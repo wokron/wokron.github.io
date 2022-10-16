@@ -156,6 +156,721 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/09/21/%E5%9F%BA%E6%9C%AC%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/09/21/%E5%9F%BA%E6%9C%AC%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">基本正则表达式总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-09-21 14:26:22 / 修改时间：17:39:11" itemprop="dateCreated datePublished" datetime="2022-09-21T14:26:22+08:00">2022-09-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。</p>
+<p>正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。</p>
+<h2 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h2><p>这里将介绍正则表达式的基本语法。另外这里推荐网站 <a target="_blank" rel="noopener" href="https://regex101.com/">regex101</a>，可以用于验证正则表达式。</p>
+<h3 id="字符与字符集"><a href="#字符与字符集" class="headerlink" title="字符与字符集"></a>字符与字符集</h3><p>正则表达式中一般的字符用于匹配字符串中对应的相同字符。例如正则表达式 “a” 可以匹配字符串中的字符 ‘a’ 。 “abc” 可以匹配字符串中的子串 “abc” 。</p>
+<blockquote>
+<p>对于在正则表达式中具有特殊含义的字符，需要进行转义，在原字符前加上反斜杠 “\\”</p>
+</blockquote>
+<p>用方括号将一个或多个字符括起来表示一个字符集，一个字符集匹配在该字符集中出现的字符。例如 [abc]，可以匹配 ‘a’ ‘b’ 或 ‘c’。</p>
+<p>还可以在字符集中指定要匹配的字符的范围，例如 [a-z]，用来匹配所有的小写英文字母。在同一字符集内可以有多个范围，例如 [a-zA-Z0-9]。</p>
+<p>在字符集括号内的所有字符之前添加 “^” 表示对该字符集取反，即匹配所有不在字符集内的元素。例如 <sup><a href="#fn_a-b" id="reffn_a-b">a-b</a></sup> 匹配所有不是小写英文字母的元素。</p>
+<blockquote>
+<p>字符 “.” 可用于匹配换行符为所有字符。</p>
+</blockquote>
+<h3 id="限定符"><a href="#限定符" class="headerlink" title="限定符"></a>限定符</h3><p>限定符用来指定其前面的部分将要匹配几次。例如a{2,5}匹配2到5个a，即”aa”、”aaa”、”aaaa”和”aaaaa”。具体的限定符含义如下表所示：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>限定符</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{n}</td>
+<td>匹配内容n次</td>
+</tr>
+<tr>
+<td>{n,}</td>
+<td>匹配内容次数大于等于n次</td>
+</tr>
+<tr>
+<td>{n,m}</td>
+<td>匹配内容次数为n到m次</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配零次或多次，同{0,}</td>
+</tr>
+<tr>
+<td>+</td>
+<td>匹配一次或多次，同{1,}</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配零次或一次，同{0,1}</td>
+</tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>注意，限定符匹配默认遵循贪婪原则，即在同样能够完成匹配的情况下，会匹配尽可能多的字符。例如要匹配<code>&lt;html&gt;&lt;dir&gt;hello,world&lt;/dir&gt;&lt;/html&gt;</code>中的标签，若使用正则表达式 “&lt;.+&gt;”，则只会匹配整个字符串。<br>解决方法是在限定符后加上一个问号 “?” 。这样限定符的匹配模式便会切换为懒惰匹配，即在同样能够完成匹配的情况下，会匹配尽可能少的字符。</p>
+</blockquote>
+<h3 id="组"><a href="#组" class="headerlink" title="组"></a>组</h3><p>用括号将一部分表达式括起，可以将这部分表达式作为一个整体。</p>
+<p>比如说，需要匹配 “aacacaaac”，可以归纳出字符串中重复的部分 “a+c”，将该部分作为一个整体，则该部分重复了三次。最终得到可以匹配该字符串的正则表达式为 “(a+c){3}”。</p>
+<p>另外，组分为捕获组与非捕获组，捕获组即单纯的括号，非捕获组包括 “(?:exp)” “(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)”。这里先说明 “(exp)” 和 “(?:exp)” 的区别。”(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 会在后一节进一步解释。</p>
+<p>当使用捕获组时，表示对括号内会出现的内容更感兴趣。这时在匹配成功后缓存括号内的匹配内容，并可以访问该内容。而使用非捕获组，则说明仅仅将括号用于划分表达式，因此不会缓存括号内的匹配。</p>
+<h3 id="选择"><a href="#选择" class="headerlink" title="选择"></a>选择</h3><p>将不同的内容用 “|” 分割，用来表示进行该部分匹配时不同的匹配选项。例如 “learn(ed|t)” 可以匹配 “learnt” 和 “learned”。</p>
+<blockquote>
+<p>正如前一节所说，这里使用了捕获；不使用捕获的表达式为 “learn(?:ed|t)”</p>
+</blockquote>
+<p>“(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 也可以实现匹配选择的功能。</p>
+<p>exp1(?=exp2)会匹配 exp2 前面的 exp1。例如表达式 “wok(?=[0-9]+)” 只会匹配后面带数字的 “wok”, 例如 “wok123” 中的 “wok” , 而不会匹配 “wokron”、 “wokd234” 中的 “wok” 。</p>
+<blockquote>
+<p>“wok(?=[0-9]+)([0-9]+)” 可以捕获 “wok” 后的数字大小。</p>
+</blockquote>
+<p>exp1(?!exp2)会匹配后面不是 exp2 的 exp1。例如表达式”wok(?![0-9]+)” 只会匹配后面不带有数字的 “wok”。</p>
+<blockquote>
+<p>“^(?:000[1-9]|(?!000)\d{4})$”会匹配0001-9999的所有值。</p>
+</blockquote>
+<p>(?&lt;=exp1)exp2会匹配前缀为 exp1 的 exp2。例如表达式”(?&lt;=foo)bar”会匹配前缀为foo的bar。</p>
+<p>(?&lt;!epx1)exp2会匹配前缀不为 exp1 的 exp2。例如表达式”(?&lt;!foo)bar”会匹配所有前缀不为foo的bar。</p>
+<blockquote>
+<p>“^(?:000[1-9]|\d{3}(?&lt;!000)\d)$”同样可以匹配0001-9999的所有值。</p>
+</blockquote>
+<h3 id="定位符"><a href="#定位符" class="headerlink" title="定位符"></a>定位符</h3><p>定位符可以将正则表达式的匹配对象定位到行首或行尾。又或者单词的开头结尾。下表是一些定位符：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>定位符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>^</td>
+<td>匹配输入字符串开始的位置</td>
+</tr>
+<tr>
+<td>$</td>
+<td>匹配输入字符串结尾的位置</td>
+</tr>
+<tr>
+<td>\b</td>
+<td>匹配一个单词边界，即字与空格间的位置</td>
+</tr>
+<tr>
+<td>\B</td>
+<td>非单词边界匹配</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="常用元字符"><a href="#常用元字符" class="headerlink" title="常用元字符"></a>常用元字符</h3><p>这里总结了一些常用的元字符，见表格：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\</td>
+<td>将下一个字符标记为特殊字符、或转义符</td>
+</tr>
+<tr>
+<td>^</td>
+<td>匹配输入字符串的开始位置</td>
+</tr>
+<tr>
+<td>$</td>
+<td>匹配输入字符串的结束位</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配前面的子表达式零次或多次</td>
+</tr>
+<tr>
+<td>+</td>
+<td>匹配前面的子表达式一次或多次</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配前面的子表达式零次或一次</td>
+</tr>
+<tr>
+<td>{n}</td>
+<td>匹配确定的 n 次</td>
+</tr>
+<tr>
+<td>{n,}</td>
+<td>至少匹配n 次</td>
+</tr>
+<tr>
+<td>{n,m}</td>
+<td>最少匹配 n 次且最多匹配 m 次</td>
+</tr>
+<tr>
+<td>?</td>
+<td>跟在其他限制符后面，设置匹配模式为非贪婪</td>
+</tr>
+<tr>
+<td>.</td>
+<td>匹配除换行符（\n、\r）之外的任何单个字符</td>
+</tr>
+<tr>
+<td>x&#124;y</td>
+<td>匹配 x 或 y</td>
+</tr>
+<tr>
+<td>[xyz]</td>
+<td>字符集合。匹配所包含的任意一个字符</td>
+</tr>
+<tr>
+<td>[&#94;xyz]</td>
+<td>负值字符集合。匹配未包含的任意字符</td>
+</tr>
+<tr>
+<td>[a-z]</td>
+<td>字符范围。匹配指定范围内的任意字符</td>
+</tr>
+<tr>
+<td>[&#94;a-z]</td>
+<td>负值字符范围。匹配任何不在指定范围内的任意字符</td>
+</tr>
+<tr>
+<td>\b</td>
+<td>匹配一个单词边界，即单词和空格间的位置</td>
+</tr>
+<tr>
+<td>\B</td>
+<td>匹配非单词边界</td>
+</tr>
+<tr>
+<td>\d</td>
+<td>匹配一个数字字符。等价于 [0-9]</td>
+</tr>
+<tr>
+<td>\D</td>
+<td>匹配一个非数字字符。等价于 <sup><a href="#fn_0-9" id="reffn_0-9">0-9</a></sup></td>
+</tr>
+<tr>
+<td>\f</td>
+<td>匹配一个换页符。等价于 \x0c 和 \cL</td>
+</tr>
+<tr>
+<td>\n</td>
+<td>匹配一个换行符。等价于 \x0a 和 \cJ</td>
+</tr>
+<tr>
+<td>\r</td>
+<td>匹配一个回车符。等价于 \x0d 和 \cM</td>
+</tr>
+<tr>
+<td>\s</td>
+<td>匹配任何空白字符</td>
+</tr>
+<tr>
+<td>\S</td>
+<td>匹配任何非空白字符</td>
+</tr>
+<tr>
+<td>\t</td>
+<td>匹配一个制表符。等价于 \x09 和 \cI</td>
+</tr>
+<tr>
+<td>\v</td>
+<td>匹配一个垂直制表符。等价于 \x0b 和 \cK</td>
+</tr>
+<tr>
+<td>\w</td>
+<td>匹配字母、数字、下划线。等价于’[A-Za-z0-9_]’</td>
+</tr>
+<tr>
+<td>\W</td>
+<td>匹配非字母、数字、下划线。等价于 ‘<sup><a href="#fn_A-Za-z0-9_" id="reffn_A-Za-z0-9_">A-Za-z0-9_</a></sup>‘</td>
+</tr>
+<tr>
+<td>\num</td>
+<td>匹配 num，其中 num 是一个正整数。对所获取的匹配的引用。例如，’(.)\1’ 匹配两个连续的相同字符</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/09/19/MySCS%E4%BA%91%E5%B9%B3%E5%8F%B0%EF%BC%88%E4%B8%80%EF%BC%89%E2%80%94%E2%80%94%E6%B3%A8%E5%86%8C%E4%B8%8E%E7%99%BB%E9%99%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/09/19/MySCS%E4%BA%91%E5%B9%B3%E5%8F%B0%EF%BC%88%E4%B8%80%EF%BC%89%E2%80%94%E2%80%94%E6%B3%A8%E5%86%8C%E4%B8%8E%E7%99%BB%E9%99%86/" class="post-title-link" itemprop="url">MySCS云平台（一）——注册与登陆</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-09-19 18:16:07 / 修改时间：18:19:33" itemprop="dateCreated datePublished" datetime="2022-09-19T18:16:07+08:00">2022-09-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">软件开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、注册与登陆模块"><a href="#一、注册与登陆模块" class="headerlink" title="一、注册与登陆模块"></a>一、注册与登陆模块</h2><p>该模块执行注册和登陆操作。从本质上说，也就是进行用户信息的添加，以及更改当前登陆的用户信息。因此我们还要定义一个储存用户信息的类</p>
+<h2 id="（1）用户信息（UserInfo）"><a href="#（1）用户信息（UserInfo）" class="headerlink" title="（1）用户信息（UserInfo）"></a>（1）用户信息（UserInfo）</h2><p>为什么是UserInfo而不是User呢？因为用户的操作是读入的命令行，所以并不需要一个User类来执行操作。在注册登录模块只需要显示用户的信息而已。（或许多用户的时候User类会出现？）</p>
+<h3 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h3><p>重写toString方法</p>
+<h3 id="字段"><a href="#字段" class="headerlink" title="字段"></a>字段</h3><ol>
+<li>学工号</li>
+<li>姓、名</li>
+<li>邮箱</li>
+<li>密码</li>
+</ol>
+<h3 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h3><p>暂无。注意构造函数只能有包括全部信息的。</p>
+<h2 id="（2）注册与登陆控制器（LoginController）"><a href="#（2）注册与登陆控制器（LoginController）" class="headerlink" title="（2）注册与登陆控制器（LoginController）"></a>（2）注册与登陆控制器（LoginController）</h2><p>用来控制注册与登陆，在执行不正确的操作时会抛出异常。</p>
+<h3 id="方法-1"><a href="#方法-1" class="headerlink" title="方法"></a>方法</h3><p>注册：无返回值，参数为用户的各项信息，用来创建一个新的用户。当用户信息不合法、已存在、密码不一致等情况发生时抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">register</span><span class="params">(String ID, String firstName, String lastName, String email, String password, String passwordConfirm)</span>;</span><br></pre></td></tr></table></figure></p>
+<p>登陆：无返回值，参数为一个学工号和一个密码，用来登陆一个用户。当用户不存在、密码不正确或已经登录的时候抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">login</span><span class="params">(String ID, String password)</span>;</span><br></pre></td></tr></table></figure></p>
+<p>打印信息：无返回值，无参数或有一个学工号作为参数，打印当前登陆的信息或学号对应的人的信息。当未登录、输入的学号不合法、不存在等等情况发生时抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">printInfo</span><span class="params">()</span>;</span><br><span class="line"><span class="keyword">void</span> <span class="title function_">printInfo</span><span class="params">(String ID)</span>;</span><br></pre></td></tr></table></figure></p>
+<p>退出登陆：无返回值、无参数。退出当前登陆，如果当前没有登陆则抛出异常。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">logout</span><span class="params">()</span>;</span><br></pre></td></tr></table></figure></p>
+<h3 id="字段-1"><a href="#字段-1" class="headerlink" title="字段"></a>字段</h3><ol>
+<li>储存用户信息的列表（<code>List&lt;UserInfo&gt;</code>）</li>
+<li>当前登陆的用户<code>(UserInfo</code>)</li>
+<li>当前程序所处的状态（<code>LoginStatus</code>枚举）</li>
+</ol>
+<h3 id="算法-1"><a href="#算法-1" class="headerlink" title="算法"></a>算法</h3><p>一个有限状态机，包含这样几种状态：未登录、学生登陆、教师登录。利用函数进行状态转换。不合理的转换会抛出异常。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/09/12/%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E4%B9%8B%E5%91%BD%E4%BB%A4%E8%A1%8C%E7%BC%96%E8%AF%91/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/09/12/%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E4%B9%8B%E5%91%BD%E4%BB%A4%E8%A1%8C%E7%BC%96%E8%AF%91/" class="post-title-link" itemprop="url">系统编程之命令行编译</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-12 21:18:59" itemprop="dateCreated datePublished" datetime="2022-09-12T21:18:59+08:00">2022-09-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-10-08 19:30:41" itemprop="dateModified" datetime="2022-10-08T19:30:41+08:00">2022-10-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。</p>
+<h2 id="二、GCC"><a href="#二、GCC" class="headerlink" title="二、GCC"></a>二、GCC</h2><h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="编译选项"><a href="#编译选项" class="headerlink" title="编译选项"></a>编译选项</h4><ul>
+<li>无选项编译链接<ul>
+<li>用法：gcc test.c<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。</li>
+</ul>
+</li>
+<li>选项 -o<ul>
+<li>用法：gcc test.c -o test<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。</li>
+</ul>
+</li>
+<li>选项 -E<ul>
+<li>用法：gcc -E test.c -o test.i<br>作用：将 test.c 预处理输出 test.i 文件。</li>
+</ul>
+</li>
+<li>选项 -S<ul>
+<li>用法：gcc -S test.i<br>作用：将预处理输出文件 test.i 编译成 test.s 文件。</li>
+</ul>
+</li>
+<li>选项 -c<ul>
+<li>用法：gcc -c test.s<br>作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。</li>
+</ul>
+</li>
+<li>无选项链接<ul>
+<li>用法：gcc test.o -o test<br>作用：将目标代码文件 test.o 链接成最终可执行文件 test。</li>
+</ul>
+</li>
+<li>选项 -O<ul>
+<li>用法：gcc -O1 test.c -o test<br>作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。</li>
+</ul>
+</li>
+</ul>
+<p>官方文档：<a target="_blank" rel="noopener" href="https://gcc.gnu.org/">GCC, the GNU Compiler Collection</a></p>
+<h4 id="搜索路径控制"><a href="#搜索路径控制" class="headerlink" title="搜索路径控制"></a>搜索路径控制</h4><ul>
+<li>-I <strong>dir</strong>：将 <strong>dir</strong> 增加至头文件搜索路径</li>
+<li>-L <strong>dir</strong>：将 <strong>dir</strong> 增加至库文件搜索路径</li>
+<li>-l <strong>library</strong> 或 -l<strong>library</strong>：指定编译时搜索的库名</li>
+</ul>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><h4 id="编译链接"><a href="#编译链接" class="headerlink" title="编译链接"></a>编译链接</h4><p>在这样的文件结构下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   └── dog.h</span><br><span class="line">├── main.c</span><br><span class="line">├── v1</span><br><span class="line">│   └── dog.c</span><br><span class="line">└── v2</span><br><span class="line">    └── dog.c</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li><p>将 <code>./main.c</code> 编译为 <code>./main.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c main.c</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v1/dog.c</code> 编译为 <code>./v1/dog.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c ./v1/dog.c -o ./v1/dog.o</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v2/dog.c</code> 编译为 <code>./v2/dog.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c ./v2/dog.c -o ./v2/dog.o</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v1/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog1</code></p>
+<blockquote>
+<p>指令：gcc main.o ./v1/dog.o -o dog1</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v2/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog2</code></p>
+<blockquote>
+<p>指令：gcc main.o ./v2/dog.o -o dog2</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="静态和动态库"><a href="#静态和动态库" class="headerlink" title="静态和动态库"></a>静态和动态库</h4><p>执行下面的命令：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v1/dog.o</span><br><span class="line">gcc -o main main.o -L. -ldog</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>第一条生成了一个名为libdog.a的静态库。<code>cr</code>意为“create and replace”，指如果库不存在则创建，如果存在则用新文件替换库中的同名文件。后接要生成的静态库名称，再之后接要添加入库中的文件。<br>第二条将第一条中生成的静态库与main.o文件链接，生成一个名为main的可执行文件。<code>-L</code>后跟地址表示将该地址添加到库文件的搜索路径，<code>-L.</code>表示将当前目录添加到搜索路径。<code>-l</code>指定编译时搜索的库名。</p>
+</blockquote>
+<p>再执行以下命令：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
+<p>两次运行main可执行文件结果相同。</p>
+<blockquote>
+<p>因为静态链接，程序在链接完成时就已确定。第二次只是更改了静态库本身，而没有改变链接后生成的可执行文件。</p>
+</blockquote>
+<hr>
+<p>执行下面的命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -c -fPIC v1/dog.c -o v1/dog.o -I include</span><br><span class="line">gcc -c -fPIC v2/dog.c -o v2/dog.o -I include</span><br><span class="line">gcc -shared -fPIC -o libdog.so v1/dog.o</span><br><span class="line">gcc main.c libdog.so -o main -I include</span><br></pre></td></tr></table></figure>
+<p>再将库文件路径设置为当前路径：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LD_LIBRARY_PATH=.</span><br><span class="line"><span class="built_in">export</span> LD_LIBRARY_PATH</span><br></pre></td></tr></table></figure>
+<p>执行 <code>./main</code>，之后再执行以下命令：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -shared -fPIC -o libdog.so v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
+<p>两次运行main可执行文件结果不同。</p>
+<blockquote>
+<p>引用动态库时，动态库的程序并不保存在可执行文件内部，而是在运行时才会动态地连接到程序中。</p>
+</blockquote>
+<h2 id="三、GDB"><a href="#三、GDB" class="headerlink" title="三、GDB"></a>三、GDB</h2><h3 id="基本操作-1"><a href="#基本操作-1" class="headerlink" title="基本操作"></a>基本操作</h3><ul>
+<li>在使用 gcc 对程序编译时，需要<strong>加上-g 参数</strong>（产生调试信息）才能使 GDB 进行调试。</li>
+<li>输入 help 命令获得帮助</li>
+<li>输入 quit 或者按 Ctrl+D 组合键退出 GDB。</li>
+<li>启动程序准备调试方法<ul>
+<li>方法一：在执行 GDB 命令时加上要调试的可执行程序名称，如“GDB yourprogram”；</li>
+<li>方法二：先输入 GDB，在 GDB 中输入 file yourprogram 加载需要调试的程序。最后使用 run 或者 r 命令开始执行，也可以使用 run parameter 方式传递参数</li>
+</ul>
+</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center">命令</th>
+<th style="text-align:center">命令缩写</th>
+<th style="text-align:center">命令说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">list</td>
+<td style="text-align:center">l</td>
+<td style="text-align:center">显示多行源代码</td>
+</tr>
+<tr>
+<td style="text-align:center">break</td>
+<td style="text-align:center">b</td>
+<td style="text-align:center">设置断点，程序运行到断点的位置会停下来</td>
+</tr>
+<tr>
+<td style="text-align:center">info</td>
+<td style="text-align:center">i</td>
+<td style="text-align:center">描述程序运行的状态</td>
+</tr>
+<tr>
+<td style="text-align:center">run</td>
+<td style="text-align:center">r</td>
+<td style="text-align:center">开始运行程序</td>
+</tr>
+<tr>
+<td style="text-align:center">display</td>
+<td style="text-align:center">disp</td>
+<td style="text-align:center">跟踪查看某个变量，每次停下来都显示它的值</td>
+</tr>
+<tr>
+<td style="text-align:center">step</td>
+<td style="text-align:center">s</td>
+<td style="text-align:center">执行下一条语句，若该语句为函数调用，则进入函数执行其第一条语句</td>
+</tr>
+<tr>
+<td style="text-align:center">next</td>
+<td style="text-align:center">n</td>
+<td style="text-align:center">执行下一条语句，若该语句为函数调用，不会进入函数内部执行（即不会一步一步地调试函数内部语句）</td>
+</tr>
+<tr>
+<td style="text-align:center">print</td>
+<td style="text-align:center">p</td>
+<td style="text-align:center">打印内部变量</td>
+</tr>
+<tr>
+<td style="text-align:center">continue</td>
+<td style="text-align:center">c</td>
+<td style="text-align:center">继续程序的执行直到遇到下一个断点</td>
+</tr>
+<tr>
+<td style="text-align:center">set var</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">设置变量的值</td>
+</tr>
+<tr>
+<td style="text-align:center">start</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">开始执行程序，在 main 函数第一条语句前面停下</td>
+</tr>
+<tr>
+<td style="text-align:center">file</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">装入需要调试的文件</td>
+</tr>
+<tr>
+<td style="text-align:center">kill</td>
+<td style="text-align:center">k</td>
+<td style="text-align:center">终止正在调试的程序</td>
+</tr>
+<tr>
+<td style="text-align:center">watch</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">监视变量值的变化</td>
+</tr>
+<tr>
+<td style="text-align:center">backtrace</td>
+<td style="text-align:center">bt</td>
+<td style="text-align:center">查看函数调用的信息</td>
+</tr>
+<tr>
+<td style="text-align:center">frame</td>
+<td style="text-align:center">f</td>
+<td style="text-align:center">查看栈帧</td>
+</tr>
+<tr>
+<td style="text-align:center">quit</td>
+<td style="text-align:center">q</td>
+<td style="text-align:center">退出 GDB 环境</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>GDB 的更多使用方法可以参阅<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb/"><strong>GDB User Manual</strong></a> (<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb.pdf">PDF</a>)</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有test.c文件：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> num;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Enter a positive integer: &quot;</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">&quot;%d&quot;</span>, &amp;num);</span><br><span class="line">    &#125; <span class="keyword">while</span> (num &lt; <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> factorial;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">1</span>; i &lt;= num; i++)</span><br><span class="line">        factorial = factorial * i;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d! = %d\n&quot;</span>, num, factorial);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>接下来对该文件进行调试。<br>按顺序执行如下操作：</p>
+<p>（1）执行以下命令进入调试状态<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -g test.c -o <span class="built_in">test</span></span><br><span class="line">gdb <span class="built_in">test</span></span><br></pre></td></tr></table></figure><br>（2）在 main 函数处设置断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> main</span><br></pre></td></tr></table></figure><br>（3）输入 <code>run</code> 命令开始程序<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Breakpoint 1, main () at test.c:2</span><br><span class="line">2	int <span class="function"><span class="title">main</span></span>() &#123;</span><br></pre></td></tr></table></figure><br>（4）多次输入 <code>next</code> 命令使程序运行到第 14 行,使用 print 命令打印 num 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> num</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$1</span> = 2</span><br></pre></td></tr></table></figure><br>（5）继续调试至程序第 15 行,使用 <code>print</code> 命令打印 factorial 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> factorial</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$2</span> = -17088</span><br></pre></td></tr></table></figure><br>（6）使用 <code>run</code> 命令再次调试程序</p>
+<p>（7）在程序第 10 行加入断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> test.c:10</span><br></pre></td></tr></table></figure><br>（8）使用 <code>continue</code> 命令使程序运行到断点处</p>
+<p>（9）使用 <code>next</code> 命令</p>
+<p>（10）再次使用 <code>print</code> 命令打印 i 和 factorial 的值</p>
+<p>（11）使用 <code>p factorial=1</code> 命令改变 factorial 的值</p>
+<p>（12）使用 <code>info locals</code> 查看所有局部变量值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i = 1</span><br><span class="line">num = 2</span><br><span class="line">factorial = 1</span><br></pre></td></tr></table></figure><br>（13）继续调试至程序结束</p>
+<blockquote>
+<p>易知程序出错在没有初始化变量factorial</p>
+<p>gdb能很好地展示程序的执行过程，方便查找出错的位置。</p>
+</blockquote>
+<h2 id="make"><a href="#make" class="headerlink" title="make"></a>make</h2><h3 id="基本操作-2"><a href="#基本操作-2" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="Makefile的格式"><a href="#Makefile的格式" class="headerlink" title="Makefile的格式"></a>Makefile的格式</h4><p>Makefile文件由一系列规则（rules）构成。每条规则的形式如下。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;target&gt; : &lt;prerequisites&gt; </span><br><span class="line">[tab]  &lt;commands&gt;</span><br></pre></td></tr></table></figure><br>第一行冒号前面的部分，叫做”目标”（target）；冒号后面的部分叫做”前置条件”（prerequisites）；第二行必须由一个tab键起首，后面跟着”命令”（commands）。</p>
+<ul>
+<li><p>目标</p>
+<ul>
+<li>一个目标（target）就构成一条规则。目标通常是文件名，指明Make命令所要构建的对象，比如上文的 a.txt 。目标可以是一个文件名，也可以是多个文件名，之间用空格分隔。</li>
+<li>除了文件名，目标还可以是某个操作的名字，称为”伪目标”（phony target）。</li>
+</ul>
+</li>
+<li><p>前置条件</p>
+<ul>
+<li>前置条件通常是一组文件名，之间用空格分隔。它指定了”目标”是否重新构建的判断标准：只要有一个前置文件不存在，或者有过更新（前置文件的last-modification时间戳比目标的时间戳新），”目标”就需要重新构建。</li>
+</ul>
+</li>
+<li><p>命令</p>
+<ul>
+<li>命令（commands）表示如何更新目标文件，由一行或多行的Shell命令组成。它是构建”目标”的具体指令，它的运行结果通常就是生成目标文件。</li>
+</ul>
+</li>
+</ul>
+<h4 id="语法选述"><a href="#语法选述" class="headerlink" title="语法选述"></a>语法选述</h4><ul>
+<li><p>注释</p>
+<ul>
+<li>井号（#）在Makefile中表示注释。</li>
+</ul>
+</li>
+<li><p>模式匹配</p>
+<ul>
+<li>Make命令允许对文件名，进行类似正则运算的匹配，主要用到的匹配符是%。比如，假定当前目录下有 f1.c 和 f2.c 两个源码文件，需要将它们编译为对应的对象文件。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%.o: %.c</span><br></pre></td></tr></table></figure>
+等同于下面的写法。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f1.o: f1.c</span><br><span class="line">f2.o: f2.c</span><br></pre></td></tr></table></figure>
+使用匹配符%，可以将大量同类型的文件，只用一条规则就完成构建。</li>
+</ul>
+</li>
+<li><p>通配符</p>
+<ul>
+<li>通配符（wildcard）用来指定一组符合条件的文件名。Makefile 的通配符与 Bash 一致</li>
+</ul>
+</li>
+<li><p>依赖路径</p>
+<ul>
+<li>大写的VPATH或小写的vpath，表示搜索文件时的路径。写法例如<code>VPATH src:include:lib</code>表示在<code>./src</code> <code>./include</code> <code>./lib</code> 三个路径下寻找文件。<code>vpath %.c ./src</code>表示以.c结尾的文件在<code>./src</code>路径下寻找。</li>
+</ul>
+</li>
+</ul>
+<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有如下结构：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   ├── dylib.h</span><br><span class="line">│   ├── fun1.h</span><br><span class="line">│   └── fun2.h</span><br><span class="line">├── lib</span><br><span class="line">│   └── libdy.so</span><br><span class="line">├── Makefile</span><br><span class="line">└── src</span><br><span class="line">    ├── fun1.c</span><br><span class="line">    ├── fun2.c</span><br><span class="line">    └── main.c</span><br></pre></td></tr></table></figure><br>将这些资源编译成一个可执行文件，在Makefile文件中写下：<br><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">vpath</span> %.h ./<span class="keyword">include</span></span><br><span class="line"><span class="keyword">vpath</span> %.so ./lib</span><br><span class="line"><span class="keyword">vpath</span> %.c ./src</span><br><span class="line"></span><br><span class="line"><span class="section">main: main.o fun1.o fun2.o libdy.so</span></span><br><span class="line">    gcc <span class="variable">$^</span> -o main</span><br><span class="line"></span><br><span class="line"><span class="section">%.o: %.c</span></span><br><span class="line">    gcc <span class="variable">$^</span> -I <span class="keyword">include</span> -c</span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>: clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    rm *.o</span><br></pre></td></tr></table></figure><br>在终端中输入命令<code>make main</code>，即生成main文件（以及中间文件）。再输入<code>make clean</code>将中间文件删除。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/09/11/Hexo%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E5%8F%8A%E4%B8%BB%E9%A2%98%E9%85%8D%E7%BD%AE%E6%95%99%E7%A8%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -906,81 +1621,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/09/10/test/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/09/10/test/" class="post-title-link" itemprop="url">Test</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2022-09-10 10:04:47 / 修改时间：15:33:39" itemprop="dateCreated datePublished" datetime="2022-09-10T10:04:47+08:00">2022-09-10</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%B5%8B%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">测试</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="Article-Test"><a href="#Article-Test" class="headerlink" title="Article Test"></a>Article Test</h1><blockquote>
-<p>测试，第一篇推文</p>
-</blockquote>
-<p>I wonder if this can be seen…</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// this is what a string cat can do.</span></span><br><span class="line">StringCat.new(<span class="string">&quot;black&quot;</span>).meow(<span class="number">2</span>).jump().sleep(<span class="number">1000</span>);</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1048,7 +1692,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">18</span>
+          <span class="site-state-item-count">21</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

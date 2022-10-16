@@ -20,29 +20,21 @@
     var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="一、引言——拟合多项式考虑如图所示的样本数据： 如果我们用一元线性回归去拟合该数据，会发现直线与数据点拟合效果很差。 通过观察，我们很容易得知数据点满足二次函数，具体地，函数是 $\frac{1}{2}x^2 + 5$。既然用直线 $y &#x3D; wx + b$ 不能拟合，那么换用二次函数 $y &#x3D; w_1x^2 + w_2x + b$ 拟合的话效果会如何？ 二、多项式回归的步骤对于一元多项式函数">
+  <meta name="description" content="一、引言对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。  模型的这种能力称为泛化能力  这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增">
 <meta property="og:type" content="article">
-<meta property="og:title" content="机器学习笔记之多项式回归">
-<meta property="og:url" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/index.html">
+<meta property="og:title" content="机器学习之模型评估与优化">
+<meta property="og:url" content="https://wokron.github.io/2022/10/16/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E4%B8%8E%E4%BC%98%E5%8C%96/index.html">
 <meta property="og:site_name" content="StringCat的博客">
-<meta property="og:description" content="一、引言——拟合多项式考虑如图所示的样本数据： 如果我们用一元线性回归去拟合该数据，会发现直线与数据点拟合效果很差。 通过观察，我们很容易得知数据点满足二次函数，具体地，函数是 $\frac{1}{2}x^2 + 5$。既然用直线 $y &#x3D; wx + b$ 不能拟合，那么换用二次函数 $y &#x3D; w_1x^2 + w_2x + b$ 拟合的话效果会如何？ 二、多项式回归的步骤对于一元多项式函数">
+<meta property="og:description" content="一、引言对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。  模型的这种能力称为泛化能力  这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/poly.png">
-<meta property="og:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/linearTry.png">
-<meta property="og:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/print.png">
-<meta property="og:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/result.png">
-<meta property="og:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/cost.png">
-<meta property="og:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/complex.png">
-<meta property="og:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/complex_cost.png">
-<meta property="article:published_time" content="2022-10-01T13:52:38.000Z">
-<meta property="article:modified_time" content="2022-10-04T14:54:47.127Z">
+<meta property="article:published_time" content="2022-10-16T08:22:46.000Z">
+<meta property="article:modified_time" content="2022-10-16T10:59:02.990Z">
 <meta property="article:author" content="wokron">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="机器学习">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/poly.png">
 
-<link rel="canonical" href="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/">
+<link rel="canonical" href="https://wokron.github.io/2022/10/16/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E4%B8%8E%E4%BC%98%E5%8C%96/">
 
 
 <script id="page-configurations">
@@ -55,7 +47,7 @@
   };
 </script>
 
-  <title>机器学习笔记之多项式回归 | StringCat的博客</title>
+  <title>机器学习之模型评估与优化 | StringCat的博客</title>
   
 
 
@@ -171,7 +163,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/10/16/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E4%B8%8E%E4%BC%98%E5%8C%96/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -184,7 +176,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          机器学习笔记之多项式回归
+          机器学习之模型评估与优化
         </h1>
 
         <div class="post-meta">
@@ -193,16 +185,10 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2022-10-01 21:52:38" itemprop="dateCreated datePublished" datetime="2022-10-01T21:52:38+08:00">2022-10-01</time>
+              <time title="创建时间：2022-10-16 16:22:46 / 修改时间：18:59:02" itemprop="dateCreated datePublished" datetime="2022-10-16T16:22:46+08:00">2022-10-16</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-10-04 22:54:47" itemprop="dateModified" datetime="2022-10-04T22:54:47+08:00">2022-10-04</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -224,28 +210,65 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="一、引言——拟合多项式"><a href="#一、引言——拟合多项式" class="headerlink" title="一、引言——拟合多项式"></a>一、引言——拟合多项式</h2><p>考虑如图所示的样本数据：<br><img src="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/poly.png" class="" title="poly"></p>
-<p>如果我们用一元线性回归去拟合该数据，会发现直线与数据点拟合效果很差。<br><img src="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/linearTry.png" class="" title="linearTry"></p>
-<p>通过观察，我们很容易得知数据点满足二次函数，具体地，函数是 $\frac{1}{2}x^2 + 5$。既然用直线 $y = wx + b$ 不能拟合，那么换用二次函数 $y = w_1x^2 + w_2x + b$ 拟合的话效果会如何？</p>
-<h2 id="二、多项式回归的步骤"><a href="#二、多项式回归的步骤" class="headerlink" title="二、多项式回归的步骤"></a>二、多项式回归的步骤</h2><p>对于一元多项式函数</p>
+        <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。</p>
+<blockquote>
+<p>模型的这种能力称为泛化能力</p>
+</blockquote>
+<p>这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增加样本数量等）。因此我们需要方法，来一般化地评估模型的质量。</p>
+<h2 id="二、泛化能力的衡量指标"><a href="#二、泛化能力的衡量指标" class="headerlink" title="二、泛化能力的衡量指标"></a>二、泛化能力的衡量指标</h2><p>正如前一节所说，泛化能力的衡量就是衡量模型对训练样本集之外的数据集的预测效果。我们知道衡量模型对训练样本预测效果的指标是损失函数，那么对于其他数据，我们同样可以把损失函数的概念迁移到这里来。</p>
+<p>我们可以将已经获得的数据划分为两部分，一部分用于训练模型，称为训练集；另一部分用于测试模型的泛化能力，称为测试集。对于用训练集训练后的数据，我们再求该模型对测试集数据的损失函数。</p>
+<p>举个例子，如果我们采用简单的平方误差损失函数，则我们就是要求</p>
 <script type="math/tex; mode=display">
-    y = w_1x + w_2x^2 + \cdots + w_nx^n + b</script><p>令 $x^i = y_i$，则原函数变为</p>
+    J_{test}(\vec{w},b) = 
+    \frac{1}{2m_{test}}\sum_{i=0}^{m_{test}-1} ( f_{\vec{w},b}(\vec{x}^{(i)}_{test}) - y^{(i)}_{test} )^2</script><p>$J_{test}(\vec{w},b)$ 就是我们对该模型泛化能力的衡量指标，称为测试误差。</p>
+<p>我们可以将该指标与训练集的损失函数值 $J_{train}(\vec{w},b)$（注意这里没有正则项，称为训练误差）进行比较。一般的情况是 $J_{test}(\vec{w},b)$ 大于 $J_{train}(\vec{w},b)$。</p>
+<p>我们还可以将该模型的泛化能力与其他模型的泛化能力，或者与人类的误差进行比较。这样我们就可以评价我们所训练的模型的优劣了。</p>
+<h2 id="三、交叉验证集"><a href="#三、交叉验证集" class="headerlink" title="三、交叉验证集"></a>三、交叉验证集</h2><p>在我们继续评估模型之前，我们要先来考虑一些我们究竟要如何进行优化。你可能会想，我们既然有了评价模型泛化能力的指标 $J_{test}$，那么只要试图让该指标减小不就可以了吗？这是一个很直接的想法。</p>
+<p>但问题是，如果我们向着使 $J_{test}$ 减小的目标优化，那么测试集与训练集有什么区别呢？按照这种方法，测试集就相当于变成了训练集的一部分，而不再能成为衡量训练集之外泛化能力的样本了。</p>
+<p>因此，我们不能将训练集作为优化的方向，而只能将其作为评价的指标。我们需要再分出一部分数据，作为优化时的参考。这就是交叉验证（Cross-validation）集。对应的衡量指标为 $J_{cv}$</p>
+<h2 id="四、模型评价"><a href="#四、模型评价" class="headerlink" title="四、模型评价"></a>四、模型评价</h2><p>我们用偏差和方差来评价一个模型。</p>
+<ul>
+<li>偏差表示模型对训练集的预测相对于真实情况的误差，如果模型对训练样本都不能很好地拟合或分类，就称其为高偏差的。 $J_{train}$ 可衡量模型的偏差。</li>
+<li>方差表示模型对测试集的预测相对于真实情况的误差（也就是泛化能力本身），如果模型不能很好地预测测试集中数据，就称其为高方差的。$J_{cv}$ 可衡量模型的方差。</li>
+</ul>
+<blockquote>
+<p>一般来说，模型的方差会大于偏差。因此高偏差的模型都是高方差的。</p>
+<p>随着模型复杂度的提升，模型的偏差会逐渐降低，但偏差会先降低再升高；随着训练样本量的提升，偏差会逐渐减小，方差会逐渐升高，直到最后方差和偏差程度接近。</p>
+</blockquote>
+<h2 id="五、倾斜数据集的误差指标"><a href="#五、倾斜数据集的误差指标" class="headerlink" title="五、倾斜数据集的误差指标"></a>五、倾斜数据集的误差指标</h2><p>对于正面例子和负面例子比例差距较大的训练样本（也就是说，被标记为某一结果的样本数量占样本总数的比例很大或很小），根据全概率分布可知，可能就算全部预测同一结果，其正确的概率也很大。因此我们需要能消除样本本身概率分布导致的正确率偏差的指标。</p>
+<p>有两种误差指标用于评价这种情况。分别为准确率（Precision）和召回率（Recall）。</p>
+<ul>
+<li>准确率衡量的是，模型预测为某一结果的情况中，有多少是预测正确的。</li>
+<li>召回率衡量的是，对所有真正为某一结果的情况，有多少是模型预测到的。</li>
+</ul>
+<p>也就是说，设</p>
+<ul>
+<li>TP表示将正类预测为正类的数量</li>
+<li>FN表示将正类预测为负类的数量</li>
+<li>FP表示将负类预测为正类的数量</li>
+<li>TN表示将负类预测为负类的数量</li>
+</ul>
+<p>则准确率为</p>
 <script type="math/tex; mode=display">
-    y = w_1y_1 + w_2y_2 + \cdots + w_ny_n + b</script><p>对于自变量 $x$，只需将 $x^2, x^3, \cdots, x^n$ 看成与 $x$ 不同的特征。此时一个一元多项式函数的拟合问题就转变成了我们已知的多元线性拟合问题。同理，对于多元多项式函数，也可以将其转化为多元线性函数进行拟合。</p>
-<h2 id="三、代码实现"><a href="#三、代码实现" class="headerlink" title="三、代码实现"></a>三、代码实现</h2><p>对于如下样本：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = np.array(<span class="built_in">range</span>(-<span class="number">1</span>, <span class="number">10</span>))</span><br><span class="line">y = (x ** <span class="number">2</span>) / <span class="number">2</span> + <span class="number">5</span></span><br></pre></td></tr></table></figure></p>
-<p>将 $x^2$ 也作为一个特征<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.c_[x.T, (x ** <span class="number">2</span>).T] <span class="comment"># np.c_ 用于进行列的扩展</span></span><br><span class="line">y_train = y</span><br></pre></td></tr></table></figure></p>
-<p>剩下的与多元线性回归同理<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">1e-3</span></span><br><span class="line">w = np.zeros(X_train.shape[<span class="number">1</span>])</span><br><span class="line">b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br></pre></td></tr></table></figure></p>
-<p>迭代信息：<br><img src="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/print.png" class="" title="print"></p>
-<p>拟合效果：<br><img src="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/result.png" class="" title="result"></p>
-<p>损失函数：<br><img src="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/cost.png" class="" title="cost"></p>
-<hr>
-<p><strong>扩展：</strong></p>
-<p>对于较为复杂的表达式，如 $y = sinx$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = np.array(<span class="built_in">range</span>(-<span class="number">1</span>, <span class="number">10</span>))</span><br><span class="line">y = np.sin(x)</span><br></pre></td></tr></table></figure></p>
-<p>只要增加多项式次数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.c_[x.T, (x**<span class="number">2</span>).T, (x**<span class="number">3</span>).T, (x**<span class="number">4</span>).T, (x**<span class="number">5</span>).T, (x**<span class="number">6</span>).T, (x**<span class="number">7</span>).T, (x**<span class="number">8</span>).T, (x**<span class="number">9</span>).T, (x**<span class="number">10</span>).T, (x**<span class="number">11</span>).T]</span><br></pre></td></tr></table></figure></p>
-<p>再加上特征缩放<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_train, _, _ = featureScaling(X_train)</span><br></pre></td></tr></table></figure></p>
-<p>在一定的步长和迭代次数下<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">0.2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">50000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br></pre></td></tr></table></figure></p>
-<p>同样可以取得一定的拟合效果<br><img src="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/complex.png" class="" title="complex"></p>
-<img src="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92/complex_cost.png" class="" title="complex_cost">
+    P = \frac{TP}{TP + FP}</script><p>召回率为</p>
+<script type="math/tex; mode=display">
+    R = \frac{TP}{TP + FN}</script><p>可以这样理解，把预测的过程当做选择的过程，准确率高就是“不重”，不过多的选择，以致把许多不属于的也包括在内；召回率高就是“不漏”，不过少地选择，把一些属于的漏掉了。</p>
+<p>我们很容易就能得知，准确率和召回率在一定程度上是矛盾的。想要准确率高，就很可能漏掉一些；想要召回率高，就可能包含了不属于的东西。</p>
+<blockquote>
+<p>对于逻辑回归来说，提高阈值（即把多少数值以上的设定为真），准确率上升，召回率下降；降低阈值，准确率下降，召回率上升。</p>
+</blockquote>
+<p>要权衡准确率和召回率，对模型进行整体的评价的方法是采用 F1 分数（F1 Score）。即</p>
+<script type="math/tex; mode=display">
+    F1 = \frac{1}{\frac{1}{2}(\frac{1}{P} + \frac{1}{R})}</script><blockquote>
+<p>相当于对准确率和召回率的调和平均</p>
+</blockquote>
+<h2 id="五、优化策略"><a href="#五、优化策略" class="headerlink" title="五、优化策略"></a>五、优化策略</h2><p>优化模型需要考虑不同的情况。</p>
+<p>一种是模型具有高偏差的情况。<br>模型具有高偏差，常常意味着当前的模型复杂度不足以拟合当前数据。此时若一味地增加训练数据量，并不会使得拟合效果提高太多。应该做的是提高模型复杂度。如增加特征、增加层数、减小正则化系数等等。</p>
+<p>另一种是模型具有高方差，且偏差较低的情况。<br>这种情况常常意味着模型对样本产生了过拟合。需要做的是降低拟合程度。采取如减少特征、增大正则化系数等手段。增加训练数据量在这种情况下可以起到效果。</p>
+<p><strong>这里再介绍一些增加数据量的方法：</strong></p>
+<p>除了通过各种手段获取新数据以外，我们还可以利用现有数据创造新数据。如对于图像，可以将其经过旋转、伸缩、扭曲等操作生成新的图像；又比如音频，可以增加背景音、噪声等来模拟更加真实的环境。这些手段都能增加模型的稳健性和泛用性。</p>
+<p>迁移学习同样是一种利用数据的手段。该方法获得经过其他数据训练过的用于完成类似任务的模型，修改部分神经层（如输出层），再进行当前任务的训练。这样做相当于使用了其他任务中的数据。（这种方法可行的原因是，相似的任务，在位置靠前的部分常有类似的处理过程）</p>
+
     </div>
 
     
@@ -264,13 +287,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2022/10/01/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E7%89%B9%E5%BE%81%E7%BC%A9%E6%94%BE/" rel="prev" title="机器学习笔记之特征缩放">
-      <i class="fa fa-chevron-left"></i> 机器学习笔记之特征缩放
+    <a href="/2022/10/14/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/" rel="prev" title="机器学习之神经网络基础">
+      <i class="fa fa-chevron-left"></i> 机器学习之神经网络基础
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2022/10/05/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0%E4%B9%8B%E9%80%BB%E8%BE%91%E5%9B%9E%E5%BD%92/" rel="next" title="机器学习笔记之逻辑回归">
-      机器学习笔记之逻辑回归 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -329,7 +349,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%BC%95%E8%A8%80%E2%80%94%E2%80%94%E6%8B%9F%E5%90%88%E5%A4%9A%E9%A1%B9%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">一、引言——拟合多项式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%A4%9A%E9%A1%B9%E5%BC%8F%E5%9B%9E%E5%BD%92%E7%9A%84%E6%AD%A5%E9%AA%A4"><span class="nav-number">2.</span> <span class="nav-text">二、多项式回归的步骤</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">三、代码实现</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%B3%9B%E5%8C%96%E8%83%BD%E5%8A%9B%E7%9A%84%E8%A1%A1%E9%87%8F%E6%8C%87%E6%A0%87"><span class="nav-number">2.</span> <span class="nav-text">二、泛化能力的衡量指标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E4%BA%A4%E5%8F%89%E9%AA%8C%E8%AF%81%E9%9B%86"><span class="nav-number">3.</span> <span class="nav-text">三、交叉验证集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7"><span class="nav-number">4.</span> <span class="nav-text">四、模型评价</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%80%BE%E6%96%9C%E6%95%B0%E6%8D%AE%E9%9B%86%E7%9A%84%E8%AF%AF%E5%B7%AE%E6%8C%87%E6%A0%87"><span class="nav-number">5.</span> <span class="nav-text">五、倾斜数据集的误差指标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5"><span class="nav-number">6.</span> <span class="nav-text">五、优化策略</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
