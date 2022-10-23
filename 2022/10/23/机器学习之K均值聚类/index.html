@@ -20,21 +20,21 @@
     var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="一、神经元模型在研究人工智能的过程中，模拟生物的神经是一条很显然的道路。神经网络模型最初便是以模拟生物的神经网络为目的的。但是在早期算力不足的情况下，神经网络的效果并不怎么好。直到硬件基础成熟的最近一段时间，神经网络才发挥出超常的能力。 当然，此时经过改进、优化后的神经网络也在一定程度上偏离了最初模拟生物神经系统的初衷。当前的，以统计为基础的神经网络模型是否是实现强人工智能的有效方法也不得而知。但">
+  <meta name="description" content="一、引言——非监督学习之前介绍的算法都是监督学习算法。需要样本中包含各特征信息以及结果标签来让模型学习特征与结果的对应关系。但是，如果我们此时只有特征信息，而不指明具体结果是什么，又需要什么样的算法和模型才能得知哪些样本会有同样的标签呢？ 这种从原始数据中探索样本间联系的学习方式称为非监督学习。其中非监督意指，模型不需要人来告知他 “什么是什么”，而能自己从数据中挖掘信息。 二、聚类算法非监督学习">
 <meta property="og:type" content="article">
-<meta property="og:title" content="机器学习之神经网络基础">
-<meta property="og:url" content="https://wokron.github.io/2022/10/14/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:title" content="机器学习之K均值聚类">
+<meta property="og:url" content="https://wokron.github.io/2022/10/23/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8BK%E5%9D%87%E5%80%BC%E8%81%9A%E7%B1%BB/index.html">
 <meta property="og:site_name" content="StringCat的博客">
-<meta property="og:description" content="一、神经元模型在研究人工智能的过程中，模拟生物的神经是一条很显然的道路。神经网络模型最初便是以模拟生物的神经网络为目的的。但是在早期算力不足的情况下，神经网络的效果并不怎么好。直到硬件基础成熟的最近一段时间，神经网络才发挥出超常的能力。 当然，此时经过改进、优化后的神经网络也在一定程度上偏离了最初模拟生物神经系统的初衷。当前的，以统计为基础的神经网络模型是否是实现强人工智能的有效方法也不得而知。但">
+<meta property="og:description" content="一、引言——非监督学习之前介绍的算法都是监督学习算法。需要样本中包含各特征信息以及结果标签来让模型学习特征与结果的对应关系。但是，如果我们此时只有特征信息，而不指明具体结果是什么，又需要什么样的算法和模型才能得知哪些样本会有同样的标签呢？ 这种从原始数据中探索样本间联系的学习方式称为非监督学习。其中非监督意指，模型不需要人来告知他 “什么是什么”，而能自己从数据中挖掘信息。 二、聚类算法非监督学习">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2022-10-14T11:25:16.000Z">
-<meta property="article:modified_time" content="2022-10-15T09:56:55.271Z">
+<meta property="article:published_time" content="2022-10-23T00:53:53.000Z">
+<meta property="article:modified_time" content="2022-10-23T02:26:50.554Z">
 <meta property="article:author" content="wokron">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="机器学习">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://wokron.github.io/2022/10/14/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/">
+<link rel="canonical" href="https://wokron.github.io/2022/10/23/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8BK%E5%9D%87%E5%80%BC%E8%81%9A%E7%B1%BB/">
 
 
 <script id="page-configurations">
@@ -47,7 +47,7 @@
   };
 </script>
 
-  <title>机器学习之神经网络基础 | StringCat的博客</title>
+  <title>机器学习之K均值聚类 | StringCat的博客</title>
   
 
 
@@ -163,7 +163,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/10/14/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80/">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/2022/10/23/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8BK%E5%9D%87%E5%80%BC%E8%81%9A%E7%B1%BB/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -176,7 +176,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          机器学习之神经网络基础
+          机器学习之K均值聚类
         </h1>
 
         <div class="post-meta">
@@ -185,16 +185,10 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2022-10-14 19:25:16" itemprop="dateCreated datePublished" datetime="2022-10-14T19:25:16+08:00">2022-10-14</time>
+              <time title="创建时间：2022-10-23 08:53:53 / 修改时间：10:26:50" itemprop="dateCreated datePublished" datetime="2022-10-23T08:53:53+08:00">2022-10-23</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-10-15 17:56:55" itemprop="dateModified" datetime="2022-10-15T17:56:55+08:00">2022-10-15</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -216,74 +210,40 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="一、神经元模型"><a href="#一、神经元模型" class="headerlink" title="一、神经元模型"></a>一、神经元模型</h2><p>在研究人工智能的过程中，模拟生物的神经是一条很显然的道路。神经网络模型最初便是以模拟生物的神经网络为目的的。但是在早期算力不足的情况下，神经网络的效果并不怎么好。直到硬件基础成熟的最近一段时间，神经网络才发挥出超常的能力。</p>
-<p>当然，此时经过改进、优化后的神经网络也在一定程度上偏离了最初模拟生物神经系统的初衷。当前的，以统计为基础的神经网络模型是否是实现强人工智能的有效方法也不得而知。但是我们还是有必要对神经网络模型，特别是作为神经网络的最小单元——神经元模型，做充分的介绍。因为事实证明了，这是一条有效的创造 AI 工具的途径。</p>
-<p>单个神经元可以看做有多个输入 $x_j$，单个输出 $a$ 的函数。神经元模型具有如下属性：</p>
-<ul>
-<li>权重 $\vec{w}, b$</li>
-<li>激发函数 $g(z)$</li>
-</ul>
-<p>所对应的函数为</p>
-<script type="math/tex; mode=display">
-    f_{\vec{w}, b, g(z)}(\vec{x}) = g(\vec{w} \cdot \vec{x} + b)</script><blockquote>
-<p>取 $g(z) = \frac{1}{1 + e^{-z}}$, 与我们之前学习过的逻辑回归没有差别。</p>
-</blockquote>
-<p>通过对这样的神经元按一定规则进行组合，便可以构造用于完成某种功能的神经网络。</p>
-<h2 id="二、神经网络层"><a href="#二、神经网络层" class="headerlink" title="二、神经网络层"></a>二、神经网络层</h2><p>对于一组输入，我们可以将其依次通过不同的神经元进行计算，计算的结果可以按顺序组成向量，作为一组新的输入。这种不断迭代的能力是神经网络的基础。我们称同一次计算使用的所有神经元为<strong>同一层</strong>的神经元。这些神经元组成了神经网络上的一<strong>层</strong>。不同层的组合构成了整个神经网络。</p>
+        <h2 id="一、引言——非监督学习"><a href="#一、引言——非监督学习" class="headerlink" title="一、引言——非监督学习"></a>一、引言——非监督学习</h2><p>之前介绍的算法都是监督学习算法。需要样本中包含各特征信息以及结果标签来让模型学习特征与结果的对应关系。但是，如果我们此时只有特征信息，而不指明具体结果是什么，又需要什么样的算法和模型才能得知哪些样本会有同样的标签呢？</p>
+<p>这种从原始数据中探索样本间联系的学习方式称为非监督学习。其中非监督意指，模型不需要人来告知他 “什么是什么”，而能自己从数据中挖掘信息。</p>
+<h2 id="二、聚类算法"><a href="#二、聚类算法" class="headerlink" title="二、聚类算法"></a>二、聚类算法</h2><p>非监督学习中的一种算法为聚类算法。它的目的是将数据按照一定特征进行分组。</p>
+<p>最广泛使用的聚类算法称为 K 均值（K-means）算法。</p>
+<h2 id="三、K均值算法"><a href="#三、K均值算法" class="headerlink" title="三、K均值算法"></a>三、K均值算法</h2><p>假设我们要将所有数据分成 k 组，并称在一组中的数据为一个簇。那么对于每一簇内的数据，我们就希望他们之间的距离相对较小，而他们与其他簇中的数据的距离较大。直观上讲，就是同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙（这或许就是聚类的含义）。</p>
+<p>我们用簇内的数据的平均作为对簇的描述，相当于指示了簇在特征空间中的位置。这一平均后得到的点称为簇质心。假设我们现在已经得到了一种分组，那么这种分组现在是否有优化的可能呢？要回答这个问题就要查看每一数据点相对于各个簇质心的距离，如果某个数据点相对于其他簇质心的距离要小于其相对于当前所在的簇的质心的距离，就说明该点被错分类了。我们就要将其重新划分为与其距离最小的簇质心所对应的簇内。</p>
+<p>但是，这种重新划分又会使得簇质心的位置发生变化，这又导致一些之前是距离该质心位置最小的数据点不再是距离该质心位置最小，又需要再次调整分类。就这样，不断地调整，直到最终所有的点距离当前所在簇的质心距离都为最小，就代表了分类完成。</p>
+<p>经过了上面的分析，我们现在给出 K 均值算法的流程：</p>
+<ol>
+<li>初始化 k 个簇质心位置，分别对应 k 个簇</li>
+<li>对每个数据点，选择与其距离最近的簇质心对应的簇作为其当前分组</li>
+<li>对所有同一簇的数据点，计算其平均值，作为新的当前簇的簇质心</li>
+<li>不断重复 2、3，直到所有簇的簇质心不再发生变化，即代表分组完成</li>
+</ol>
+<p>可以看出，该算法具有很简单的流程，且没有复杂的数据结构。</p>
 <blockquote>
-<p>注意，同一层的神经元需要满足输入个数相同、激发函数相同。</p>
+<p>算法中还需要明确两个点：</p>
+<ul>
+<li>如何初始化簇质心：<br>一般是随机选取点作为质心，或者在样本数据中随机选取 k 个点</li>
+<li>怎么计算数据点到簇质心的距离<br>该算法使用二范数，或者说欧氏距离作为距离</li>
+</ul>
 </blockquote>
-<p>从数学上讲，设输入为 $\vec{x} = (x_1, x_2, …, x_n)$，输出为 $\vec{a} = (a_1, a_2, …, a_m)$，神经元函数为 $f_1(\vec{x}), f_2(\vec{x}), … f_m(\vec{x})$ 则</p>
+<h2 id="四、K均值算法的损失函数"><a href="#四、K均值算法的损失函数" class="headerlink" title="四、K均值算法的损失函数"></a>四、K均值算法的损失函数</h2><p>这里我们要更理论化地解释为什么这样的算法可以将数据成功分类</p>
+<p>假设总共有 m 个样本数据 $x^{(1)}, x^{(2)}, …, x^{(m)}$，需要将其分为 k 类（k &lt; m）。我们用 $c^{(i)}$ 表示第 i 个数据点选择第几个簇。用 $\mu_{j}$ 表示第 j 个簇的簇质心。</p>
+<p>要衡量当前分组，按照之前所说的 “同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙”，很容易采用簇中数据点相对于质心的距离的平均作为标准。这里直接给出损失函数</p>
 <script type="math/tex; mode=display">
-    \vec{a} = (f_1(\vec{x}), f_2(\vec{x}), ... f_m(\vec{x}))</script><p>对于不同层上的属性或参数 x，我们加上上标 $x^{[i]}$ 表示该属性或参数属于第 i 层（第几层指示神经元计算的顺序）；对于同一层的不同神经元，加上下标 $x^{[i]}_j$ 表示第 i 层的第 j 个神经元的属性或参数。</p>
-<p>则更一般的，假设第 i 层接受 n 个参数的输入，并具有 m 个神经元，则第 i 层上的运算可表示为：</p>
-<script type="math/tex; mode=display">
-        \left\{
-        \begin{array}{lr}
-            a^{[i]}_1 = g(\vec{w}^{[i]}_1 \cdot \vec{a}^{[i-1]} + b^{[i]}_1) \\
-            a^{[i]}_2 = g(\vec{w}^{[i]}_2 \cdot \vec{a}^{[i-1]} + b^{[i]}_2) \\
-            \vdots \\
-            a^{[i]}_m = g(\vec{w}^{[i]}_m \cdot \vec{a}^{[i-1]} + b^{[i]}_m)
-        \end{array}
-    \right.</script><blockquote>
-<p>$\vec{a}^{[0]}$ 表示神经网络的总输入</p>
-</blockquote>
-<h2 id="三、神经网络的矩阵表示"><a href="#三、神经网络的矩阵表示" class="headerlink" title="三、神经网络的矩阵表示"></a>三、神经网络的矩阵表示</h2><p>神经网络所以一种有效的机器学习方法，在于其清晰的结构和高效的计算方式。清晰的结构已经在上一部分有所说明，这里进一步阐述神经网络的矩阵表示形式。通过矩阵并行化计算，神经网络的运行速度将得到极大地提升。</p>
-<p>对于单一神经元上的权重，我们可以将其表示成列向量的形式，即</p>
-<script type="math/tex; mode=display">
-    W^{[i]}_j = \begin{bmatrix}
-        w_1 & w_2 & \cdots & w_n
-    \end{bmatrix}^T</script><p>按照上一节中的公式，要进行点乘运算，则应该将输入表示为行向量的形式</p>
-<script type="math/tex; mode=display">
-    A^{[i-1]} = \begin{bmatrix}
-        a_1 & a_2 & \cdots & a_n
-    \end{bmatrix}</script><p>则 $\vec{w}^{[i]}_j \cdot \vec{a}^{[i-1]}$ 就可以转化为 $A^{[i-1]}W^{[i]}_j$。</p>
-<p>之后，我们可以先忽略激发函数。只看激发函数内的一组线性表达式，将这组表达式的结果也按顺序表示为行向量</p>
-<script type="math/tex; mode=display">
-    Z^{[i]} = \begin{bmatrix}
-        z^{[i]}_1 & z^{[i]}_2 & \cdots & z^{[i]}_m
-    \end{bmatrix}</script><p>把 b 的部分提出单独作为一个向量，记</p>
-<script type="math/tex; mode=display">
-    B^{[i]} = \begin{bmatrix}
-        b_1 & b_2 & \cdots & b_m
-    \end{bmatrix}</script><p>则</p>
-<script type="math/tex; mode=display">
-    Z^{[i]} = \begin{bmatrix}
-        A^{[i-1]}W^{[i]}_1 & A^{[i-1]}W^{[i]}_2 & \cdots & A^{[i-1]}W^{[i]}_m
-    \end{bmatrix} + B^{[i]}</script><p>再将输入 $A^{[i-1]}$ 提出来</p>
-<script type="math/tex; mode=display">
-    Z^{[i]} = A^{[i-1]} \begin{bmatrix}
-        W^{[i]}_1 & W^{[i]}_2 & \cdots & W^{[i]}_m
-    \end{bmatrix} + B^{[i]}</script><p>此时各个神经元的权重组合成了一个新的矩阵，记</p>
-<script type="math/tex; mode=display">
-    W^{[i]} = \begin{bmatrix}
-        W^{[i]}_1 & W^{[i]}_2 & \cdots & W^{[i]}_m
-    \end{bmatrix}_{n \times m}</script><blockquote>
-<p>可以认为，神经网络的层的本质就是矩阵 $W^{[i]}$ 和向量 $B^{[i]}$</p>
-</blockquote>
-<p>此时如果我们认为函数 $g(Z)$ 表示对矩阵中的每一个元素应用激活函数 $g(z)$ ，则整个神经网络层就可以表示为</p>
-<script type="math/tex; mode=display">
-    A^{[i]} = g(A^{[i-1]} W^{[i]} + B^{[i]})</script><p>这不只是形式上的化简。利用 numpy 等数学库，可以极大加快运算的速度。</p>
+    J(c^{(1)}, ..., c^{(m)}, \mu_{1}, ..., \mu_{k}) =
+    \frac{1}{m}\sum_{i=1}^m \Vert x^{(i)} - \mu_{c^{(i)}} \Vert^2</script><p>该损失函数在这里又叫做失真函数。很明显，失真函数是所有数据点到其对应的簇质心的距离的平方的平均。距离取平方是因为这样并不影响损失函数的衡量效果，而又方便计算。</p>
+<p>根据失真函数，我们可以证明上一节算法的正确性。</p>
+<ul>
+<li>步骤 2 时，对第 i 个样本，我们重新选择 $c^{(i)}$ 使得 $\min\Vert x^{(i)} - \mu_{c^{(i)}} \Vert$ 从而使得 $\min J$。</li>
+<li>步骤 3 时，我们使 $\mu_j$ 取所有簇内数据点的平均。可以数学证明，此时依旧使得 $\min \Vert x^{(i)} - \mu_{c^{(i)}} \Vert$。</li>
+<li>这样我们就对失真函数中的每一个参数进行了调整，相当于进行了一次梯度下降。通过不断重复这一过程，最终便可达到使失真函数最小的位置。</li>
+</ul>
 
     </div>
 
@@ -303,13 +263,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2022/10/14/%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="prev" title="系统编程之进程管理">
-      <i class="fa fa-chevron-left"></i> 系统编程之进程管理
+    <a href="/2022/10/17/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E5%86%B3%E7%AD%96%E6%A0%91/" rel="prev" title="机器学习之决策树">
+      <i class="fa fa-chevron-left"></i> 机器学习之决策树
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2022/10/16/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E4%B8%8E%E4%BC%98%E5%8C%96/" rel="next" title="机器学习之模型评估与优化">
-      机器学习之模型评估与优化 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -368,7 +325,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E7%A5%9E%E7%BB%8F%E5%85%83%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">一、神经元模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%B1%82"><span class="nav-number">2.</span> <span class="nav-text">二、神经网络层</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E7%9A%84%E7%9F%A9%E9%98%B5%E8%A1%A8%E7%A4%BA"><span class="nav-number">3.</span> <span class="nav-text">三、神经网络的矩阵表示</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%BC%95%E8%A8%80%E2%80%94%E2%80%94%E9%9D%9E%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0"><span class="nav-number">1.</span> <span class="nav-text">一、引言——非监督学习</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E8%81%9A%E7%B1%BB%E7%AE%97%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">二、聚类算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81K%E5%9D%87%E5%80%BC%E7%AE%97%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">三、K均值算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81K%E5%9D%87%E5%80%BC%E7%AE%97%E6%B3%95%E7%9A%84%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="nav-number">4.</span> <span class="nav-text">四、K均值算法的损失函数</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
