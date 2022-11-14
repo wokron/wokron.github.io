@@ -182,6 +182,22 @@
 
               <time title="创建时间：2022-11-13 21:03:39" itemprop="dateCreated datePublished" datetime="2022-11-13T21:03:39+08:00">2022-11-13</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-11-14 09:09:02" itemprop="dateModified" datetime="2022-11-14T09:09:02+08:00">2022-11-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
 
           
 
@@ -194,7 +210,55 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          
+          <h2 id="一、引子——双色球"><a href="#一、引子——双色球" class="headerlink" title="一、引子——双色球"></a>一、引子——双色球</h2><p>我们知道，双色球每注投注号码由 6 个红色球号码和 1 个蓝色球号码组成。红色球号码从 1—33 中选择；蓝色球号码从 1—16 中选择。现在要求写出一个程序，模拟双色球的抽奖过程。</p>
+<p>我们很容易想到使用某种方法生成一定范围内的随机数。蓝色球很好解决，但对于红色球，需要的是随机生成 6 个号码不同的数，可一定范围内的随机数总可能出现相同的情况，这样要如何解决？</p>
+<p>也就是说：对于 $1, 2, …, m$ 这 m 个数字，随机抽取其中 $n(n \lt m)$ 个数。要采取怎样的算法？</p>
+<h2 id="二、两种思路"><a href="#二、两种思路" class="headerlink" title="二、两种思路"></a>二、两种思路</h2><h3 id="其一-暴力方法"><a href="#其一-暴力方法" class="headerlink" title="其一 : 暴力方法"></a>其一 : 暴力方法</h3><p>的确，随机数总有可能出现相同的情况，但是我们知道，同一个数多次出现的概率很小，以至于我们可以将其忽略。因此，我们只需要不断地取范围内的随机数，遇到重复的舍弃，直到取得的数字数目达到 n 即可。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">rand1</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span>* hasSelect = <span class="built_in">calloc</span>(m+<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="type">char</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> r = randomInt(<span class="number">1</span>, m);</span><br><span class="line">        <span class="keyword">if</span> (!hasSelect[r])</span><br><span class="line">        &#123;</span><br><span class="line">            rands[i++] = r;</span><br><span class="line">            hasSelect[r] = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">free</span>(hasSelect);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>但这种算法是有缺陷的。问题在于，概率达到多小才算作可以忽略？<br>考虑 $m=100, n=99$ 的情况。首先，取得第一个球，一定只需要选取 1 次；但是，我们再计算一下取得最后一个球的选取次数。为了取得第 99 个数，选中的概率为 $p_{99} = \frac{1}{50}$。我们设离散型随机变量 $X$ 表示为了取得第 99 个数所需的选取次数，则 $P\{X = k\} = (1-p)^{k-1}p$ 服从几何分布。因此 $E(X) = \frac{1}{p} = 50$。从期望上看，需要整整 50 次才能取到第 99 个数！！这中间的差距说明了，在 m 一定时，随着 n 的增大，随机的效率明显降低。</p>
+<h3 id="其二-洗牌算法"><a href="#其二-洗牌算法" class="headerlink" title="其二 : 洗牌算法"></a>其二 : 洗牌算法</h3><p>还从双色球这一实际问题来看，我们要从 33 个球中取得 6 个球，实际上是从球的一个随机排列中取得前 6 个球。这样，我们的问题就等价于找到一种将序列打乱顺序，使每一个数在每一个位置的概率相等的算法。</p>
+<p>这里介绍 Knuth 的洗牌算法，如下：</p>
+<blockquote>
+<p>在整个数组 [0, n-1] 中（包括最后一个元素）随机选出一个元素，将它和最后那个元素 [n-1] 交换，然后再在数组 [0, n-2] 中随机选出一个元素，将它与倒数第二个元素 [n-2] 交换…一直到最后一个元素。</p>
+</blockquote>
+<p>洗牌之后，我们再取前 n 个数，就求得了 n 个不重复随机数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">rand2</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span>* nums = <span class="built_in">calloc</span>(m, <span class="keyword">sizeof</span>(<span class="type">int</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">        nums[i] = i+<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = m<span class="number">-1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> j = randomInt(<span class="number">0</span>, i);</span><br><span class="line">        <span class="type">int</span> tmp = nums[i];</span><br><span class="line">        nums[i] = nums[j];</span><br><span class="line">        nums[j] = tmp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        rands[i] = nums[i];</span><br><span class="line">    <span class="built_in">free</span>(nums);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从直觉上看，这种算法的用时是与 n 无关的。在 n 足够小时，暴力方法的用时会小于该算法。我们需要对着两种方法进一步分析，以做权衡。</p>
+<h2 id="三、数学上的分析"><a href="#三、数学上的分析" class="headerlink" title="三、数学上的分析"></a>三、数学上的分析</h2><p>我们首先需要解决的问题是，对于序列 $1, 2, …, m$ 我们随机放回抽取，求当取得 n 个不同的数时所用次数的数学期望。</p>
+<p>我们设随机变量 $X_i$ 表示已经取到了 $i-1$ 个不同的数后，还需要多少次才能取到第 $i$ 个不同的数。并设随机变量 $T_n$ 表示取得 n 个不同的数所需要的总次数，即 $T_n = \sum_{i=1}^n X_i$。</p>
+<p>在已经取得 $i-1$ 个不同的数的条件下，取一次，不属于已经取到过的数的概率为</p>
+<script type="math/tex; mode=display">
+    p_i = \frac{m-i+1}{m}</script><p>因 $X_i$ 服从几何分布, $P\{X_i = k\} = (1-p_i)^{k-1}p_{i}$ 则有</p>
+<script type="math/tex; mode=display">
+    EX_i = \sum_{k=1}^{\infty} k (1-p_{i})^{k-1}p_{i}
+    = -p_{i}[\sum_{k=1}^{\infty} (1-p_{i})^{k}]^{'}
+    = \frac{1}{p_i} = \frac{m}{m-i+1}</script><p>又因随机变量序列 $\{X_n\}$ 相互独立，则</p>
+<script type="math/tex; mode=display">
+    ET_n = E(\sum_{i=1}^n X_i) = \sum_{i=1}^nEX_i
+    = m \sum_{i=1}^n \frac{1}{m-i+1}
+    = m(\sum_{i=1}^m \frac{1}{i} - \sum_{i=1}^{m-n} \frac{1}{i})</script><p>即</p>
+<script type="math/tex; mode=display">
+    ET_n = m(\sum_{i=1}^m \frac{1}{i} - \sum_{i=1}^{m-n} \frac{1}{i})
+    = m(H_m - H_{m-n})</script><p>其中 $H_m, H_{m-n}$ 分别表示第 m，m-n 个调和数（Harmonic number）。</p>
+<p>又因 </p>
+<script type="math/tex; mode=display">
+    H_n = \ln(n) + \gamma + \frac{1}{2} + O(\frac{1}{n}) \\
+    \gamma \approx 0.57721 56649</script><p>则</p>
+<script type="math/tex; mode=display">
+    ET_n = -m \ln({1-\frac{n}{m}}) + O(\frac{1}{m})</script><blockquote>
+<p>由上式可知，$n \ll m$ 时，$ET_n \approx 0$。这是符合直觉的。但 $m =n$ 的情况却并不满足上式子，因为并不存在 $H_0$。 $m=n$ 时的公式应为</p>
+<script type="math/tex; mode=display">
+    ET_n = mH_m = m\ln(m) + \gamma + \frac{1}{2} + O(\frac{1}{m})</script></blockquote>
+<p>此暴力算法的时间复杂度为 $O(-m\log(1-\frac{n}{m}))$ （认为 n 会小于 m）。</p>
+<p>而对于洗牌算法，其时间复杂度为 $O(m)$。</p>
+<p>要使第一种算法用时少于第二种，则需要</p>
+<script type="math/tex; mode=display">
+    -m\log(1-\frac{n}{m}) \lt m</script><p>得</p>
+<script type="math/tex; mode=display">
+    n \lt (1-\frac{1}{e})m \approx 0.632m</script><p>可见在一些情况下，暴力算法能取得很好的效果。但在 $n \ge 0.632m$ 的时候，或许采用洗牌算法效率更高。</p>
+<blockquote>
+<p>当然，由于第二种算法的系数更高，所以实践中的情况会更为复杂。</p>
+</blockquote>
+<h2 id="四、代码"><a href="#四、代码" class="headerlink" title="四、代码"></a>四、代码</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">randomInt</span><span class="params">(<span class="type">int</span> from, <span class="type">int</span> to)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> rand() % (to - from + <span class="number">1</span>) + from;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">rand1</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">rand2</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    srand(time(<span class="number">0</span>));</span><br><span class="line">    <span class="type">int</span> n = <span class="number">5</span>;</span><br><span class="line">    <span class="type">int</span> rands[<span class="number">10</span>];</span><br><span class="line">    rand1(<span class="number">10</span>, n, rands);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>, rands[i]);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    rand1(<span class="number">10</span>, n, rands);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>, rands[i]);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">rand1</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span>* hasSelect = <span class="built_in">calloc</span>(m+<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="type">char</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> r = randomInt(<span class="number">1</span>, m);</span><br><span class="line">        <span class="keyword">if</span> (!hasSelect[r])</span><br><span class="line">        &#123;</span><br><span class="line">            rands[i++] = r;</span><br><span class="line">            hasSelect[r] = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">free</span>(hasSelect);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">rand2</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span>* nums = <span class="built_in">calloc</span>(m, <span class="keyword">sizeof</span>(<span class="type">int</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">        nums[i] = i+<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = m<span class="number">-1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> j = randomInt(<span class="number">0</span>, i);</span><br><span class="line">        <span class="type">int</span> tmp = nums[i];</span><br><span class="line">        nums[i] = nums[j];</span><br><span class="line">        nums[j] = tmp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        rands[i] = nums[i];</span><br><span class="line">    <span class="built_in">free</span>(nums);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
       
     </div>
 
@@ -1430,7 +1494,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-count">21</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
