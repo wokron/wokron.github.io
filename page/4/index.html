@@ -159,6 +159,97 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/4754b2bd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/4754b2bd/" class="post-title-link" itemprop="url">MySQL的中文插入问题</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-31 15:24:00" itemprop="dateCreated datePublished" datetime="2022-12-31T15:24:00+08:00">2022-12-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、问题描述"><a href="#一、问题描述" class="headerlink" title="一、问题描述"></a>一、问题描述</h2><p>在执行一个sql脚本的时候出现了这样的问题：<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ERROR 1366 (HY000): Incorrect string value: &#x27;\xA3\x8E\xE6\x9C\x89\xE5...&#x27; for column &#x27;name_zh&#x27; at row 1</span><br></pre></td></tr></table></figure></p>
+<p>问题很明显是由于中文引起的。查看报错的语句：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `admin_menu` <span class="keyword">VALUES</span> (<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;/admin&#x27;</span>, <span class="string">&#x27;AdminIndex&#x27;</span>, <span class="string">&#x27;首页&#x27;</span>, <span class="string">&#x27;el-icon-s-home&#x27;</span>, <span class="string">&#x27;AdminIndex&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);</span><br></pre></td></tr></table></figure><br>是 “首页” 无法被识别。考虑是字符集的问题。</p>
+<h2 id="二、问题处理"><a href="#二、问题处理" class="headerlink" title="二、问题处理"></a>二、问题处理</h2><h3 id="情况一：数据库字符集与脚本所用字符集不一致"><a href="#情况一：数据库字符集与脚本所用字符集不一致" class="headerlink" title="情况一：数据库字符集与脚本所用字符集不一致"></a>情况一：数据库字符集与脚本所用字符集不一致</h3><p>第一种可能是数据库所用的字符集和脚本字符集不一致，比如说建表时使用的字符集为 <code>latin1</code>，而脚本使用的却是 <code>utf-8</code>，这样就会导致错误。</p>
+<p>输入命令，查看建库语句<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> <span class="keyword">CREATE</span> DATABASE wj;</span><br></pre></td></tr></table></figure><br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+--------------+----------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| Database     | Create Database                                                                                                                        |</span><br><span class="line">+--------------+----------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| white_jotter | CREATE DATABASE `wj` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION=&#x27;N&#x27; */ |</span><br><span class="line">+--------------+----------------------------------------------------------------------------------------------------------------------------------------+</span><br></pre></td></tr></table></figure><br>显示所用字符集为 <code>utf8mb4</code>，说明数据库字符集与脚本所用字符集一致。</p>
+<blockquote>
+<p>若不一致，应该使用如下指令来修改<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> DATABASE 数据库名 <span class="type">CHARACTER</span> <span class="keyword">SET</span> utf8mb4;</span><br></pre></td></tr></table></figure></p>
+<p>注意平常所说的 utf8 指 sql 中的 utf8mb4，而不是 sql 中的 utf8 或 utf8md3。sql 将 utf8md3 视为 utf8 似乎有历史的原因。utf8mb4 兼容 utf8md3，并可以表示更多的符号，一些表情符号也包含在 utf8mb4 中。</p>
+</blockquote>
+<h3 id="情况二：表字符集或列字符集与脚本所用字符集不一致"><a href="#情况二：表字符集或列字符集与脚本所用字符集不一致" class="headerlink" title="情况二：表字符集或列字符集与脚本所用字符集不一致"></a>情况二：表字符集或列字符集与脚本所用字符集不一致</h3><p>同样输入命令，查看建表语句<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> admin_menu;</span><br></pre></td></tr></table></figure><br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">+------------+------------------------------------------------------------------------+</span><br><span class="line">| admin_menu | CREATE TABLE `admin_menu` (</span><br><span class="line">  `id` int NOT NULL AUTO_INCREMENT,</span><br><span class="line">  `path` varchar(64) DEFAULT NULL,</span><br><span class="line">  `name` varchar(64) DEFAULT NULL,</span><br><span class="line">  `name_zh` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,</span><br><span class="line">  `icon_cls` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,</span><br><span class="line">  `component` varchar(64) DEFAULT NULL,</span><br><span class="line">  `parent_id` int DEFAULT NULL,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |</span><br><span class="line">+------------+------------------------------------------------------------------------+</span><br></pre></td></tr></table></figure></p>
+<p>显示表字符集和列字符集所用字符集依旧为 <code>utf8mb4</code>。</p>
+<blockquote>
+<p>类似的，如果不一致，应该使用如下指令来修改<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> 表名 <span class="type">CHARACTER</span> <span class="keyword">SET</span> utf8mb4;</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<h3 id="情况三：客户端字符集与脚本所用字符集不一致"><a href="#情况三：客户端字符集与脚本所用字符集不一致" class="headerlink" title="情况三：客户端字符集与脚本所用字符集不一致"></a>情况三：客户端字符集与脚本所用字符集不一致</h3><p>所谓的客户端字符集指的是用户输入的命令所用的字符集。</p>
+<p>通过如下指令查看：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> variables <span class="keyword">LIKE</span> <span class="string">&#x27;%char%&#x27;</span>;</span><br></pre></td></tr></table></figure><br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">+--------------------------+-------------------------------------------+</span><br><span class="line">| Variable_name            | Value                                     |</span><br><span class="line">+--------------------------+-------------------------------------------+</span><br><span class="line">| character_set_client     | gbk                                       |</span><br><span class="line">| character_set_connection | gbk                                       |</span><br><span class="line">| character_set_database   | utf8mb4                                   |</span><br><span class="line">| character_set_filesystem | binary                                    |</span><br><span class="line">| character_set_results    | gbk                                       |</span><br><span class="line">| character_set_server     | utf8mb4                                   |</span><br><span class="line">| character_set_system     | utf8mb3                                   |</span><br><span class="line">| character_sets_dir       | D:\MySQL\MySQL Server 8.0\share\charsets\ |</span><br><span class="line">+--------------------------+-------------------------------------------+</span><br></pre></td></tr></table></figure><br>第一行 <code>character_set_client</code> 便是用户字符集，为 <code>gbk</code> 而非 <code>utf8mb4</code>。这就是 sql 指令中出现中文会产生错误的原因。</p>
+<p>使用指令<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> character_set_client<span class="operator">=</span>utf8mb4;</span><br></pre></td></tr></table></figure><br>可以修改 <code>character_set_client</code> 为 <code>utf8mb4</code>。</p>
+<p>类似的命令也可以修改 <code>character_set_connection</code> 和 <code>character_set_results</code>。这两个字符集分别是连接数据库的字符集和数据库向客户端返回时的字符集。另外这三个字符集也可以通过一条命令同时修改：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> NAMES utf8mb4;</span><br></pre></td></tr></table></figure></p>
+<p>注意这样的设置在重启后将会还原，永久设置字符集可以通过修改配置文件 <code>my.ini</code> 实现（<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/20570246/change-database-variable-character-set-client-in-mysql">永久修改字符集</a>）。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3fc6e65a/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1299,147 +1390,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/76c44d63/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/76c44d63/" class="post-title-link" itemprop="url">机器学习之神经网络基础</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-14 19:25:16" itemprop="dateCreated datePublished" datetime="2022-10-14T19:25:16+08:00">2022-10-14</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、神经元模型"><a href="#一、神经元模型" class="headerlink" title="一、神经元模型"></a>一、神经元模型</h2><p>在研究人工智能的过程中，模拟生物的神经是一条很显然的道路。神经网络模型最初便是以模拟生物的神经网络为目的的。但是在早期算力不足的情况下，神经网络的效果并不怎么好。直到硬件基础成熟的最近一段时间，神经网络才发挥出超常的能力。</p>
-<p>当然，此时经过改进、优化后的神经网络也在一定程度上偏离了最初模拟生物神经系统的初衷。当前的，以统计为基础的神经网络模型是否是实现强人工智能的有效方法也不得而知。但是我们还是有必要对神经网络模型，特别是作为神经网络的最小单元——神经元模型，做充分的介绍。因为事实证明了，这是一条有效的创造 AI 工具的途径。</p>
-<p>单个神经元可以看做有多个输入 $x_j$，单个输出 $a$ 的函数。神经元模型具有如下属性：</p>
-<ul>
-<li>权重 $\vec{w}, b$</li>
-<li>激发函数 $g(z)$</li>
-</ul>
-<p>所对应的函数为</p>
-<script type="math/tex; mode=display">
-    f_{\vec{w}, b, g(z)}(\vec{x}) = g(\vec{w} \cdot \vec{x} + b)</script><blockquote>
-<p>取 $g(z) = \frac{1}{1 + e^{-z}}$, 与我们之前学习过的逻辑回归没有差别。</p>
-</blockquote>
-<p>通过对这样的神经元按一定规则进行组合，便可以构造用于完成某种功能的神经网络。</p>
-<h2 id="二、神经网络层"><a href="#二、神经网络层" class="headerlink" title="二、神经网络层"></a>二、神经网络层</h2><p>对于一组输入，我们可以将其依次通过不同的神经元进行计算，计算的结果可以按顺序组成向量，作为一组新的输入。这种不断迭代的能力是神经网络的基础。我们称同一次计算使用的所有神经元为<strong>同一层</strong>的神经元。这些神经元组成了神经网络上的一<strong>层</strong>。不同层的组合构成了整个神经网络。</p>
-<blockquote>
-<p>注意，同一层的神经元需要满足输入个数相同、激发函数相同。</p>
-</blockquote>
-<p>从数学上讲，设输入为 $\vec{x} = (x_1, x_2, …, x_n)$，输出为 $\vec{a} = (a_1, a_2, …, a_m)$，神经元函数为 $f_1(\vec{x}), f_2(\vec{x}), … f_m(\vec{x})$ 则</p>
-<script type="math/tex; mode=display">
-    \vec{a} = (f_1(\vec{x}), f_2(\vec{x}), ... f_m(\vec{x}))</script><p>对于不同层上的属性或参数 x，我们加上上标 $x^{[i]}$ 表示该属性或参数属于第 i 层（第几层指示神经元计算的顺序）；对于同一层的不同神经元，加上下标 $x^{[i]}_j$ 表示第 i 层的第 j 个神经元的属性或参数。</p>
-<p>则更一般的，假设第 i 层接受 n 个参数的输入，并具有 m 个神经元，则第 i 层上的运算可表示为：</p>
-<script type="math/tex; mode=display">
-        \left\{
-        \begin{array}{lr}
-            a^{[i]}_1 = g(\vec{w}^{[i]}_1 \cdot \vec{a}^{[i-1]} + b^{[i]}_1) \\
-            a^{[i]}_2 = g(\vec{w}^{[i]}_2 \cdot \vec{a}^{[i-1]} + b^{[i]}_2) \\
-            \vdots \\
-            a^{[i]}_m = g(\vec{w}^{[i]}_m \cdot \vec{a}^{[i-1]} + b^{[i]}_m)
-        \end{array}
-    \right.</script><blockquote>
-<p>$\vec{a}^{[0]}$ 表示神经网络的总输入</p>
-</blockquote>
-<h2 id="三、神经网络的矩阵表示"><a href="#三、神经网络的矩阵表示" class="headerlink" title="三、神经网络的矩阵表示"></a>三、神经网络的矩阵表示</h2><p>神经网络所以一种有效的机器学习方法，在于其清晰的结构和高效的计算方式。清晰的结构已经在上一部分有所说明，这里进一步阐述神经网络的矩阵表示形式。通过矩阵并行化计算，神经网络的运行速度将得到极大地提升。</p>
-<p>对于单一神经元上的权重，我们可以将其表示成列向量的形式，即</p>
-<script type="math/tex; mode=display">
-    W^{[i]}_j = \begin{bmatrix}
-        w_1 & w_2 & \cdots & w_n
-    \end{bmatrix}^T</script><p>按照上一节中的公式，要进行点乘运算，则应该将输入表示为行向量的形式</p>
-<script type="math/tex; mode=display">
-    A^{[i-1]} = \begin{bmatrix}
-        a_1 & a_2 & \cdots & a_n
-    \end{bmatrix}</script><p>则 $\vec{w}^{[i]}_j \cdot \vec{a}^{[i-1]}$ 就可以转化为 $A^{[i-1]}W^{[i]}_j$。</p>
-<p>之后，我们可以先忽略激发函数。只看激发函数内的一组线性表达式，将这组表达式的结果也按顺序表示为行向量</p>
-<script type="math/tex; mode=display">
-    Z^{[i]} = \begin{bmatrix}
-        z^{[i]}_1 & z^{[i]}_2 & \cdots & z^{[i]}_m
-    \end{bmatrix}</script><p>把 b 的部分提出单独作为一个向量，记</p>
-<script type="math/tex; mode=display">
-    B^{[i]} = \begin{bmatrix}
-        b_1 & b_2 & \cdots & b_m
-    \end{bmatrix}</script><p>则</p>
-<script type="math/tex; mode=display">
-    Z^{[i]} = \begin{bmatrix}
-        A^{[i-1]}W^{[i]}_1 & A^{[i-1]}W^{[i]}_2 & \cdots & A^{[i-1]}W^{[i]}_m
-    \end{bmatrix} + B^{[i]}</script><p>再将输入 $A^{[i-1]}$ 提出来</p>
-<script type="math/tex; mode=display">
-    Z^{[i]} = A^{[i-1]} \begin{bmatrix}
-        W^{[i]}_1 & W^{[i]}_2 & \cdots & W^{[i]}_m
-    \end{bmatrix} + B^{[i]}</script><p>此时各个神经元的权重组合成了一个新的矩阵，记</p>
-<script type="math/tex; mode=display">
-    W^{[i]} = \begin{bmatrix}
-        W^{[i]}_1 & W^{[i]}_2 & \cdots & W^{[i]}_m
-    \end{bmatrix}_{n \times m}</script><blockquote>
-<p>可以认为，神经网络的层的本质就是矩阵 $W^{[i]}$ 和向量 $B^{[i]}$</p>
-</blockquote>
-<p>此时如果我们认为函数 $g(Z)$ 表示对矩阵中的每一个元素应用激活函数 $g(z)$ ，则整个神经网络层就可以表示为</p>
-<script type="math/tex; mode=display">
-    A^{[i]} = g(A^{[i-1]} W^{[i]} + B^{[i]})</script><p>这不只是形式上的化简。利用 numpy 等数学库，可以极大加快运算的速度。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1511,7 +1461,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-count">59</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

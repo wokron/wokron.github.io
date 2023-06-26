@@ -159,6 +159,147 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/76c44d63/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/76c44d63/" class="post-title-link" itemprop="url">机器学习之神经网络基础</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-14 19:25:16" itemprop="dateCreated datePublished" datetime="2022-10-14T19:25:16+08:00">2022-10-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、神经元模型"><a href="#一、神经元模型" class="headerlink" title="一、神经元模型"></a>一、神经元模型</h2><p>在研究人工智能的过程中，模拟生物的神经是一条很显然的道路。神经网络模型最初便是以模拟生物的神经网络为目的的。但是在早期算力不足的情况下，神经网络的效果并不怎么好。直到硬件基础成熟的最近一段时间，神经网络才发挥出超常的能力。</p>
+<p>当然，此时经过改进、优化后的神经网络也在一定程度上偏离了最初模拟生物神经系统的初衷。当前的，以统计为基础的神经网络模型是否是实现强人工智能的有效方法也不得而知。但是我们还是有必要对神经网络模型，特别是作为神经网络的最小单元——神经元模型，做充分的介绍。因为事实证明了，这是一条有效的创造 AI 工具的途径。</p>
+<p>单个神经元可以看做有多个输入 $x_j$，单个输出 $a$ 的函数。神经元模型具有如下属性：</p>
+<ul>
+<li>权重 $\vec{w}, b$</li>
+<li>激发函数 $g(z)$</li>
+</ul>
+<p>所对应的函数为</p>
+<script type="math/tex; mode=display">
+    f_{\vec{w}, b, g(z)}(\vec{x}) = g(\vec{w} \cdot \vec{x} + b)</script><blockquote>
+<p>取 $g(z) = \frac{1}{1 + e^{-z}}$, 与我们之前学习过的逻辑回归没有差别。</p>
+</blockquote>
+<p>通过对这样的神经元按一定规则进行组合，便可以构造用于完成某种功能的神经网络。</p>
+<h2 id="二、神经网络层"><a href="#二、神经网络层" class="headerlink" title="二、神经网络层"></a>二、神经网络层</h2><p>对于一组输入，我们可以将其依次通过不同的神经元进行计算，计算的结果可以按顺序组成向量，作为一组新的输入。这种不断迭代的能力是神经网络的基础。我们称同一次计算使用的所有神经元为<strong>同一层</strong>的神经元。这些神经元组成了神经网络上的一<strong>层</strong>。不同层的组合构成了整个神经网络。</p>
+<blockquote>
+<p>注意，同一层的神经元需要满足输入个数相同、激发函数相同。</p>
+</blockquote>
+<p>从数学上讲，设输入为 $\vec{x} = (x_1, x_2, …, x_n)$，输出为 $\vec{a} = (a_1, a_2, …, a_m)$，神经元函数为 $f_1(\vec{x}), f_2(\vec{x}), … f_m(\vec{x})$ 则</p>
+<script type="math/tex; mode=display">
+    \vec{a} = (f_1(\vec{x}), f_2(\vec{x}), ... f_m(\vec{x}))</script><p>对于不同层上的属性或参数 x，我们加上上标 $x^{[i]}$ 表示该属性或参数属于第 i 层（第几层指示神经元计算的顺序）；对于同一层的不同神经元，加上下标 $x^{[i]}_j$ 表示第 i 层的第 j 个神经元的属性或参数。</p>
+<p>则更一般的，假设第 i 层接受 n 个参数的输入，并具有 m 个神经元，则第 i 层上的运算可表示为：</p>
+<script type="math/tex; mode=display">
+        \left\{
+        \begin{array}{lr}
+            a^{[i]}_1 = g(\vec{w}^{[i]}_1 \cdot \vec{a}^{[i-1]} + b^{[i]}_1) \\
+            a^{[i]}_2 = g(\vec{w}^{[i]}_2 \cdot \vec{a}^{[i-1]} + b^{[i]}_2) \\
+            \vdots \\
+            a^{[i]}_m = g(\vec{w}^{[i]}_m \cdot \vec{a}^{[i-1]} + b^{[i]}_m)
+        \end{array}
+    \right.</script><blockquote>
+<p>$\vec{a}^{[0]}$ 表示神经网络的总输入</p>
+</blockquote>
+<h2 id="三、神经网络的矩阵表示"><a href="#三、神经网络的矩阵表示" class="headerlink" title="三、神经网络的矩阵表示"></a>三、神经网络的矩阵表示</h2><p>神经网络所以一种有效的机器学习方法，在于其清晰的结构和高效的计算方式。清晰的结构已经在上一部分有所说明，这里进一步阐述神经网络的矩阵表示形式。通过矩阵并行化计算，神经网络的运行速度将得到极大地提升。</p>
+<p>对于单一神经元上的权重，我们可以将其表示成列向量的形式，即</p>
+<script type="math/tex; mode=display">
+    W^{[i]}_j = \begin{bmatrix}
+        w_1 & w_2 & \cdots & w_n
+    \end{bmatrix}^T</script><p>按照上一节中的公式，要进行点乘运算，则应该将输入表示为行向量的形式</p>
+<script type="math/tex; mode=display">
+    A^{[i-1]} = \begin{bmatrix}
+        a_1 & a_2 & \cdots & a_n
+    \end{bmatrix}</script><p>则 $\vec{w}^{[i]}_j \cdot \vec{a}^{[i-1]}$ 就可以转化为 $A^{[i-1]}W^{[i]}_j$。</p>
+<p>之后，我们可以先忽略激发函数。只看激发函数内的一组线性表达式，将这组表达式的结果也按顺序表示为行向量</p>
+<script type="math/tex; mode=display">
+    Z^{[i]} = \begin{bmatrix}
+        z^{[i]}_1 & z^{[i]}_2 & \cdots & z^{[i]}_m
+    \end{bmatrix}</script><p>把 b 的部分提出单独作为一个向量，记</p>
+<script type="math/tex; mode=display">
+    B^{[i]} = \begin{bmatrix}
+        b_1 & b_2 & \cdots & b_m
+    \end{bmatrix}</script><p>则</p>
+<script type="math/tex; mode=display">
+    Z^{[i]} = \begin{bmatrix}
+        A^{[i-1]}W^{[i]}_1 & A^{[i-1]}W^{[i]}_2 & \cdots & A^{[i-1]}W^{[i]}_m
+    \end{bmatrix} + B^{[i]}</script><p>再将输入 $A^{[i-1]}$ 提出来</p>
+<script type="math/tex; mode=display">
+    Z^{[i]} = A^{[i-1]} \begin{bmatrix}
+        W^{[i]}_1 & W^{[i]}_2 & \cdots & W^{[i]}_m
+    \end{bmatrix} + B^{[i]}</script><p>此时各个神经元的权重组合成了一个新的矩阵，记</p>
+<script type="math/tex; mode=display">
+    W^{[i]} = \begin{bmatrix}
+        W^{[i]}_1 & W^{[i]}_2 & \cdots & W^{[i]}_m
+    \end{bmatrix}_{n \times m}</script><blockquote>
+<p>可以认为，神经网络的层的本质就是矩阵 $W^{[i]}$ 和向量 $B^{[i]}$</p>
+</blockquote>
+<p>此时如果我们认为函数 $g(Z)$ 表示对矩阵中的每一个元素应用激活函数 $g(z)$ ，则整个神经网络层就可以表示为</p>
+<script type="math/tex; mode=display">
+    A^{[i]} = g(A^{[i-1]} W^{[i]} + B^{[i]})</script><p>这不只是形式上的化简。利用 numpy 等数学库，可以极大加快运算的速度。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/757349f6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1466,329 +1607,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/a5aebc7b/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/a5aebc7b/" class="post-title-link" itemprop="url">系统编程之命令行编译</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-12 21:18:59" itemprop="dateCreated datePublished" datetime="2022-09-12T21:18:59+08:00">2022-09-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。</p>
-<h2 id="二、GCC"><a href="#二、GCC" class="headerlink" title="二、GCC"></a>二、GCC</h2><h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="编译选项"><a href="#编译选项" class="headerlink" title="编译选项"></a>编译选项</h4><ul>
-<li>无选项编译链接<ul>
-<li>用法：gcc test.c<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。</li>
-</ul>
-</li>
-<li>选项 -o<ul>
-<li>用法：gcc test.c -o test<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。</li>
-</ul>
-</li>
-<li>选项 -E<ul>
-<li>用法：gcc -E test.c -o test.i<br>作用：将 test.c 预处理输出 test.i 文件。</li>
-</ul>
-</li>
-<li>选项 -S<ul>
-<li>用法：gcc -S test.i<br>作用：将预处理输出文件 test.i 编译成 test.s 文件。</li>
-</ul>
-</li>
-<li>选项 -c<ul>
-<li>用法：gcc -c test.s<br>作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。</li>
-</ul>
-</li>
-<li>无选项链接<ul>
-<li>用法：gcc test.o -o test<br>作用：将目标代码文件 test.o 链接成最终可执行文件 test。</li>
-</ul>
-</li>
-<li>选项 -O<ul>
-<li>用法：gcc -O1 test.c -o test<br>作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。</li>
-</ul>
-</li>
-</ul>
-<p>官方文档：<a target="_blank" rel="noopener" href="https://gcc.gnu.org/">GCC, the GNU Compiler Collection</a></p>
-<h4 id="搜索路径控制"><a href="#搜索路径控制" class="headerlink" title="搜索路径控制"></a>搜索路径控制</h4><ul>
-<li>-I <strong>dir</strong>：将 <strong>dir</strong> 增加至头文件搜索路径</li>
-<li>-L <strong>dir</strong>：将 <strong>dir</strong> 增加至库文件搜索路径</li>
-<li>-l <strong>library</strong> 或 -l<strong>library</strong>：指定编译时搜索的库名</li>
-</ul>
-<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><h4 id="编译链接"><a href="#编译链接" class="headerlink" title="编译链接"></a>编译链接</h4><p>在这样的文件结构下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   └── dog.h</span><br><span class="line">├── main.c</span><br><span class="line">├── v1</span><br><span class="line">│   └── dog.c</span><br><span class="line">└── v2</span><br><span class="line">    └── dog.c</span><br></pre></td></tr></table></figure></p>
-<ul>
-<li><p>将 <code>./main.c</code> 编译为 <code>./main.o</code>（仅编译）</p>
-<blockquote>
-<p>指令：gcc -I ./include -c main.c</p>
-</blockquote>
-</li>
-<li><p>将 <code>./v1/dog.c</code> 编译为 <code>./v1/dog.o</code>（仅编译）</p>
-<blockquote>
-<p>指令：gcc -I ./include -c ./v1/dog.c -o ./v1/dog.o</p>
-</blockquote>
-</li>
-<li><p>将 <code>./v2/dog.c</code> 编译为 <code>./v2/dog.o</code>（仅编译）</p>
-<blockquote>
-<p>指令：gcc -I ./include -c ./v2/dog.c -o ./v2/dog.o</p>
-</blockquote>
-</li>
-<li><p>将 <code>./v1/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog1</code></p>
-<blockquote>
-<p>指令：gcc main.o ./v1/dog.o -o dog1</p>
-</blockquote>
-</li>
-<li><p>将 <code>./v2/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog2</code></p>
-<blockquote>
-<p>指令：gcc main.o ./v2/dog.o -o dog2</p>
-</blockquote>
-</li>
-</ul>
-<h4 id="静态和动态库"><a href="#静态和动态库" class="headerlink" title="静态和动态库"></a>静态和动态库</h4><p>执行下面的命令：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v1/dog.o</span><br><span class="line">gcc -o main main.o -L. -ldog</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>第一条生成了一个名为libdog.a的静态库。<code>cr</code>意为“create and replace”，指如果库不存在则创建，如果存在则用新文件替换库中的同名文件。后接要生成的静态库名称，再之后接要添加入库中的文件。<br>第二条将第一条中生成的静态库与main.o文件链接，生成一个名为main的可执行文件。<code>-L</code>后跟地址表示将该地址添加到库文件的搜索路径，<code>-L.</code>表示将当前目录添加到搜索路径。<code>-l</code>指定编译时搜索的库名。</p>
-</blockquote>
-<p>再执行以下命令：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
-<p>两次运行main可执行文件结果相同。</p>
-<blockquote>
-<p>因为静态链接，程序在链接完成时就已确定。第二次只是更改了静态库本身，而没有改变链接后生成的可执行文件。</p>
-</blockquote>
-<hr>
-<p>执行下面的命令</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -c -fPIC v1/dog.c -o v1/dog.o -I include</span><br><span class="line">gcc -c -fPIC v2/dog.c -o v2/dog.o -I include</span><br><span class="line">gcc -shared -fPIC -o libdog.so v1/dog.o</span><br><span class="line">gcc main.c libdog.so -o main -I include</span><br></pre></td></tr></table></figure>
-<p>再将库文件路径设置为当前路径：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LD_LIBRARY_PATH=.</span><br><span class="line"><span class="built_in">export</span> LD_LIBRARY_PATH</span><br></pre></td></tr></table></figure>
-<p>执行 <code>./main</code>，之后再执行以下命令：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -shared -fPIC -o libdog.so v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
-<p>两次运行main可执行文件结果不同。</p>
-<blockquote>
-<p>引用动态库时，动态库的程序并不保存在可执行文件内部，而是在运行时才会动态地连接到程序中。</p>
-</blockquote>
-<h2 id="三、GDB"><a href="#三、GDB" class="headerlink" title="三、GDB"></a>三、GDB</h2><h3 id="基本操作-1"><a href="#基本操作-1" class="headerlink" title="基本操作"></a>基本操作</h3><ul>
-<li>在使用 gcc 对程序编译时，需要<strong>加上-g 参数</strong>（产生调试信息）才能使 GDB 进行调试。</li>
-<li>输入 help 命令获得帮助</li>
-<li>输入 quit 或者按 Ctrl+D 组合键退出 GDB。</li>
-<li>启动程序准备调试方法<ul>
-<li>方法一：在执行 GDB 命令时加上要调试的可执行程序名称，如“GDB yourprogram”；</li>
-<li>方法二：先输入 GDB，在 GDB 中输入 file yourprogram 加载需要调试的程序。最后使用 run 或者 r 命令开始执行，也可以使用 run parameter 方式传递参数</li>
-</ul>
-</li>
-</ul>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th style="text-align:center">命令</th>
-<th style="text-align:center">命令缩写</th>
-<th style="text-align:center">命令说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">list</td>
-<td style="text-align:center">l</td>
-<td style="text-align:center">显示多行源代码</td>
-</tr>
-<tr>
-<td style="text-align:center">break</td>
-<td style="text-align:center">b</td>
-<td style="text-align:center">设置断点，程序运行到断点的位置会停下来</td>
-</tr>
-<tr>
-<td style="text-align:center">info</td>
-<td style="text-align:center">i</td>
-<td style="text-align:center">描述程序运行的状态</td>
-</tr>
-<tr>
-<td style="text-align:center">run</td>
-<td style="text-align:center">r</td>
-<td style="text-align:center">开始运行程序</td>
-</tr>
-<tr>
-<td style="text-align:center">display</td>
-<td style="text-align:center">disp</td>
-<td style="text-align:center">跟踪查看某个变量，每次停下来都显示它的值</td>
-</tr>
-<tr>
-<td style="text-align:center">step</td>
-<td style="text-align:center">s</td>
-<td style="text-align:center">执行下一条语句，若该语句为函数调用，则进入函数执行其第一条语句</td>
-</tr>
-<tr>
-<td style="text-align:center">next</td>
-<td style="text-align:center">n</td>
-<td style="text-align:center">执行下一条语句，若该语句为函数调用，不会进入函数内部执行（即不会一步一步地调试函数内部语句）</td>
-</tr>
-<tr>
-<td style="text-align:center">print</td>
-<td style="text-align:center">p</td>
-<td style="text-align:center">打印内部变量</td>
-</tr>
-<tr>
-<td style="text-align:center">continue</td>
-<td style="text-align:center">c</td>
-<td style="text-align:center">继续程序的执行直到遇到下一个断点</td>
-</tr>
-<tr>
-<td style="text-align:center">set var</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">设置变量的值</td>
-</tr>
-<tr>
-<td style="text-align:center">start</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">开始执行程序，在 main 函数第一条语句前面停下</td>
-</tr>
-<tr>
-<td style="text-align:center">file</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">装入需要调试的文件</td>
-</tr>
-<tr>
-<td style="text-align:center">kill</td>
-<td style="text-align:center">k</td>
-<td style="text-align:center">终止正在调试的程序</td>
-</tr>
-<tr>
-<td style="text-align:center">watch</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">监视变量值的变化</td>
-</tr>
-<tr>
-<td style="text-align:center">backtrace</td>
-<td style="text-align:center">bt</td>
-<td style="text-align:center">查看函数调用的信息</td>
-</tr>
-<tr>
-<td style="text-align:center">frame</td>
-<td style="text-align:center">f</td>
-<td style="text-align:center">查看栈帧</td>
-</tr>
-<tr>
-<td style="text-align:center">quit</td>
-<td style="text-align:center">q</td>
-<td style="text-align:center">退出 GDB 环境</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>GDB 的更多使用方法可以参阅<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb/"><strong>GDB User Manual</strong></a> (<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb.pdf">PDF</a>)</p>
-<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有test.c文件：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> num;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Enter a positive integer: &quot;</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">&quot;%d&quot;</span>, &amp;num);</span><br><span class="line">    &#125; <span class="keyword">while</span> (num &lt; <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> factorial;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">1</span>; i &lt;= num; i++)</span><br><span class="line">        factorial = factorial * i;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d! = %d\n&quot;</span>, num, factorial);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>接下来对该文件进行调试。<br>按顺序执行如下操作：</p>
-<p>（1）执行以下命令进入调试状态<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -g test.c -o <span class="built_in">test</span></span><br><span class="line">gdb <span class="built_in">test</span></span><br></pre></td></tr></table></figure><br>（2）在 main 函数处设置断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> main</span><br></pre></td></tr></table></figure><br>（3）输入 <code>run</code> 命令开始程序<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Breakpoint 1, main () at test.c:2</span><br><span class="line">2	int <span class="function"><span class="title">main</span></span>() &#123;</span><br></pre></td></tr></table></figure><br>（4）多次输入 <code>next</code> 命令使程序运行到第 14 行,使用 print 命令打印 num 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> num</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$1</span> = 2</span><br></pre></td></tr></table></figure><br>（5）继续调试至程序第 15 行,使用 <code>print</code> 命令打印 factorial 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> factorial</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$2</span> = -17088</span><br></pre></td></tr></table></figure><br>（6）使用 <code>run</code> 命令再次调试程序</p>
-<p>（7）在程序第 10 行加入断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> test.c:10</span><br></pre></td></tr></table></figure><br>（8）使用 <code>continue</code> 命令使程序运行到断点处</p>
-<p>（9）使用 <code>next</code> 命令</p>
-<p>（10）再次使用 <code>print</code> 命令打印 i 和 factorial 的值</p>
-<p>（11）使用 <code>p factorial=1</code> 命令改变 factorial 的值</p>
-<p>（12）使用 <code>info locals</code> 查看所有局部变量值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i = 1</span><br><span class="line">num = 2</span><br><span class="line">factorial = 1</span><br></pre></td></tr></table></figure><br>（13）继续调试至程序结束</p>
-<blockquote>
-<p>易知程序出错在没有初始化变量factorial</p>
-<p>gdb能很好地展示程序的执行过程，方便查找出错的位置。</p>
-</blockquote>
-<h2 id="make"><a href="#make" class="headerlink" title="make"></a>make</h2><h3 id="基本操作-2"><a href="#基本操作-2" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="Makefile的格式"><a href="#Makefile的格式" class="headerlink" title="Makefile的格式"></a>Makefile的格式</h4><p>Makefile文件由一系列规则（rules）构成。每条规则的形式如下。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;target&gt; : &lt;prerequisites&gt; </span><br><span class="line">[tab]  &lt;commands&gt;</span><br></pre></td></tr></table></figure><br>第一行冒号前面的部分，叫做”目标”（target）；冒号后面的部分叫做”前置条件”（prerequisites）；第二行必须由一个tab键起首，后面跟着”命令”（commands）。</p>
-<ul>
-<li><p>目标</p>
-<ul>
-<li>一个目标（target）就构成一条规则。目标通常是文件名，指明Make命令所要构建的对象，比如上文的 a.txt 。目标可以是一个文件名，也可以是多个文件名，之间用空格分隔。</li>
-<li>除了文件名，目标还可以是某个操作的名字，称为”伪目标”（phony target）。</li>
-</ul>
-</li>
-<li><p>前置条件</p>
-<ul>
-<li>前置条件通常是一组文件名，之间用空格分隔。它指定了”目标”是否重新构建的判断标准：只要有一个前置文件不存在，或者有过更新（前置文件的last-modification时间戳比目标的时间戳新），”目标”就需要重新构建。</li>
-</ul>
-</li>
-<li><p>命令</p>
-<ul>
-<li>命令（commands）表示如何更新目标文件，由一行或多行的Shell命令组成。它是构建”目标”的具体指令，它的运行结果通常就是生成目标文件。</li>
-</ul>
-</li>
-</ul>
-<h4 id="语法选述"><a href="#语法选述" class="headerlink" title="语法选述"></a>语法选述</h4><ul>
-<li><p>注释</p>
-<ul>
-<li>井号（#）在Makefile中表示注释。</li>
-</ul>
-</li>
-<li><p>模式匹配</p>
-<ul>
-<li>Make命令允许对文件名，进行类似正则运算的匹配，主要用到的匹配符是%。比如，假定当前目录下有 f1.c 和 f2.c 两个源码文件，需要将它们编译为对应的对象文件。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%.o: %.c</span><br></pre></td></tr></table></figure>
-等同于下面的写法。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f1.o: f1.c</span><br><span class="line">f2.o: f2.c</span><br></pre></td></tr></table></figure>
-使用匹配符%，可以将大量同类型的文件，只用一条规则就完成构建。</li>
-</ul>
-</li>
-<li><p>通配符</p>
-<ul>
-<li>通配符（wildcard）用来指定一组符合条件的文件名。Makefile 的通配符与 Bash 一致</li>
-</ul>
-</li>
-<li><p>依赖路径</p>
-<ul>
-<li>大写的VPATH或小写的vpath，表示搜索文件时的路径。写法例如<code>VPATH src:include:lib</code>表示在<code>./src</code> <code>./include</code> <code>./lib</code> 三个路径下寻找文件。<code>vpath %.c ./src</code>表示以.c结尾的文件在<code>./src</code>路径下寻找。</li>
-</ul>
-</li>
-</ul>
-<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有如下结构：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   ├── dylib.h</span><br><span class="line">│   ├── fun1.h</span><br><span class="line">│   └── fun2.h</span><br><span class="line">├── lib</span><br><span class="line">│   └── libdy.so</span><br><span class="line">├── Makefile</span><br><span class="line">└── src</span><br><span class="line">    ├── fun1.c</span><br><span class="line">    ├── fun2.c</span><br><span class="line">    └── main.c</span><br></pre></td></tr></table></figure><br>将这些资源编译成一个可执行文件，在Makefile文件中写下：<br><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">vpath</span> %.h ./<span class="keyword">include</span></span><br><span class="line"><span class="keyword">vpath</span> %.so ./lib</span><br><span class="line"><span class="keyword">vpath</span> %.c ./src</span><br><span class="line"></span><br><span class="line"><span class="section">main: main.o fun1.o fun2.o libdy.so</span></span><br><span class="line">    gcc <span class="variable">$^</span> -o main</span><br><span class="line"></span><br><span class="line"><span class="section">%.o: %.c</span></span><br><span class="line">    gcc <span class="variable">$^</span> -I <span class="keyword">include</span> -c</span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>: clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    rm *.o</span><br></pre></td></tr></table></figure><br>在终端中输入命令<code>make main</code>，即生成main文件（以及中间文件）。再输入<code>make clean</code>将中间文件删除。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1860,7 +1678,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-count">59</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
