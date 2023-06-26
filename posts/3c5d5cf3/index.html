@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。 因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的NLP入门练习搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。 因">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ESIM网络的搭建和训练">
+<meta property="og:url" content="https://wokron.github.io/posts/3c5d5cf3/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。 因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的NLP入门练习搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。 因">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wokron.github.io/posts/3c5d5cf3/train_loss.png">
+<meta property="og:image" content="https://wokron.github.io/posts/3c5d5cf3/train_acc.png">
+<meta property="og:image" content="https://wokron.github.io/posts/3c5d5cf3/test_loss.png">
+<meta property="og:image" content="https://wokron.github.io/posts/3c5d5cf3/test_acc.png">
+<meta property="article:published_time" content="2023-03-05T02:30:20.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.376Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="pytorch">
+<meta property="article:tag" content="Colab">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wokron.github.io/posts/3c5d5cf3/train_loss.png">
+
+<link rel="canonical" href="https://wokron.github.io/posts/3c5d5cf3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ESIM网络的搭建和训练 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3c5d5cf3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ESIM网络的搭建和训练
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-05 10:30:20" itemprop="dateCreated datePublished" datetime="2023-03-05T10:30:20+08:00">2023-03-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。</p>
+<p>因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的<a target="_blank" rel="noopener" href="https://github.com/FudanNLP/nlp-beginner">NLP入门练习</a>搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。</p>
+<p>因为使用了Colab，本次模型的构建和训练比较成功，因而做此记录。</p>
+<h2 id="二、任务"><a href="#二、任务" class="headerlink" title="二、任务"></a>二、任务</h2><p>本次任务是输入两个句子，判断它们之间的关系。具体来说，我们需要实现<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1609.06038v3.pdf">论文</a>中提出的 ESIM 网络，并通过 <a target="_blank" rel="noopener" href="https://nlp.stanford.edu/projects/snli/">SNLI数据集</a> 进行训练，以学习预测两个句子间的关系。</p>
+<h2 id="三、数据集"><a href="#三、数据集" class="headerlink" title="三、数据集"></a>三、数据集</h2><p>SNLI数据集包含57万行英文句子对，并被标注了句子间的关系，包括蕴含（Entailment），矛盾（Contradiction），中立/不冲突（Neutral），未知（-）。</p>
+<p>例如</p>
+<blockquote>
+<p>输入文本： A man inspects the uniform of a figure in some East Asian  country.<br>输入假设： The man is sleeping.<br>输出： 矛盾（C）</p>
+<p>输入文本： A smiling costumed woman is holding an umbrella.<br>输入假设：A happy woman in a fairy costume holds an umbrella.<br>输出： 中立（N）</p>
+<p>输入文本： A soccer game with multiple males playing.<br>输入假设： Some men are playing a sport.<br>输出： 蕴含（E）</p>
+</blockquote>
+<p>原始的数据集提供了 json 格式和制表符分割 txt 格式。在读取数据时，我们使用了制表符格式。</p>
+<p>对于每一个文件，第一行为表头，其他行为数据。我们只需要获取 sentence1 和 sentence2 列对应的句子和 gold_label 所对应的标注。</p>
+<p>我们创建获取SNLI数据集的 Dataset 类<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SNLIDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br></pre></td></tr></table></figure><br>首先指定 sentence1、sentence2 和 gold_label 对应的列数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, file_path, vocab=<span class="literal">None</span></span>):</span><br><span class="line">    s1 = <span class="number">5</span></span><br><span class="line">    s2 = <span class="number">6</span></span><br><span class="line">    l = <span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<p>训练时使用自建词汇表。我们在加载训练集时构建词汇表，在验证级和测试集中使用词汇表<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> vocab <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">    self.build_vocab = <span class="literal">True</span></span><br><span class="line">    self.vocab = &#123;<span class="string">&quot;&lt;pad&gt;&quot;</span>: <span class="number">0</span>&#125;</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    self.build_vocab = <span class="literal">False</span></span><br><span class="line">    self.vocab = vocab</span><br></pre></td></tr></table></figure></p>
+<p>我们打开文件，遍历其中每一行，注意这里我们使用了 tqdm 来显示进度条。同时使用了 enumerate 获取 index。当遇到第一行时 continue。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">self.s1 = []</span><br><span class="line">self.s2 = []</span><br><span class="line">self.labels = []</span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;UTF-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">with</span> tqdm(f) <span class="keyword">as</span> tqdm_file:</span><br><span class="line">        tqdm_file.set_description(<span class="string">&quot;Load Data&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> index, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(tqdm_file):</span><br><span class="line">            <span class="keyword">if</span> index == <span class="number">0</span>:</span><br><span class="line">                <span class="keyword">continue</span></span><br></pre></td></tr></table></figure>
+<p>按制表符分割一行，取出其中的 sentence1、sentence2 和 gold_label。分别将字符串转化为 tensor 存入对应的数组中。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">splited_line = line.split(<span class="string">&quot;\t&quot;</span>)</span><br><span class="line"></span><br><span class="line">sentence1 = splited_line[s1]</span><br><span class="line">sentence2 = splited_line[s2]</span><br><span class="line">label = splited_line[l]</span><br><span class="line"></span><br><span class="line">self.s1.append(self.__sentence2tensor(sentence1))</span><br><span class="line">self.s2.append(self.__sentence2tensor(sentence2))</span><br><span class="line">self.labels.append(torch.as_tensor(labels[label]))</span><br></pre></td></tr></table></figure>
+<p>其中 <code>__sentence2tensor</code> 方法如下。该方法通过正则表达式匹配单词，构建词汇表。<code>get_word_index</code> 将 char 字符转化为数字 token，如果字符不在词汇表中则返回值为 0。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__sentence2tensor</span>(<span class="params">self, s</span>):</span><br><span class="line">    rt = []</span><br><span class="line">    <span class="keyword">for</span> char <span class="keyword">in</span> re.findall(<span class="string">&quot;[a-zA-Z-]+&quot;</span>, s):</span><br><span class="line">        <span class="keyword">if</span> self.build_vocab <span class="keyword">and</span> char <span class="keyword">not</span> <span class="keyword">in</span> self.vocab:</span><br><span class="line">            self.vocab[char] = <span class="built_in">len</span>(self.vocab)</span><br><span class="line">        rt.append(get_word_index(self.vocab, char))</span><br><span class="line">    <span class="keyword">return</span> torch.as_tensor(rt)</span><br></pre></td></tr></table></figure>
+<p>接着我们实现 <code>__getitem__</code> 和 <code>__len__</code> 方法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    <span class="keyword">return</span> self.s1[item], self.s2[item], self.labels[item]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(self.s1)</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、神经网络"><a href="#四、神经网络" class="headerlink" title="四、神经网络"></a>四、神经网络</h2><p>在实现的过程中，我简化了一部分流程</p>
+<p>首先，我们定义输入的两个句子为 $a = (a<em>1, …, a</em>{seq<em>a})$ 和 $b = (b_1, …, b</em>{seq_b})$。其中 $a_i, b_j$ 为 $l$ 维的词向量。</p>
+<p>依照双向注意力的机制，我们首先定义 $f(x)$。即</p>
+<script type="math/tex; mode=display">
+    \bar{a}_i = BiLSTM(a, i)</script><script type="math/tex; mode=display">
+    \bar{b}_j = BiLSTM(b, j)</script><p>接着，我们定义注意力权重 $e_{ij} = f(a_i)^T f(b_j)$，即</p>
+<script type="math/tex; mode=display">
+    e_{ij} = \bar{a}_i^T \bar{b}_j</script><p>我们计算对某一句中的每一个词，被注意到的另一个句子中词汇的含义。</p>
+<script type="math/tex; mode=display">
+    \tilde{a}_i = \sum_{j} \frac{\exp(e_{ij})}{\sum_k \exp(e_{ik})} \bar{b}_j</script><script type="math/tex; mode=display">
+    \tilde{b}_j = \sum_{i} \frac{\exp(e_{ij})}{\sum_k \exp(e_{kj})} \bar{a}_i</script><p>为了获取更多的信息，ESIM 将结果组合成如下的形式</p>
+<script type="math/tex; mode=display">
+    m_a = [\bar{a}; \tilde{a}; \bar{a}-\tilde{a}; \bar{a} \odot \tilde{a}]</script><script type="math/tex; mode=display">
+    m_b = [\bar{b}; \tilde{b}; \bar{b}-\tilde{b}; \bar{b} \odot \tilde{b}]</script><p>接着，我们再使用 BiLSTM 对 $m_a, m_b$ 进行处理</p>
+<script type="math/tex; mode=display">
+    \bar{v}_{a, i} = BiLSTM(a, i)</script><script type="math/tex; mode=display">
+    \bar{v}_{b, j} = BiLSTM(b, j)</script><p>最后进行池化操作，并将结果再次连接在一起，通过多层感知机得到结果</p>
+<script type="math/tex; mode=display">
+    \bar{v}_{a, ave} = \sum_i \frac{\bar{v}_{a, i}}{l_a}, \bar{v}_{a, max} = \max_i \bar{v}_{a, i}</script><script type="math/tex; mode=display">
+    \bar{v}_{b, ave} = \sum_j \frac{\bar{v}_{b, j}}{l_b}, \bar{v}_{b, max} = \max_j \bar{v}_{b, j}</script><script type="math/tex; mode=display">
+    v = [\bar{v}_{a, ave}; \bar{v}_{a, max}; \bar{v}_{b, ave}; \bar{v}_{b, max}]</script><p>我们开始构建模型：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ESIM</span>(nn.Module):</span><br></pre></td></tr></table></figure></p>
+<p>首先将单词编码转化为词向量</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, s1, s2</span>):</span><br><span class="line">    a = self.embed(s1)  <span class="comment"># (batch_size,seq_size1,embed_size)</span></span><br><span class="line">    b = self.embed(s2)  <span class="comment"># (batch_size,seq_size2,embed_size)</span></span><br></pre></td></tr></table></figure>
+<p>通过 BiLSTM 层计算得出 $\bar{a}, \bar{b}$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a_, _ = self.lstm1(a)  <span class="comment"># (batch_size,seq_size1,2*hidden_size)</span></span><br><span class="line">b_, _ = self.lstm1(b)  <span class="comment"># (batch_size,seq_size2,2*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>接着计算出 $e$，注意这里直接使用了矩阵乘法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e = torch.bmm(a_, b_.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>))  <span class="comment"># (batch_size,seq_size1,seq_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>计算 $\tilde{a}, \tilde{b}$。使用 softmax 时，设置 <code>dim=-1</code> 表示对最高维求 softmax。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">a_sim = torch.bmm(F.softmax(e, dim=-<span class="number">1</span>), b_)</span><br><span class="line"><span class="comment"># (batch_size,seq_size1,2*hidden_size)</span></span><br><span class="line">b_sim = torch.bmm(F.softmax(e.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>), dim=-<span class="number">1</span>), a_)</span><br><span class="line"><span class="comment"># (batch_size,seq_size2,2*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>得到 $m_a, m_b$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ma = torch.cat([a_, a_sim, a_ - a_sim, a_ * a_sim], dim=<span class="number">2</span>)</span><br><span class="line"><span class="comment"># (batch_size,seq_size1,8*hidden_size)</span></span><br><span class="line">mb = torch.cat([b_, b_sim, b_ - b_sim, b_ * b_sim], dim=<span class="number">2</span>)</span><br><span class="line"><span class="comment"># (batch_size,seq_size2,8*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>通过 BiLSTM 层计算得出 $v_a, v_b$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">va, _ = self.lstm2(ma)  <span class="comment"># (batch_size,seq_size1,2*hidden_size2)</span></span><br><span class="line">vb, _ = self.lstm2(mb)  <span class="comment"># (batch_size,seq_size2,2*hidden_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>池化并连接<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">va_ave = torch.mean(va, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line">va_max, _ = torch.<span class="built_in">max</span>(va, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line"></span><br><span class="line">vb_ave = torch.mean(vb, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line">vb_max, _ = torch.<span class="built_in">max</span>(vb, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line"></span><br><span class="line">v = torch.cat([va_ave, va_max, vb_ave, vb_max], dim=<span class="number">1</span>)</span><br><span class="line"><span class="comment"># (batch_size,8*hidden_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>经过双层线性感知机得到结果<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">predict = self.multi(v)  <span class="comment"># (batch_size,class_num)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> predict</span><br></pre></td></tr></table></figure></p>
+<h2 id="五、训练"><a href="#五、训练" class="headerlink" title="五、训练"></a>五、训练</h2><h3 id="部分代码"><a href="#部分代码" class="headerlink" title="部分代码"></a>部分代码</h3><p>定义训练函数，声明全局训练步数和全局轮次<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train</span>(<span class="params">dataloader, net, criterion, optimizer</span>):</span><br><span class="line">    <span class="keyword">global</span> global_train_step</span><br><span class="line">    <span class="keyword">global</span> global_epoch</span><br></pre></td></tr></table></figure></p>
+<p>设置进度条<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tqdm(dataloader) <span class="keyword">as</span> tqdm_loader:</span><br><span class="line">    tqdm_loader.set_description(<span class="string">f&quot;Epoch <span class="subst">&#123;global_epoch&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>开始训练<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">net.train()</span><br><span class="line"><span class="keyword">for</span> s1, s2, target <span class="keyword">in</span> tqdm_loader:</span><br><span class="line">    global_train_step += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    s1 = s1.to(args.device)</span><br><span class="line">    s2 = s2.to(args.device)</span><br><span class="line">    target = target.to(args.device)</span><br><span class="line"></span><br><span class="line">    predict = net(s1, s2)</span><br><span class="line"></span><br><span class="line">    loss = criterion(predict, target)</span><br><span class="line"></span><br><span class="line">    accuracy = get_accuracy(predict, target)</span><br><span class="line"></span><br><span class="line">    optimizer.zero_grad()</span><br><span class="line">    loss.backward()</span><br><span class="line">    optimizer.step()</span><br></pre></td></tr></table></figure></p>
+<p>为进度条和 tensorboard 更新信息<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tqdm_loader.set_postfix(loss=loss.item(), accuracy=accuracy)</span><br><span class="line"></span><br><span class="line">writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), global_train_step)</span><br><span class="line">writer.add_scalar(<span class="string">&quot;train accuracy&quot;</span>, accuracy, global_train_step)</span><br></pre></td></tr></table></figure></p>
+<p>定义评价函数，参数 tag 表示验证或者测试<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">evaluate</span>(<span class="params">tag, dataloader, net, criterion</span>):</span><br><span class="line">    <span class="keyword">global</span> global_epoch</span><br></pre></td></tr></table></figure></p>
+<p>开始评价<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">total_loss = <span class="number">0</span></span><br><span class="line">accuracy = <span class="number">0</span></span><br><span class="line">total_step = <span class="number">0</span></span><br><span class="line">net.<span class="built_in">eval</span>()</span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> s1, s2, target <span class="keyword">in</span> dataloader:</span><br><span class="line">        s1 = s1.to(args.device)</span><br><span class="line">        s2 = s2.to(args.device)</span><br><span class="line">        target = target.to(args.device)</span><br><span class="line"></span><br><span class="line">        predict = net(s1, s2)</span><br><span class="line"></span><br><span class="line">        loss = criterion(predict, target)</span><br><span class="line"></span><br><span class="line">        total_loss += loss</span><br><span class="line"></span><br><span class="line">        accuracy += get_accuracy(predict, target)</span><br><span class="line"></span><br><span class="line">        total_step += <span class="number">1</span></span><br></pre></td></tr></table></figure></p>
+<p>更新 tensorboard 信息<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">accuracy /= total_step</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;tag&#125;</span>: total loss=<span class="subst">&#123;total_loss&#125;</span>, accuracy=<span class="subst">&#123;accuracy&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">writer.add_scalar(tag + <span class="string">&quot; loss&quot;</span>, total_loss, global_epoch)</span><br><span class="line">writer.add_scalar(tag + <span class="string">&quot; accuracy&quot;</span>, accuracy, global_epoch)</span><br></pre></td></tr></table></figure></p>
+<p>设定参数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">args = Namespace(</span><br><span class="line">    batch_size=<span class="number">512</span>,</span><br><span class="line">    device=torch.device(<span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span>),</span><br><span class="line">    embed_size=<span class="number">100</span>,</span><br><span class="line">    hidden_size1=<span class="number">200</span>,</span><br><span class="line">    hidden_size2=<span class="number">200</span>,</span><br><span class="line">    num_layers=<span class="number">2</span>,</span><br><span class="line">    epoch_size=<span class="number">15</span>,</span><br><span class="line">    learning_rate=<span class="number">0.01</span>,</span><br><span class="line"></span><br><span class="line">    train_path=<span class="string">&quot;./data/snli_1.0_train.txt&quot;</span>,</span><br><span class="line">    test_path=<span class="string">&quot;./data/snli_1.0_test.txt&quot;</span>,</span><br><span class="line">    dev_path=<span class="string">&quot;./data/snli_1.0_dev.txt&quot;</span>,</span><br><span class="line">    log_path=<span class="string">&quot;./logs&quot;</span>,</span><br><span class="line">    checkpoint_path=<span class="string">&quot;./checkpoints&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>设定损失函数和优化器<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">loss_fn = nn.CrossEntropyLoss().to(args.device)</span><br><span class="line"></span><br><span class="line">optim = torch.optim.SGD(net.parameters(), lr=args.learning_rate)</span><br></pre></td></tr></table></figure></p>
+<p>主循环<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(args.epoch_size):</span><br><span class="line">    global_epoch += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    train(train_loader, net, loss_fn, optim)</span><br><span class="line"></span><br><span class="line">    save_checkpoint(net, optim, global_epoch, global_train_step)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;dev&quot;</span>, dev_loader, net, loss_fn)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;test&quot;</span>, test_loader, net, loss_fn)</span><br></pre></td></tr></table></figure></p>
+<h3 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h3><img src="/posts/3c5d5cf3/train_loss.png" class="" title="train_loss">
+<img src="/posts/3c5d5cf3/train_acc.png" class="" title="train_acc">
+<img src="/posts/3c5d5cf3/test_loss.png" class="" title="test_loss">
+<img src="/posts/3c5d5cf3/test_acc.png" class="" title="test_acc">
+<p>模型在训练集和测试集上均取得了 72% 的准确率，和 ESTM 论文中的还有一定差距，可能的原因是</p>
+<ul>
+<li>词向量使用了随机初始化而非GloVe初始化</li>
+<li>优化器使用了 SGD 而非 Adam，导致训练过慢</li>
+<li>模型的参数设置不合理</li>
+</ul>
+<p>另外</p>
+<ul>
+<li>模型中没有使用 dropout，可能导致过拟合（虽然本模型并没有出现）</li>
+</ul>
+<h2 id="七、参考资料"><a href="#七、参考资料" class="headerlink" title="七、参考资料"></a>七、参考资料</h2><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_42365109/article/details/115704688">NLP-Beginner 任务三：基于注意力机制的文本匹配+pytorch</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+              <a href="/tags/pytorch/" rel="tag"># pytorch</a>
+              <a href="/tags/Colab/" rel="tag"># Colab</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/3190f9b2/" rel="prev" title="利用Colab训练神经网络">
+      <i class="fa fa-chevron-left"></i> 利用Colab训练神经网络
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/6afa4e5d/" rel="next" title="使用transformer进行机器翻译">
+      使用transformer进行机器翻译 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E4%BB%BB%E5%8A%A1"><span class="nav-number">2.</span> <span class="nav-text">二、任务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.</span> <span class="nav-text">三、数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C"><span class="nav-number">4.</span> <span class="nav-text">四、神经网络</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E8%AE%AD%E7%BB%83"><span class="nav-number">5.</span> <span class="nav-text">五、训练</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E5%88%86%E4%BB%A3%E7%A0%81"><span class="nav-number">5.1.</span> <span class="nav-text">部分代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%9C"><span class="nav-number">5.2.</span> <span class="nav-text">结果</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">6.</span> <span class="nav-text">七、参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

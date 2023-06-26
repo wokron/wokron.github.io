@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。 二、GCC基本操作编译选项 无选项编译链接 用法：gcc test.c作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。   选项 -o 用法：gcc test.c -o test作用：将 test.c 预处理、编译、汇编并链接形成可执">
+<meta property="og:type" content="article">
+<meta property="og:title" content="系统编程之命令行编译">
+<meta property="og:url" content="https://wokron.github.io/posts/a5aebc7b/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。 二、GCC基本操作编译选项 无选项编译链接 用法：gcc test.c作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。   选项 -o 用法：gcc test.c -o test作用：将 test.c 预处理、编译、汇编并链接形成可执">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-09-12T13:18:59.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.396Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="系统编程">
+<meta property="article:tag" content="GCC">
+<meta property="article:tag" content="Makefile">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/a5aebc7b/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>系统编程之命令行编译 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/a5aebc7b/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          系统编程之命令行编译
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-12 21:18:59" itemprop="dateCreated datePublished" datetime="2022-09-12T21:18:59+08:00">2022-09-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。</p>
+<h2 id="二、GCC"><a href="#二、GCC" class="headerlink" title="二、GCC"></a>二、GCC</h2><h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="编译选项"><a href="#编译选项" class="headerlink" title="编译选项"></a>编译选项</h4><ul>
+<li>无选项编译链接<ul>
+<li>用法：gcc test.c<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。</li>
+</ul>
+</li>
+<li>选项 -o<ul>
+<li>用法：gcc test.c -o test<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。</li>
+</ul>
+</li>
+<li>选项 -E<ul>
+<li>用法：gcc -E test.c -o test.i<br>作用：将 test.c 预处理输出 test.i 文件。</li>
+</ul>
+</li>
+<li>选项 -S<ul>
+<li>用法：gcc -S test.i<br>作用：将预处理输出文件 test.i 编译成 test.s 文件。</li>
+</ul>
+</li>
+<li>选项 -c<ul>
+<li>用法：gcc -c test.s<br>作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。</li>
+</ul>
+</li>
+<li>无选项链接<ul>
+<li>用法：gcc test.o -o test<br>作用：将目标代码文件 test.o 链接成最终可执行文件 test。</li>
+</ul>
+</li>
+<li>选项 -O<ul>
+<li>用法：gcc -O1 test.c -o test<br>作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。</li>
+</ul>
+</li>
+</ul>
+<p>官方文档：<a target="_blank" rel="noopener" href="https://gcc.gnu.org/">GCC, the GNU Compiler Collection</a></p>
+<h4 id="搜索路径控制"><a href="#搜索路径控制" class="headerlink" title="搜索路径控制"></a>搜索路径控制</h4><ul>
+<li>-I <strong>dir</strong>：将 <strong>dir</strong> 增加至头文件搜索路径</li>
+<li>-L <strong>dir</strong>：将 <strong>dir</strong> 增加至库文件搜索路径</li>
+<li>-l <strong>library</strong> 或 -l<strong>library</strong>：指定编译时搜索的库名</li>
+</ul>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><h4 id="编译链接"><a href="#编译链接" class="headerlink" title="编译链接"></a>编译链接</h4><p>在这样的文件结构下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   └── dog.h</span><br><span class="line">├── main.c</span><br><span class="line">├── v1</span><br><span class="line">│   └── dog.c</span><br><span class="line">└── v2</span><br><span class="line">    └── dog.c</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li><p>将 <code>./main.c</code> 编译为 <code>./main.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c main.c</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v1/dog.c</code> 编译为 <code>./v1/dog.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c ./v1/dog.c -o ./v1/dog.o</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v2/dog.c</code> 编译为 <code>./v2/dog.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c ./v2/dog.c -o ./v2/dog.o</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v1/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog1</code></p>
+<blockquote>
+<p>指令：gcc main.o ./v1/dog.o -o dog1</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v2/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog2</code></p>
+<blockquote>
+<p>指令：gcc main.o ./v2/dog.o -o dog2</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="静态和动态库"><a href="#静态和动态库" class="headerlink" title="静态和动态库"></a>静态和动态库</h4><p>执行下面的命令：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v1/dog.o</span><br><span class="line">gcc -o main main.o -L. -ldog</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>第一条生成了一个名为libdog.a的静态库。<code>cr</code>意为“create and replace”，指如果库不存在则创建，如果存在则用新文件替换库中的同名文件。后接要生成的静态库名称，再之后接要添加入库中的文件。<br>第二条将第一条中生成的静态库与main.o文件链接，生成一个名为main的可执行文件。<code>-L</code>后跟地址表示将该地址添加到库文件的搜索路径，<code>-L.</code>表示将当前目录添加到搜索路径。<code>-l</code>指定编译时搜索的库名。</p>
+</blockquote>
+<p>再执行以下命令：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
+<p>两次运行main可执行文件结果相同。</p>
+<blockquote>
+<p>因为静态链接，程序在链接完成时就已确定。第二次只是更改了静态库本身，而没有改变链接后生成的可执行文件。</p>
+</blockquote>
+<hr>
+<p>执行下面的命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -c -fPIC v1/dog.c -o v1/dog.o -I include</span><br><span class="line">gcc -c -fPIC v2/dog.c -o v2/dog.o -I include</span><br><span class="line">gcc -shared -fPIC -o libdog.so v1/dog.o</span><br><span class="line">gcc main.c libdog.so -o main -I include</span><br></pre></td></tr></table></figure>
+<p>再将库文件路径设置为当前路径：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LD_LIBRARY_PATH=.</span><br><span class="line"><span class="built_in">export</span> LD_LIBRARY_PATH</span><br></pre></td></tr></table></figure>
+<p>执行 <code>./main</code>，之后再执行以下命令：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -shared -fPIC -o libdog.so v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
+<p>两次运行main可执行文件结果不同。</p>
+<blockquote>
+<p>引用动态库时，动态库的程序并不保存在可执行文件内部，而是在运行时才会动态地连接到程序中。</p>
+</blockquote>
+<h2 id="三、GDB"><a href="#三、GDB" class="headerlink" title="三、GDB"></a>三、GDB</h2><h3 id="基本操作-1"><a href="#基本操作-1" class="headerlink" title="基本操作"></a>基本操作</h3><ul>
+<li>在使用 gcc 对程序编译时，需要<strong>加上-g 参数</strong>（产生调试信息）才能使 GDB 进行调试。</li>
+<li>输入 help 命令获得帮助</li>
+<li>输入 quit 或者按 Ctrl+D 组合键退出 GDB。</li>
+<li>启动程序准备调试方法<ul>
+<li>方法一：在执行 GDB 命令时加上要调试的可执行程序名称，如“GDB yourprogram”；</li>
+<li>方法二：先输入 GDB，在 GDB 中输入 file yourprogram 加载需要调试的程序。最后使用 run 或者 r 命令开始执行，也可以使用 run parameter 方式传递参数</li>
+</ul>
+</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center">命令</th>
+<th style="text-align:center">命令缩写</th>
+<th style="text-align:center">命令说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">list</td>
+<td style="text-align:center">l</td>
+<td style="text-align:center">显示多行源代码</td>
+</tr>
+<tr>
+<td style="text-align:center">break</td>
+<td style="text-align:center">b</td>
+<td style="text-align:center">设置断点，程序运行到断点的位置会停下来</td>
+</tr>
+<tr>
+<td style="text-align:center">info</td>
+<td style="text-align:center">i</td>
+<td style="text-align:center">描述程序运行的状态</td>
+</tr>
+<tr>
+<td style="text-align:center">run</td>
+<td style="text-align:center">r</td>
+<td style="text-align:center">开始运行程序</td>
+</tr>
+<tr>
+<td style="text-align:center">display</td>
+<td style="text-align:center">disp</td>
+<td style="text-align:center">跟踪查看某个变量，每次停下来都显示它的值</td>
+</tr>
+<tr>
+<td style="text-align:center">step</td>
+<td style="text-align:center">s</td>
+<td style="text-align:center">执行下一条语句，若该语句为函数调用，则进入函数执行其第一条语句</td>
+</tr>
+<tr>
+<td style="text-align:center">next</td>
+<td style="text-align:center">n</td>
+<td style="text-align:center">执行下一条语句，若该语句为函数调用，不会进入函数内部执行（即不会一步一步地调试函数内部语句）</td>
+</tr>
+<tr>
+<td style="text-align:center">print</td>
+<td style="text-align:center">p</td>
+<td style="text-align:center">打印内部变量</td>
+</tr>
+<tr>
+<td style="text-align:center">continue</td>
+<td style="text-align:center">c</td>
+<td style="text-align:center">继续程序的执行直到遇到下一个断点</td>
+</tr>
+<tr>
+<td style="text-align:center">set var</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">设置变量的值</td>
+</tr>
+<tr>
+<td style="text-align:center">start</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">开始执行程序，在 main 函数第一条语句前面停下</td>
+</tr>
+<tr>
+<td style="text-align:center">file</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">装入需要调试的文件</td>
+</tr>
+<tr>
+<td style="text-align:center">kill</td>
+<td style="text-align:center">k</td>
+<td style="text-align:center">终止正在调试的程序</td>
+</tr>
+<tr>
+<td style="text-align:center">watch</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">监视变量值的变化</td>
+</tr>
+<tr>
+<td style="text-align:center">backtrace</td>
+<td style="text-align:center">bt</td>
+<td style="text-align:center">查看函数调用的信息</td>
+</tr>
+<tr>
+<td style="text-align:center">frame</td>
+<td style="text-align:center">f</td>
+<td style="text-align:center">查看栈帧</td>
+</tr>
+<tr>
+<td style="text-align:center">quit</td>
+<td style="text-align:center">q</td>
+<td style="text-align:center">退出 GDB 环境</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>GDB 的更多使用方法可以参阅<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb/"><strong>GDB User Manual</strong></a> (<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb.pdf">PDF</a>)</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有test.c文件：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> num;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Enter a positive integer: &quot;</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">&quot;%d&quot;</span>, &amp;num);</span><br><span class="line">    &#125; <span class="keyword">while</span> (num &lt; <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> factorial;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">1</span>; i &lt;= num; i++)</span><br><span class="line">        factorial = factorial * i;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d! = %d\n&quot;</span>, num, factorial);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>接下来对该文件进行调试。<br>按顺序执行如下操作：</p>
+<p>（1）执行以下命令进入调试状态<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -g test.c -o <span class="built_in">test</span></span><br><span class="line">gdb <span class="built_in">test</span></span><br></pre></td></tr></table></figure><br>（2）在 main 函数处设置断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> main</span><br></pre></td></tr></table></figure><br>（3）输入 <code>run</code> 命令开始程序<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Breakpoint 1, main () at test.c:2</span><br><span class="line">2	int <span class="function"><span class="title">main</span></span>() &#123;</span><br></pre></td></tr></table></figure><br>（4）多次输入 <code>next</code> 命令使程序运行到第 14 行,使用 print 命令打印 num 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> num</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$1</span> = 2</span><br></pre></td></tr></table></figure><br>（5）继续调试至程序第 15 行,使用 <code>print</code> 命令打印 factorial 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> factorial</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$2</span> = -17088</span><br></pre></td></tr></table></figure><br>（6）使用 <code>run</code> 命令再次调试程序</p>
+<p>（7）在程序第 10 行加入断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> test.c:10</span><br></pre></td></tr></table></figure><br>（8）使用 <code>continue</code> 命令使程序运行到断点处</p>
+<p>（9）使用 <code>next</code> 命令</p>
+<p>（10）再次使用 <code>print</code> 命令打印 i 和 factorial 的值</p>
+<p>（11）使用 <code>p factorial=1</code> 命令改变 factorial 的值</p>
+<p>（12）使用 <code>info locals</code> 查看所有局部变量值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i = 1</span><br><span class="line">num = 2</span><br><span class="line">factorial = 1</span><br></pre></td></tr></table></figure><br>（13）继续调试至程序结束</p>
+<blockquote>
+<p>易知程序出错在没有初始化变量factorial</p>
+<p>gdb能很好地展示程序的执行过程，方便查找出错的位置。</p>
+</blockquote>
+<h2 id="make"><a href="#make" class="headerlink" title="make"></a>make</h2><h3 id="基本操作-2"><a href="#基本操作-2" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="Makefile的格式"><a href="#Makefile的格式" class="headerlink" title="Makefile的格式"></a>Makefile的格式</h4><p>Makefile文件由一系列规则（rules）构成。每条规则的形式如下。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;target&gt; : &lt;prerequisites&gt; </span><br><span class="line">[tab]  &lt;commands&gt;</span><br></pre></td></tr></table></figure><br>第一行冒号前面的部分，叫做”目标”（target）；冒号后面的部分叫做”前置条件”（prerequisites）；第二行必须由一个tab键起首，后面跟着”命令”（commands）。</p>
+<ul>
+<li><p>目标</p>
+<ul>
+<li>一个目标（target）就构成一条规则。目标通常是文件名，指明Make命令所要构建的对象，比如上文的 a.txt 。目标可以是一个文件名，也可以是多个文件名，之间用空格分隔。</li>
+<li>除了文件名，目标还可以是某个操作的名字，称为”伪目标”（phony target）。</li>
+</ul>
+</li>
+<li><p>前置条件</p>
+<ul>
+<li>前置条件通常是一组文件名，之间用空格分隔。它指定了”目标”是否重新构建的判断标准：只要有一个前置文件不存在，或者有过更新（前置文件的last-modification时间戳比目标的时间戳新），”目标”就需要重新构建。</li>
+</ul>
+</li>
+<li><p>命令</p>
+<ul>
+<li>命令（commands）表示如何更新目标文件，由一行或多行的Shell命令组成。它是构建”目标”的具体指令，它的运行结果通常就是生成目标文件。</li>
+</ul>
+</li>
+</ul>
+<h4 id="语法选述"><a href="#语法选述" class="headerlink" title="语法选述"></a>语法选述</h4><ul>
+<li><p>注释</p>
+<ul>
+<li>井号（#）在Makefile中表示注释。</li>
+</ul>
+</li>
+<li><p>模式匹配</p>
+<ul>
+<li>Make命令允许对文件名，进行类似正则运算的匹配，主要用到的匹配符是%。比如，假定当前目录下有 f1.c 和 f2.c 两个源码文件，需要将它们编译为对应的对象文件。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%.o: %.c</span><br></pre></td></tr></table></figure>
+等同于下面的写法。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f1.o: f1.c</span><br><span class="line">f2.o: f2.c</span><br></pre></td></tr></table></figure>
+使用匹配符%，可以将大量同类型的文件，只用一条规则就完成构建。</li>
+</ul>
+</li>
+<li><p>通配符</p>
+<ul>
+<li>通配符（wildcard）用来指定一组符合条件的文件名。Makefile 的通配符与 Bash 一致</li>
+</ul>
+</li>
+<li><p>依赖路径</p>
+<ul>
+<li>大写的VPATH或小写的vpath，表示搜索文件时的路径。写法例如<code>VPATH src:include:lib</code>表示在<code>./src</code> <code>./include</code> <code>./lib</code> 三个路径下寻找文件。<code>vpath %.c ./src</code>表示以.c结尾的文件在<code>./src</code>路径下寻找。</li>
+</ul>
+</li>
+</ul>
+<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有如下结构：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   ├── dylib.h</span><br><span class="line">│   ├── fun1.h</span><br><span class="line">│   └── fun2.h</span><br><span class="line">├── lib</span><br><span class="line">│   └── libdy.so</span><br><span class="line">├── Makefile</span><br><span class="line">└── src</span><br><span class="line">    ├── fun1.c</span><br><span class="line">    ├── fun2.c</span><br><span class="line">    └── main.c</span><br></pre></td></tr></table></figure><br>将这些资源编译成一个可执行文件，在Makefile文件中写下：<br><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">vpath</span> %.h ./<span class="keyword">include</span></span><br><span class="line"><span class="keyword">vpath</span> %.so ./lib</span><br><span class="line"><span class="keyword">vpath</span> %.c ./src</span><br><span class="line"></span><br><span class="line"><span class="section">main: main.o fun1.o fun2.o libdy.so</span></span><br><span class="line">    gcc <span class="variable">$^</span> -o main</span><br><span class="line"></span><br><span class="line"><span class="section">%.o: %.c</span></span><br><span class="line">    gcc <span class="variable">$^</span> -I <span class="keyword">include</span> -c</span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>: clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    rm *.o</span><br></pre></td></tr></table></figure><br>在终端中输入命令<code>make main</code>，即生成main文件（以及中间文件）。再输入<code>make clean</code>将中间文件删除。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B/" rel="tag"># 系统编程</a>
+              <a href="/tags/GCC/" rel="tag"># GCC</a>
+              <a href="/tags/Makefile/" rel="tag"># Makefile</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/6cacc70/" rel="prev" title="Hexo个人博客搭建及主题配置教程">
+      <i class="fa fa-chevron-left"></i> Hexo个人博客搭建及主题配置教程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/74b7a513/" rel="next" title="MySCS云平台（一）——注册与登陆">
+      MySCS云平台（一）——注册与登陆 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81GCC"><span class="nav-number">2.</span> <span class="nav-text">二、GCC</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C"><span class="nav-number">2.1.</span> <span class="nav-text">基本操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E9%80%89%E9%A1%B9"><span class="nav-number">2.1.1.</span> <span class="nav-text">编译选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%90%9C%E7%B4%A2%E8%B7%AF%E5%BE%84%E6%8E%A7%E5%88%B6"><span class="nav-number">2.1.2.</span> <span class="nav-text">搜索路径控制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E9%93%BE%E6%8E%A5"><span class="nav-number">2.2.1.</span> <span class="nav-text">编译链接</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E5%92%8C%E5%8A%A8%E6%80%81%E5%BA%93"><span class="nav-number">2.2.2.</span> <span class="nav-text">静态和动态库</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81GDB"><span class="nav-number">3.</span> <span class="nav-text">三、GDB</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C-1"><span class="nav-number">3.1.</span> <span class="nav-text">基本操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">3.2.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#make"><span class="nav-number">4.</span> <span class="nav-text">make</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C-2"><span class="nav-number">4.1.</span> <span class="nav-text">基本操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Makefile%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="nav-number">4.1.1.</span> <span class="nav-text">Makefile的格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95%E9%80%89%E8%BF%B0"><span class="nav-number">4.1.2.</span> <span class="nav-text">语法选述</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-2"><span class="nav-number">4.2.</span> <span class="nav-text">示例</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

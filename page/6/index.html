@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="StringCat的个人博客。记录学习、分享经验">
+<meta property="og:type" content="website">
+<meta property="og:title" content="StringCat的博客">
+<meta property="og:url" content="https://wokron.github.io/page/6/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="StringCat的个人博客。记录学习、分享经验">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="github,java,c#,python,pytorch,blog,engine,buaa,algorithm,software engineering">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/page/6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : true,
+    isPost : false,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content index posts-expand">
+            
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/6cacc70/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/6cacc70/" class="post-title-link" itemprop="url">Hexo个人博客搭建及主题配置教程</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-11 18:28:06" itemprop="dateCreated datePublished" datetime="2022-09-11T18:28:06+08:00">2022-09-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%99%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">教程</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。</p>
+<h2 id="二、搭建阶段"><a href="#二、搭建阶段" class="headerlink" title="二、搭建阶段"></a>二、搭建阶段</h2><h3 id="（1）Hexo简介"><a href="#（1）Hexo简介" class="headerlink" title="（1）Hexo简介"></a>（1）Hexo简介</h3><p>Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。</p>
+<h3 id="（2）前期安装"><a href="#（2）前期安装" class="headerlink" title="（2）前期安装"></a>（2）前期安装</h3><h4 id="安装Git"><a href="#安装Git" class="headerlink" title="安装Git"></a>安装Git</h4><p>Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。</p>
+<p>windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。</p>
+<p>linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install git</span><br></pre></td></tr></table></figure><br>安装好后，用<code>git --version</code>来查看一下版本。</p>
+<h4 id="安装nodejs"><a href="#安装nodejs" class="headerlink" title="安装nodejs"></a>安装nodejs</h4><p>Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。</p>
+<p>windows：nodejs选择LTS版本就行了。</p>
+<p>linux：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install nodejs</span><br><span class="line">sudo apt-get install npm</span><br></pre></td></tr></table></figure><br>安装完后，打开命令行<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">node -v</span><br><span class="line">npm -v</span><br></pre></td></tr></table></figure><br>检查一下有没有安装成功</p>
+<h4 id="安装Hexo"><a href="#安装Hexo" class="headerlink" title="安装Hexo"></a>安装Hexo</h4><p>前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。</p>
+<p>输入命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br></pre></td></tr></table></figure><br>用<code>hexo -v</code>查看一下版本，至此就全部安装完了。</p>
+<p>接下来初始化一下hexo<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init myblog</span><br></pre></td></tr></table></figure><br>这个myblog可以自己取什么名字都行，然后<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> myblog //进入这个myblog文件夹</span><br><span class="line">npm install</span><br></pre></td></tr></table></figure><br>新建完成后，指定文件夹目录下有：</p>
+<ul>
+<li>node_modules: 依赖包</li>
+<li>public：存放生成的页面</li>
+<li>scaffolds：生成文章的一些模板</li>
+<li>source：用来存放你的文章</li>
+<li>themes：主题</li>
+<li>_config.yml: 博客的配置文件**</li>
+</ul>
+<p>打开hexo的服务<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br><span class="line">hexo server</span><br></pre></td></tr></table></figure><br>在浏览器输入localhost:4000就可以看到你生成的博客了。</p>
+<h3 id="（3）Github部署"><a href="#（3）Github部署" class="headerlink" title="（3）Github部署"></a>（3）Github部署</h3><h4 id="GitHub创建个人仓库"><a href="#GitHub创建个人仓库" class="headerlink" title="GitHub创建个人仓库"></a>GitHub创建个人仓库</h4><p>首先，注册Github账号。</p>
+<p>注册完登录后，在网站中点击New repository，新建仓库</p>
+<p>创建一个和用户名相同的仓库，后面加.github.io，只有这样，将来要部署到GitHub page的时候，才会被识别，也就是xxxx.github.io，其中xxx就是你注册GitHub的用户名。</p>
+<p>点击create repository，创建仓库。</p>
+<h4 id="生成SSH添加到GitHub"><a href="#生成SSH添加到GitHub" class="headerlink" title="生成SSH添加到GitHub"></a>生成SSH添加到GitHub</h4><p>回到git bash中，输入<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git config --global user.name <span class="string">&quot;yourname&quot;</span></span><br><span class="line">git config --global user.email <span class="string">&quot;youremail&quot;</span></span><br></pre></td></tr></table></figure><br>yourname输入GitHub用户名，youremail输入GitHub的邮箱。</p>
+<p>可以用以下两条，检查一下你有没有输对<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git config user.name</span><br><span class="line">git config user.email</span><br></pre></td></tr></table></figure><br>然后创建SSH，输入<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh-keygen -t rsa -C <span class="string">&quot;youremail&quot;</span></span><br></pre></td></tr></table></figure><br>接着一路回车。<br>会显示已经生成了.ssh的文件夹。在你的电脑中找到这个文件夹。</p>
+<p>在GitHub的setting中，找到SSH keys的设置选项，点击New SSH key<br>把id_rsa.pub里面的信息复制进去。</p>
+<p>在gitbash中，查看是否成功<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh -T git@github.com</span><br></pre></td></tr></table></figure></p>
+<h4 id="将hexo部署到GitHub"><a href="#将hexo部署到GitHub" class="headerlink" title="将hexo部署到GitHub"></a>将hexo部署到GitHub</h4><p>这一步，我们就可以将hexo和GitHub关联起来，也就是将hexo生成的文章部署到GitHub上，打开站点配置文件 _config.yml，翻到最后，修改为<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/YourgithubName/YourgithubName.github.io.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure><br>YourgithubName就是你的GitHub账户</p>
+<p>这个时候需要先安装deploy-git ，也就是部署的命令,这样你才能用命令部署到GitHub。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure><br>然后<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo generate</span><br><span class="line">hexo deploy</span><br></pre></td></tr></table></figure></p>
+<p>其中 hexo clean清除了你之前生成的东西，也可以不加。<br>hexo generate 顾名思义，生成静态文章，可以用 hexo g缩写<br>hexo deploy 部署文章，可以用hexo d缩写</p>
+<p>注意deploy时可能要你输入username和password。</p>
+<p>得到下图就说明部署成功了，过一会儿就可以在<a target="_blank" rel="noopener" href="http://yourname.github.io">http://yourname.github.io</a> 这个网站看到你的博客了！！</p>
+<h3 id="（4）Hexo基本配置"><a href="#（4）Hexo基本配置" class="headerlink" title="（4）Hexo基本配置"></a>（4）Hexo基本配置</h3><h4 id="Hexo框架配置"><a href="#Hexo框架配置" class="headerlink" title="Hexo框架配置"></a>Hexo框架配置</h4><p>文件根目录下的_config.yml，就是整个hexo框架的配置文件了。可以在里面修改大部分的配置。</p>
+<p>这里列出几个比较主要的配置参数：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>title</td>
+<td>网站标题</td>
+<td>xxx的博客</td>
+</tr>
+<tr>
+<td>subtitle</td>
+<td>网站副标题</td>
+<td>技术记录</td>
+</tr>
+<tr>
+<td>description</td>
+<td>网站描述</td>
+<td>一个技术宅的博客</td>
+</tr>
+<tr>
+<td>author</td>
+<td>您的名字</td>
+<td>author</td>
+</tr>
+<tr>
+<td>language</td>
+<td>网站使用的语言</td>
+<td>zh-CN</td>
+</tr>
+<tr>
+<td>timezone</td>
+<td>网站时区,默认使用电脑时区</td>
+<td>Asia/Shanghai</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="文件配置"><a href="#文件配置" class="headerlink" title="文件配置"></a>文件配置</h4><p>输入命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new newpaper</span><br></pre></td></tr></table></figure><br>可以创建一篇新的文章。newpaper为文章的名字，格式为markdown文件。</p>
+<p>在文件最上方以 —- 分隔的区域，可用于指定个别文件的变量，举例来说：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: Hexo个人博客搭建及主题配置教程</span><br><span class="line">date: 2022-09-11 18:28:06</span><br><span class="line">tags: Hexo</span><br><span class="line"><span class="section">categories: 教程</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure><br>以下是预先定义的参数，可在模板中使用这些参数值并加以利用。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>layout</td>
+<td>布局</td>
+</tr>
+<tr>
+<td>title</td>
+<td>标题</td>
+</tr>
+<tr>
+<td>date</td>
+<td>建立日期</td>
+</tr>
+<tr>
+<td>updated</td>
+<td>更新日期</td>
+</tr>
+<tr>
+<td>comments</td>
+<td>开启文章的评论功能</td>
+</tr>
+<tr>
+<td>tags</td>
+<td>标签（不适用于分页）</td>
+</tr>
+<tr>
+<td>categories</td>
+<td>分类（不适用于分页）</td>
+</tr>
+<tr>
+<td>permalink</td>
+<td>覆盖文章网址</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>其中，分类和标签需要区别一下，分类具有顺序性和层次性，也就是说 Foo, Bar 不等于 Bar, Foo；而标签没有顺序和层次。</p>
+<h2 id="三、更换主题"><a href="#三、更换主题" class="headerlink" title="三、更换主题"></a>三、更换主题</h2><p>本文将以NexT主题为例</p>
+<h3 id="（1）安装并启用-NexT-主题"><a href="#（1）安装并启用-NexT-主题" class="headerlink" title="（1）安装并启用 NexT 主题"></a>（1）安装并启用 NexT 主题</h3><h4 id="安装主题"><a href="#安装主题" class="headerlink" title="安装主题"></a>安装主题</h4><p>打开博客根目录文件夹，右键Git Bash，输入如下代码将next主题下载到目录<code>./themes</code>：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/theme-next/hexo-theme-next themes/next</span><br></pre></td></tr></table></figure><br>打开主题文件夹下的package.json文件可以查看NexT主题版本。本文使用的版本为<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;7.8.0&quot;</span><span class="punctuation">,</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="启用主题"><a href="#启用主题" class="headerlink" title="启用主题"></a>启用主题</h4><p>打开根目录下的_config.yml(称为站点配置文件)，修改主题（注意冒号后都要有空格）。搜索theme参数，修改为next<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></figure><br>另外next主题有四种样式，分别为Muse、Mist、Pisces、Gemini，这里设置为Gemini，在<code>./themes/next/</code>下的_config.yml（称为主题配置文件）中搜索参数Schemes，将要选的主题取消注释：<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#scheme: Muse</span></span><br><span class="line"><span class="comment">#scheme: Mist</span></span><br><span class="line"><span class="comment">#scheme: Pisces</span></span><br><span class="line"><span class="attr">scheme:</span> <span class="string">Gemini</span> <span class="comment"># 选择该主题</span></span><br></pre></td></tr></table></figure><br>回到根目录打开Git Bash，输入如下三条命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure><br>将主题修改应用到网站上。</p>
+<h3 id="（2）功能设置"><a href="#（2）功能设置" class="headerlink" title="（2）功能设置"></a>（2）功能设置</h3><h4 id="开启tags-categories"><a href="#开启tags-categories" class="headerlink" title="开启tags/categories"></a>开启tags/categories</h4><p>开启该功能，博客会将写过的文章按照tags或categories进行归类。</p>
+<p>进入博客根目录下，输入命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hexo new page tags</span><br><span class="line">hexo new page categories</span><br></pre></td></tr></table></figure><br>会在<code>./source</code>下出现tags和categories文件夹。博客中将出现关于tags和categories的新页面。</p>
+<p>打开文件夹中的文件，可以修改相关信息，类似于修改文章配置<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: 标签</span><br><span class="line">date: 2022-09-10 10:33:40</span><br><span class="line"><span class="section">type: &quot;tags&quot;</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="修改侧边栏信息"><a href="#修改侧边栏信息" class="headerlink" title="修改侧边栏信息"></a>修改侧边栏信息</h4><p>在主题配置文件<code>./theme/next/_config.yml</code>中搜索avatar<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Sidebar Avatar</span></span><br><span class="line"><span class="attr">avatar:</span></span><br><span class="line">  <span class="comment"># Replace the default image and set the url here.</span></span><br><span class="line">  <span class="attr">url:</span> <span class="string">/images/avatar.jpg</span></span><br><span class="line">  <span class="comment"># If true, the avatar will be dispalyed in circle.</span></span><br><span class="line">  <span class="attr">rounded:</span> <span class="literal">true</span></span><br><span class="line">  <span class="comment"># If true, the avatar will be rotated with the cursor.</span></span><br><span class="line">  <span class="attr">rotated:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure><br>在这里可以设置侧边栏的头像。包括头像图片，头像是否原型，鼠标放置是否会转动。</p>
+<p>同样的文件搜索social<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">social:</span></span><br><span class="line">  <span class="attr">GitHub:</span> <span class="string">https://github.com/wokron</span> <span class="string">||</span> <span class="string">fab</span> <span class="string">fa-github</span></span><br><span class="line">  <span class="attr">E-Mail:</span> <span class="string">stringcatwok@gmail.com</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-envelope</span></span><br><span class="line">  <span class="comment">#Weibo: https://weibo.com/yourname || fab fa-weibo</span></span><br><span class="line">  <span class="comment">#Google: https://plus.google.com/yourname || fab fa-google</span></span><br><span class="line">  <span class="comment">#Twitter: https://twitter.com/yourname || fab fa-twitter</span></span><br><span class="line">  <span class="comment">#FB Page: https://www.facebook.com/yourname || fab fa-facebook</span></span><br><span class="line">  <span class="comment">#StackOverflow: https://stackoverflow.com/yourname || fab fa-stack-overflow</span></span><br><span class="line">  <span class="comment">#YouTube: https://youtube.com/yourname || fab fa-youtube</span></span><br><span class="line">  <span class="comment">#Instagram: https://instagram.com/yourname || fab fa-instagram</span></span><br><span class="line">  <span class="comment">#Skype: skype:yourname?call|chat || fab fa-skype</span></span><br></pre></td></tr></table></figure><br>可以设置相关的网络账户信息。</p>
+<h4 id="修改代码框"><a href="#修改代码框" class="headerlink" title="修改代码框"></a>修改代码框</h4><p>搜索codeblock<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">codeblock:</span></span><br><span class="line">  <span class="comment"># Code Highlight theme</span></span><br><span class="line">  <span class="comment"># Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic</span></span><br><span class="line">  <span class="comment"># See: https://github.com/chriskempson/tomorrow-theme</span></span><br><span class="line">  <span class="attr">highlight_theme:</span> <span class="string">night</span></span><br><span class="line">  <span class="comment"># Add copy button on codeblock</span></span><br><span class="line">  <span class="attr">copy_button:</span></span><br><span class="line">    <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">    <span class="comment"># Show text copy result.</span></span><br><span class="line">    <span class="attr">show_result:</span> <span class="string">default</span></span><br><span class="line">    <span class="comment"># Available values: default | flat | mac</span></span><br><span class="line">    <span class="attr">style:</span> <span class="string">mac</span></span><br></pre></td></tr></table></figure><br>可以设置代码框相关的参数。包括代码主题、复制键是否开启、是否显示复制效果、代码框的样式（<code>style: mac</code>就可以设置成很美观的mac panel样式，不需要网上那些复杂的步骤）。</p>
+<h3 id="（3）增加扩展"><a href="#（3）增加扩展" class="headerlink" title="（3）增加扩展"></a>（3）增加扩展</h3><h4 id="添加Live2D"><a href="#添加Live2D" class="headerlink" title="添加Live2D"></a>添加Live2D</h4><p>首先在博客目录下执行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -save hexo-helper-live2d</span><br></pre></td></tr></table></figure><br>然后在站点配置文件中加入：<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">live2d:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">scriptFrom:</span> <span class="string">local</span></span><br><span class="line">  <span class="attr">pluginRootPath:</span> <span class="string">live2dw/</span></span><br><span class="line">  <span class="attr">pluginJsPath:</span> <span class="string">lib/</span></span><br><span class="line">  <span class="attr">pluginModelPath:</span> <span class="string">assets/</span></span><br><span class="line">  <span class="attr">tagMode:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">log:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">model:</span></span><br><span class="line">    <span class="attr">use:</span> <span class="string">live2d-widget-model-hijiki</span> <span class="comment">#选择哪种模型</span></span><br><span class="line">  <span class="attr">display:</span></span><br><span class="line">    <span class="attr">position:</span> <span class="string">right</span></span><br><span class="line">    <span class="attr">width:</span> <span class="number">150</span></span><br><span class="line">    <span class="attr">height:</span> <span class="number">300</span></span><br><span class="line">  <span class="attr">mobile:</span></span><br><span class="line">    <span class="attr">show:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure><br>接着下载对应模型<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install live2d-widget-model-hijiki</span><br></pre></td></tr></table></figure></p>
+<h4 id="文章图片支持"><a href="#文章图片支持" class="headerlink" title="文章图片支持"></a>文章图片支持</h4><p>这里使用相对引用插入图片</p>
+<p>安装插件<code>hexo-renderer-marked</code>：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-renderer-marked</span><br></pre></td></tr></table></figure><br>修改站点配置文件<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">post_asset_folder:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure><br>同时在其中添加：<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">marked:</span></span><br><span class="line">  <span class="attr">prependRoot:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">postAsset:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure><br>就可以进行图片的引用了。</p>
+<h4 id="公式支持"><a href="#公式支持" class="headerlink" title="公式支持"></a>公式支持</h4><p>需要更换 Hexo 的 markdown 渲染引擎，hexo-renderer-kramed 引擎是在默认的渲染引擎 hexo-renderer-marked 的基础上修改了一些 bug ，两者比较接近，也比较轻量级。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm uninstall hexo-renderer-marked --save</span><br><span class="line">npm install hexo-renderer-kramed --save</span><br></pre></td></tr></table></figure><br>执行上面的命令，先卸载原来的渲染引擎，再安装新的。</p>
+<p>接下来到博客根目录下，找到<code>node_modules\kramed\lib\rules\inline.js</code>，修改 escape以及em变量的值：<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//escape: /^\\([\\`*&#123;&#125;\[\]()#$+\-.!_&gt;])/,</span></span><br><span class="line"><span class="attr">escape</span>: <span class="regexp">/^\\([`*\[\]()#$+\-.!_&gt;])/</span>,</span><br><span class="line"></span><br><span class="line"><span class="comment">//em: /^\b_((?:__|[\s\S])+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,</span></span><br><span class="line"><span class="attr">em</span>: <span class="regexp">/^\*((?:\*\*|[\s\S])+?)\*(?!\*)/</span>,</span><br></pre></td></tr></table></figure></p>
+<p>然后在主题中开启MathJax。打开主题配置文件，搜索mathjax，改为<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># hexo-renderer-pandoc (or hexo-renderer-kramed) required for full MathJax support.</span></span><br><span class="line">  <span class="attr">mathjax:</span></span><br><span class="line">    <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">    <span class="comment"># See: https://mhchem.github.io/MathJax-mhchem/</span></span><br><span class="line">    <span class="attr">mhchem:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure></p>
+<p>最后在写文章时，在开头开启mathjax<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: 雇佣K名工人的最低成本</span><br><span class="line">date: 2022-09-11 09:02:32</span><br><span class="line">tags: [LeetCode,优先队列,贪心,c++]</span><br><span class="line">categories: 算法</span><br><span class="line"><span class="section">mathjax: true </span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure><br>即可在文章中使用公式。</p>
+<h3 id="（4）主题美化"><a href="#（4）主题美化" class="headerlink" title="（4）主题美化"></a>（4）主题美化</h3><h4 id="添加背景"><a href="#添加背景" class="headerlink" title="添加背景"></a>添加背景</h4><p>把想设置的背景放入./themes/next/source/images中，命名为background.jpg。在根目录的source文件夹下新建文件夹_data与style文件source/_data/styles.styl，输入以下代码<br><figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">body</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>:<span class="built_in">url</span>(<span class="string">/images/background.jpg</span>);</span><br><span class="line">    <span class="attribute">background-repeat</span>: no-repeat;</span><br><span class="line">    <span class="attribute">background-attachment</span>:fixed;</span><br><span class="line">    <span class="attribute">background-position</span>:<span class="number">100%</span> <span class="number">100%</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>再在主题_config.yml文件中找到对应的custom_file_path，去掉注释即可。<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">custom_file_path:</span></span><br><span class="line">  <span class="comment">#head: source/_data/head.swig</span></span><br><span class="line">  <span class="comment">#header: source/_data/header.swig</span></span><br><span class="line">  <span class="comment">#sidebar: source/_data/sidebar.swig</span></span><br><span class="line">  <span class="comment">#postMeta: source/_data/post-meta.swig</span></span><br><span class="line">  <span class="comment">#postBodyEnd: source/_data/post-body-end.swig</span></span><br><span class="line">  <span class="comment">#footer: source/_data/footer.swig</span></span><br><span class="line">  <span class="comment">#bodyEnd: source/_data/body-end.swig</span></span><br><span class="line">  <span class="comment">#variable: source/_data/variables.styl</span></span><br><span class="line">  <span class="comment">#mixin: source/_data/mixins.styl</span></span><br><span class="line">  <span class="attr">style:</span> <span class="string">source/_data/styles.styl</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="博客内容透明化"><a href="#博客内容透明化" class="headerlink" title="博客内容透明化"></a>博客内容透明化</h4><p>在上文新建的styles.styl文件中添加如下内容即可：<br><figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">//博客内容透明化</span><br><span class="line">//文章内容的透明度设置</span><br><span class="line"><span class="selector-class">.content-wrap</span> &#123;</span><br><span class="line">  <span class="attribute">opacity</span>: <span class="number">0.9</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//侧边框的透明度设置</span><br><span class="line"><span class="selector-class">.sidebar</span> &#123;</span><br><span class="line">  <span class="attribute">opacity</span>: <span class="number">0.9</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//菜单栏的透明度设置</span><br><span class="line"><span class="selector-class">.header-inner</span> &#123;</span><br><span class="line">  <span class="attribute">background</span>: <span class="built_in">rgba</span>(<span class="number">255</span>,<span class="number">255</span>,<span class="number">255</span>,<span class="number">0.9</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//搜索框（local-search）的透明度设置</span><br><span class="line"><span class="selector-class">.popup</span> &#123;</span><br><span class="line">  <span class="attribute">opacity</span>: <span class="number">0.9</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、结语"><a href="#四、结语" class="headerlink" title="四、结语"></a>四、结语</h2><p>搭建和美化博客的工作内容颇多，本人也花了许久功夫去查阅资料、不断尝试，才最终得到了一个比较好的效果。在这一过程中，给过我帮助的文章已经难以一一回忆起来，因此在最后不能给出一份引用资料，实在抱歉。<br>这里就列出一些我还能找得到的参考文章：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/sinat_37781304/article/details/82729029">https://blog.csdn.net/sinat_37781304/article/details/82729029</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_34003239/article/details/100883213">https://blog.csdn.net/qq_34003239/article/details/100883213</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/265077468">https://zhuanlan.zhihu.com/p/265077468</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/yexiaohhjk/article/details/82526604">https://blog.csdn.net/yexiaohhjk/article/details/82526604</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.snowmoon.top/2021/02/21/next%E4%B8%BB%E9%A2%98%E7%BE%8E%E5%8C%96/">https://www.snowmoon.top/2021/02/21/next%E4%B8%BB%E9%A2%98%E7%BE%8E%E5%8C%96/</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/22319630/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/22319630/" class="post-title-link" itemprop="url">雇佣K名工人的最低成本</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-11 09:02:32" itemprop="dateCreated datePublished" datetime="2022-09-11T09:02:32+08:00">2022-09-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="857-雇佣-K-名工人的最低成本"><a href="#857-雇佣-K-名工人的最低成本" class="headerlink" title="857. 雇佣 K 名工人的最低成本"></a>857. 雇佣 K 名工人的最低成本</h2><blockquote>
+<p>有 n 名工人。 给定两个数组 quality 和 wage ，其中，quality[i] 表示第 i 名工人的工作质量，其最低期望工资为 wage[i] 。</p>
+<p>现在我们想雇佣 k 名工人组成一个工资组。在雇佣 一组 k 名工人时，我们必须按照下述规则向他们支付工资：</p>
+<p>对工资组中的每名工人，应当按其工作质量与同组其他工人的工作质量的比例来支付工资。<br>工资组中的每名工人至少应当得到他们的最低期望工资。<br>给定整数 k ，返回 组成满足上述条件的付费群体所需的最小金额 。在实际答案的 10-5 以内的答案将被接受。。</p>
+<p>输入： quality = [10,20,5], wage = [70,50,30], k = 2<br>输出： 105.00000<br>解释： 我们向 0 号工人支付 70，向 2 号工人支付 35。</p>
+</blockquote>
+<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><p>假设选择某一组工人$[h_1, h_2,…h_m]$，设总工资为$totalpay$，则对每一个工人$h_i({1}\le{i}\le{m})$，有不等式：</p>
+<script type="math/tex; mode=display">
+\frac{quality[h_i]}{\sum_{i=1}^{m}{quality[h_i]}}\times{totalpay}\ge{wage[h_i]}</script><p>即：</p>
+<script type="math/tex; mode=display">
+    totalpay = {\sum_{i=1}^{m}{quality[h_i]}}\times{max(\frac{wage[h_i]}{quality[h_i]})}</script><p>$\frac{wage[h_i]}{quality[h_i]}$即为每个工人工作的“性价比”。</p>
+<p>由等式可知，对于一组确定的工人，除了总工作质量外，其总工资只与“性价比”最高的那个工人有关。</p>
+<p>因此可以得到这样的算法：对于每一个工人，在“性价比”低于该工人的人中找到k-1个人，使得总工作质量最小。求得当前的总工资。最后取所有得到的总工资中的最小值。</p>
+<h3 id="程序实现"><a href="#程序实现" class="headerlink" title="程序实现"></a>程序实现</h3><p>我们需要找到“性价比”在倒数k-1名之前的所有工人，不妨先按照性价比进行排序。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> n = wage.<span class="built_in">size</span>();</span><br><span class="line"><span class="type">int</span> wpq[n]; <span class="comment">// wage per quality</span></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">    wpq[i] = i;</span><br><span class="line"><span class="built_in">sort</span>(wpq, wpq+n,</span><br><span class="line">    [&amp;](<span class="type">int</span> i, <span class="type">int</span> j)</span><br><span class="line">    &#123; <span class="keyword">return</span> wage[i] * quality[j] &lt; wage[j] * quality[i];&#125;);</span><br></pre></td></tr></table></figure><br>注意这里并未对quality和wage直接排序，而是将下标进行排序。</p>
+<p>之后，再分析接下来需要进行的操作。对于每个工人，都要找到他（性价比中的位置）之前的k-1个工人，这些工人需要总工作质量最小。具体的，这些工人就是工作质量最小的k-1个人。</p>
+<p>保存最大/最小的k个元素，可以利用优先队列。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">priority_queue&lt;<span class="type">int</span>&gt; pq;</span><br><span class="line"><span class="type">int</span> qsum = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; k<span class="number">-1</span>; i++)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> nowq = quality[wpq[i]];</span><br><span class="line">    pq.<span class="built_in">push</span>(nowq);</span><br><span class="line">    qsum += nowq;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>先将前k-1个人压入队列，那么对于前k-1个人，他们一定是工作质量最小的k-1个人。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">double</span> ans = DBL_MAX; </span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = k<span class="number">-1</span>; i &lt; n; i++)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> work = wpq[i];</span><br><span class="line">    <span class="type">int</span> nowq = quality[work];</span><br><span class="line">    pq.<span class="built_in">push</span>(nowq);</span><br><span class="line">    qsum += nowq;</span><br><span class="line">    <span class="type">double</span> nowPay = qsum * ((<span class="type">double</span>)wage[work] / nowq);</span><br><span class="line">    ans = <span class="built_in">min</span>(ans, nowPay);</span><br><span class="line">    qsum -= pq.<span class="built_in">top</span>();</span><br><span class="line">    pq.<span class="built_in">pop</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> ans;</span><br></pre></td></tr></table></figure><br>然后从第k个工人开始，求最小的总工作质量。具体的，压入第i个工人，再从优先队列中弹出工作质量最大的那个。易证操作后队列里的k个依旧是最小的k个。</p>
+<h2 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h2><p>话说这道题明明有思路，想到了“性价比”，也想到了优先队列，可是就是没做出来，实在是对不起自己了。现在想想，好像也没有什么困难的地方，或许只是自己被概念缠住了吧。有时候列一列公式还是很有必要的。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2c835ddc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/2c835ddc/" class="post-title-link" itemprop="url">只出现一次的数字</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 22:00:43" itemprop="dateCreated datePublished" datetime="2022-09-10T22:00:43+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="136-只出现一次的数字"><a href="#136-只出现一次的数字" class="headerlink" title="136. 只出现一次的数字"></a>136. 只出现一次的数字</h2><blockquote>
+<p>给定一个非空整数数组，除了某个元素只出现一次以外，其余每个元素均出现两次。找出&gt;那个只出现了一次的元素。</p>
+<p>说明：<br>你的算法应该具有线性时间复杂度。 你可以不使用额外空间来实现吗？</p>
+</blockquote>
+<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>题目本身很简单，但是要做到O(1)的空间复杂度还是需要思考的。正确的做法是使用位运算，</p>
+<p>具体来说，是利用异或的运算性质。即两个相同的数异或为0，任何数与0异或得其本身。异或的这一性质用于偶数次出现的元素很有用处。</p>
+<p>对于本道题，就是需要将所有数一同进行异或运算。因为异或满足交换律，所以所有出现偶数次（两次）的数结合都得0，而所有出现奇数次（一次）的数则保持其本身不变。又因数组中只有一个元素出现一次，因此全部异或的结果就是只出现一次的数本身。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">singleNumber</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> ans = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">auto</span> num : nums)</span><br><span class="line">            ans ^= num;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>或许以后会总结一篇位运算的用法</p>
+</blockquote>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/fe7db33d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/fe7db33d/" class="post-title-link" itemprop="url">FunctionSketch说明文档</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 18:33:26" itemprop="dateCreated datePublished" datetime="2022-09-10T18:33:26+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">软件开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、简述"><a href="#一、简述" class="headerlink" title="一、简述"></a>一、简述</h2><p>本文档将介绍程序<strong>函数画板</strong>的主要功能和基本操作。<strong>函数画板</strong>是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。</p>
+<h2 id="二、函数绘制"><a href="#二、函数绘制" class="headerlink" title="二、函数绘制"></a>二、函数绘制</h2><h3 id="1、添加函数"><a href="#1、添加函数" class="headerlink" title="1、添加函数"></a>1、添加函数</h3><p>运行exe文件后，将进入程序的主界面。如下图所示。<br><img src="/posts/fe7db33d/%E5%87%BD%E6%95%B0%E4%B8%BB%E7%95%8C%E9%9D%A2.png" class="" title="函数主界面"></p>
+<p>点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。<br><img src="/posts/fe7db33d/%E8%BE%93%E5%85%A5%E5%87%BD%E6%95%B0.png" class="" title="输入函数"></p>
+<p>输入函数表达式后按回车键（或采取使输入框不再被选中的操作），若表达式<strong>正确</strong>，则会将该表达式所对应的函数绘制到主界面左侧的窗口上。</p>
+<p>其中<strong>正确的表达式</strong>包括如下几种情况：</p>
+<ol>
+<li>表示单变量函数<br>此时表达式请以x为自变量，不忽略运算符（特别注意，对数如logm(n)请写作mlogn）。表达式前可忽略“y=”。例如“y=x+x^2”或“x*(elogx)”</li>
+<li>表示参数方程<br>此时请同时输入两个单变量函数表达式，以x或t为自变量，两表达式间以逗号间隔。注意请不要在两个表达式前添加“x=”或“y=”。例如“t^2,t”或“sinx,cosx”</li>
+<li>表示隐函数（或一般的方程）<br>此时请以x，y表示横纵两坐标轴对应的变量。表达式中必须包含等号。例如“x^2+y^2=1”。当等式左侧为“y=”时自动转换为单变量函数计算。</li>
+</ol>
+<p>另外，一次输入可以绘制多个图像。若要输入多个表达式，请将各表达式以分号间隔。</p>
+<h3 id="2、函数属性设置"><a href="#2、函数属性设置" class="headerlink" title="2、函数属性设置"></a>2、函数属性设置</h3><p>添加函数后，函数图像将在左侧窗口内显示，同时右侧函数列表栏内也会出现记录该函数信息的卡片（超出范围的卡片可以滑动滚轮以查看）。<br><img src="/posts/fe7db33d/%E7%BB%98%E5%88%B6%E5%9B%BE%E5%83%8F.png" class="" title="绘制图像"></p>
+<p>每一个函数信息卡右侧有两个按钮。上面标有“x”字的按钮点击后可关闭该函数卡并删除左侧窗口内对应的函数图像。下面显示“···”符号的按钮，点击后可以设置该函数相关的属性。主要包括如下内容。<br><img src="/posts/fe7db33d/%E5%87%BD%E6%95%B0%E8%AE%BE%E7%BD%AE.png" class="" title="绘制图像"></p>
+<ol>
+<li>坐标形式<br>单变量函数和参数方程共有。设置图像以直角坐标或极坐标形式呈现。</li>
+<li>线性变换<br>单变量函数和参数方程共有。表示一个2*2矩阵。在绘制过程中，图像的每一个坐标点会与该矩阵相乘。</li>
+<li>位移<br>单变量函数和参数方程共有。表示一个二维矢量。在绘制过程中，图像的每一个坐标点会与该矢量相加。</li>
+<li>积分<br>单变量函数特有。表示一个积分区间。默认不计算积分（积分范围NaN-&gt;NaN）。若输入正确的积分范围，则会在左侧窗口内将求积分的面积涂色。并在信息卡上显示积分结果。</li>
+<li>求导<br>单变量函数特有。点击求导按钮后会求一阶导数，并将得到的新函数添加到函数列表栏的末尾。图像也会在左侧窗口内显示。</li>
+<li>参数范围<br>参数方程特有。用以表示参数的范围。左侧窗口内只会绘制参数范围内的图像。</li>
+</ol>
+<h2 id="三、保存文件"><a href="#三、保存文件" class="headerlink" title="三、保存文件"></a>三、保存文件</h2><h3 id="1、保存当前函数图像"><a href="#1、保存当前函数图像" class="headerlink" title="1、保存当前函数图像"></a>1、保存当前函数图像</h3><p>点击主窗口上侧菜单栏“文件”选项。其中第一项“保存”可以将当前绘制的图像保存为图片格式（当前暂时只支持jpg格式）。</p>
+<h3 id="2、查看默认保存位置"><a href="#2、查看默认保存位置" class="headerlink" title="2、查看默认保存位置"></a>2、查看默认保存位置</h3><p>第二项“打开默认保存路径”会打开exe所在路径之下的SaveImage文件夹。可用于作为保存文件的位置。</p>
+<h2 id="四、设置"><a href="#四、设置" class="headerlink" title="四、设置"></a>四、设置</h2><h3 id="1、绘制设置"><a href="#1、绘制设置" class="headerlink" title="1、绘制设置"></a>1、绘制设置</h3><p>点击菜单栏“设置”选项，会打开一个设置窗口。<br><img src="/posts/fe7db33d/%E8%AE%BE%E7%BD%AE%E7%AA%97%E5%8F%A3.png" class="" title="设置窗口"><br>其中前三项用于绘制设置。</p>
+<ol>
+<li>显示范围<br>相对位置用于设置当前显示位置与默认位置的偏移量。可以理解该值为一个表示当前窗口显示的位置相对于原点的坐标。<br>显示宽度用于设置当前窗口宽度下，横坐标数值的变化范围。<br>（该项设置也可以在主界面显示窗口用鼠标拖动和滚轮实现。）</li>
+<li>线条颜色<br>设置图像曲线、坐标轴、积分区域的颜色。</li>
+<li>线条宽度<br>设置图像曲线、坐标轴线条的粗细。注意该粗细不会随着窗口的缩放而发生变化。</li>
+</ol>
+<h3 id="2、算法设置"><a href="#2、算法设置" class="headerlink" title="2、算法设置"></a>2、算法设置</h3><p>设置窗口第四项用于设置算法相关参数。算法原理详见设计文档。<br><img src="/posts/fe7db33d/%E7%AE%97%E6%B3%95%E8%AE%BE%E7%BD%AE.png" class="" title="算法设置"></p>
+<ol>
+<li>基本<br>最小绘制间隔即生成基本绘制点时自变量的间隔。</li>
+<li>平滑算法<br>平滑算法用于处理曲率较大的情况。平滑率表示连点绘制的曲线的“尖锐度”的阈值，过于“尖锐”的部分将被试图平滑。最大递归层数用于避免过深的递归，减少绘制时间。</li>
+<li>Marching Square算法<br>Marching Square算法用于处理一般方程，能较有效地绘制隐函数图像。但计算量较大，以dx为单位长度绘制速度较慢。因此以dx乘以某一常数得到的长度作为新的单位长度，该常数即方块比例。</li>
+</ol>
+<h2 id="五、帮助"><a href="#五、帮助" class="headerlink" title="五、帮助"></a>五、帮助</h2><h3 id="1、查看源代码"><a href="#1、查看源代码" class="headerlink" title="1、查看源代码"></a>1、查看源代码</h3><p>点击菜单栏“帮助”选项，第一项“源代码”点击后会转到保存该程序源代码的github仓库。</p>
+<h3 id="2、操作说明"><a href="#2、操作说明" class="headerlink" title="2、操作说明"></a>2、操作说明</h3><p>第二项“操作说明”可以打开一个新的帮助窗口，其中记录了一些较为常见的操作的提示。可在使用时随时查看。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/9a443429/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/9a443429/" class="post-title-link" itemprop="url">FunctionSketch设计文档</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 18:28:04" itemprop="dateCreated datePublished" datetime="2022-09-10T18:28:04+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">软件开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、程序简述"><a href="#一、程序简述" class="headerlink" title="一、程序简述"></a>一、程序简述</h2><p>本软件是一个轻量级的图像绘制软件。在实现较为丰富的函数绘制功能的同时，避免了庞大的体量。与Matlab、Mathematica等专业软件的二维图像绘制功能相比，更方便上手，便于使用。可用于满足学习和简单研究的二维绘图需要。</p>
+<h2 id="二、实现思路"><a href="#二、实现思路" class="headerlink" title="二、实现思路"></a>二、实现思路</h2><h3 id="1、表达式字符串解析"><a href="#1、表达式字符串解析" class="headerlink" title="1、表达式字符串解析"></a>1、表达式字符串解析</h3><h4 id="（1）解析目标"><a href="#（1）解析目标" class="headerlink" title="（1）解析目标"></a>（1）解析目标</h4><p>本程序的主要输入内容为表达式字符串，用以表示单变量函数、参数方程或是隐函数。为了进行计算，我们需要将其转化为可使用计算机计算的函数。我们可以将三种方程分别看成单参数、单返回值的函数；单参数、双返回值的函数；双参数，单返回值的函数（即<code>f(x,y)=0</code>）。这可以利用<code>C#</code>的<code>delegate</code>实现。<code>C#</code>中预先定义了<code>Func&lt;&gt;</code>委托。利用泛型可分别存储三种类型的方法。</p>
+<p>因此现在的问题便是，如何依据不同的字符串，构造出对应的可反映该表达式计算过程的方法。这里采取表达式树的结构。</p>
+<h4 id="（2）FunctionParser类——字符串转表达式树"><a href="#（2）FunctionParser类——字符串转表达式树" class="headerlink" title="（2）FunctionParser类——字符串转表达式树"></a>（2）FunctionParser类——字符串转表达式树</h4><p>字符串转表达式树的基本算法已经在大一的数据结构课上讲过了。这里不赘述。</p>
+<p>不同的地方在于面向对象可以方便的利用多态代替判断。因此对于表达式树，不再需要节点内储存数据表示不同的节点类型。只需要所有的节点继承共同的抽象父类<code>ExpressionElement</code>，同时<code>ExpressionElement</code>具有函数<code>Calculate</code>,子类，包括<code>Value</code>、<code>ArgumentX</code>、<code>ArgumentY</code>、<code>Operator</code>等等，各自实现不同的<code>Calculate</code>操作。<br><img src="/posts/9a443429/%E7%B1%BB%E5%9B%BE.png" class="" title="类图"></p>
+<p>最后，将<code>Calculate</code>方法赋给<code>Func&lt;&gt;</code>类型的变量，就可以实现表达式的存储了。</p>
+<h4 id="（3）FunctionFactory类——字符串转函数封装信息"><a href="#（3）FunctionFactory类——字符串转函数封装信息" class="headerlink" title="（3）FunctionFactory类——字符串转函数封装信息"></a>（3）FunctionFactory类——字符串转函数封装信息</h4><p>但是，不同类型的函数有着不同的信息，比如单变量函数可以方便地求导、积分；参数方程需要指定参数的范围。因此在绘制图像之前，还需要对函数的信息做一次封装。</p>
+<p><code>FunctionFactory</code>读入字符串，判断其类型，将其封装为不同的类（<code>SingleVarFuncStorage</code> 、<code>DoubleVarFuncStorage</code>和<code>ParamVarFuncStorage</code>。其中各自具有对应函数的属性和方法），并以<code>FunctionStorage[]</code>父类数组的形式返回。</p>
+<h3 id="2、FunctionDrawing类——图像绘制"><a href="#2、FunctionDrawing类——图像绘制" class="headerlink" title="2、FunctionDrawing类——图像绘制"></a>2、FunctionDrawing类——图像绘制</h3><h4 id="（1）基础算法"><a href="#（1）基础算法" class="headerlink" title="（1）基础算法"></a>（1）基础算法</h4><p><code>FunctionStorage</code>类的成员将传入<code>FunctionDrawing</code>类中，成员被存储在一个<code>List&lt;FunctionStorage&gt;</code>内。每次调用<code>Refresh</code>函数重绘，都将对列表内的每一个元素调用绘制。</p>
+<p>不同的函数类型将采取不同的绘制策略。绘制时先用里氏转换将函数转换会真正的子类。随后调用多态方法<code>DrawFunction</code>。</p>
+<p>虽然绘制算法并不相同，但本质上都采取了取点描线的方式。绘制利用了<code>WPF</code>的绘图API，主要是运用了<code>DrawingGroup</code>、<code>DrawingContext</code>类。并将绘制结果以<code>DrawingImage</code>的形式作为位于主界面左侧窗口的<code>Image</code>的<code>Source</code>。</p>
+<h4 id="（2）平滑算法"><a href="#（2）平滑算法" class="headerlink" title="（2）平滑算法"></a>（2）平滑算法</h4><p>单变量函数和参数方程的基本绘制，就是简单的以某一小间隔<code>dx</code>为单位，从自变量初值递增到终值，对每一个自变量，计算对应的坐标。最后将所有在绘制范围内的坐标点连接起来。</p>
+<p>而平滑算法是用于改善一些极端情况，如<code>y=sin(1/x)</code>，的绘制效果的算法。用于平滑过于“尖锐”的图像。这是一个递归算法，具体操作如下</p>
+<ol>
+<li>输入参数为三个点，构成两条线段</li>
+<li>如果这两条线段较为“平滑”（本程序采用斜率之差的绝对值小于某一值），则退出</li>
+<li>否则，分别对于两条线段，各自取端点参数的中值，算出坐标，将原线段的端点和中值的坐标作为参数，重复1。</li>
+</ol>
+<h4 id="（3）Marching-Square算法"><a href="#（3）Marching-Square算法" class="headerlink" title="（3）Marching Square算法"></a>（3）Marching Square算法</h4><p>对于图像一般形式<code>f(x,y)=0</code>，就算遍历全部绘制范围也较难恰好取到等于0的情况。另外如果以某一确定的<code>eps</code>作为误差范围，也会因为不同的梯度导致绘制的曲线误差较大。因此需要采用新的算法。</p>
+<p>Marching Square算法一定程度上解决了这一问题。该算法通过将绘制区域划分成等大的方块，并取样方块顶点上的函数值，根据函数值的正负估计曲线的走向。最后利用线性插值估计<code>f(x,y)=0</code>在方块边上的位置，连线得出图像。<br><img src="/posts/9a443429/MarchingSquare.png" class="" title="MarchingSquare"></p>
+<h3 id="3、UI设计"><a href="#3、UI设计" class="headerlink" title="3、UI设计"></a>3、UI设计</h3><h4 id="（1）图像尺寸自适应"><a href="#（1）图像尺寸自适应" class="headerlink" title="（1）图像尺寸自适应"></a>（1）图像尺寸自适应</h4><p>软件需要能实现尺寸的自由变化，而如果只绘制某一特定尺寸的图像，那么就无法实现较好的变化效果。</p>
+<p>采取的解决方式是在<code>FunctionDrawing</code>类内添加属性<code>AspectRatio</code>用于表示长宽比。同时监听窗口的尺寸变化事件。在尺寸变化后，获取新的长宽比，更新<code>AspectRatio</code>并调用<code>Refresh</code>方法重绘界面。</p>
+<h4 id="（2）UserControl自定义控件"><a href="#（2）UserControl自定义控件" class="headerlink" title="（2）UserControl自定义控件"></a>（2）UserControl自定义控件</h4><p>在添加函数后，主界面右侧函数列表会出现记录该函数的信息卡片。并具有删除和设置函数的按钮。该卡片集成了该函数所能做的所有操作，是<code>FunctionStorage</code>在UI的反映。</p>
+<p>如果每创建一个新的函数，都要执行一大段生成包括<code>Button</code>、<code>Label</code>、<code>TextBlock</code> <code>PopUp</code>等控件的代码，很显然是不明智的。因此采用用户控件<code>UserControl</code>在新的窗口设计信息卡片需要的功能。主页面则只需要在添加函数时创建关于该函数的卡片实例即可。类似的，表达式输入框等内容也是如此。<br><img src="/posts/9a443429/%E7%94%A8%E6%88%B7%E6%8E%A7%E4%BB%B6.png" class="" title="用户控件"></p>
+<h4 id="（3）Frame——Page实现单窗口多页面"><a href="#（3）Frame——Page实现单窗口多页面" class="headerlink" title="（3）Frame——Page实现单窗口多页面"></a>（3）Frame——Page实现单窗口多页面</h4><p>点击菜单栏的设置选项，会出现一个用于设置的新窗口。选择左侧边栏的不同设置选项，右侧会显示不同的页面。这个单窗口多页面的功能，由<code>Frame</code>加<code>Page</code>控件实现。</p>
+<p>主设置页添加一个<code>Frame</code>控件，在打开该窗口时，<code>Frame</code>加载显示不同设置的<code>Page</code>。在点击左侧边栏按钮的时候，调用<code>Frame</code>的<code>Navigate</code>方法导航到对应的设置页。<br><img src="/posts/9a443429/%E9%A1%B5.png" class="" title="页"></p>
+<h2 id="三、运行环境"><a href="#三、运行环境" class="headerlink" title="三、运行环境"></a>三、运行环境</h2><p>编写时使用<code>Visual Studio</code>版本为<code>VS2019 16.11.17</code><br><code>.NET</code>版本为<code>netcoreapp3.1</code><br><code>c#</code>版本为<code>C#8.0</code></p>
+<h2 id="四、收获"><a href="#四、收获" class="headerlink" title="四、收获"></a>四、收获</h2><ol>
+<li>学习了面向对象编程的思想，实践了简单的代码重构。</li>
+<li>获得了开发近4000行代码的项目的经验。</li>
+<li>学习了一些图形学算法。</li>
+<li>对<code>C#</code>的理解更加深入，并获得了简单的<code>WPF</code>经验。</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/e01ea1fb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/e01ea1fb/" class="post-title-link" itemprop="url">Hexo插入图片</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 15:32:12" itemprop="dateCreated datePublished" datetime="2022-09-10T15:32:12+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%B5%8B%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">测试</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="插入图片"><a href="#插入图片" class="headerlink" title="插入图片"></a>插入图片</h2><p><img src="blackcat.jpg" alt=""><br>以上图片被保存在路径<code>./Hexo插入图片/</code>中。插入图片使用的代码为：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![](<span class="link">blackcat.jpg</span>)</span><br></pre></td></tr></table></figure><br>注意这样写在VScode中无法显示图片。Vscode中写法应为：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![](<span class="link">/Hexo插入图片/blackcat.jpg</span>)</span><br></pre></td></tr></table></figure></p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>需要使用插件hexo-renderer-marked。利用命令直接安装：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-renderer-marked</span><br></pre></td></tr></table></figure><br>之后在config.yaml中更改配置如下：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- 用于在生成文章时生成对应的资源文件夹，请在配置文件中搜索并修改为true --&gt;</span><br><span class="line">post<span class="emphasis">_asset_</span>folder: true</span><br><span class="line"></span><br><span class="line">&lt;!-- 插件配置 --&gt;</span><br><span class="line">marked:</span><br><span class="line">  prependRoot: true</span><br><span class="line">  postAsset: true</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/ebe0c30f/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/ebe0c30f/" class="post-title-link" itemprop="url">关于git推送失败</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 14:40:57" itemprop="dateCreated datePublished" datetime="2022-09-10T14:40:57+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">踩坑记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>其实这个问题出现过许多次了，可每次的解决方法都不尽相同。因此这里做一个简单的汇总，也为之后再次出现提供一个总结的位置。</p>
+<p>曾经出现该问题的情况：</p>
+<ol>
+<li>VS推送失败</li>
+<li>hexo推送失败</li>
+</ol>
+<p>问题形式类似于<code>fatal: unable to access &#39;https://github.com/.../.git&#39;:...</code></p>
+<h2 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h2><p>貌似是代理产生的问题。根据网上资料，通过取消代理就可以解决问题。但本人也曾有过通过更换VPN线路解决的情况，不知是否仅仅是凑巧解决。</p>
+<h2 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h2><p>查看代理：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git config --global --get http.proxy</span><br><span class="line">git config --global --get https.proxy</span><br></pre></td></tr></table></figure><br>如果发现<code>git</code>使用了代理，则取消代理：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git config --global --<span class="built_in">unset</span> http.proxy</span><br><span class="line">git config --global --<span class="built_in">unset</span> https.proxy</span><br></pre></td></tr></table></figure><br>需要再次设置代理请使用如下命令（设置当前代理为 <a href="http://127.0.0.1:1080）：">http://127.0.0.1:1080）：</a><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git config --global http.proxy <span class="string">&#x27;http://127.0.0.1:1080&#x27;</span></span><br><span class="line">git config --global https.proxy <span class="string">&#x27;http://127.0.0.1:1080&#x27;</span></span><br></pre></td></tr></table></figure></p>
+<p>值得注意的是，<code>git</code>还可以对单一网站设置代理，例如只对<code>github</code>使用代理<a href="http://127.0.0.1:58591：">http://127.0.0.1:58591：</a><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global http.https://github.com.proxy http://127.0.0.1:58591</span><br></pre></td></tr></table></figure><br>该类代理无法通过前面的查看代理命令查看，需要明确指出网站才可查询到：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global --get http.https://github.com.proxy</span><br></pre></td></tr></table></figure><br>取消对github的代理：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global --<span class="built_in">unset</span> http.https://github.com.proxy</span><br></pre></td></tr></table></figure><br>另外代理设置也可以直接在git配置文件中查看，为<code>C:\Users\&#123;用户名&#125;\.gitconfig</code>。也可以在其中直接修改。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/784dd132/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/784dd132/" class="post-title-link" itemprop="url">Test</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 10:04:47" itemprop="dateCreated datePublished" datetime="2022-09-10T10:04:47+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%B5%8B%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">测试</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="Article-Test"><a href="#Article-Test" class="headerlink" title="Article Test"></a>Article Test</h1><blockquote>
+<p>测试，第一篇推文</p>
+</blockquote>
+<p>I wonder if this can be seen…</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// this is what a string cat can do.</span></span><br><span class="line">StringCat.new(<span class="string">&quot;black&quot;</span>).meow(<span class="number">2</span>).jump().sleep(<span class="number">1000</span>);</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span>
+  </nav>
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

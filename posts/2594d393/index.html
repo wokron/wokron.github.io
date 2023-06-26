@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="后端开发笔记之脚本">
+<meta property="og:url" content="https://wokron.github.io/posts/2594d393/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-04-25T10:10:33.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="后端">
+<meta property="article:tag" content="shell">
+<meta property="article:tag" content="mysql">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/2594d393/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>后端开发笔记之脚本 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2594d393/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          后端开发笔记之脚本
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-25 18:10:33" itemprop="dateCreated datePublished" datetime="2023-04-25T18:10:33+08:00">2023-04-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。<br><span id="more"></span></p>
+<h2 id="二、shell-的异常处理"><a href="#二、shell-的异常处理" class="headerlink" title="二、shell 的异常处理"></a>二、shell 的异常处理</h2><p>有时我们希望在 shell 脚本命令执行出现异常时进行处理，比如说输出异常情况或退出等等。我们知道发生异常时返回值不为 0，如果是在 c 语言中我们可以这样处理<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!do_something()) &#123;</span><br><span class="line">  <span class="comment">// handle exception</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>类似的在 shell 中<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dosomething arg1 arg2</span><br><span class="line"><span class="keyword">if</span> [ $? -ne 0 ]</span><br><span class="line"><span class="keyword">then</span></span><br><span class="line">  <span class="comment"># handle exception</span></span><br><span class="line"><span class="keyword">if</span></span><br></pre></td></tr></table></figure></p>
+<p>但是这样编写起来太过麻烦了，我们可以采用另一种方法，那就是使用短路逻辑运算符。</p>
+<p>我们还先以 c 语言为例，假设现在我们有两个函数，对他们取逻辑或<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> r = func1() &amp;&amp; func2()</span><br></pre></td></tr></table></figure></p>
+<p>那么在 <code>func1</code> 的返回值为 0 时，就会发生短路，不执行 <code>func2</code>。而在返回值为；而当 <code>func1</code> 的返回值不为 0 时，则会继续执行 <code>func2</code>。我们可以让 <code>func2</code> 完成 <code>func1</code> 的异常处理。</p>
+<p>当然，在 c 语言中这种方法很是牵强，因为不同函数的栈帧并不一样，很难跨函数进行处理。可是 shell 中就不同了，所有的变量都是全局变量。</p>
+<p>但还需要注意一点，shell 中 0 表示真，1 表示假。（因为 0 表示程序正常结束，所以为真。）所以在 shell 中就需要使用 <code>||</code> 而非 <code>&amp;&amp;</code>。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cmd1 arg1 arg2 || cmd2 arg3 arg4</span><br></pre></td></tr></table></figure>
+<p>举我写的脚本中的例子。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;try to import csv files in <span class="variable">$source_path</span>, execute insert.py script to do this&quot;</span></span><br><span class="line">python3 ./insert.py <span class="variable">$host</span> <span class="variable">$port</span> <span class="variable">$username</span> <span class="variable">$password</span> <span class="variable">$source_path</span> <span class="variable">$database</span> || ! <span class="built_in">echo</span> <span class="string">&quot;error: fail to import all csv files&quot;</span> || <span class="built_in">exit</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;import csv files success!!!&quot;</span></span><br></pre></td></tr></table></figure></p>
+<p>需要注意这里用 <code>||</code> 连接了三条命令，其中第二条输出错误提示，我们为了在该命令正常执行后依旧执行后面的 <code>exit</code> 操作，在该命令前面加上 <code>!</code> 进行取反。需要注意这里不能将 <code>!</code> 和 <code>echo</code> 连接起来 <code>!echo</code>。</p>
+<p>另外在学习使用命令行时你一定见过这样的操作，只是使用的是 <code>&amp;&amp;</code>。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cmd1 arg1 arg2 &amp;&amp; cmd2 arg3 arg4</span><br></pre></td></tr></table></figure></p>
+<p>虽然各位应该理解两者的区别，但这里还是说明一下：</p>
+<ul>
+<li><code>||</code> 表示如果发生错误，才执行下一条</li>
+<li><code>&amp;&amp;</code> 表示只要不发生错误，就不断依次执行</li>
+</ul>
+<h2 id="三。执行-sql-脚本"><a href="#三。执行-sql-脚本" class="headerlink" title="三。执行 sql 脚本"></a>三。执行 sql 脚本</h2><p>当进行项目维护的时候，可能需要使用大量的 sql 语句，这时将这些语句编写成 sql 脚本，批量执行更有效率。</p>
+<p>我自己的数据导入脚本就有用到了 sql 脚本。实际上执行脚本不过就是进行了一个文件重定向而已。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;try to create tables by create.sql...&quot;</span></span><br><span class="line">mysql -h <span class="variable">$host</span> -P <span class="variable">$port</span> -u <span class="variable">$username</span> -p<span class="variable">$password</span> &lt; ./create.sql || ! <span class="built_in">echo</span> <span class="string">&quot;error: fail to execute create.sql&quot;</span> || <span class="built_in">exit</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;tables are now created&quot;</span></span><br></pre></td></tr></table></figure></p>
+<p>当然还有使用管道的方法，如果想要执行多个 sql 脚本，可以使用通配符将文件连接起来统一执行<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> ./*.sql | mysql -h <span class="variable">$host</span> -P <span class="variable">$port</span> -u <span class="variable">$username</span> -p<span class="variable">$password</span></span><br></pre></td></tr></table></figure></p>
+<p>还可以在命令行中执行单一语句，这需要在使用 <code>mysql</code> 命令时设置 <code>-e</code> 参数<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -h <span class="variable">$host</span> -P <span class="variable">$port</span> -u <span class="variable">$username</span> -p<span class="variable">$password</span> -e <span class="string">&quot;SHOW DATABASES&quot;</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="四、csv-数据导入"><a href="#四、csv-数据导入" class="headerlink" title="四、csv 数据导入"></a>四、csv 数据导入</h2><p>mysql 中有 <code>LOAD DATA INFILE</code> 语句用于文件导入，不过其他数据库似乎并不支持这种方法。更普适的方法还是通过 <code>INSERT</code> 插入数据。这里我写了一个 python 脚本用于通过 <code>insert</code> 从 csv 文件中导入数据。我个人认为还是编写地比较灵活，可以通过简单修改导入不同数据。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sys <span class="keyword">import</span> argv</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> pymysql</span><br><span class="line"></span><br><span class="line">insert_template = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">insert into &#123;&#125;(&#123;&#125;)</span></span><br><span class="line"><span class="string">values (&#123;&#125;)</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">tables = [<span class="string">&#x27;departments&#x27;</span>, <span class="string">&#x27;employees&#x27;</span>, <span class="string">&#x27;titles&#x27;</span>, <span class="string">&#x27;dept_emp&#x27;</span>, <span class="string">&#x27;dept_manager&#x27;</span>]</span><br><span class="line"></span><br><span class="line">_, host, port, username, password, source_path, database = argv</span><br><span class="line">port = <span class="built_in">int</span>(port)</span><br><span class="line"></span><br><span class="line">error = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">db = pymysql.connect(</span><br><span class="line">    host=host,</span><br><span class="line">    user=username,</span><br><span class="line">    passwd=password,</span><br><span class="line">    database=database,</span><br><span class="line">    port=port,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">cursor = db.cursor()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> table <span class="keyword">in</span> tables:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;start to import csv file to table <span class="subst">&#123;table&#125;</span>...&quot;</span>)</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">f&#x27;<span class="subst">&#123;source_path&#125;</span>/<span class="subst">&#123;table&#125;</span>.csv&#x27;</span>, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        args = <span class="built_in">list</span>(<span class="built_in">map</span>(<span class="keyword">lambda</span> line: <span class="built_in">tuple</span>(line.strip().split(<span class="string">&#x27;,&#x27;</span>)), f.readlines()))</span><br><span class="line">        fields = <span class="string">&#x27;, &#x27;</span>.join(args[<span class="number">0</span>])</span><br><span class="line">        argc = <span class="built_in">len</span>(args[<span class="number">0</span>])</span><br><span class="line">        <span class="keyword">del</span> args[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sql = insert_template.<span class="built_in">format</span>(table, fields, <span class="string">&#x27;, &#x27;</span>.join([<span class="string">&#x27;%s&#x27;</span>]*argc))</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        cursor.executemany(sql, args)</span><br><span class="line">        db.commit()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;import csv file to table <span class="subst">&#123;table&#125;</span> success!!!&quot;</span>)</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        db.rollback()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;error: fail to import into table <span class="subst">&#123;table&#125;</span>, <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        error = <span class="literal">True</span></span><br><span class="line"></span><br><span class="line">db.close()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> error:</span><br><span class="line">    exit(<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>这里使用了 <code>executemany</code> 用于一次执行许多条类似的语句，相较于逐个插入数据有很大的速度提升。这似乎是因为 <code>INSERT</code> 语句执行后默认会直接提交到数据库，写入磁盘。过多的 <code>INSERT</code> 语句就会增加大量的磁盘写入时间。</p>
+<p>直接使用 sql 插入数据也有同样的问题，一个解决办法是在进行多次插入之前禁用自动提交 <code>SET AUTOCOMMIT = 0;</code>，再插入结束后再开启 <code>SET AUTOCOMMIT = 1;</code>。</p>
+<p>这里我们举一例子，如下的 sql 语句创建了一个存储过程，该存储过程会向表 <code>table_random</code> 中插入 400000 条随机生成的数据。在 <code>WHILE</code> 循环的前后，我们设置了 <code>AUTOCOMMIT</code> 的值以禁用和开启自动提交。可以试着注释这两条语句，在注释前和注释后分别执行该存储过程，看一下完成所需时间。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">DELIMITER $$</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">PROCEDURE</span> random_insert()</span><br><span class="line"><span class="keyword">BEGIN</span></span><br><span class="line">	<span class="keyword">DECLARE</span> i <span class="type">INTEGER</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">DECLARE</span> sparse_val <span class="type">INTEGER</span>;</span><br><span class="line">	<span class="keyword">DECLARE</span> dense_val <span class="type">INTEGER</span>;</span><br><span class="line">	<span class="keyword">DECLARE</span> num <span class="type">INTEGER</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">SET</span> AUTOCOMMIT <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	WHILE i <span class="operator">&lt;</span> <span class="number">400000</span> DO</span><br><span class="line">		<span class="keyword">SET</span> sparse_val <span class="operator">=</span> ROUND(RAND()<span class="operator">*</span><span class="number">5000001</span> <span class="operator">-</span> <span class="number">0.5</span>);</span><br><span class="line">		<span class="keyword">SET</span> dense_val <span class="operator">=</span> ROUND(RAND()<span class="operator">*</span><span class="number">10</span> <span class="operator">-</span> <span class="number">0.5</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">INSERT</span> <span class="keyword">INTO</span> table_random(sparse, dense)</span><br><span class="line">		<span class="keyword">VALUES</span> (sparse_val, dense_val);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">SET</span> i <span class="operator">=</span> i <span class="operator">+</span> <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">END</span> WHILE;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">SET</span> AUTOCOMMIT <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">	</span><br><span class="line"><span class="keyword">END</span> $$</span><br><span class="line">DELIMITER ;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%90%8E%E7%AB%AF/" rel="tag"># 后端</a>
+              <a href="/tags/shell/" rel="tag"># shell</a>
+              <a href="/tags/mysql/" rel="tag"># mysql</a>
+              <a href="/tags/python/" rel="tag"># python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/a2d88011/" rel="prev" title="后端开发笔记之Docker">
+      <i class="fa fa-chevron-left"></i> 后端开发笔记之Docker
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/b72a5f5f/" rel="next" title="BUAA-OS实验笔记之Lab5">
+      BUAA-OS实验笔记之Lab5 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81shell-%E7%9A%84%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">二、shell 的异常处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%82%E6%89%A7%E8%A1%8C-sql-%E8%84%9A%E6%9C%AC"><span class="nav-number">3.</span> <span class="nav-text">三。执行 sql 脚本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81csv-%E6%95%B0%E6%8D%AE%E5%AF%BC%E5%85%A5"><span class="nav-number">4.</span> <span class="nav-text">四、csv 数据导入</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

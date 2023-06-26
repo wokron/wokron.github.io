@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言最近事情有些多，这篇短文写写停停，花费了很长时间。本来想着在五一假期结束前完成这一系列文章的，现在看来还有些困难呀。 这篇文章总结了自己使用 Docker 时用到的一些知识，可能内容不深，还请见谅。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="后端开发笔记之Docker">
+<meta property="og:url" content="https://wokron.github.io/posts/a2d88011/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言最近事情有些多，这篇短文写写停停，花费了很长时间。本来想着在五一假期结束前完成这一系列文章的，现在看来还有些困难呀。 这篇文章总结了自己使用 Docker 时用到的一些知识，可能内容不深，还请见谅。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-04-25T10:09:15.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="Docker">
+<meta property="article:tag" content="后端">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/a2d88011/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>后端开发笔记之Docker | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/a2d88011/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          后端开发笔记之Docker
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-25 18:09:15" itemprop="dateCreated datePublished" datetime="2023-04-25T18:09:15+08:00">2023-04-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>最近事情有些多，这篇短文写写停停，花费了很长时间。本来想着在五一假期结束前完成这一系列文章的，现在看来还有些困难呀。</p>
+<p>这篇文章总结了自己使用 Docker 时用到的一些知识，可能内容不深，还请见谅。<br><span id="more"></span></p>
+<h2 id="二、镜像的构筑"><a href="#二、镜像的构筑" class="headerlink" title="二、镜像的构筑"></a>二、镜像的构筑</h2><h3 id="（1）Docker-镜像简介"><a href="#（1）Docker-镜像简介" class="headerlink" title="（1）Docker 镜像简介"></a>（1）Docker 镜像简介</h3><p>正如在“准备工作”那篇文章中所说的，镜像时静态的容器，容器是运行的镜像。我们在使用 Docker 时，需要做的就是像编写代码一样构建 Docker 镜像。</p>
+<p>Docker 镜像中包含了一套文件系统，其所维护的文件包含了项目运行所需的环境以及项目本身。但是镜像和一般的文件系统不同，镜像由一系列层构成，每一层中存储了对之前镜像的修改信息。</p>
+<p>这样做有一定的优点，在下载镜像时，我们不需要每次都下载完整的镜像；而只需要下载与本地镜像不相同的层就可以了。另一方面，容器基于镜像进行构筑，在容器运行时，分层设计也有利于不同容器的共享。采取写时复制技术可以减少内存的占用。</p>
+<p>我们进行镜像的构筑时，也不需要从头开始，而可以选择在已有的镜像上添加新的层，通过修改已有环境来构建我们所需的项目运行环境。</p>
+<h3 id="（2）Dockerfile-简介"><a href="#（2）Dockerfile-简介" class="headerlink" title="（2）Dockerfile 简介"></a>（2）Dockerfile 简介</h3><p>Docker 中使用 Dockerfile 来设置镜像构建的操作流程，这一点类似于 Makefile。这里借我的后端项目中的 Dockerfile 的内容来稍微解释一下。<br><figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># python alpine is the smallest python image</span></span><br><span class="line"><span class="keyword">FROM</span> python:<span class="number">3.9</span>-alpine</span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> ./src /src</span></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> ./start.sh ./</span></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> ./config.ini ./</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> pip install -r ./src/requirements.txt</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ash is shell for alpine</span></span><br><span class="line"><span class="keyword">CMD</span><span class="language-bash"> ash start.sh </span></span><br></pre></td></tr></table></figure></p>
+<p>Dockerfile 中使用一系列大写关键字作为指令，构建镜像时，从头到尾依次执行。</p>
+<p>第一句使用了 <code>FROM</code> 指令。该指令指定了构筑时的基础镜像，接下来的指令都是对镜像的修改，会在基础镜像上增加新的层。这里 <code>FROM python:3.9-alpine</code> 指定了一个镜像，来自仓库 python，标签为 3.9-alpine。该镜像包含了 python3.9 的运行环境，底层的操作系统为 <code>alpine</code>，这也是 Linux 的一个发行版，以体积小著称。</p>
+<p>接下来的三条指令为 <code>COPY</code>，该指令用于将本地的文件复制到镜像中，第一个参数为本地的路径，第二个为镜像中路径。对第一条指令 <code>COPY ./src /src</code>，本地路径为目录，这意味着复制该目录下的所有文件，到镜像中的 <code>/src</code> 路径下。后两条指令中本地路径为目录，则只将该文件复制到对应路径下。</p>
+<p>之后使用了 <code>RUN</code> 指令，该指令用于运行一条 shell 命令。这里我们使用 pip 命令下载 python 依赖包。注意此处提供给 pip 的路径为镜像内路径。</p>
+<p>最后 <code>CMD</code> 指令同样用于运行命令，只不过该命令在启动容器时才会调用。这里我们执行了 start.sh 脚本以启动服务。ash 类似于 bash，但是是属于 alpine 的 shell 程序。<code>CMD</code> 还有另外一种写法，<code>CMD [&quot;ash&quot;, &quot;start.sh&quot;]</code></p>
+<p>除此之外 Dockerfile 中还可以使用其他许多指令。这里在列举几个在我看来较为重要的指令。</p>
+<h4 id="ENTRYPOINT"><a href="#ENTRYPOINT" class="headerlink" title="ENTRYPOINT"></a>ENTRYPOINT</h4><p><code>ENTRYPOINT</code> 指令和 <code>CMD</code> 类似，都可以执行 shell 命令。但是 <code>ENTRYPOINT</code> 和 <code>CMD</code> 结合使用，可以实现可变参数的效果。<br><figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 定参</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="language-bash"> [<span class="string">&quot;nginx&quot;</span>, <span class="string">&quot;-c&quot;</span>]</span></span><br><span class="line"><span class="comment"># 变参</span></span><br><span class="line"><span class="keyword">CMD</span><span class="language-bash"> [<span class="string">&quot;/etc/nginx/nginx.conf&quot;</span>]</span></span><br></pre></td></tr></table></figure></p>
+<p>如上所示，这里 <code>ENTRYPOINT</code> 和 <code>CMD</code> 并非两条指令，而是一条指令 <code>nginx -c /etc/nginx/nginx.conf</code>。<code>CMD</code> 中的内容作为 <code>ENTRYPOINT</code> 中命令的参数。</p>
+<p>当我们运行容器时，想要修改 <code>CMD</code> 所设置的参数，只需要在命令中增加参数 <code>-c /etc/nginx/new.conf</code> 即可。</p>
+<h4 id="ENV-和-ARG"><a href="#ENV-和-ARG" class="headerlink" title="ENV 和 ARG"></a>ENV 和 ARG</h4><p>这两个指令都用于设定环境变量，只不过 ARG 设定的环境变量在完成镜像构筑后便被移除。设定环境变量的语法如下<br><figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ENV</span> &lt;key1&gt;=&lt;val1&gt; &lt;key2&gt;=&lt;val2&gt;</span><br><span class="line"><span class="keyword">ARG</span> &lt;key3&gt;=&lt;val3&gt; &lt;key4&gt;=&lt;val4&gt;</span><br></pre></td></tr></table></figure></p>
+<h4 id="VOLUME"><a href="#VOLUME" class="headerlink" title="VOLUME"></a>VOLUME</h4><p>Docker 中用 “卷” 来表示主机目录和容器目录的映射关系。当设定容器目录中的某个路径为卷后，该路径下的内容便会直接保存在主机上。这样可以避免重要的数据因为容器重启而丢失；也可以避免容器大小增大。</p>
+<p>在 Dockerfile 中使用 <code>VOLUME</code> 指定哪些路径作为卷。但是此处只是指定某些路径被映射到主机，而并未指出要映射到主机的哪些路径。这是因为不同主机的文件系统本就不同，设定映射应该交由镜像的使用者根据自身情况设定。在这里进行设置，只是映射到默认的路径上。<br><figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">VOLUME</span><span class="language-bash"> [<span class="string">&quot;&lt;path1&gt;&quot;</span>, <span class="string">&quot;&lt;path2&gt;&quot;</span>]</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="EXPOSE"><a href="#EXPOSE" class="headerlink" title="EXPOSE"></a>EXPOSE</h4><p><code>EXPOSE</code> 指令设定了容器内运行的服务对外提供的端口，可以方便镜像的使用者进行设置。此指令只是用于声明而已，并不具有更多的作用。</p>
+<h3 id="（3）镜像构筑"><a href="#（3）镜像构筑" class="headerlink" title="（3）镜像构筑"></a>（3）镜像构筑</h3><p>在 Dockerfile 中我们已经完成了大部分镜像构筑时的配置操作。在最后，我们需要执行 <code>build</code> 命令完成镜像的构筑。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t myimage:v1 ./</span><br></pre></td></tr></table></figure></p>
+<p>这里 <code>-t</code> 参数为镜像命名。其中这里的 <code>myimage</code> 为镜像所属的仓库名，而 <code>v1</code> 表示该镜像的标签。仓库中常常保存同一个应用的不同镜像，而标签则用于区分仓库中不同镜像间的区别，因此常用版本号作为标签。</p>
+<p>最后的 <code>./</code> 指定了 Dockerfile 所在的位置。这样 docker 就将按指定路径的 Dockerfile 中的指令进行镜像的构筑。</p>
+<p>最后执行命令 <code>docker images</code>，就可以看到本地的所有镜像信息了，这其中包含了我们新创建的镜像。</p>
+<h2 id="三、容器的运行"><a href="#三、容器的运行" class="headerlink" title="三、容器的运行"></a>三、容器的运行</h2><h3 id="（1）容器运行"><a href="#（1）容器运行" class="headerlink" title="（1）容器运行"></a>（1）容器运行</h3><p>我们以镜像作为模板创建容器并运行。要运行容器，需要使用 <code>run</code> 命令。</p>
+<p>如果我们希望基于上一节构筑的镜像运行，需要如下命令<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mycontainer -p 5000:5000 myimage:v1</span><br></pre></td></tr></table></figure></p>
+<p>这里我们除了传入 <code>myimage:v1</code> 作为容器运行的镜像外，还设定了一些参数。</p>
+<p>首先 <code>-d</code> 设定容器启动后移到后台运行。类似的有前台交互的方式运行的选项，<code>-it</code>，其中 <code>-i</code> 指交互式操作，<code>-t</code> 指终端，这两者常常同时使用</p>
+<p><code>--name</code> 设定了容器名为 <code>mycontainer</code>。不同的容器有容器 ID 作为标识符，但容器 ID 常常难以记忆，于是经常为容器起名作为第二种指代容器的手段</p>
+<p><code>-p</code> 参数设定了容器的端口映射方式。在上面的例子中 <code>5000:5000</code> 表示将容器内的 5000 端口映射到了容器外的 5000 端口。前者为本地主机的端口，后者为容器内的端口。这样的映射意味着对本机的 5000 端口的请求，会转为请求容器内的 5000 端口。</p>
+<h3 id="（2）操纵容器"><a href="#（2）操纵容器" class="headerlink" title="（2）操纵容器"></a>（2）操纵容器</h3><p>当容器在后台运行时，我们可能需要得知其状态。可以使用 <code>logs</code> 指令获取容器内的标准输出结果<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker logs mycontainer</span><br></pre></td></tr></table></figure></p>
+<p>有时我们还需要进入到后台运行的容器内部。这可以使用 <code>exec</code> 指令实现。该指令用于执行一条 shell 命令。当我们选择执行 shell 终端，并附加 <code>-it</code> 参数时，就能进入到容器的命令行中。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it mycontainer /bin/bash</span><br></pre></td></tr></table></figure>
+<p>如果想要暂停容器，可以使用 <code>stop</code>。执行该命令后容器暂停运行，但依旧存在。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker stop mycontainer</span><br></pre></td></tr></table></figure></p>
+<p>我们可以使用 <code>ps</code> 查看容器信息。不加额外参数则只显示正在运行的容器。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker ps</span><br></pre></td></tr></table></figure></p>
+<p>在执行 <code>stop</code> 之前，应该可以看到 <code>mycontainer</code> 的相关信息；而在之后就看不到 <code>mycontainer</code> 的信息了。</p>
+<p>这时为 <code>ps</code> 增加参数 <code>-a</code> 就可以查看所有容器，包括正在运行和暂未运行的容器的信息。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker ps -a</span><br></pre></td></tr></table></figure></p>
+<p>想要真正的移除容器需要 <code>rm</code> 命令。该命令将删除容器的一切信息，包括容器运行过程中产生的数据。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="built_in">rm</span> mycontainer</span><br></pre></td></tr></table></figure></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Docker/" rel="tag"># Docker</a>
+              <a href="/tags/%E5%90%8E%E7%AB%AF/" rel="tag"># 后端</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/b7c97beb/" rel="prev" title="后端开发笔记之Flask简介">
+      <i class="fa fa-chevron-left"></i> 后端开发笔记之Flask简介
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/2594d393/" rel="next" title="后端开发笔记之脚本">
+      后端开发笔记之脚本 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E9%95%9C%E5%83%8F%E7%9A%84%E6%9E%84%E7%AD%91"><span class="nav-number">2.</span> <span class="nav-text">二、镜像的构筑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89Docker-%E9%95%9C%E5%83%8F%E7%AE%80%E4%BB%8B"><span class="nav-number">2.1.</span> <span class="nav-text">（1）Docker 镜像简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89Dockerfile-%E7%AE%80%E4%BB%8B"><span class="nav-number">2.2.</span> <span class="nav-text">（2）Dockerfile 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ENTRYPOINT"><span class="nav-number">2.2.1.</span> <span class="nav-text">ENTRYPOINT</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ENV-%E5%92%8C-ARG"><span class="nav-number">2.2.2.</span> <span class="nav-text">ENV 和 ARG</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#VOLUME"><span class="nav-number">2.2.3.</span> <span class="nav-text">VOLUME</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#EXPOSE"><span class="nav-number">2.2.4.</span> <span class="nav-text">EXPOSE</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E9%95%9C%E5%83%8F%E6%9E%84%E7%AD%91"><span class="nav-number">2.3.</span> <span class="nav-text">（3）镜像构筑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%AE%B9%E5%99%A8%E7%9A%84%E8%BF%90%E8%A1%8C"><span class="nav-number">3.</span> <span class="nav-text">三、容器的运行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E5%AE%B9%E5%99%A8%E8%BF%90%E8%A1%8C"><span class="nav-number">3.1.</span> <span class="nav-text">（1）容器运行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E6%93%8D%E7%BA%B5%E5%AE%B9%E5%99%A8"><span class="nav-number">3.2.</span> <span class="nav-text">（2）操纵容器</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

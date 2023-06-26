@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="StringCat的个人博客。记录学习、分享经验">
+<meta property="og:type" content="website">
+<meta property="og:title" content="StringCat的博客">
+<meta property="og:url" content="https://wokron.github.io/page/2/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="StringCat的个人博客。记录学习、分享经验">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="github,java,c#,python,pytorch,blog,engine,buaa,algorithm,software engineering">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/page/2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : true,
+    isPost : false,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content index posts-expand">
+            
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/db841b3c/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/db841b3c/" class="post-title-link" itemprop="url">BUAA OS实验笔记之Lab2</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-20 21:38:57" itemprop="dateCreated datePublished" datetime="2023-03-20T21:38:57+08:00">2023-03-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、Lab2-前言"><a href="#一、Lab2-前言" class="headerlink" title="一、Lab2 前言"></a>一、Lab2 前言</h2><p>这篇文章应该是我目前写过的文章中长度排行前几的了。Lab2 的内容着实繁多，不仅是分页内存管理本身的理论和实现细节颇多；操作系统的基本知识和注意事项也占据了很大的篇幅。后者在不理解的情况下实在会对本次实验产生许多困惑。本人也是在逐步地探索之后才得以有了较多的认识——当然，这一认识或许也只是片面的。</p>
+<p>本文逐函数、逐代码地讲解了 Lab2 中新增的内容。主要在于内核初始化中关于内存的部分以及分页内存管理的实现。在本文中，关于链表宏和虚拟/物理内存的辨析也占据了比较多的内容。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/posts/db841b3c/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/7a0960e5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/7a0960e5/" class="post-title-link" itemprop="url">基于概率模型的蘑菇菌丝规模分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-17 16:38:01" itemprop="dateCreated datePublished" datetime="2023-03-17T16:38:01+08:00">2023-03-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E5%AD%A6%E5%BB%BA%E6%A8%A1%E8%AE%BA%E6%96%87/" itemprop="url" rel="index"><span itemprop="name">数学建模论文</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><strong>摘要：</strong><br>本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。</p>
+<p>对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。</p>
+<p>对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。</p>
+<p>我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。<br><strong>Keywords: 概率论，数值模拟</strong><br>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/posts/7a0960e5/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/a08f03c8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/a08f03c8/" class="post-title-link" itemprop="url">BUAA OS实验笔记之Lab1</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-14 21:13:05" itemprop="dateCreated datePublished" datetime="2023-03-14T21:13:05+08:00">2023-03-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、总前言"><a href="#一、总前言" class="headerlink" title="一、总前言"></a>一、总前言</h2><p>操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。</p>
+<p>但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。<br>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/posts/a08f03c8/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/6afa4e5d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/6afa4e5d/" class="post-title-link" itemprop="url">使用transformer进行机器翻译</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-12 13:25:50" itemprop="dateCreated datePublished" datetime="2023-03-12T13:25:50+08:00">2023-03-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、transformer-简介"><a href="#一、transformer-简介" class="headerlink" title="一、transformer 简介"></a>一、transformer 简介</h2><p>transformer 是 Google 在 2017 年发表的文章 <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a> 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。</p>
+<p>对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗忘；使用 CNN，我们必须通过增加层数来扩大获取信息的范围。这两种方法都有很大的局限。</p>
+<p>注意力方法则可以直接获得全局信息。方法是对一条序列，求其对于本身的注意力，这被称为自注意力。</p>
+<blockquote>
+<p>transformer 的原理和模型较为复杂，在这里只是简单说明。</p>
+</blockquote>
+<h2 id="二、数据集"><a href="#二、数据集" class="headerlink" title="二、数据集"></a>二、数据集</h2><p>此为训练模型所用的<a target="_blank" rel="noopener" href="https://www.kaggle.com/datasets/concyclics/machine-translation-chinese-and-english">数据集</a>。设定英文为源语言，中文为要翻译成的语言。</p>
+<h3 id="（1）Dataset-类编写"><a href="#（1）Dataset-类编写" class="headerlink" title="（1）Dataset 类编写"></a>（1）Dataset 类编写</h3><p>我们根据路径打开文件，获取中英文序列和单词表。并将序列直接转化为 tensor，方便读取。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslateDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, en_path, zh_path</span>):</span><br><span class="line">        en_seqs, self.en_vocab = get_seq_and_vocab(en_path, get_tokenizer(<span class="string">&quot;basic_english&quot;</span>))</span><br><span class="line"></span><br><span class="line">        zh_seqs, self.zh_vocab = get_seq_and_vocab(zh_path, zh_simple_tokenizer)</span><br><span class="line"></span><br><span class="line">        self.items = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(en_seqs)):</span><br><span class="line">            en_seq = en_seqs[i]</span><br><span class="line">            zh_seq = zh_seqs[i]</span><br><span class="line"></span><br><span class="line">            src = en_seq</span><br><span class="line">            tgt = zh_seq[:-<span class="number">1</span>]</span><br><span class="line">            pdt = zh_seq[<span class="number">1</span>:]</span><br><span class="line"></span><br><span class="line">            self.items.append((</span><br><span class="line">                torch.as_tensor(src),</span><br><span class="line">                torch.as_tensor(tgt),</span><br><span class="line">                torch.as_tensor(pdt),</span><br><span class="line">            ))</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>get_seq_and_vocab</code> 方法用于根据路径打开文件，根据第二个参数选择的 tokenizer 进行分词。构建序列和单词表。</p>
+<p>我们首先定义了存储序列的列表和记录词频的字典。<code>Counter</code> 类可以直接根据列表统计列表中元素频率。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_seq_and_vocab</span>(<span class="params">file_path, tokenizer</span>):</span><br><span class="line">    token_freq = Counter()</span><br><span class="line">    seqs = []</span><br></pre></td></tr></table></figure></p>
+<p>打开文件，依次读取文件中每一行，通过 <code>tokenizer</code> 进行分词。序列保存到 <code>seqs</code> 中。更新词频。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;UTF-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">with</span> tqdm(f) <span class="keyword">as</span> tqdm_file:</span><br><span class="line">        tqdm_file.set_description(<span class="string">f&quot;Load <span class="subst">&#123;file_path&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> idx, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(tqdm_file):</span><br><span class="line">            <span class="keyword">if</span> args.debug <span class="keyword">and</span> idx &gt; <span class="number">10000</span>:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">            tokens_in_line = tokenizer(line)</span><br><span class="line">            tokens_in_line.insert(<span class="number">0</span>, <span class="string">&#x27;&lt;sos&gt;&#x27;</span>)</span><br><span class="line">            tokens_in_line.append(<span class="string">&#x27;&lt;eos&gt;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">            seqs.append(tokens_in_line)</span><br><span class="line"></span><br><span class="line">            token_freq += Counter(tokens_in_line)</span><br></pre></td></tr></table></figure></p>
+<p>根据词频生成单词表，把单词序列转化为数值序列。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">v = vocab(token_freq, <span class="number">5</span>, [<span class="string">&#x27;&lt;pad&gt;&#x27;</span>, <span class="string">&#x27;&lt;unk&gt;&#x27;</span>, <span class="string">&#x27;&lt;sos&gt;&#x27;</span>, <span class="string">&#x27;&lt;eos&gt;&#x27;</span>])</span><br><span class="line">v.set_default_index(v[<span class="string">&#x27;&lt;unk&gt;&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> idx <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(seqs)):</span><br><span class="line">    seqs[idx] = [v[token] <span class="keyword">for</span> token <span class="keyword">in</span> seqs[idx]]</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> seqs, v</span><br></pre></td></tr></table></figure></p>
+<p>英文分词可以使用 pytorch 自带的 <code>get_tokenizer(&quot;basic_english&quot;)</code>。中文分词可以采用如下方式。此方法考虑了中文中掺杂英文的情况。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">zh_simple_tokenizer</span>(<span class="params">line</span>):</span><br><span class="line">    <span class="keyword">return</span> re.findall(<span class="string">&quot;[a-zA-Z]+|[^\s]&quot;</span>, line)</span><br></pre></td></tr></table></figure></p>
+<p>最后在 <code>TranslateDataset</code> 中，简单实现 <code>__getitem__</code> 和 <code>__len__</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    <span class="keyword">return</span> self.items[item]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(self.items)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）保存和加载处理后的数据"><a href="#（2）保存和加载处理后的数据" class="headerlink" title="（2）保存和加载处理后的数据"></a>（2）保存和加载处理后的数据</h3><p>本数据集规模较大，如果每次都要重新进行分词处理的话需要耗费不少时间。因此可以只处理一次，以后只需调用之前处理后的结果即可。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> os.path.exists(args.processed_dataset_path):</span><br><span class="line">    dataset = torch.load(args.processed_dataset_path)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    dataset = TranslateDataset(args.en_path, args.zh_path)</span><br><span class="line">    torch.save(dataset, args.processed_dataset_path)</span><br></pre></td></tr></table></figure>
+<h3 id="（3）划分数据集"><a href="#（3）划分数据集" class="headerlink" title="（3）划分数据集"></a>（3）划分数据集</h3><p>因为本数据集只有完整的文件，没有进行划分，所以还需要对加载后的 <code>dataset</code> 进行划分。我们需要使用 <code>random_split</code> 方法实现。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">train_set, dev_set, test_set = random_split(</span><br><span class="line">    dataset,</span><br><span class="line">    [train_size, dev_size, test_size],</span><br><span class="line">    generator=torch.Generator().manual_seed(<span class="number">42</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>需要注意的是，<code>random_split</code> 会进行随机划分。随机划分有助于避免过拟合，但是如果每次运行程序划分的方式都不同，就会导致信息泄露。为了使每次运行时的随机划分结果一致，需要指定随机划分的种子，即代码中的 <code>generator=torch.Generator().manual_seed(42)</code>。</p>
+<h2 id="三、模型"><a href="#三、模型" class="headerlink" title="三、模型"></a>三、模型</h2><h3 id="（1）整体结构"><a href="#（1）整体结构" class="headerlink" title="（1）整体结构"></a>（1）整体结构</h3><p>我们要实现一个机器翻译模型。它的输入是源语句 src，和经过右移的目标语句 tgt，输出是包含结束词的目标语句 predict。</p>
+<p>首先，我们将输入的序列扩展为词向量<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslationModel</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, <span class="built_in">input</span></span>):</span><br><span class="line">        src, tgt = <span class="built_in">input</span>  <span class="comment"># (seq1_len, batch_size) (seq2_len, batch_size)</span></span><br><span class="line">        src_embed = self.embed(src)  <span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">        tgt_embed = self.embed(tgt)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>随后，我们为词向量添加位置编码。采取此操作的原因是注意力模型中整个序列被同时输入，模型无法得知位置信息，因此需要添加位置编码。具体的添加位置编码的方式会在后面说明。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">src_embed_encoded = self.positional_encoding(src_embed)</span><br><span class="line"><span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">tgt_embed_encoded = self.positional_encoding(tgt_embed)</span><br><span class="line"><span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>我们根据输入 <code>src</code> 和 <code>tgt</code> 确定各类掩码，并将掩码与 <code>src_embed_encoded</code>、<code>tgt_embed_encoded</code> 一同输入到 transformer 中。</p>
+<p><code>tgt_mask</code> 用于处理预测时的时序问题。因为如果将 tgt_embed_encoded 直接输入到 transformer，则 transformer 就会在同一时刻得知序列的全部信息，无法实现逐词生成。</p>
+<p><code>src_pad_mask</code> 和 <code>src_pad_mask</code> 用于将 <code>&#39;&lt;pad&gt;&#39;</code> 忽略。避免填充词影响模型的权重。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tgt_mask = get_tgt_mask(tgt.shape[<span class="number">0</span>])  <span class="comment"># (seq2_len, seq2_len)</span></span><br><span class="line">src_pad_mask = get_pad_mask(src)  <span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">tgt_pad_mask = get_pad_mask(tgt)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br><span class="line"></span><br><span class="line">out = self.transformer(</span><br><span class="line">    src_embed_encoded,</span><br><span class="line">    tgt_embed_encoded,</span><br><span class="line">    tgt_mask=tgt_mask,</span><br><span class="line">    src_key_padding_mask=src_pad_mask,</span><br><span class="line">    tgt_key_padding_mask=tgt_pad_mask,</span><br><span class="line">)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>最后将 transformer 的输出经过多层感知机调整为适当的形状，输出预测结果。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">predict = self.multi(out)  <span class="comment"># (seq2_len, batch_size, class_num)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> predict</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）词向量"><a href="#（2）词向量" class="headerlink" title="（2）词向量"></a>（2）词向量</h3><p>我们定义嵌入层为 <code>TokenEmbedding</code>，而不是直接使用 <code>nn.Embedding</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslationModel</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size, class_num, dropout</span>):</span><br><span class="line">        <span class="built_in">super</span>(TranslationModel, self).__init__()</span><br><span class="line">        self.embed = TokenEmbedding(vocab_size, embed_size)</span><br></pre></td></tr></table></figure></p>
+<p><code>TokenEmbedding</code> 定义如下。很容易看出，我们只是将 <code>Embedding</code> 输出的词向量乘以了 $\sqrt{\text{emb size}}$。这样做更便于训练。具体原因可见<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/442509602">Transformer 3. word embedding 输入为什么要乘以 embedding size的开方</a>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TokenEmbedding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size</span>):</span><br><span class="line">        <span class="built_in">super</span>(TokenEmbedding, self).__init__()</span><br><span class="line"></span><br><span class="line">        self.embedding = nn.Embedding(vocab_size, embed_size)</span><br><span class="line">        self.embed_size = embed_size</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, seq</span>):</span><br><span class="line">        <span class="keyword">return</span> self.embedding(seq) * math.sqrt(self.embed_size)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）位置编码"><a href="#（3）位置编码" class="headerlink" title="（3）位置编码"></a>（3）位置编码</h3><p>在模型中，我们随后定义了位置编码层<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.positional_encoding = PositionalEncoding(embed_size, dropout)</span><br></pre></td></tr></table></figure></p>
+<p><code>PositionalEncoding</code> 定义如下。位置编码得到的结果是一个形状为 <code>(max_len, 1, embed_size)</code> 的张量 $pos<em>embedding$。其中 $p</em>{i1}$ 表示第 $i$ 个位置的编码。将该编码与原来的 <code>seq_embed</code> 相加，就得到了经过位置编码后的词向量序列。</p>
+<p>关于位置编码的原理，可以参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/338592312">一文教你彻底理解Transformer中Positional Encoding</a>。该编码使用正余弦函数生成，可以保证不同位置的编码唯一。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, embed_size, dropout, max_len=<span class="number">5000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line"></span><br><span class="line">        den = torch.exp(- torch.arange(<span class="number">0</span>, embed_size, <span class="number">2</span>) * math.log(<span class="number">10000</span>) / embed_size)</span><br><span class="line">        pos = torch.arange(<span class="number">0</span>, max_len).reshape(max_len, <span class="number">1</span>)</span><br><span class="line">        pos_embedding = torch.zeros((max_len, embed_size))</span><br><span class="line">        pos_embedding[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(pos * den)</span><br><span class="line">        pos_embedding[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(pos * den)</span><br><span class="line">        pos_embedding = pos_embedding.unsqueeze(-<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        self.dropout = nn.Dropout(dropout)</span><br><span class="line">        self.register_buffer(<span class="string">&#x27;pos_embedding&#x27;</span>, pos_embedding)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, seq_embed</span>):</span><br><span class="line">        seq_embed_encoded = seq_embed + self.pos_embedding[:seq_embed.size(<span class="number">0</span>), :]</span><br><span class="line">        <span class="comment"># (seq_len, batch_size, embed_size) + (seq_len, 1, embed_size)</span></span><br><span class="line">        <span class="keyword">return</span> self.dropout(seq_embed_encoded)</span><br></pre></td></tr></table></figure>
+<h3 id="（4）掩码"><a href="#（4）掩码" class="headerlink" title="（4）掩码"></a>（4）掩码</h3><p>填充掩码用来屏蔽 <code>&#39;&lt;pad&gt;&#39;</code> 索引，是一个和输入同大小的张量，其中每一个值表示对应的位置是否需要被屏蔽。计算方式如下，进行了转置是因为 pytorch 的 transformer 要求第一维为 batch。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_pad_mask</span>(<span class="params">seq, pad_idx=<span class="number">0</span></span>):</span><br><span class="line">    <span class="keyword">return</span> (seq == pad_idx).permute(<span class="number">1</span>, <span class="number">0</span>)</span><br></pre></td></tr></table></figure></p>
+<p>后继掩码用来模拟时间步，防止模型在进行预测时查看未来的单词。我们需要用一个三角形矩阵来模拟此过程。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_tgt_mask</span>(<span class="params">size</span>):</span><br><span class="line">    mask = torch.tril(torch.ones(size, size) == <span class="number">1</span>).<span class="built_in">float</span>()</span><br><span class="line">    mask = mask.masked_fill(mask == <span class="number">0</span>, <span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>))</span><br><span class="line">    mask = mask.masked_fill(mask == <span class="number">1</span>, <span class="built_in">float</span>(<span class="number">0.0</span>))</span><br><span class="line">    mask = mask.to(args.device)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> mask</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、训练"><a href="#四、训练" class="headerlink" title="四、训练"></a>四、训练</h2><p>训练时的通用步骤不再详述。只说明一些值得注意的地方。</p>
+<h3 id="（1）自定义-collate-fn"><a href="#（1）自定义-collate-fn" class="headerlink" title="（1）自定义 collate_fn"></a>（1）自定义 collate_fn</h3><p>因为序列长度不定，所以需要自行对其，需要自定义 <code>dataloader</code> 的 <code>collate_fn</code>。在其中，使用了 <code>pad_sequence</code> 对一批序列进行对齐。<code>pad_sequence</code> 的默认填充值为 0。如果 <code>&#39;&lt;pad&gt;&#39;</code> 的对应值不是 0，还需要自行设定。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">collate_fn</span>(<span class="params">data</span>):</span><br><span class="line">    src, tgt, pdt = <span class="built_in">zip</span>(*data)</span><br><span class="line">    src = pad_sequence(src)</span><br><span class="line">    tgt = pad_sequence(tgt)</span><br><span class="line">    pdt = pad_sequence(pdt)</span><br><span class="line">    <span class="keyword">return</span> [src, tgt], pdt</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）交叉熵损失函数-ignore-index-的设置"><a href="#（2）交叉熵损失函数-ignore-index-的设置" class="headerlink" title="（2）交叉熵损失函数 ignore_index 的设置"></a>（2）交叉熵损失函数 ignore_index 的设置</h3><p>虽然我们使用 <code>&#39;&lt;pad&gt;&#39;</code> 进行了对齐，但是 <code>&#39;&lt;pad&gt;&#39;</code> 还没有被认为是特殊的符号。此时在损失函数中，<code>&#39;&lt;pad&gt;&#39;</code> 与其他字符的预测差距还是会被计算到损失之中。又因为 <code>&#39;&lt;pad&gt;&#39;</code>会在序列中经常出现，所以如果不特殊处理 <code>&#39;&lt;pad&gt;&#39;</code>，则训练后预测的结果便一定总是 <code>&lt;pad&gt;</code>。</p>
+<p>因此我们希望损失函数忽略 <code>&#39;&lt;pad&gt;&#39;</code>。只需要设定 <code>ignore_index</code> 参数。如下所示将 <code>ignore_index</code> 设定为 <code>&#39;&lt;pad&gt;&#39;</code> 对应的数值。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">loss_fn = nn.CrossEntropyLoss(ignore_index=dataset.zh_vocab[<span class="string">&#x27;&lt;pad&gt;&#x27;</span>]).to(args.device)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）计算损失函数时对输入进行处理"><a href="#（3）计算损失函数时对输入进行处理" class="headerlink" title="（3）计算损失函数时对输入进行处理"></a>（3）计算损失函数时对输入进行处理</h3><p>阅读一下 pytorch 文档中关于交叉熵损失函数的说明，就可以得知我们的模型默认的输出不能直接传入损失函数进行计算，必须重新设定维度。</p>
+<p>模型的预测形状为 <code>(seq_len, batch_size, class_num)</code>， 需要的输入为 <code>(batch_size, class_num, seq_len)</code>；目标的形状为 <code>(seq_len, batch_size)</code>，需要的输入为 <code>(batch_size, seq_len)</code>。因此重新定义了 <code>criterion</code> 方法作为损失函数，使用 <code>permute</code> 方法调整维度。将 <code>criterion</code> 传入 <code>train</code>、<code>eval</code> 方法中作为损失函数。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">criterion</span>(<span class="params">predict, target</span>):</span><br><span class="line">    <span class="keyword">return</span> loss_fn(predict.permute(<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>), target.permute(<span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(args.max_epoch):</span><br><span class="line">    global_epoch += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    train(train_loader, net, criterion, optim)</span><br><span class="line"></span><br><span class="line">    save_checkpoint(net, optim, global_epoch, global_train_step)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;dev&quot;</span>, dev_loader, net, criterion)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;test&quot;</span>, test_loader, net, criterion)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（4）训练结果"><a href="#（4）训练结果" class="headerlink" title="（4）训练结果"></a>（4）训练结果</h3><img src="/posts/6afa4e5d/train_loss.png" class="" title="train_loss">
+<img src="/posts/6afa4e5d/train_acc.png" class="" title="train_acc">
+<img src="/posts/6afa4e5d/test_loss.png" class="" title="test_loss">
+<img src="/posts/6afa4e5d/test_acc.png" class="" title="test_acc">
+<blockquote>
+<p>本来应该用机器翻译的评价指标，如 BLEU 的，但是一开始没有考虑到</p>
+<p>从图中可以看到，模型的翻译能力并不算强，并且还有继续训练下去的空间。为什么不继续训练了呢？因为 Colab 时间用完了<code>:(</code><br><img src="/posts/6afa4e5d/example.png" class="" title="example"></p>
+</blockquote>
+<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><p>本次实践了 transformer 模型的构建和训练。在训练过程中学到了一些知识，主要有</p>
+<ul>
+<li>transformer 模型的结构</li>
+<li>注意力的掩码机制</li>
+<li>位置编码</li>
+<li>损失函数 ignore_index 的使用</li>
+<li>数据集处理后的存储和加载</li>
+<li>通过scheduler动态调整学习率的方法（本次未使用，之后应该会应用）</li>
+<li>深度学习上层架构，如 ignite、lightning（本次未使用，之后应该会应用）</li>
+</ul>
+<p>也出现了一些问题</p>
+<ul>
+<li>未考虑张量形状，导致出现了“位置编码时为不同 batch 赋予了不同的编码“的bug</li>
+<li>因为上一条内容浪费了大量的训练时间</li>
+<li>未能设置适当的学习率，导致训练缓慢</li>
+<li>没有使用 BLEU 等指标进行评价</li>
+<li>没有对中文进行分词，一字多义可能增加了训练难度</li>
+</ul>
+<p>希望下一次避免犯下类似的错误。</p>
+<h2 id="六、参考资料"><a href="#六、参考资料" class="headerlink" title="六、参考资料"></a>六、参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/264468193">【通俗易懂】大白话讲解 Transformer</a></li>
+<li><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/beginner/translation_transformer.html">Language Translation with nn.Transformer and torchtext</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3c5d5cf3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/3c5d5cf3/" class="post-title-link" itemprop="url">ESIM网络的搭建和训练</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-05 10:30:20" itemprop="dateCreated datePublished" datetime="2023-03-05T10:30:20+08:00">2023-03-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。</p>
+<p>因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的<a target="_blank" rel="noopener" href="https://github.com/FudanNLP/nlp-beginner">NLP入门练习</a>搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。</p>
+<p>因为使用了Colab，本次模型的构建和训练比较成功，因而做此记录。</p>
+<h2 id="二、任务"><a href="#二、任务" class="headerlink" title="二、任务"></a>二、任务</h2><p>本次任务是输入两个句子，判断它们之间的关系。具体来说，我们需要实现<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1609.06038v3.pdf">论文</a>中提出的 ESIM 网络，并通过 <a target="_blank" rel="noopener" href="https://nlp.stanford.edu/projects/snli/">SNLI数据集</a> 进行训练，以学习预测两个句子间的关系。</p>
+<h2 id="三、数据集"><a href="#三、数据集" class="headerlink" title="三、数据集"></a>三、数据集</h2><p>SNLI数据集包含57万行英文句子对，并被标注了句子间的关系，包括蕴含（Entailment），矛盾（Contradiction），中立/不冲突（Neutral），未知（-）。</p>
+<p>例如</p>
+<blockquote>
+<p>输入文本： A man inspects the uniform of a figure in some East Asian  country.<br>输入假设： The man is sleeping.<br>输出： 矛盾（C）</p>
+<p>输入文本： A smiling costumed woman is holding an umbrella.<br>输入假设：A happy woman in a fairy costume holds an umbrella.<br>输出： 中立（N）</p>
+<p>输入文本： A soccer game with multiple males playing.<br>输入假设： Some men are playing a sport.<br>输出： 蕴含（E）</p>
+</blockquote>
+<p>原始的数据集提供了 json 格式和制表符分割 txt 格式。在读取数据时，我们使用了制表符格式。</p>
+<p>对于每一个文件，第一行为表头，其他行为数据。我们只需要获取 sentence1 和 sentence2 列对应的句子和 gold_label 所对应的标注。</p>
+<p>我们创建获取SNLI数据集的 Dataset 类<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SNLIDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br></pre></td></tr></table></figure><br>首先指定 sentence1、sentence2 和 gold_label 对应的列数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, file_path, vocab=<span class="literal">None</span></span>):</span><br><span class="line">    s1 = <span class="number">5</span></span><br><span class="line">    s2 = <span class="number">6</span></span><br><span class="line">    l = <span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<p>训练时使用自建词汇表。我们在加载训练集时构建词汇表，在验证级和测试集中使用词汇表<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> vocab <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">    self.build_vocab = <span class="literal">True</span></span><br><span class="line">    self.vocab = &#123;<span class="string">&quot;&lt;pad&gt;&quot;</span>: <span class="number">0</span>&#125;</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    self.build_vocab = <span class="literal">False</span></span><br><span class="line">    self.vocab = vocab</span><br></pre></td></tr></table></figure></p>
+<p>我们打开文件，遍历其中每一行，注意这里我们使用了 tqdm 来显示进度条。同时使用了 enumerate 获取 index。当遇到第一行时 continue。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">self.s1 = []</span><br><span class="line">self.s2 = []</span><br><span class="line">self.labels = []</span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;UTF-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">with</span> tqdm(f) <span class="keyword">as</span> tqdm_file:</span><br><span class="line">        tqdm_file.set_description(<span class="string">&quot;Load Data&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> index, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(tqdm_file):</span><br><span class="line">            <span class="keyword">if</span> index == <span class="number">0</span>:</span><br><span class="line">                <span class="keyword">continue</span></span><br></pre></td></tr></table></figure>
+<p>按制表符分割一行，取出其中的 sentence1、sentence2 和 gold_label。分别将字符串转化为 tensor 存入对应的数组中。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">splited_line = line.split(<span class="string">&quot;\t&quot;</span>)</span><br><span class="line"></span><br><span class="line">sentence1 = splited_line[s1]</span><br><span class="line">sentence2 = splited_line[s2]</span><br><span class="line">label = splited_line[l]</span><br><span class="line"></span><br><span class="line">self.s1.append(self.__sentence2tensor(sentence1))</span><br><span class="line">self.s2.append(self.__sentence2tensor(sentence2))</span><br><span class="line">self.labels.append(torch.as_tensor(labels[label]))</span><br></pre></td></tr></table></figure>
+<p>其中 <code>__sentence2tensor</code> 方法如下。该方法通过正则表达式匹配单词，构建词汇表。<code>get_word_index</code> 将 char 字符转化为数字 token，如果字符不在词汇表中则返回值为 0。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__sentence2tensor</span>(<span class="params">self, s</span>):</span><br><span class="line">    rt = []</span><br><span class="line">    <span class="keyword">for</span> char <span class="keyword">in</span> re.findall(<span class="string">&quot;[a-zA-Z-]+&quot;</span>, s):</span><br><span class="line">        <span class="keyword">if</span> self.build_vocab <span class="keyword">and</span> char <span class="keyword">not</span> <span class="keyword">in</span> self.vocab:</span><br><span class="line">            self.vocab[char] = <span class="built_in">len</span>(self.vocab)</span><br><span class="line">        rt.append(get_word_index(self.vocab, char))</span><br><span class="line">    <span class="keyword">return</span> torch.as_tensor(rt)</span><br></pre></td></tr></table></figure>
+<p>接着我们实现 <code>__getitem__</code> 和 <code>__len__</code> 方法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    <span class="keyword">return</span> self.s1[item], self.s2[item], self.labels[item]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(self.s1)</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、神经网络"><a href="#四、神经网络" class="headerlink" title="四、神经网络"></a>四、神经网络</h2><p>在实现的过程中，我简化了一部分流程</p>
+<p>首先，我们定义输入的两个句子为 $a = (a<em>1, …, a</em>{seq<em>a})$ 和 $b = (b_1, …, b</em>{seq_b})$。其中 $a_i, b_j$ 为 $l$ 维的词向量。</p>
+<p>依照双向注意力的机制，我们首先定义 $f(x)$。即</p>
+<script type="math/tex; mode=display">
+    \bar{a}_i = BiLSTM(a, i)</script><script type="math/tex; mode=display">
+    \bar{b}_j = BiLSTM(b, j)</script><p>接着，我们定义注意力权重 $e_{ij} = f(a_i)^T f(b_j)$，即</p>
+<script type="math/tex; mode=display">
+    e_{ij} = \bar{a}_i^T \bar{b}_j</script><p>我们计算对某一句中的每一个词，被注意到的另一个句子中词汇的含义。</p>
+<script type="math/tex; mode=display">
+    \tilde{a}_i = \sum_{j} \frac{\exp(e_{ij})}{\sum_k \exp(e_{ik})} \bar{b}_j</script><script type="math/tex; mode=display">
+    \tilde{b}_j = \sum_{i} \frac{\exp(e_{ij})}{\sum_k \exp(e_{kj})} \bar{a}_i</script><p>为了获取更多的信息，ESIM 将结果组合成如下的形式</p>
+<script type="math/tex; mode=display">
+    m_a = [\bar{a}; \tilde{a}; \bar{a}-\tilde{a}; \bar{a} \odot \tilde{a}]</script><script type="math/tex; mode=display">
+    m_b = [\bar{b}; \tilde{b}; \bar{b}-\tilde{b}; \bar{b} \odot \tilde{b}]</script><p>接着，我们再使用 BiLSTM 对 $m_a, m_b$ 进行处理</p>
+<script type="math/tex; mode=display">
+    \bar{v}_{a, i} = BiLSTM(a, i)</script><script type="math/tex; mode=display">
+    \bar{v}_{b, j} = BiLSTM(b, j)</script><p>最后进行池化操作，并将结果再次连接在一起，通过多层感知机得到结果</p>
+<script type="math/tex; mode=display">
+    \bar{v}_{a, ave} = \sum_i \frac{\bar{v}_{a, i}}{l_a}, \bar{v}_{a, max} = \max_i \bar{v}_{a, i}</script><script type="math/tex; mode=display">
+    \bar{v}_{b, ave} = \sum_j \frac{\bar{v}_{b, j}}{l_b}, \bar{v}_{b, max} = \max_j \bar{v}_{b, j}</script><script type="math/tex; mode=display">
+    v = [\bar{v}_{a, ave}; \bar{v}_{a, max}; \bar{v}_{b, ave}; \bar{v}_{b, max}]</script><p>我们开始构建模型：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ESIM</span>(nn.Module):</span><br></pre></td></tr></table></figure></p>
+<p>首先将单词编码转化为词向量</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, s1, s2</span>):</span><br><span class="line">    a = self.embed(s1)  <span class="comment"># (batch_size,seq_size1,embed_size)</span></span><br><span class="line">    b = self.embed(s2)  <span class="comment"># (batch_size,seq_size2,embed_size)</span></span><br></pre></td></tr></table></figure>
+<p>通过 BiLSTM 层计算得出 $\bar{a}, \bar{b}$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a_, _ = self.lstm1(a)  <span class="comment"># (batch_size,seq_size1,2*hidden_size)</span></span><br><span class="line">b_, _ = self.lstm1(b)  <span class="comment"># (batch_size,seq_size2,2*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>接着计算出 $e$，注意这里直接使用了矩阵乘法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e = torch.bmm(a_, b_.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>))  <span class="comment"># (batch_size,seq_size1,seq_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>计算 $\tilde{a}, \tilde{b}$。使用 softmax 时，设置 <code>dim=-1</code> 表示对最高维求 softmax。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">a_sim = torch.bmm(F.softmax(e, dim=-<span class="number">1</span>), b_)</span><br><span class="line"><span class="comment"># (batch_size,seq_size1,2*hidden_size)</span></span><br><span class="line">b_sim = torch.bmm(F.softmax(e.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>), dim=-<span class="number">1</span>), a_)</span><br><span class="line"><span class="comment"># (batch_size,seq_size2,2*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>得到 $m_a, m_b$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ma = torch.cat([a_, a_sim, a_ - a_sim, a_ * a_sim], dim=<span class="number">2</span>)</span><br><span class="line"><span class="comment"># (batch_size,seq_size1,8*hidden_size)</span></span><br><span class="line">mb = torch.cat([b_, b_sim, b_ - b_sim, b_ * b_sim], dim=<span class="number">2</span>)</span><br><span class="line"><span class="comment"># (batch_size,seq_size2,8*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>通过 BiLSTM 层计算得出 $v_a, v_b$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">va, _ = self.lstm2(ma)  <span class="comment"># (batch_size,seq_size1,2*hidden_size2)</span></span><br><span class="line">vb, _ = self.lstm2(mb)  <span class="comment"># (batch_size,seq_size2,2*hidden_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>池化并连接<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">va_ave = torch.mean(va, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line">va_max, _ = torch.<span class="built_in">max</span>(va, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line"></span><br><span class="line">vb_ave = torch.mean(vb, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line">vb_max, _ = torch.<span class="built_in">max</span>(vb, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line"></span><br><span class="line">v = torch.cat([va_ave, va_max, vb_ave, vb_max], dim=<span class="number">1</span>)</span><br><span class="line"><span class="comment"># (batch_size,8*hidden_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>经过双层线性感知机得到结果<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">predict = self.multi(v)  <span class="comment"># (batch_size,class_num)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> predict</span><br></pre></td></tr></table></figure></p>
+<h2 id="五、训练"><a href="#五、训练" class="headerlink" title="五、训练"></a>五、训练</h2><h3 id="部分代码"><a href="#部分代码" class="headerlink" title="部分代码"></a>部分代码</h3><p>定义训练函数，声明全局训练步数和全局轮次<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train</span>(<span class="params">dataloader, net, criterion, optimizer</span>):</span><br><span class="line">    <span class="keyword">global</span> global_train_step</span><br><span class="line">    <span class="keyword">global</span> global_epoch</span><br></pre></td></tr></table></figure></p>
+<p>设置进度条<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tqdm(dataloader) <span class="keyword">as</span> tqdm_loader:</span><br><span class="line">    tqdm_loader.set_description(<span class="string">f&quot;Epoch <span class="subst">&#123;global_epoch&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>开始训练<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">net.train()</span><br><span class="line"><span class="keyword">for</span> s1, s2, target <span class="keyword">in</span> tqdm_loader:</span><br><span class="line">    global_train_step += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    s1 = s1.to(args.device)</span><br><span class="line">    s2 = s2.to(args.device)</span><br><span class="line">    target = target.to(args.device)</span><br><span class="line"></span><br><span class="line">    predict = net(s1, s2)</span><br><span class="line"></span><br><span class="line">    loss = criterion(predict, target)</span><br><span class="line"></span><br><span class="line">    accuracy = get_accuracy(predict, target)</span><br><span class="line"></span><br><span class="line">    optimizer.zero_grad()</span><br><span class="line">    loss.backward()</span><br><span class="line">    optimizer.step()</span><br></pre></td></tr></table></figure></p>
+<p>为进度条和 tensorboard 更新信息<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tqdm_loader.set_postfix(loss=loss.item(), accuracy=accuracy)</span><br><span class="line"></span><br><span class="line">writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), global_train_step)</span><br><span class="line">writer.add_scalar(<span class="string">&quot;train accuracy&quot;</span>, accuracy, global_train_step)</span><br></pre></td></tr></table></figure></p>
+<p>定义评价函数，参数 tag 表示验证或者测试<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">evaluate</span>(<span class="params">tag, dataloader, net, criterion</span>):</span><br><span class="line">    <span class="keyword">global</span> global_epoch</span><br></pre></td></tr></table></figure></p>
+<p>开始评价<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">total_loss = <span class="number">0</span></span><br><span class="line">accuracy = <span class="number">0</span></span><br><span class="line">total_step = <span class="number">0</span></span><br><span class="line">net.<span class="built_in">eval</span>()</span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> s1, s2, target <span class="keyword">in</span> dataloader:</span><br><span class="line">        s1 = s1.to(args.device)</span><br><span class="line">        s2 = s2.to(args.device)</span><br><span class="line">        target = target.to(args.device)</span><br><span class="line"></span><br><span class="line">        predict = net(s1, s2)</span><br><span class="line"></span><br><span class="line">        loss = criterion(predict, target)</span><br><span class="line"></span><br><span class="line">        total_loss += loss</span><br><span class="line"></span><br><span class="line">        accuracy += get_accuracy(predict, target)</span><br><span class="line"></span><br><span class="line">        total_step += <span class="number">1</span></span><br></pre></td></tr></table></figure></p>
+<p>更新 tensorboard 信息<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">accuracy /= total_step</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;tag&#125;</span>: total loss=<span class="subst">&#123;total_loss&#125;</span>, accuracy=<span class="subst">&#123;accuracy&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">writer.add_scalar(tag + <span class="string">&quot; loss&quot;</span>, total_loss, global_epoch)</span><br><span class="line">writer.add_scalar(tag + <span class="string">&quot; accuracy&quot;</span>, accuracy, global_epoch)</span><br></pre></td></tr></table></figure></p>
+<p>设定参数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">args = Namespace(</span><br><span class="line">    batch_size=<span class="number">512</span>,</span><br><span class="line">    device=torch.device(<span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span>),</span><br><span class="line">    embed_size=<span class="number">100</span>,</span><br><span class="line">    hidden_size1=<span class="number">200</span>,</span><br><span class="line">    hidden_size2=<span class="number">200</span>,</span><br><span class="line">    num_layers=<span class="number">2</span>,</span><br><span class="line">    epoch_size=<span class="number">15</span>,</span><br><span class="line">    learning_rate=<span class="number">0.01</span>,</span><br><span class="line"></span><br><span class="line">    train_path=<span class="string">&quot;./data/snli_1.0_train.txt&quot;</span>,</span><br><span class="line">    test_path=<span class="string">&quot;./data/snli_1.0_test.txt&quot;</span>,</span><br><span class="line">    dev_path=<span class="string">&quot;./data/snli_1.0_dev.txt&quot;</span>,</span><br><span class="line">    log_path=<span class="string">&quot;./logs&quot;</span>,</span><br><span class="line">    checkpoint_path=<span class="string">&quot;./checkpoints&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>设定损失函数和优化器<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">loss_fn = nn.CrossEntropyLoss().to(args.device)</span><br><span class="line"></span><br><span class="line">optim = torch.optim.SGD(net.parameters(), lr=args.learning_rate)</span><br></pre></td></tr></table></figure></p>
+<p>主循环<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(args.epoch_size):</span><br><span class="line">    global_epoch += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    train(train_loader, net, loss_fn, optim)</span><br><span class="line"></span><br><span class="line">    save_checkpoint(net, optim, global_epoch, global_train_step)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;dev&quot;</span>, dev_loader, net, loss_fn)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;test&quot;</span>, test_loader, net, loss_fn)</span><br></pre></td></tr></table></figure></p>
+<h3 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h3><img src="/posts/3c5d5cf3/train_loss.png" class="" title="train_loss">
+<img src="/posts/3c5d5cf3/train_acc.png" class="" title="train_acc">
+<img src="/posts/3c5d5cf3/test_loss.png" class="" title="test_loss">
+<img src="/posts/3c5d5cf3/test_acc.png" class="" title="test_acc">
+<p>模型在训练集和测试集上均取得了 72% 的准确率，和 ESTM 论文中的还有一定差距，可能的原因是</p>
+<ul>
+<li>词向量使用了随机初始化而非GloVe初始化</li>
+<li>优化器使用了 SGD 而非 Adam，导致训练过慢</li>
+<li>模型的参数设置不合理</li>
+</ul>
+<p>另外</p>
+<ul>
+<li>模型中没有使用 dropout，可能导致过拟合（虽然本模型并没有出现）</li>
+</ul>
+<h2 id="七、参考资料"><a href="#七、参考资料" class="headerlink" title="七、参考资料"></a>七、参考资料</h2><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_42365109/article/details/115704688">NLP-Beginner 任务三：基于注意力机制的文本匹配+pytorch</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3190f9b2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/3190f9b2/" class="post-title-link" itemprop="url">利用Colab训练神经网络</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-04 16:44:22" itemprop="dateCreated datePublished" datetime="2023-03-04T16:44:22+08:00">2023-03-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">踩坑记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、算力从哪里来？"><a href="#一、算力从哪里来？" class="headerlink" title="一、算力从哪里来？"></a>一、算力从哪里来？</h2><p>曾听到过这样一种说法，深度学习 “自学 + 没经费 = 天坑”。不幸的是我似乎正处于这种状态中。自学的方面还比较好克服，可没有 gpu 进行训练就 “难为无米之炊” 了。就算理论学得再好，自己构建的模型电脑带不动，没有实践的机会，也是难以学好这门学科的。</p>
+<p>最近我正开始学着实现更大的模型，我的笔记本此前的小模型还可以勉强撑住，可现在却完全带不动了。一方面，训练的时间太长，挤占了我使用笔记本做其他事的时间；另一方面，我的 gpu 显存太小，不能调大参数，可参数较小时又无法收敛。这就是我面临的双重两难问题。</p>
+<p>我希望找到一处租用算力的平台。它应该同时满足如下的条件</p>
+<ol>
+<li>算力丰富，能快速训练模型</li>
+<li>对用户友好，和本机环境差别不大，能够迅速上手训练模型</li>
+<li>费用便宜，最好有免费的算力</li>
+</ol>
+<p>综合以上各点，通过搜索，我找到了 Colab。Colab(oratory) 是一个 Google 研究项目，旨在帮助传播机器学习培训和研究成果。它是一个 Jupyter 笔记本环境，不需要进行任何设置就可以使用，并且完全在云端运行。Colab 笔记本存储在 Google 云端硬盘中，并且可以共享。利用Colaboratory ，可以方便的使用Keras, TensorFlow, PyTorch, OpenCV 等框架进行深度学习应用的开发。最重要的是，Colab 可免费使用。</p>
+<h2 id="二、Colab基本操作"><a href="#二、Colab基本操作" class="headerlink" title="二、Colab基本操作"></a>二、Colab基本操作</h2><h3 id="（1）创建笔记本"><a href="#（1）创建笔记本" class="headerlink" title="（1）创建笔记本"></a>（1）创建笔记本</h3><blockquote>
+<p>在正式介绍 Colab 之前需要说明一点，<strong>使用 Colab 需要科学上网</strong>。</p>
+</blockquote>
+<p>要新建 Colab 需要创建笔记，笔记是 Colab 编辑文本、代码和运行程序的地方。使用过 jupyter notebook 的人应该很了解。不同笔记之间内容互不相通，可以把每一个笔记看做一台独立运行的虚拟机。</p>
+<p>Colab 是谷歌的产品，因此需要实现注册好一个谷歌账号。</p>
+<h4 id="通过-Google-Drive-创建笔记本"><a href="#通过-Google-Drive-创建笔记本" class="headerlink" title="通过 Google Drive 创建笔记本"></a>通过 Google Drive 创建笔记本</h4><p><a target="_blank" rel="noopener" href="https://drive.google.com/drive/">Google Drive</a> 是 Google 的一款云端硬盘，操作与其他云盘，如百度网盘、阿里云盘，类似。</p>
+<p>通过 Google Drive 可以创建 Colab 笔记。方式是：点击左上角的“新建”按钮或右击背景 =&gt; 在弹出的窗口中选择“更多” =&gt; 选择 “Google Colaboratory” 选项。</p>
+<img src="/posts/3190f9b2/drive_disk_colab.jpg" class="" title="drive_disk_colab">
+<h4 id="通过-Colab-创建笔记本"><a href="#通过-Colab-创建笔记本" class="headerlink" title="通过 Colab 创建笔记本"></a>通过 Colab 创建笔记本</h4><p>还有另一种方式，直接访问 <a target="_blank" rel="noopener" href="https://colab.research.google.com/">Colab</a> 网页。</p>
+<p>在欢迎页处点击左上角，文件 =&gt; 新建笔记本即可创建。</p>
+<img src="/posts/3190f9b2/colab_colab.jpg" class="" title="colab_colab">
+<h3 id="（2）装载-Google-Drive"><a href="#（2）装载-Google-Drive" class="headerlink" title="（2）装载 Google Drive"></a>（2）装载 Google Drive</h3><p>讲解两种创建方法的原因，是指出 Colab 和 Google Drive 可以进行信息交互。Colab 笔记本身存储在 Google Drive 中，而 Google Drive 中的其他内容也可以被 Colab 笔记访问。另外，因为 Colab 虚拟机中的内容只在会话中保存，因此将数据集和训练过的模型存储在 Google Drive 也是必要的。</p>
+<p>我们要建立 Colab 到 Google Drive 的连接。方法是点击左侧边栏文件夹图标 =&gt; 点击如下图标</p>
+<img src="/posts/3190f9b2/load_disk.png" class="" title="load_disk">
+<p>随后会在笔记本中创建如下的代码段<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> google.colab <span class="keyword">import</span> drive</span><br><span class="line">drive.mount(<span class="string">&#x27;/content/drive&#x27;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>运行这段代码（点击左侧“播放”按钮），随后点击新出现的内容中的url，按指示进行授权即可。</p>
+<p>成功后，我们可以看到文件夹目录中多出了一个文件夹，其中即为 Google Drive 的内容。我们可以像对其他目录一样，直接用路径访问 Google Drive 中的文件。</p>
+<h3 id="（3）Jupyter-笔记本"><a href="#（3）Jupyter-笔记本" class="headerlink" title="（3）Jupyter 笔记本"></a>（3）Jupyter 笔记本</h3><p>Jupyter Notebook 是一款应用程序，以网页的形式打开，可以在网页页面中直接编写代码和运行代码，代码的运行结果也会直接在代码块下显示。Colab 也使用了 Jupyter Notebook 作为编写代码的途径。下面简单介绍一下（Colab的） Jupyter 笔记本的使用。</p>
+<p>Jupyter Notebook 中有两种单元格，其一是文本格、其二是代码格。文本格支持 markdown 语法，可以方便地进行排版。</p>
+<p>代码格中能够编写代码，除了 python 外也支持其他语言，但使用 python 的为多。值得强调的是 Jupyter Notebook 中代码的执行方式。在 Notebook 中，代码被划分在不同的单元格中，每个单元格中的代码都可以单独执行，不需要考虑顺序，每个单元格也可以多次重复执行。唯一的约束是跨越单元格使用的变量、方法、类等等，应该先执行其声明，再执行其引用。当然，这是十分合理的要求。</p>
+<p>可以看出，Jupyter Notebook 和 python 的命令行模式有相似之处。</p>
+<h3 id="（4）命令行"><a href="#（4）命令行" class="headerlink" title="（4）命令行"></a>（4）命令行</h3><p>有时我们不止需要编写文本和代码，还需要进行系统的操作，这就需要执行系统命令。Colab 中提供了执行命令的方法：可以在代码格中输入命令，只需要在命令之前加上叹号 <code>!</code> 即可。例如</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!ls -a</span><br></pre></td></tr></table></figure>
+<h3 id="（5）管理会话"><a href="#（5）管理会话" class="headerlink" title="（5）管理会话"></a>（5）管理会话</h3><h4 id="必要性"><a href="#必要性" class="headerlink" title="必要性"></a>必要性</h4><p>我们已经知道了如何使用 Colab 编写代码、执行命令并持久地保存数据。这对于操作一台虚拟机来说已经足够了。在这一小节中，要讨论的是另一个问题，如何节省算力资源？</p>
+<p>Colab 有免费的算力，但这是有限的。在资源不紧张的情况下，Colab 允许免费使用 gpu，但一旦资源紧张或者你占用了太多的资源，Colab 就可能在一段时间内禁止你使用 gpu。因此算力需要节省使用。</p>
+<p>Colab 中，“会话” 指 Colab 前端到算力平台的连接。每当某一个笔记运行程序时，都会创建会话。会话一般不会自行结束（除非超过了24小时未使用），如果忘记关闭的会话恰好连接了一个 gpu，那么造成的算力浪费将是惊人的。</p>
+<p>说道这里，恰好解释一下会话的不同类型。会话分为 cpu、gpu 和 tpu。cpu 的会话几乎不会消耗资源（消耗得很少）；gpu 和 tpu 的会话则会消耗资源，并且根据使用的 gpu 和 tpu 类型的不同，消耗资源的速度也不同。</p>
+<h4 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h4><p>因此，我们可以在平时编写代码时只连接 cpu，而到了训练时才连接 gpu 或 tpu。这需要进行会话的切换，具体方法如下：</p>
+<p>新建笔记，我们可以在笔记的右上角看到下图红色框所指示的按钮。点击该按钮，或者运行某一段代码，就会使笔记连接到服务器。会话的类型由设置决定，如果是第一次使用，则连接的便为 cpu。</p>
+<img src="/posts/3190f9b2/session1.png" class="" title="session1">
+<p>连接成功后，图标变为类似下图的样子。</p>
+<img src="/posts/3190f9b2/session2.png" class="" title="session2">
+<p>点击旁边的小箭头，会弹出更多选项。</p>
+<img src="/posts/3190f9b2/session3.jpg" class="" title="session3">
+<ul>
+<li>连接到托管运行时，为使用谷歌的资源</li>
+<li>连接到本地运行时，为使用本机的资源</li>
+<li>断开连接，将删除当前的会话，当然在会话中创建的文件等内容也会一并消除，需要事先移动到 Google Drive 中。</li>
+</ul>
+<p>更重要的是更下面的选项</p>
+<ul>
+<li><p>查看资源，点击后出现如下的窗口，点击 “更改运行时类型” 即可选择会话的类型。点击 “管理会话” 和选项 “管理会话” 的结果相同。</p>
+<blockquote>
+<p>在连接成功后点击图标，同样能显示此窗口，但这时再更改运行时类型，只会创建一个新的会话。因此应该在连接断开时更改。</p>
+  <img src="/posts/3190f9b2/session3.jpg" class="" title="session3">
+</blockquote>
+</li>
+<li><p>管理会话，点击后显示正在进行的会话。太多不使用的会话会占用更多的资源，可以点击右侧垃圾桶图标结束会话。</p>
+</li>
+</ul>
+<p>通过合理地创建会话和结束会话，可以做到资源利用的最大化。</p>
+<h2 id="三、Colab训练神经网络"><a href="#三、Colab训练神经网络" class="headerlink" title="三、Colab训练神经网络"></a>三、Colab训练神经网络</h2><p>虽然 Colab 笔记能编写代码，但是代码组织在同一个文件中，同时难以调试，很不方便。</p>
+<p>使用 Colab 训练神经网络比较好的方法是在本地把代码跑通；把代码和数据集打包上传到 Google Drive 中；随后 Colab 装载 Google Drive，并通过命令执行 python 代码文件。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!python <span class="string">&quot;/content/drive/train.py&quot;</span></span><br></pre></td></tr></table></figure>
+<p>训练神经网络时经常使用 tensorboard，在 Colab 中也可以使用。只需要在代码块中执行如下两条：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">%load_ext tensorboard</span><br><span class="line">%tensorboard --logdir=<span class="string">&quot;/content/drive/logs&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="四、购买算力和订阅"><a href="#四、购买算力和订阅" class="headerlink" title="四、购买算力和订阅"></a>四、购买算力和订阅</h2><p>有时，Colab 提供的免费算力依旧不够用，这时就需要购买额外的算力了。在资源窗口中点击 “升级到 <a target="_blank" rel="noopener" href="https://colab.research.google.com/signup/pricing">Colab Pro</a>” 或在设置中选择 “<a target="_blank" rel="noopener" href="https://colab.research.google.com/signup/pricing">Colab Pro</a>” 选项。即可跳转到购买界面。可以选择只购买计算单元或是每月订阅。</p>
+<p>需要注意的是，Colab 只支持信用卡支付。对一些学生来说，这可能不太方便。一种解决办法是使用虚拟信用卡。这一部分和本文关系不大，上网可以搜索到相关资料，因此不详细说明。</p>
+<h2 id="五、参考资料"><a href="#五、参考资料" class="headerlink" title="五、参考资料"></a>五、参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/386162610">Google Colab 快速上手</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/218133131">Google Colab 的正确使用姿势</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/111343423">使用colab进行深度学习训练</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3a041e16/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/3a041e16/" class="post-title-link" itemprop="url">利用ASM库实现Java反射</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-21 18:10:43" itemprop="dateCreated datePublished" datetime="2023-02-21T18:10:43+08:00">2023-02-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、ASM库简介"><a href="#一、ASM库简介" class="headerlink" title="一、ASM库简介"></a>一、ASM库简介</h2><p>ASM 库是一款基于 Java 字节码层面的代码分析和修改工具。它能分析二进制的 class 文件并对其进行动态修改。ASM 库侧重性能，设计和实现尽可能小和快。</p>
+<p>通过 ASM 库，我们可以方便地获取类信息，并实现类似于反射的功能。ASM 库处理字节码，因此能得到仅仅使用反射无法获取的信息，如方法内的结构。</p>
+<p>ASM 库同样具有动态修改和创建类文件的功能，但本篇文章主要使用 ASM 库的字节码读取功能。</p>
+<blockquote>
+<p>本篇文章假设读者能自行通过Maven或其他方式添加ASM库依赖。</p>
+</blockquote>
+<h2 id="二、利用ASM库访问类文件"><a href="#二、利用ASM库访问类文件" class="headerlink" title="二、利用ASM库访问类文件"></a>二、利用ASM库访问类文件</h2><p>ASM 库的核心库提供了读取和修改字节码的基本 API。核心库包含如下几个工具类：</p>
+<h3 id="ClassReader"><a href="#ClassReader" class="headerlink" title="ClassReader"></a>ClassReader</h3><p><code>ClassReader</code> 类用于从 class 文件中加载字节码。这样，这一 <code>ClassReader</code> 对象就拥有了关于某一类的所有信息。</p>
+<h3 id="ClassVisitor"><a href="#ClassVisitor" class="headerlink" title="ClassVisitor"></a>ClassVisitor</h3><p><code>ClassVisitor</code> 类可以从 <code>ClassReader</code> 中获取想要的信息。</p>
+<p><code>ClassVisitor</code> 是访问者模式的访问类。简单解释访问者模式，就是被访问的对象调用访问者类的方法，从而使得访问者获取希望得到的数据。</p>
+<p>还是通过 ASM 的例子来理解吧，<code>ClassVisitor</code> 实际是一个抽象类，其中定义了一个方法 <code>visit</code>。该方法的签名为：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">visit(<span class="type">int</span> version, <span class="type">int</span> access, String name, String signature, String superName, String[] interfaces)</span><br></pre></td></tr></table></figure></p>
+<p>假设我们继承 <code>ClassVisitor</code> 创建了一个新的访问类，那么获取信息的方式如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ClassReader</span> <span class="variable">cr</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClassReader</span>(<span class="string">&quot;className&quot;</span>);</span><br><span class="line"><span class="type">ClassVisitor</span> <span class="variable">cv</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClassVisitor</span>(Opcodes.ASM5) &#123;</span><br><span class="line">    <span class="comment">// this is an anonymous class </span></span><br><span class="line">&#125;;</span><br><span class="line">cr.accept(cv, <span class="number">0</span>); <span class="comment">// second argument is the parsingOptions</span></span><br></pre></td></tr></table></figure></p>
+<p>如上代码中，<code>ClassReader</code> 调用 <code>accept</code> 方法允许一个 <code>ClassVisitor</code>。在 <code>accept</code> 方法内部，会按一定解析规则调用 <code>ClassVisitor</code> 中的 <code>visit</code> 方法。这样我们就可以获得该类的类名、父类名、接口名等等信息。</p>
+<p><code>ClassVisitor</code> 类中还有许多访问方法可以重写，如<code>visitAnnotation</code>、<code>visitField</code>、<code>visitMethod</code> 等等。其中 <code>visitField</code>、<code>visitMethod</code> 等方法的返回值类似 <code>FieldVisitor</code>、<code>MethodVisitor</code> 等等 ，同样是访问者模式的抽象访问者类型。使用方法与 <code>ClassVisitor</code> 类似。</p>
+<h3 id="ClassWriter"><a href="#ClassWriter" class="headerlink" title="ClassWriter"></a>ClassWriter</h3><p><code>ClassWriter</code> 用于修改或创建 class 文件，虽然在本篇文章中不会使用，但因为是ASM核心库的组成部分，还是略微介绍一下。</p>
+<p><code>ClassWriter</code> 继承了 <code>ClassVisitor</code>。因此也具有 <code>visit</code> 等方法。不同于 <code>ClassVisitor</code> 通过 <code>ClassReader</code> 调用访问函数，<code>ClassWriter</code> 应由程序员自行调用，并由此让 <code>ClassWriter</code> 构建起类结构。最后，调用 <code>ClassWriter</code> 的 <code>toByteArray</code> 方法生成字节码，通过文件流生成新的文件。</p>
+<p>例子如下，这里不赘述<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ClassWriter</span> <span class="variable">cw</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClassWriter</span>(<span class="number">0</span>);</span><br><span class="line">cw.visit(V1_5, ACC_PUBLIC + ACC_ABSTRACT + ACC_INTERFACE,<span class="string">&quot;pkg/Comparable&quot;</span>, <span class="literal">null</span>, <span class="string">&quot;java/lang/Object&quot;</span>,<span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;pkg/Mesurable&quot;</span>&#125;);</span><br><span class="line">cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC, <span class="string">&quot;LESS&quot;</span>,<span class="string">&quot;I&quot;</span>, <span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Integer</span>(-<span class="number">1</span>)).visitEnd();</span><br><span class="line">cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC, <span class="string">&quot;EQUAL&quot;</span>,<span class="string">&quot;I&quot;</span>, <span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Integer</span>(<span class="number">0</span>)).visitEnd();</span><br><span class="line">cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC, <span class="string">&quot;GREATER&quot;</span>,<span class="string">&quot;I&quot;</span>, <span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Integer</span>(<span class="number">1</span>)).visitEnd();</span><br><span class="line">cw.visitMethod(ACC_PUBLIC + ACC_ABSTRACT, <span class="string">&quot;compareTo&quot;</span>,<span class="string">&quot;(Ljava/lang/Object;)I&quot;</span>, <span class="literal">null</span>, <span class="literal">null</span>).visitEnd();</span><br><span class="line">cw.visitEnd();</span><br><span class="line"><span class="type">byte</span>[] b = cw.toByteArray();</span><br><span class="line"></span><br><span class="line"><span class="comment">//输出</span></span><br><span class="line"><span class="type">FileOutputStream</span> <span class="variable">fileOutputStream</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(<span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;F:/asm/Comparable.class&quot;</span>));</span><br><span class="line">fileOutputStream.write(b);</span><br><span class="line">fileOutputStream.close();</span><br></pre></td></tr></table></figure></p>
+<p>示例出自<a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000040160637">java - ASM入门篇 - ksfzhaohui技术专栏 - SegmentFault 思否</a></p>
+<h2 id="三、利用ASM-Tree实现反射"><a href="#三、利用ASM-Tree实现反射" class="headerlink" title="三、利用ASM Tree实现反射"></a>三、利用ASM Tree实现反射</h2><p>ASM 将各种不同功能的 API 组织在不同的库中。Tree库就是其中之一，能够将解析后的类信息组织成树的形式。即，类用ClassNode表示，ClassNode中包含类的相关信息，以及包含的字段，用FieldNode表示；和方法，用MethodNode表示。</p>
+<p>首先，我们需要获取字节码。字节码可能是项目中已经被加载的文件，也可能是未被加载的其他文件。我们可以通过包括包名的类全称获取已加载的类的字节码，也可以通过文件流加载字节码。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">var</span> <span class="variable">cr</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClassReader</span>(<span class="string">&quot;package.name.ClassName&quot;</span>);</span><br></pre></td></tr></table></figure><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">var</span> <span class="variable">in</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;fileName&quot;</span>);</span><br><span class="line"><span class="type">var</span> <span class="variable">cr</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">CLassReader</span>(in);</span><br></pre></td></tr></table></figure></p>
+<p>接着我们创建一个 <code>ClassNode</code> 实例作为访问和存储类信息的对象。并使用该对象获取类信息。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">var</span> <span class="variable">cls</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClassNode</span>();</span><br><span class="line">cr.accept(cls, <span class="number">0</span>);</span><br></pre></td></tr></table></figure></p>
+<p>接着我们就可以获取 <code>ClassNode</code> 中保存的类信息。<code>ClassNode</code> 的所有字段都是公共的。这样做是因为 <code>ClassNode</code> 类只作为保存数据的对象，而没有其他功能。因此使用公共字段是合理的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ClassNode中的一些字段：</span></span><br><span class="line"><span class="keyword">public</span> List&lt;Attribute&gt; attrs;</span><br><span class="line"><span class="keyword">public</span> List&lt;InnerClassNode&gt; innerClasses;</span><br><span class="line"><span class="keyword">public</span> String nestHostClass;</span><br><span class="line"><span class="keyword">public</span> List&lt;String&gt; nestMembers;</span><br><span class="line"><span class="keyword">public</span> List&lt;String&gt; permittedSubclasses;</span><br><span class="line"><span class="keyword">public</span> List&lt;RecordComponentNode&gt; recordComponents;</span><br><span class="line"><span class="keyword">public</span> List&lt;FieldNode&gt; fields;</span><br><span class="line"><span class="keyword">public</span> List&lt;MethodNode&gt; methods;</span><br></pre></td></tr></table></figure>
+<p>这样我们就利用 ASM Tree 库实现了类似反射的功能。</p>
+<h2 id="四、自定义访问器实现反射"><a href="#四、自定义访问器实现反射" class="headerlink" title="四、自定义访问器实现反射"></a>四、自定义访问器实现反射</h2><p>在这一部分，我们自定义一个简单的访问器，实现对类、方法、字段信息的获取。以此为例演示 ASM 核心库的使用方法。</p>
+<p>我们创建 <code>MyClassVisitor</code> 类继承 <code>ClassVisitor</code>。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyClassVisitor</span> <span class="keyword">extends</span> <span class="title class_">ClassVisitor</span></span><br></pre></td></tr></table></figure></p>
+<p>添加希望获取的字段<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> String className;</span><br><span class="line"><span class="keyword">public</span> String superClassName;</span><br><span class="line"><span class="keyword">public</span> List&lt;String&gt; interfacesName = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br></pre></td></tr></table></figure></p>
+<p>重写 <code>visit</code> 方法。这样我们就获取到了类名、父类名和接口名等信息。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">visit</span><span class="params">(<span class="type">int</span> version, <span class="type">int</span> access, String name, String signature, String superName, String[] interfaces)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">super</span>.visit(version, access, name, signature, superName, interfaces);</span><br><span class="line">    className = name;</span><br><span class="line">    superClassName = superName;</span><br><span class="line">    interfacesName.addAll(List.of(interfaces));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>类似的，我们创建 <code>MyMethodVisitor</code> 和 <code>MyFieldVisitor</code> 类，并添加字段<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyMethodVisitor</span> <span class="keyword">extends</span> <span class="title class_">MethodVisitor</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String methodName;</span><br><span class="line">    <span class="keyword">public</span> String descriptor;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyFieldVisitor</span> <span class="keyword">extends</span> <span class="title class_">FieldVisitor</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String fieldType;</span><br><span class="line">    <span class="keyword">public</span> String fieldName;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>然后重写 <code>ClassVisitor</code> 的 <code>visitMethod</code> 和 <code>visitField</code>。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> MethodVisitor <span class="title function_">visitMethod</span><span class="params">(<span class="type">int</span> access, String name, String descriptor, String signature, String[] exceptions)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">var</span> <span class="variable">mv</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyMethodVisitor</span>(Opcodes.ASM5,</span><br><span class="line">            <span class="built_in">super</span>.visitMethod(access, name, descriptor, signature, exceptions));</span><br><span class="line">    mv.methodName = name;</span><br><span class="line">    mv.descriptor = descriptor;</span><br><span class="line">    methods.add(mv);</span><br><span class="line">    <span class="keyword">return</span> mv;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> FieldVisitor <span class="title function_">visitField</span><span class="params">(<span class="type">int</span> access, String name, String descriptor, String signature, Object value)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">var</span> <span class="variable">fv</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyFieldVisitor</span>(Opcodes.ASM5,</span><br><span class="line">            <span class="built_in">super</span>.visitField(access, name, descriptor, signature, value));</span><br><span class="line">    fv.fieldName = name;</span><br><span class="line">    fv.fieldType = descriptor;</span><br><span class="line">    fields.add(fv);</span><br><span class="line">    <span class="keyword">return</span> fv;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这样就可以利用 <code>MyMethodVisitor</code> 获取 <code>ClassReader</code> 中的字节码信息了。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">var</span> <span class="variable">cr</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ClassReader</span>(<span class="string">&quot;org.objectweb.asm.ClassVisitor&quot;</span>);</span><br><span class="line"><span class="type">var</span> <span class="variable">cv</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyClassVisitor</span>(Opcodes.ASM5);</span><br><span class="line">cr.accept(cv, <span class="number">0</span>);</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/99f60659/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/99f60659/" class="post-title-link" itemprop="url">Java注解与C#特性</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-20 12:45:30" itemprop="dateCreated datePublished" datetime="2023-02-20T12:45:30+08:00">2023-02-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、元数据简介"><a href="#一、元数据简介" class="headerlink" title="一、元数据简介"></a>一、元数据简介</h2><p>元数据是指用来描述数据的数据。对编程语言来说，元数据可以为程序中元素添加额外的信息。这一功能可以被用于描述代码间关系，以及代码与其他资源的联系。</p>
+<p>元数据可以被用于框架中。通过元数据可以实现在代码上对类的直接配置，避免编写如 xml 的配置文件。</p>
+<p>Java 和 C# 都具有为程序中元素，如类、方法等等，添加元数据的方式。Java中称为注解，而C#中称为特性。注解和特性都通过反射获取，关于两者的获取方式，已经在前一篇文章中有所记述。本篇只讨论注解和特性的定义和使用。</p>
+<h2 id="二、Java注解"><a href="#二、Java注解" class="headerlink" title="二、Java注解"></a>二、Java注解</h2><h3 id="注解的定义"><a href="#注解的定义" class="headerlink" title="注解的定义"></a>注解的定义</h3><p>如果想要自定义注解，需要继承 <code>Annotation</code> 类。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyAnnotation</span> <span class="keyword">extends</span> <span class="title class_">Annotation</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>同时还有另一种写法，由此可知注释本质上是接口<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation2 &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>和接口一样，注解可以添加静态变量</p>
+</blockquote>
+<p>我们可以为注解添加“参数”，比如 Spring 中的注解 <code>@Profile(value = &quot;dev&quot;)</code>。我们为其设置了 <code>value</code> 属性。</p>
+<p>但是注解本是接口，不可能有保存数据的能力，要如何设置注解的属性呢？实际上，注解的属性在编写 <code>Annotation</code> 时是一个方法。即</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyProfile &#123;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还可以为参数添加默认值<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation3 &#123;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span>;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">number</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">8</span>; <span class="comment">// set default number</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>注解经常和枚举一起使用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation4 &#123;</span><br><span class="line">    <span class="keyword">enum</span> <span class="title class_">SELECT_TYPE</span> &#123;TYPE_A, TYPE_B&#125;</span><br><span class="line">    SELECT_TYPE <span class="title function_">selectType</span><span class="params">()</span> <span class="keyword">default</span> TYPE_A;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="元注解"><a href="#元注解" class="headerlink" title="元注解"></a>元注解</h3><p>元注解是注解的元数据，也就是对注解的注解。元注解为注解设置额外的信息，如设置注解的作用对象等等。</p>
+<h4 id="Documented"><a href="#Documented" class="headerlink" title="@Documented"></a>@Documented</h4><p>设置@Documented表明该注解能够出现在javadoc中。默认注解不会出现在javadoc中。</p>
+<h4 id="Target"><a href="#Target" class="headerlink" title="@Target"></a>@Target</h4><p>设置注解的作用对象，如注解类、方法、构造方法等等。使用方式如下<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(&#123;ElementType.METHOD, ElementType.CONSTRUCTOR&#125;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation5 &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><code>@Target</code> 表明注解 <code>@MyAnnotation5</code> 只能修饰方法和构造函数。</p>
+<h4 id="Retention"><a href="#Retention" class="headerlink" title="@Retention"></a>@Retention</h4><p>@Retention 设置注解被保留的时间。分为“仅在源文件”、“在class文件中保留”和“直到运行时依旧存在”。对应枚举 <code>RetentionPolicy.SOURCE</code>、<code>RetentionPolicy.CLASS</code>和<code>RetentionPolicy.RUNTIME</code>。</p>
+<h4 id="Inherited"><a href="#Inherited" class="headerlink" title="@Inherited"></a>@Inherited</h4><p>@Inherited 表示该注解所修饰的类，其子类也具有该注解。即注解也可被继承。</p>
+<h4 id="Repeatable"><a href="#Repeatable" class="headerlink" title="@Repeatable"></a>@Repeatable</h4><p>@Repeatable 表示该注解可以多次修饰同一个地方。例如</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RepeatableAnnotation(&quot;123&quot;)</span></span><br><span class="line"><span class="meta">@RepeatableAnnotation(&quot;456&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestClass</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="注解的使用"><a href="#注解的使用" class="headerlink" title="注解的使用"></a>注解的使用</h3><p>注解可以看做存储有一定信息的类型。使用注解就是获取其存储的信息（或者特定的注解类型本身便可作为一种信息）。获取注解信息只需要调用注解接口定义的方法即可。</p>
+<h2 id="三、C-特性"><a href="#三、C-特性" class="headerlink" title="三、C#特性"></a>三、C#特性</h2><h3 id="特性的定义"><a href="#特性的定义" class="headerlink" title="特性的定义"></a>特性的定义</h3><p>在C#中，特性就是一个类。可以定义类的所有成员种类，如方法、属性、字段等等，获取后也可以像一般类实例一样使用。自定义特性只需要继承 <code>Attribute</code> 类即可。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> MyTestAttribute : Attribute</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="built_in">string</span> Value &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyTestAttribute</span>()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyTestAttribute</span>(<span class="params"><span class="built_in">string</span> <span class="keyword">value</span></span>)</span></span><br><span class="line">    &#123;</span><br><span class="line">        Value = <span class="keyword">value</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>约定特性类名称以 Attribute 结尾。要使用特性时，既可以使用特性类名，也可以使用去掉末尾 Attribute 后的名称。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">MyTestAttribute(<span class="string">&quot;123&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">public</span> TestClass</span><br><span class="line">&#123; &#125;</span><br><span class="line"></span><br><span class="line">[<span class="meta">MyTest(<span class="string">&quot;456&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">public</span> TestClass2</span><br><span class="line">&#123; &#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意特性类作为特性使用构造函数时传入的参数只能是简单类型如 <code>bool, int, double, string, Type, enums</code> 等等。</p>
+</blockquote>
+<p>同时特性类型中的属性也可以在特性修饰时设置，还举 <code>MyTest</code> 为例。使用方法为 <code>propertyName = constPropertyValue</code>。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">MyTest(Value = <span class="string">&quot;789&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">public</span> TestClass3</span><br><span class="line">&#123; &#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="特性设置"><a href="#特性设置" class="headerlink" title="特性设置"></a>特性设置</h3><p>类似于Java注解的元注解，也有对特性进行设置的方式。只需要使用 <code>AttributeUsage</code> 注解。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">AttributeUsage(AttributeTargets.Class|AttributeTargets.Method, AllowMultiple = true, Inherited = true)</span>]</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">MyTest2Attribute</span> : <span class="title">Attribute</span></span><br><span class="line">&#123; &#125;</span><br></pre></td></tr></table></figure></p>
+<p>上面的例子展示了可以对特性进行的所有设置：作用对象、是否可重复、是否可继承。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/afa82b33/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/afa82b33/" class="post-title-link" itemprop="url">Java和C#中的反射机制</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-19 13:59:43" itemprop="dateCreated datePublished" datetime="2023-02-19T13:59:43+08:00">2023-02-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、反射简介"><a href="#一、反射简介" class="headerlink" title="一、反射简介"></a>一、反射简介</h2><p>反射是一种程序动态访问修改其状态或行为的机制。具体来说，反射提供了在程序运行时对代码进行操作的手段。</p>
+<p>反射提高了程序的灵活性和扩展性，能使程序员通过字符串动态地实现程序的修改。它降低了代码间的耦合度，可以避免硬编码，实现代码的组件化。反射的这些特点在对灵活性和扩展性要求很高的框架上有巨大的作用。</p>
+<p>当然，也需要注意到，反射通过字符串进行操作的方式是解释性的，这将导致性能的降低。</p>
+<h2 id="二、反射的原理"><a href="#二、反射的原理" class="headerlink" title="二、反射的原理"></a>二、反射的原理</h2><p>对于拥有虚拟机（或者类似的东西，虚拟机只是一个不正规的名词）的语言，都存在加载字节码（同样不正规的名词）到虚拟机的过程。在这个过程中，虚拟机获取了有关类的信息，包括继承关系、包含的字段和方法等等。对于java来说，局部变量放在栈中，类实例放在堆中，程序方法放在方法区中。</p>
+<p>对不使用反射的一般情况来说，方法调用更加直接。调用时虚拟机将根据编译时即确定的方法地址进行跳转。而对于反射，则需要根据字符串查找对应的类或方法。这样查找而非硬编码的过程就会影响性能。</p>
+<h2 id="二、java中的反射"><a href="#二、java中的反射" class="headerlink" title="二、java中的反射"></a>二、java中的反射</h2><p>通过反射我们能获取java语言中的如下组成部分：包、类（和接口）、方法（一般/构造）、字段、注解。反射不能操作方法中的内容。</p>
+<p>类是面向对象的基本单元，我们通过获取类来实现对程序的动态操作。</p>
+<h3 id="（1）类和包"><a href="#（1）类和包" class="headerlink" title="（1）类和包"></a>（1）类和包</h3><p>“类” <code>Class&lt;?&gt;</code> 是一个用于表示类的类型。它有三种获取方式<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ClassName.class <span class="comment">// 类型名.class</span></span><br><span class="line">obj.getClass(); <span class="comment">// 对象.getClass</span></span><br><span class="line">Class.forName(String className); <span class="comment">// Class.forName(&quot;包含包路径的类型全称&quot;)</span></span><br></pre></td></tr></table></figure></p>
+<p>前两种较好理解，相当于获取一个类型，我们可以用这编写一个类似于 <code>instanceof</code> 的函数。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">boolean</span> <span class="title function_">typeof</span><span class="params">(Object obj, Class&lt;?&gt; cls)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> obj.getClass() == cls;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>当然这无法将子类也判断为真。值得注意的是这里我们直接使用了 <code>==</code> 而不是 <code>equals</code>。因为对于每一个类，Class&lt;?&gt;只用一个实例。</p>
+</blockquote>
+<p>但第三种才最为重要，它通过字符串获取了一个类型。这就为程序提供了灵活性。</p>
+<p>获取了一个 <code>Class</code> 对象后，我们可以进一步获取其父类和实现的接口<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Class&lt;?&gt; cls = Class.forName(<span class="string">&quot;somepackages.someClass&quot;</span>);</span><br><span class="line">Class&lt;?&gt; superCls = cls.getSuperclass();</span><br><span class="line">Class&lt;?&gt;[] interfaces = cls.getInterfaces();</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>值得注意的是获取接口方法返回的是一个 <code>Class</code> 数组。这说明对于虚拟机来说本没有类和接口之分。</p>
+</blockquote>
+<p>调用 <code>getPackage</code> 可以获取包<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Package</span> <span class="variable">p</span> <span class="operator">=</span> cls.getPackage();</span><br></pre></td></tr></table></figure></p>
+<p><code>Package</code> 类型保存了该包的一些信息，如名称、版本等等，不一一列举。</p>
+<h3 id="（2）方法"><a href="#（2）方法" class="headerlink" title="（2）方法"></a>（2）方法</h3><p>通过反射机制可以获取类的方法。既可以获取方法集合也可以获取指定的方法。</p>
+<p>获取方法集合的方法为<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Class&lt;?&gt; cls = Class.forName(&quot;somepackages.someClass&quot;);</span></span><br><span class="line">Method[] ms = cls.getMethods(); <span class="comment">// 只获取 public 方法</span></span><br><span class="line">Method[] ms = cls.getDeclaredMethods(); <span class="comment">// 获取所有方法</span></span><br></pre></td></tr></table></figure></p>
+<p>获取特定的方法，需要指定方法签名。也就是方法的名称和其参数类型。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Method</span> <span class="variable">m</span> <span class="operator">=</span> cls.getMethod(<span class="string">&quot;func1&quot;</span>, <span class="type">int</span>.class, <span class="type">double</span>.class);</span><br><span class="line"><span class="type">Method</span> <span class="variable">m</span> <span class="operator">=</span> cls.getDeclaredMethod(<span class="string">&quot;func2&quot;</span>, <span class="type">int</span>.class, cls);</span><br><span class="line"><span class="comment">// 参数类型 (String name, Class&lt;?&gt;... parameterTypes)</span></span><br></pre></td></tr></table></figure></p>
+<p><code>Method</code> 类提供了一些方法以访问方法的相关信息，如名称、参数类型、返回值类型等等。通过函数名很容易理解，这里不一一列举。</p>
+<p>如果想要调用方法的话，则需要调用 <code>Method</code> 类的 <code>invoke</code> 方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">m.invoke(obj, param1, param2)</span><br><span class="line"><span class="comment">// 参数类型 (Object obj, Object... args) 其中第一个参数为要调用该方法的实例</span></span><br></pre></td></tr></table></figure></p>
+<p>对于私有方法，不能直接调用，还需要通过 <code>setAccessible</code> 方法设置其为允许调用。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">m.setAccessible(<span class="literal">true</span>); <span class="comment">// is accessible</span></span><br></pre></td></tr></table></figure></p>
+<p>对于构造函数的获取也有类似的方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Constructor&lt;?&gt;[] cs = cls.getConstructors();</span><br><span class="line">Constructor&lt;?&gt;[] cs = cls.getDeclaredConstructors();</span><br><span class="line">Constructor&lt;?&gt; c = cls.getConstructor(<span class="type">int</span>.class);</span><br><span class="line">Constructor&lt;?&gt; c = cls.getDeclaredConstructor(<span class="type">double</span>.class);</span><br></pre></td></tr></table></figure></p>
+<p>需要注意的是，调用构造函数所使用的方法不是 <code>invoke</code> 而是 <code>newInstance</code>。同时方法不包含对象参数（这是当然的）。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">var</span> <span class="variable">ins</span> <span class="operator">=</span> c.newInstance(param1, param2);</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）字段"><a href="#（3）字段" class="headerlink" title="（3）字段"></a>（3）字段</h3><p>同样使用反射机制获取类的字段，这与获取方法类似。对于获取特定字段，只需要指定字段名即可。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Field[] fs = cls.getFields();</span><br><span class="line">Field[] fs = cls.getDeclaredFields();</span><br><span class="line"><span class="type">Field</span> <span class="variable">f</span> <span class="operator">=</span> cls.getField(<span class="string">&quot;fieldName&quot;</span>);</span><br><span class="line"><span class="type">Field</span> <span class="variable">f</span> <span class="operator">=</span> cls.getDeclaredField(<span class="string">&quot;fieldName&quot;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>我们希望实现字段的读写，这需要通过 <code>Field</code> 的 <code>get</code> 和 <code>set</code> 方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Object</span> <span class="variable">val</span> <span class="operator">=</span> f.get(obj);</span><br><span class="line">f.set(obj2, val);</span><br><span class="line"><span class="comment">// obj 和 obj2 为拥有被访问字段的实例</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意进行类型转换。字段的类型是在编译时确定的。</p>
+</blockquote>
+<h3 id="（4）注解"><a href="#（4）注解" class="headerlink" title="（4）注解"></a>（4）注解</h3><p>注解 <code>Annotation</code> 是一种特殊的类（就像异常也是一种特殊的类）。它能够被写在类（或接口）、方法、字段或包等等位置，用于为这些元素附加一些内容。如java内置的 <code>@Override</code> 注解就表达了 “其所注解的方法重写了父类方法” 的意思。</p>
+<p>编译器会在编译期处理一些注解。但在运行阶段注解就只能通过反射访问。如果想要自定义注解，需要继承 <code>Annotation</code> 类。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyAnnotation</span> <span class="keyword">extends</span> <span class="title class_">Annotation</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>同时还有另一种写法，由此可知注释本质上是接口<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation2 &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>但关于注释的具体内容这里还是先打住吧，可能会另写一篇文章详细说明。还是看一下通过反射获取注解的方式吧。</p>
+</blockquote>
+<p>反射中所说明的其他对象都继承了 <code>AnnotatedElement</code> 类。这意味着他们都是 “可以被注解的”。他们都具有获取自己拥有的注解的方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cls.getAnnotation(MyAnnotation.class);</span><br><span class="line">cls.getAnnotations();</span><br><span class="line">cls.getAnnotationsByType(MyAnnotation2.class);</span><br><span class="line"></span><br><span class="line">cls.getDeclaredAnnotation(MyAnnotation.class);</span><br><span class="line">cls.getDeclaredAnnotations();</span><br><span class="line">cls.getDeclaredAnnotationsByType(MyAnnotation2.class);</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意 <code>getAnnotationsByType</code> 获取可重复注解；<code>DeclaredAnnotation</code> 指的是直接属于该对象，而非继承得来的注解</p>
+</blockquote>
+<p>不同的反射对象也有特殊的关于注解的方法，如 <code>Class</code> 有获取具有注解的方法集合的方法，<code>Method</code> 有获取具有注解的参数的方法。不一一列举。</p>
+<h3 id="（5）泛型"><a href="#（5）泛型" class="headerlink" title="（5）泛型"></a>（5）泛型</h3><p>java的假泛型设计使得这个语言关于泛型的部分都十分麻烦，这里也是。</p>
+<p>反射库中可以看到一些带有 <code>Generic</code> 字段的方法。如 <code>getGenericReturnType</code>。这些方法返回的类型不是 <code>Class</code> 而是 <code>Type</code>。<code>Type</code> 是 <code>Class</code> 的父类。<code>Type</code> 类还有用以支持泛型、泛型数组等类型的子类，如 <code>ParameterizedType</code>、<code>GenericArrayType</code> 这些子类各有方法用于获取其类型参数。</p>
+<blockquote>
+<p>也就是说，没有 <code>Generic</code> 字段的方法返回的只是类型擦除后的类型。</p>
+</blockquote>
+<p><code>ParameterizedType</code> 具有 <code>getActualTypeArguments</code> 方法，可以获取一个泛型类的泛型类型。如 <code>List&lt;Integer&gt;</code> 获取 <code>Integer</code> 类型。</p>
+<p><code>GenericArrayType</code> 具有 <code>getGenericComponentType</code> 方法，可以获取一个泛型数组的泛型类型。</p>
+<h2 id="三、C-中的反射"><a href="#三、C-中的反射" class="headerlink" title="三、C#中的反射"></a>三、C#中的反射</h2><p>C# 中的反射机制与java中类似，这里进行对比介绍。</p>
+<p>C# 的反射机制能获取如下组成部分，类型、方法（构造、一般）、属性、字段、事件。</p>
+<h3 id="（1）程序集"><a href="#（1）程序集" class="headerlink" title="（1）程序集"></a>（1）程序集</h3><p>程序集是C#自有的概念，指的是C#代码编译后产生的exe文件或dll文件。类似于java中的jar。可以动态地加载程序集，这一点类似于java中的 <code>ClassLoader</code>，但似乎更加灵活。</p>
+<p>可以通过程序集名或程序集路径来加载程序集。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Assembly assembly = Assembly.Load(<span class="string">&quot;assemblyName&quot;</span>);</span><br><span class="line">Assembly assembly = Assembly.LoadFile(<span class="string">&quot;filePath&quot;</span>);</span><br><span class="line">Assembly assembly = Assembly.LoadFrom(<span class="string">&quot;assemblyFile&quot;</span>);</span><br></pre></td></tr></table></figure></p>
+<p>之后使用类型全名获取类型或获取程序集中的所有类型<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Type type = assembly.GetType(<span class="string">&quot;namespace.className&quot;</span>);</span><br><span class="line">Type[] type = assembly.GetTypes(); <span class="comment">// 获取程序集中的所有类型</span></span><br></pre></td></tr></table></figure></p>
+<p>通过类型同样可以反过来获取程序集<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Assembly assembly = type.Assembly;</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）类型"><a href="#（2）类型" class="headerlink" title="（2）类型"></a>（2）类型</h3><p>类型 <code>Type</code> 同java <code>Type</code>。但没有假泛型导致的复杂子类。除了通过程序集，还有其他的获取类型的三种方式，类似于java。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Type t = <span class="keyword">typeof</span>(TypeName) <span class="comment">// typeof(类型名)</span></span><br><span class="line">Type t = obj.getType(); <span class="comment">// 对象.getClass</span></span><br><span class="line">Type t = Type.getType(String className); <span class="comment">// Class.forName(&quot;包含命名空间的类型全称&quot;)</span></span><br></pre></td></tr></table></figure></p>
+<p>同样的，第三种方式最为关键。另外C#中也可以获取到父类和接口，这些内容不再重复。</p>
+<h3 id="（3）方法"><a href="#（3）方法" class="headerlink" title="（3）方法"></a>（3）方法</h3><p>C#同样可以获取构方法集合和特定方法。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ConstructorInfo[] cs = t.GetConstructors();</span><br><span class="line">ConstructorInfo? c = t.GetConstructor(<span class="keyword">new</span> Type[]&#123;type1, type2&#125;); <span class="comment">// 参数类型(Type[] types)</span></span><br><span class="line"></span><br><span class="line">MethodInfo[] ms = t.GetMethods();</span><br><span class="line">MethodInfo? m = t.GetMethod(<span class="string">&quot;func1&quot;</span>, <span class="keyword">new</span> Type[]&#123;type1, type2&#125;);</span><br></pre></td></tr></table></figure></p>
+<p>值得注意的是，<code>ConstructorInfo</code> 和 <code>MethodInfo</code> 都继承了 <code>MethodBase</code>。这意味着构造函数和一般函数在C#反射中都是函数，可以使用同样的 <code>Invoke</code> 方法调用。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">object</span> newObj = c.Invoke(<span class="keyword">new</span> <span class="built_in">object</span>[]&#123;param1, param2&#125;);</span><br><span class="line">m.Invoke(obj, <span class="keyword">new</span> <span class="built_in">object</span>[]&#123;param1, param2&#125;);</span><br></pre></td></tr></table></figure></p>
+<h3 id="（4）属性"><a href="#（4）属性" class="headerlink" title="（4）属性"></a>（4）属性</h3><p>属性相当于C#中的getter、setter函数。也是类的组成部分，也可以通过反射获取。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">PropertyInfo? p = t.GetProperty(<span class="string">&quot;propertyName&quot;</span>);</span><br><span class="line">PropertyInfo[] ps = t.GetProperties();</span><br></pre></td></tr></table></figure></p>
+<p>通过 <code>GetValue</code> 和 <code>SetValue</code> 进行属性的修改。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">object</span>? val = p.GetValue(obj);</span><br><span class="line">p.setValue(obj2, val);</span><br></pre></td></tr></table></figure></p>
+<h3 id="（5）字段"><a href="#（5）字段" class="headerlink" title="（5）字段"></a>（5）字段</h3><p>字段类似于java的字段<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FieldInfo? f = t.GetField(<span class="string">&quot;fieldName&quot;</span>);</span><br><span class="line">FieldInfo[] fs = t.GetFields();</span><br></pre></td></tr></table></figure></p>
+<p>同样通过 <code>GetValue</code> 和 <code>SetValue</code> 进行属性的修改。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">object</span>? val = f.GetValue(obj);</span><br><span class="line">f.setValue(obj2, val);</span><br></pre></td></tr></table></figure></p>
+<h3 id="（6）事件"><a href="#（6）事件" class="headerlink" title="（6）事件"></a>（6）事件</h3><p>从C#的角度讲，事件是只属于某一类的委托。因此单独作为反射的一部分。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">EventInfo? e = t.GetEvent(<span class="string">&quot;eventName&quot;</span>);</span><br><span class="line">EventInfo[] es = t.GetEvents();</span><br></pre></td></tr></table></figure></p>
+<p>每个事件具有 <code>Add</code> 和 <code>Remove</code> 方法。用于注册或删除方法。我们可以获取某一事件对应的方法<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MethodInfo addHandler = e.GetAddMethod();</span><br><span class="line">MethodInfo removeHandler = e.GetRemoveMethod();</span><br></pre></td></tr></table></figure></p>
+<p>之后，创建代理并将其添加到事件或从事件中删除。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Delegate d = Delegate.CreateDelegate(tDelegate, <span class="keyword">this</span>, miHandler); <span class="comment">// 创建代理</span></span><br><span class="line">Object[] handlerArgs = &#123; d &#125;;</span><br><span class="line">addHandler.Invoke(eventObj, handlerArgs);</span><br><span class="line">removeHandler.Invoke(eventObj, handlerArgs);</span><br></pre></td></tr></table></figure></p>
+<h3 id="（7）类型成员"><a href="#（7）类型成员" class="headerlink" title="（7）类型成员"></a>（7）类型成员</h3><p>如上除程序集和类型之外的组成部分都是类型的成员。我们可以直接获取成员<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MemberInfo[] members = t.GetMember(<span class="string">&quot;memberName&quot;</span>); <span class="comment">// 获取该名称的成员</span></span><br><span class="line">MemberInfo[] members = t.GetMembers(); <span class="comment">// 获取类型的所有public成员</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="（8）成员筛选"><a href="#（8）成员筛选" class="headerlink" title="（8）成员筛选"></a>（8）成员筛选</h3><p>我们有时希望之查找具有某些特征的成员，如只搜索私有成员或公共成员。这需要在如上获取成员的方法（不管是如第3节获取特定的成员，如方法。或是如上一节获取一般的成员）上设定参数 <code>bindingAttr:</code>。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> m = type.GetMethod(<span class="string">&quot;func&quot;</span>, <span class="keyword">new</span> Type[]&#123;type1, type2&#125;,</span><br><span class="line">    bindingAttr: BindingFlags.Public);</span><br><span class="line"><span class="keyword">var</span> members = t.GetMembers(</span><br><span class="line">    bindingAttr: BindingFlags.NonPublic);</span><br></pre></td></tr></table></figure>
+<p><code>bindingAttr:</code> 参数的类型是一个枚举类 <code>BindingFlags</code>。包含有许多设置参数，如</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IgnoreCase</td>
+<td>忽略名称大小写</td>
+</tr>
+<tr>
+<td>Public</td>
+<td>查找公共成员</td>
+</tr>
+<tr>
+<td>NonPublic</td>
+<td>查找非公共成员</td>
+</tr>
+<tr>
+<td>Static</td>
+<td>查找静态成员</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+</tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>如果想要采取不止一种选项，可以对这些枚举值求按位或。如 <code>bindingAttr: BindingFlags.Public|BindingFlags.NonPublic</code></p>
+</blockquote>
+<h3 id="（9）特性"><a href="#（9）特性" class="headerlink" title="（9）特性"></a>（9）特性</h3><p>c#的特性（Attribute）与java的注解几乎一模一样。只不过声明方法略有区别，是用方括号括起来的。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">MyAttribute(<span class="string">&quot;123&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">MyClass</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>C#中获取特性的方法更为优雅。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Attribute[] attrs = Attribute.GetCustomAttributes(t);</span><br><span class="line">Attribute attr = Attribute.GetCustomAttribute(</span><br><span class="line">    t, attributeType: <span class="keyword">typeof</span>(MyAttribute));</span><br></pre></td></tr></table></figure></p>
+<h3 id="（10）泛型"><a href="#（10）泛型" class="headerlink" title="（10）泛型"></a>（10）泛型</h3><p>C#中反射的泛型十分简单。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Type[] gArgs = t.GetGenericArguments();</span><br></pre></td></tr></table></figure><br>这样就可以获取类型的泛型参数了（如果不是泛型类则数组长度为0）。对于类内的成员同样适用。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/704144f6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/704144f6/" class="post-title-link" itemprop="url">2D物理引擎基础之刚体力学与碰撞约束</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-10 09:47:10" itemprop="dateCreated datePublished" datetime="2023-02-10T09:47:10+08:00">2023-02-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文是“2D物理引擎基础”的第三篇文章，主要介绍物体刚体力学的相关知识以及碰撞发生后的处理办法。后者背后的数学原理较为复杂，因此这里大多情况只是罗列公式并做简要说明。</p>
+<h2 id="二、刚体力学"><a href="#二、刚体力学" class="headerlink" title="二、刚体力学"></a>二、刚体力学</h2><h3 id="连续的刚体力学"><a href="#连续的刚体力学" class="headerlink" title="连续的刚体力学"></a>连续的刚体力学</h3><p>我们考虑二维的情况。假设有一刚体，质量为 $M$，转动惯量为 $I$，在距质心 $\vec{r}$ 处受到一力 $\vec{F}$ 的作用。</p>
+<p>那么刚体所受相对于质心的力矩 $\vec{M}$ 为：</p>
+<script type="math/tex; mode=display">
+    \vec{M} = \vec{r} \times \vec{F}</script><p>注意 $\vec{M}$ 的方向垂直于平面，后面的角速度同理。</p>
+<p>在 $\Delta{t}$ 时间内速度变化 $\Delta{\vec{v}}$ 有</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{v}} = \int_{t_0}^{t0+\Delta{t}} \frac{\vec{F}(t)}{M} dt</script><p>同样的，角速度变化 $\Delta{\vec{w}}$ 有</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{w}} = \int_{t_0}^{t0+\Delta{t}} \frac{\vec{M(t)}}{I} dt</script><p>类似的，也有位置和角度的变化</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{p}} = \int_{t_0}^{t0+\Delta{t}} \vec{v}(t) dt</script><script type="math/tex; mode=display">
+    \Delta{\vec{\theta}} = \int_{t_0}^{t0+\Delta{t}} \vec{w}(t) dt</script><p>还有冲量</p>
+<script type="math/tex; mode=display">
+    \vec{I} = \int_{t_0}^{t0+\Delta{t}} \vec{F}(t) dt</script><p>以及角冲量（或称冲量矩）</p>
+<script type="math/tex; mode=display">
+    \vec{H} = \int_{t_0}^{t0+\Delta{t}} \vec{M}(t) dt</script><p>并有等式</p>
+<script type="math/tex; mode=display">
+    \vec{I} = M \Delta{\vec{v}}</script><script type="math/tex; mode=display">
+    \vec{H} = I \Delta{\vec{w}}</script><h3 id="离散的刚体模拟"><a href="#离散的刚体模拟" class="headerlink" title="离散的刚体模拟"></a>离散的刚体模拟</h3><p>正如第一篇文章中说过的，一般情况下计算机无法计算连续，只能通过离散的方式进行近似。物理引擎中进行的模拟会导致误差，但这对于视觉效果来说已经足够了。</p>
+<h4 id="力的视角"><a href="#力的视角" class="headerlink" title="力的视角"></a>力的视角</h4><p>同样的，我们假设有一刚体，质量为 $M$，转动惯量为 $I$，在距质心 $\vec{r}$ 处受到一力 $\vec{F}$ 的作用。在 $\Delta{t}$ 的时间间隔下，有力矩</p>
+<script type="math/tex; mode=display">
+    \vec{M} = \vec{r} \times \vec{F}</script><p>速度和角速度的变化为</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{v}} = \frac{\vec{F}}{M} \Delta{t}</script><script type="math/tex; mode=display">
+    \Delta{\vec{w}} = \frac{\vec{M}}{I} \Delta{t}</script><p>位置和角度的变化为</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{p}} =  \vec{v} \Delta{t}</script><script type="math/tex; mode=display">
+    \Delta{\vec{\theta}} =  \vec{w} \Delta{t}</script><h4 id="冲量的视角"><a href="#冲量的视角" class="headerlink" title="冲量的视角"></a>冲量的视角</h4><p>假设物体在距质心 $\vec{r}$ 处极短的时间内受到一冲量 $\vec{I}$ 的作用，这个冲量将直接引起速度和角速度的变化。</p>
+<p>首先，这个冲量相对于质心的冲量矩为</p>
+<script type="math/tex; mode=display">
+    \vec{H} = \vec{r} \times \vec{I}</script><p>冲量更新速度</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{v}} = \frac{\vec{I}}{M}</script><p>冲量矩更新角速度</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{w}} = \frac{\vec{H}}{I}</script><p>最后需要提一句，距离质点 $\vec{r}$ 处在全局坐标系的速度为</p>
+<script type="math/tex; mode=display">
+    \vec{v}_p = \vec{v} + \vec{w} \times \vec{r}</script><blockquote>
+<p>这些概念和公式并不复杂，只是有些时候难以准确记忆。罗列公式的意义也就在于此</p>
+</blockquote>
+<h2 id="三、碰撞约束"><a href="#三、碰撞约束" class="headerlink" title="三、碰撞约束"></a>三、碰撞约束</h2><p>约束是物理引擎中的重要概念，指的是在一些情况下，通过某些手段，改变物体的位置、速度等数据，实现物体满足某种限制效果的方法。</p>
+<p>本部分专门介绍碰撞约束，研究物体与物体发生碰撞后，限制物体不相互穿透的方法。我们的输入是碰撞的物体的物理属性、接触点、碰撞法线和穿透深度；输出是对碰撞物体的速度、角速度进行的修改。一般来说，物理引擎使用冲量对物体速度进行修改。</p>
+<h3 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h3><p>我们首先考虑一个简单的问题，两个小球在平面上发生正碰，他们的初始速度分别为 $\vec{v}_a, \vec{v}_b$，由 A 到 B 的碰撞法线为 $\vec{n}$。恢复系数为 $C_r$。他们碰撞后速度改变，这等效于对两者施加怎样的冲量？</p>
+<p>首先，我们计算两物体的相对速度</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{v}_{ab} = \vec{v}_b - \vec{v}_a
+\end{equation}</script><p>那么反弹后的相对速度应为</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_{ab} = -C_r \vec{v}_{ab}
+\end{equation}</script><p>另一方面我们要对两物体施加冲量，因为牛顿第三定理，两个作用力等大反向，因此冲量的大小也相等，设为 $\lambda_n$</p>
+<p>则冲量的作用效果为</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_a = \vec{v}_a - \frac{\lambda_n \vec{n}}{m_a}
+\end{equation}</script><script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_b = \vec{v}_b + \frac{\lambda_n \vec{n}}{m_b}
+\end{equation}</script><p>$(4)-(3)$ 得</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_b - \vec{u}_a = \vec{v}_b - \vec{v}_a + (\frac{1}{m_a} + \frac{1}{m_b}) \lambda_n \vec{n}
+\end{equation}</script><p>带入 $(1), (2)$ 式得</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \lambda_n = \frac{-(1+C_r)\vec{v}_{ab}}{(\frac{1}{m_a} + \frac{1}{m_b})\vec{n}}
+\end{equation}</script><p>等式右侧上下同点乘 $\vec{n}$ 得</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \lambda_n = \frac{-(1+C_r)(\vec{v}_b - \vec{v}_a) \cdot \vec{n}}{(\frac{1}{m_a} + \frac{1}{m_b})}
+\end{equation}</script><p>因此我们只需对物体 A 施加 $-\lambda_n \vec{n}$，对 B 施加 $\lambda_n \vec{n}$ 大小的冲量就足以实现碰撞后分开的约束效果。</p>
+<h3 id="刚体力学的碰撞约束"><a href="#刚体力学的碰撞约束" class="headerlink" title="刚体力学的碰撞约束"></a>刚体力学的碰撞约束</h3><p>上一小节的例子只考虑了一个很简化的情况。只有正碰，而没有考虑斜碰时的摩擦力和旋转等问题。更一般的公式是如下所示的：</p>
+<p>首先我们定义切向方向，它是与碰撞法线垂直，且位于速度同侧的单位向量或零向量，即</p>
+<script type="math/tex; mode=display">
+    \vec{v}_R = \vec{v}_b - \vec{v}_a</script><script type="math/tex; mode=display">
+    \vec{t} = normalize(\vec{v}_R - (\vec{v}_R \cdot \vec{n}) \vec{n})</script><p>那么法向的冲量大小为</p>
+<script type="math/tex; mode=display">
+    \lambda_n = \frac{-(1+C_r)(\vec{v}_b - \vec{v}_a) \cdot \vec{n}}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{n})^2}{I_a} + \frac{(\vec{r}_b \times \vec{n})^2}{I_b}}</script><p>切向的冲量大小为</p>
+<script type="math/tex; mode=display">
+    \lambda_t = \frac{-(\vec{v}_b - \vec{v}_a) \cdot \vec{t}}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{t})^2}{I_a} + \frac{(\vec{r}_b \times \vec{t})^2}{I_b}}</script><p>其中 $\vec{r}_a, \vec{r}_b$ 表示从物体质心到接触点的位置向量。</p>
+<blockquote>
+<p>注意两个公式中 $\vec{n}$ 和 $\vec{t}$ 的不同。并且注意这里的速度 $\vec{v}_a, \vec{v}_b$ 考虑了角速度，即</p>
+<script type="math/tex; mode=display">
+    \vec{v} = \vec{v}_{\text{linear}} + \vec{w}_{\text{rotate}} \times \vec{r}</script></blockquote>
+<p>这样只要对物体 A 施加 $-(\lambda_n \vec{n} + \lambda_t \vec{t})$，对物体 B 施加 $\lambda_n \vec{n} + \lambda_t \vec{t}$ 大小的冲量就可以实现物体的碰撞的约束。</p>
+<p>值得注意的是，我们在上面的公式中多次看到质量的倒数和转动惯量的倒数，这一数值在物理引擎中经常使用，我们可以将其在一开始便计算并储存起来。另外，冲量等式中分母部分也较为常见，我们同样可以将其提出作为单独的参数。此参数被称为（法向/切向）有效质量。</p>
+<script type="math/tex; mode=display">
+    M_n^{-1} = \frac{1}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{n})^2}{I_a} + \frac{(\vec{r}_b \times \vec{n})^2}{I_b}}</script><script type="math/tex; mode=display">
+    M_t^{-1} = \frac{1}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{t})^2}{I_a} + \frac{(\vec{r}_b \times \vec{t})^2}{I_b}}</script><p>我们修改原有的 Body 类<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">self.mass = density * get_area(self.points)</span><br><span class="line">self.inv_mass = <span class="number">1</span> / self.mass <span class="comment"># add inv_mass</span></span><br><span class="line">self.inertia = get_moments_of_inertia(self.points, self.mass)</span><br><span class="line">self.inv_inertia = <span class="number">1</span> / self.inertia <span class="comment"># add inv_inertia</span></span><br></pre></td></tr></table></figure></p>
+<p>并编写计算有效质量的函数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_effective_mass</span>(<span class="params">body_a, ra, body_b, rb, unit_vect</span>):</span><br><span class="line">    ma = body_a.inv_mass</span><br><span class="line">    mb = body_b.inv_mass</span><br><span class="line"></span><br><span class="line">    ia = (np.cross(ra, unit_vect))**<span class="number">2</span> * body_a.inv_inertia</span><br><span class="line">    ib = (np.cross(rb, unit_vect))**<span class="number">2</span> * body_b.inv_inertia</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> / (ma + mb + ia + ib)</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>unit_vect</code> 表示切向量或者法向量。</p>
+<h3 id="摩擦力的模拟"><a href="#摩擦力的模拟" class="headerlink" title="摩擦力的模拟"></a>摩擦力的模拟</h3><p>很多时候我们还需要考虑摩擦力的影响，这样我们就需要对切向的冲量进行调整。具体来说，我们假设最大静摩擦系数等于动摩擦系数，那么就需要满足</p>
+<script type="math/tex; mode=display">
+    F_f \le \mu F_n</script><blockquote>
+<p>注意 $F_f, F_n$ 是力的大小，不考虑方向</p>
+</blockquote>
+<p>不等式两边同乘 $\Delta{t}$ 就变成冲量不等式，即</p>
+<script type="math/tex; mode=display">
+    \lambda_t \le \mu \lambda_n</script><p>因此对摩擦力的限制即为</p>
+<script type="math/tex; mode=display">
+    \lambda'_t = clamp_{[-\mu\lambda_n, \mu\lambda_n]}(\lambda_t)</script><blockquote>
+<p>clamp 函数将 $\lambda_t$ 限制在区间 $[-\mu\lambda_n, \mu\lambda_n]$ 间。</p>
+</blockquote>
+<h3 id="速度约束"><a href="#速度约束" class="headerlink" title="速度约束"></a>速度约束</h3><p>据此我们可以编写实施约束的代码。首先，我们将碰撞相关的信息打包成一个类。在物理引擎理论中，这似乎被称作 Manifold。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Manifold</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, body_a, body_b, collide_result</span>):</span><br><span class="line">        self.body_a = body_a</span><br><span class="line">        self.body_b = body_b</span><br><span class="line">        self.normal, self.contact_points = collide_result</span><br><span class="line"></span><br><span class="line">        self.ra = []</span><br><span class="line">        self.rb = []</span><br><span class="line">        <span class="keyword">for</span> point, depth <span class="keyword">in</span> self.contact_points:</span><br><span class="line">            self.ra.append(point - body_a.position)</span><br><span class="line">            self.rb.append(point - body_b.position)</span><br></pre></td></tr></table></figure><br>其中传入的 <code>collide_result</code> 参数即 <code>sat3</code> 函数的输出。</p>
+<p>接着，我们编写碰撞中约束速度的函数：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">velocity_constrain</span>(<span class="params">manifold</span>):</span><br><span class="line">    body_a = manifold.body_a</span><br><span class="line">    body_b = manifold.body_b</span><br><span class="line">    contact_points = manifold.contact_points</span><br><span class="line">    n = manifold.normal</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(contact_points)):</span><br><span class="line">        p, depth = contact_points[i]</span><br><span class="line"></span><br><span class="line">        ra = manifold.ra[i]</span><br><span class="line">        rb = manifold.rb[i]</span><br><span class="line"></span><br><span class="line">        va = body_a.v + cross_product(body_a.w, ra)</span><br><span class="line">        vb = body_b.v + cross_product(body_b.w, rb)</span><br><span class="line"></span><br><span class="line">        rv = vb - va</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> np.dot(rv, n) &gt; <span class="number">0</span>: <span class="comment"># 如果速度方向背离了碰撞方向，则说明物体已经分离</span></span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        </span><br><span class="line">        t = normalize(rv - np.dot(rv, n) * n)</span><br><span class="line"></span><br><span class="line">        effective_mass_n = get_effective_mass(body_a, ra, body_b, rb, n)</span><br><span class="line">        effective_mass_t = get_effective_mass(body_a, ra, body_b, rb, t)</span><br><span class="line"></span><br><span class="line">        cr = <span class="built_in">min</span>(body_a.restitution, body_b.restitution)</span><br><span class="line"></span><br><span class="line">        lambda_n = -(<span class="number">1</span> + cr) * np.dot(rv, n) * effective_mass_n</span><br><span class="line"></span><br><span class="line">        body_a.apply_impulse(-lambda_n * n, p)</span><br><span class="line">        body_b.apply_impulse(lambda_n * n, p)</span><br><span class="line"></span><br><span class="line">        lambda_t = - np.dot(rv, t) * effective_mass_t</span><br><span class="line"></span><br><span class="line">        mu = np.sqrt(body_a.friction * body_b.friction)</span><br><span class="line"></span><br><span class="line">        max_friction = <span class="built_in">abs</span>(mu * lambda_n)</span><br><span class="line"></span><br><span class="line">        lambda_t = clamp(lambda_t, -max_friction, max_friction)</span><br><span class="line"></span><br><span class="line">        body_a.apply_impulse(-lambda_t * t, p)</span><br><span class="line">        body_b.apply_impulse(lambda_t * t, p)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cross_product</span>(<span class="params">s, a</span>):</span><br><span class="line">    <span class="keyword">return</span> np.array([-s * a[<span class="number">1</span>], s * a[<span class="number">0</span>]])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">clamp</span>(<span class="params">value, smallest, largest</span>):</span><br><span class="line">    <span class="keyword">if</span> value &lt; smallest:</span><br><span class="line">        <span class="keyword">return</span> smallest</span><br><span class="line">    <span class="keyword">elif</span> largest &lt; value:</span><br><span class="line">        <span class="keyword">return</span> largest</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> value</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p><strong>十分需要注意的是</strong>，碰撞约束的求解是一个迭代的过程，这是因为每次碰撞检测只会考虑某两个物体；对于多对物体，我们需要先求出所有发生碰撞的物体对，将碰撞信息存入 <code>Manifold</code> 类中。接着多次迭代，每一次迭代对所有的 Manifold 求解速度约束。只有这样才能尽量求得全局的约束结果。</p>
+</blockquote>
+<h3 id="穿透问题与位置约束"><a href="#穿透问题与位置约束" class="headerlink" title="穿透问题与位置约束"></a>穿透问题与位置约束</h3><p>容易发现，我们上面的代码并没有使用穿透深度。在一些情况下，因为在碰撞后的第一帧就进行了速度处理，此时穿透深度较小，很快就能修正，所以视觉上并无大碍。但很多时候，如施加了重力的情况下，单纯的修改速度不足以抵消重力的影响，此时穿透深度会越来越大，最终会使物体陷入地面。</p>
+<p>因此，我们除了进行速度约束以外，还需要根据穿透深度进行位置的修正。这就是位置约束。</p>
+<p>我们设当前穿透深度为 $x$，最大允许穿透深度为 $x_{max}$，则有</p>
+<script type="math/tex; mode=display">
+    \lambda_{pos} = \beta M^{-1}_{n} max(x - x_{max}, 0) \quad (0 \lt \beta \lt 1)</script><p>其中 $\beta$ 是人为穿透的解决程度（虽然不太理解这有什么意义）。</p>
+<p>类似于冲量，最终的位置的变化量为</p>
+<script type="math/tex; mode=display">
+    \Delta \vec{p}_a = -\frac{\lambda_{pos}\vec{n}}{m_a}</script><script type="math/tex; mode=display">
+    \Delta \vec{p}_b = \frac{\lambda_{pos}\vec{n}}{m_b}</script><blockquote>
+<p>本方法的数学原理并不清楚，但似乎 box2d 中是这样做的？</p>
+</blockquote>
+<p>据此我们能写出代码。需要注意一点，位置变化会引起接触点的变化，我们希望得知接触点分离的时刻，这通过保留物体质心到接触点的向量实现。这也是我们在 <code>Manifold</code> 类中加入 <code>ra, rb</code> 的原因。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">position_constrain</span>(<span class="params">manifold</span>):</span><br><span class="line">    body_a = manifold.body_a</span><br><span class="line">    body_b = manifold.body_b</span><br><span class="line">    contact_points = manifold.contact_points</span><br><span class="line">    n = manifold.normal</span><br><span class="line"></span><br><span class="line">    bias_factor = <span class="number">0.8</span></span><br><span class="line">    max_depth = <span class="number">0.005</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(contact_points)):</span><br><span class="line">        p, depth = contact_points[i]</span><br><span class="line"></span><br><span class="line">        ra = manifold.ra[i]</span><br><span class="line">        rb = manifold.rb[i]</span><br><span class="line"></span><br><span class="line">        pa = ra + body_a.position</span><br><span class="line">        pb = rb + body_b.position</span><br><span class="line"></span><br><span class="line">        c = pa - pb</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> np.dot(c, n) &lt; <span class="number">0</span>: <span class="comment"># 判断接触点是否分离</span></span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        bias = bias_factor * <span class="built_in">max</span>((depth - max_depth), <span class="number">0</span>)</span><br><span class="line">        lambda_p = get_effective_mass(body_a, ra, body_b, rb, n) * bias</span><br><span class="line"></span><br><span class="line">        correction = lambda_p * n</span><br><span class="line"></span><br><span class="line">        body_a.position = body_a.position - body_a.inv_mass * correction</span><br><span class="line"></span><br><span class="line">        body_b.position = body_b.position + body_b.inv_mass * correction</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>位置约束的求解也是一个迭代过程。发生在速度约束的迭代完成后。</p>
+</blockquote>
+<h2 id="四、总结"><a href="#四、总结" class="headerlink" title="四、总结"></a>四、总结</h2><p>这一篇文章内容较多，简单介绍了一下刚体力学的知识，接着主要是碰撞约束的求解方法。在一些应详细解释的地方因能力不足，未能详述，实在抱歉。但还是希望这篇文章能对自己和他人有所帮助吧。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+  </nav>
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

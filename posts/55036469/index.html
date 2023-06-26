@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、引言决策树是另一种十分有效的机器学习模型。该模型采取树状分支结构，能够很快地进行模型训练，并具有较高的准确率。 本文将以决策树的最简单形式开始，即特征只包括真值特征，或只有两种选择的特征，且结果也只有两种的情况。 二、决策树基本模型决策树是一个二叉树，树的非叶节点存储需要区分的特征，叶节点存储预测的分类。对于每一个要进行预测的数据，从根节点开始，根据当前节点所对应的特征，选择移动到左子节点或右">
+<meta property="og:type" content="article">
+<meta property="og:title" content="机器学习之决策树">
+<meta property="og:url" content="https://wokron.github.io/posts/55036469/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、引言决策树是另一种十分有效的机器学习模型。该模型采取树状分支结构，能够很快地进行模型训练，并具有较高的准确率。 本文将以决策树的最简单形式开始，即特征只包括真值特征，或只有两种选择的特征，且结果也只有两种的情况。 二、决策树基本模型决策树是一个二叉树，树的非叶节点存储需要区分的特征，叶节点存储预测的分类。对于每一个要进行预测的数据，从根节点开始，根据当前节点所对应的特征，选择移动到左子节点或右">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-17T00:07:31.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/55036469/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>机器学习之决策树 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/55036469/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          机器学习之决策树
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-17 08:07:31" itemprop="dateCreated datePublished" datetime="2022-10-17T08:07:31+08:00">2022-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>决策树是另一种十分有效的机器学习模型。该模型采取树状分支结构，能够很快地进行模型训练，并具有较高的准确率。</p>
+<p>本文将以决策树的最简单形式开始，即特征只包括真值特征，或只有两种选择的特征，且结果也只有两种的情况。</p>
+<h2 id="二、决策树基本模型"><a href="#二、决策树基本模型" class="headerlink" title="二、决策树基本模型"></a>二、决策树基本模型</h2><p>决策树是一个二叉树，树的非叶节点存储需要区分的特征，叶节点存储预测的分类。对于每一个要进行预测的数据，从根节点开始，根据当前节点所对应的特征，选择移动到左子节点或右子节点。直到最终移动到一个叶节点，返回预测结果。</p>
+<p>可以认为决策树的预测过程就是通过不同特征将当前数据分组归类的过程。决策树的构建过程，或者更一般地说，该模型的学习过程，也就是不断确定如何分类的过程。</p>
+<h2 id="三、决策树的构建"><a href="#三、决策树的构建" class="headerlink" title="三、决策树的构建"></a>三、决策树的构建</h2><p>总体上讲，对于我们已有的样本数据，构建决策树的过程时这样的。</p>
+<ol>
+<li>选择一个特征，将该特征作为当前节点的特征</li>
+<li>根据该特征将样本数据分为两组</li>
+<li>对于两组被分类的数据，分别递归执行如上操作，从而确定当前节点的左右子节点。直到当前数据已经全部是要预测的某个结果了、或者所有特征都被用完、又或者递归进行到了最大层数。</li>
+</ol>
+<p>可以看到，决策树构建的过程中大部分过程都可以用简单的程序逻辑实现。现在唯一要解决的就是在每个节点时，如何选择一个特征了。</p>
+<blockquote>
+<p>当然，对于神经网络来说也是这样的。唯一要解决的是如何选择权重。</p>
+</blockquote>
+<h2 id="四、特征的选择"><a href="#四、特征的选择" class="headerlink" title="四、特征的选择"></a>四、特征的选择</h2><p>我们要衡量选择不同特征对训练样本的区分效果。这点类似于损失函数。</p>
+<p>我们区分的目标是使得所有当前组的样本属于同一个预测结果。那么我们就要找到一种衡量纯度的指标，数据越纯指标越小，数据越不纯指标越大。这种指标就是熵。假设某一种类在数据总体中的占比为 $p_1$，则熵 $H(p_1)$ 为</p>
+<script type="math/tex; mode=display">
+    p_0 = 1 - p_1 \\
+    H(p_1) = -p_1log_2(p_1) - p_0 log_2(p_0)</script><p>即</p>
+<script type="math/tex; mode=display">
+    H(p_1) = -p_1log_2(p_1) - (1-p_1) log_2(1 - p_1)</script><p>当 $p_1 = 0$ 或 $p_1 = 1$ 时</p>
+<script type="math/tex; mode=display">
+    H(0) = H(0+0) = 0 \\
+    H(1) = H(1-0) = 0</script><blockquote>
+<p>可以看出熵与交叉熵损失函数之间有联系。确实，交叉熵损失函数也是用来衡量预测的纯度的。对于一个预测，我们总希望它接近 0 或者 1，也就是纯度最大的比例。</p>
+</blockquote>
+<p>我们不妨设决策树中预测可能结果中一个为正例，一个为负例。假设对于当前节点处的训练样本集合 $X$， 我们选择第 j 个特征，将该集合分为两个部分 $A<em>j$ 和 $B_j$。设此时 $A_j$ 和 $B_j$ 中正例所占比例分别为 $p</em>{Aj}, p_{Bj}$，则对应的熵为：</p>
+<script type="math/tex; mode=display">
+    H(p_{Aj}) 和 H(p_{Bj})</script><p>对于不同的 j，两个熵值均会不同，那么我们如何比较哪种选择更为合适呢？我们需要对熵取加权平均，权重为该集合中元素数量占原集合数量的比重。</p>
+<script type="math/tex; mode=display">
+    \frac{\#A_jH(p_{Aj}) + \#B_jH(p_{Bj})}{\#X}</script><blockquote>
+<p>这是很合理的。举个例子，假设选择了一个特征将一个样本和其他样本分开，虽然第一个样本的熵为 0，可是该分类对样本整体的影响较小，决定整体纯度的还是其他样本的部分，最终平均后的熵可能并不会减少太多</p>
+</blockquote>
+<p>我们将分类后的平均熵值对分类前的总熵的减少量称为信息增益（Information Gain）。假设选择某一特征时，子集合元素数量占原集合的比重为 $w^{left}, w^{right}$，则</p>
+<script type="math/tex; mode=display">
+    \text{Information Gain} = H(p^{root}_1) - (w^{left}H(p^{left}_1) + w^{right}H(p^{right}_1))</script><p>这样我们就解决了选择特征的问题，只要选择使信息增益最大的特征即可。</p>
+<blockquote>
+<p>很明显，如果一个特征在祖先节点已经被选择过了，则信息增益为 0。当所有特征的信息增益都为 0 时，说明所有特征都已经被使用过了，此时就可以返回递归了。</p>
+</blockquote>
+<h2 id="五、多取值特征"><a href="#五、多取值特征" class="headerlink" title="五、多取值特征"></a>五、多取值特征</h2><p>之前，我们的每一个特征都只能有两个取值，我们要将特征的取值推广到多个。这里采用的方法是将多取值特征转化为双取值特征。</p>
+<p>解决方案是采用独热（one-hot）编码。举例来说，如果有一个特征 x，取值为1、2或3。那么我们可以将其转化为三个特征 is_x_equal1、is_x_equal2和is_x_equal3。这样，三个新的特征就可以只取 0、1 两个值了。</p>
+<h2 id="六、连续取值特征"><a href="#六、连续取值特征" class="headerlink" title="六、连续取值特征"></a>六、连续取值特征</h2><p>对于连续取值的特征，我们要将其转化为离散特征。</p>
+<p>具体来说，我们可以取一个阈值 n，将样本按该特征的值分为大于 n 和小于等于 n 的两个部分。为了方便选择，我们可以取样本的值进行分割，也就是分别取每一个样本中该特征对应的值作为划分时所用的值，计算其信息增益，最后选择使信息增益最大的值作为对该特征的划分即可。</p>
+<h2 id="七、回归树——对连续取值结果的预测"><a href="#七、回归树——对连续取值结果的预测" class="headerlink" title="七、回归树——对连续取值结果的预测"></a>七、回归树——对连续取值结果的预测</h2><p>回归树是对决策树的进一步扩展。使得决策树模型可以学习结果为连续值的训练样本。</p>
+<p>这样，原本的计算信息增益的方法就不再适用了。现在的数据不再有纯度的分别了，取而代之的是疏密的区别。这里我们采用样本结果的方差来衡量数据的离散程度。依旧设子集合元素数量占原集合的比重为 $w^{left}, w^{right}$，样本结果的方差则为 $var^{root}, var^{left}, var^{right}$</p>
+<p>则增益的大小为</p>
+<script type="math/tex; mode=display">
+    \text{Gain} = var^{root} - (w^{left}var^{left} + w^{right}var^{right})</script><p>经过不断的递归构建，我们最终在叶节点处得到一组方差较小的样本。将这组样本的结果取平均，即得到叶节点对应的预测值。</p>
+<h2 id="八、决策树林"><a href="#八、决策树林" class="headerlink" title="八、决策树林"></a>八、决策树林</h2><p>决策树的缺点之一是其可能对数据中的微小变化十分敏感，以至于稍有不同的数据就会产生截然不同的决策树结构。对于需要有比较大可靠性的预测，这是需要避免的。</p>
+<p>解决方法是生成许多不同结构的决策树，通过这些决策树的预测结果表决或取平均，得到最终的预测结果。但确定的训练样本只会产生确定的决策树。因此这里采用随机化保证生成不同结构的决策树。</p>
+<p>也就是说，对于大小为 m 的训练集，我们从中随机放回抽取 m 个样本，组成一个新的训练集，用该训练集生成一个决策树。重复这样的过程多次，就可以得到许多不同结构的决策树。</p>
+<blockquote>
+<p>还有一种名为 XGBoost 的方法。这样方法在选取样本组成新的训练集的过程中，会倾向于选择之前并未被选取的样本，这样组成的样本集合将更为一般化，从而使得学习效果更好。</p>
+</blockquote>
+<p>这样，我们就得到了能解决大部分机器学习问题的决策树算法。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/5b526508/" rel="prev" title="机器学习之模型评估与优化">
+      <i class="fa fa-chevron-left"></i> 机器学习之模型评估与优化
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/af468c0b/" rel="next" title="机器学习之K均值聚类">
+      机器学习之K均值聚类 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%86%B3%E7%AD%96%E6%A0%91%E5%9F%BA%E6%9C%AC%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">二、决策树基本模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%86%B3%E7%AD%96%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA"><span class="nav-number">3.</span> <span class="nav-text">三、决策树的构建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%89%B9%E5%BE%81%E7%9A%84%E9%80%89%E6%8B%A9"><span class="nav-number">4.</span> <span class="nav-text">四、特征的选择</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%A4%9A%E5%8F%96%E5%80%BC%E7%89%B9%E5%BE%81"><span class="nav-number">5.</span> <span class="nav-text">五、多取值特征</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E8%BF%9E%E7%BB%AD%E5%8F%96%E5%80%BC%E7%89%B9%E5%BE%81"><span class="nav-number">6.</span> <span class="nav-text">六、连续取值特征</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%9B%9E%E5%BD%92%E6%A0%91%E2%80%94%E2%80%94%E5%AF%B9%E8%BF%9E%E7%BB%AD%E5%8F%96%E5%80%BC%E7%BB%93%E6%9E%9C%E7%9A%84%E9%A2%84%E6%B5%8B"><span class="nav-number">7.</span> <span class="nav-text">七、回归树——对连续取值结果的预测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E5%86%B3%E7%AD%96%E6%A0%91%E6%9E%97"><span class="nav-number">8.</span> <span class="nav-text">八、决策树林</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

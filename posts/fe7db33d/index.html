@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、简述本文档将介绍程序函数画板的主要功能和基本操作。函数画板是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。 二、函数绘制1、添加函数运行exe文件后，将进入程序的主界面。如下图所示。 点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。 输入函数表达式后按回车键（或采取使输入框不再被选中的操作）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FunctionSketch说明文档">
+<meta property="og:url" content="https://wokron.github.io/posts/fe7db33d/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、简述本文档将介绍程序函数画板的主要功能和基本操作。函数画板是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。 二、函数绘制1、添加函数运行exe文件后，将进入程序的主界面。如下图所示。 点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。 输入函数表达式后按回车键（或采取使输入框不再被选中的操作）">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wokron.github.io/posts/fe7db33d/%E5%87%BD%E6%95%B0%E4%B8%BB%E7%95%8C%E9%9D%A2.png">
+<meta property="og:image" content="https://wokron.github.io/posts/fe7db33d/%E8%BE%93%E5%85%A5%E5%87%BD%E6%95%B0.png">
+<meta property="og:image" content="https://wokron.github.io/posts/fe7db33d/%E7%BB%98%E5%88%B6%E5%9B%BE%E5%83%8F.png">
+<meta property="og:image" content="https://wokron.github.io/posts/fe7db33d/%E5%87%BD%E6%95%B0%E8%AE%BE%E7%BD%AE.png">
+<meta property="og:image" content="https://wokron.github.io/posts/fe7db33d/%E8%AE%BE%E7%BD%AE%E7%AA%97%E5%8F%A3.png">
+<meta property="og:image" content="https://wokron.github.io/posts/fe7db33d/%E7%AE%97%E6%B3%95%E8%AE%BE%E7%BD%AE.png">
+<meta property="article:published_time" content="2022-09-10T10:33:26.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.380Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="C#">
+<meta property="article:tag" content="函数画板">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wokron.github.io/posts/fe7db33d/%E5%87%BD%E6%95%B0%E4%B8%BB%E7%95%8C%E9%9D%A2.png">
+
+<link rel="canonical" href="https://wokron.github.io/posts/fe7db33d/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>FunctionSketch说明文档 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/fe7db33d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FunctionSketch说明文档
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 18:33:26" itemprop="dateCreated datePublished" datetime="2022-09-10T18:33:26+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">软件开发</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、简述"><a href="#一、简述" class="headerlink" title="一、简述"></a>一、简述</h2><p>本文档将介绍程序<strong>函数画板</strong>的主要功能和基本操作。<strong>函数画板</strong>是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。</p>
+<h2 id="二、函数绘制"><a href="#二、函数绘制" class="headerlink" title="二、函数绘制"></a>二、函数绘制</h2><h3 id="1、添加函数"><a href="#1、添加函数" class="headerlink" title="1、添加函数"></a>1、添加函数</h3><p>运行exe文件后，将进入程序的主界面。如下图所示。<br><img src="/posts/fe7db33d/%E5%87%BD%E6%95%B0%E4%B8%BB%E7%95%8C%E9%9D%A2.png" class="" title="函数主界面"></p>
+<p>点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。<br><img src="/posts/fe7db33d/%E8%BE%93%E5%85%A5%E5%87%BD%E6%95%B0.png" class="" title="输入函数"></p>
+<p>输入函数表达式后按回车键（或采取使输入框不再被选中的操作），若表达式<strong>正确</strong>，则会将该表达式所对应的函数绘制到主界面左侧的窗口上。</p>
+<p>其中<strong>正确的表达式</strong>包括如下几种情况：</p>
+<ol>
+<li>表示单变量函数<br>此时表达式请以x为自变量，不忽略运算符（特别注意，对数如logm(n)请写作mlogn）。表达式前可忽略“y=”。例如“y=x+x^2”或“x*(elogx)”</li>
+<li>表示参数方程<br>此时请同时输入两个单变量函数表达式，以x或t为自变量，两表达式间以逗号间隔。注意请不要在两个表达式前添加“x=”或“y=”。例如“t^2,t”或“sinx,cosx”</li>
+<li>表示隐函数（或一般的方程）<br>此时请以x，y表示横纵两坐标轴对应的变量。表达式中必须包含等号。例如“x^2+y^2=1”。当等式左侧为“y=”时自动转换为单变量函数计算。</li>
+</ol>
+<p>另外，一次输入可以绘制多个图像。若要输入多个表达式，请将各表达式以分号间隔。</p>
+<h3 id="2、函数属性设置"><a href="#2、函数属性设置" class="headerlink" title="2、函数属性设置"></a>2、函数属性设置</h3><p>添加函数后，函数图像将在左侧窗口内显示，同时右侧函数列表栏内也会出现记录该函数信息的卡片（超出范围的卡片可以滑动滚轮以查看）。<br><img src="/posts/fe7db33d/%E7%BB%98%E5%88%B6%E5%9B%BE%E5%83%8F.png" class="" title="绘制图像"></p>
+<p>每一个函数信息卡右侧有两个按钮。上面标有“x”字的按钮点击后可关闭该函数卡并删除左侧窗口内对应的函数图像。下面显示“···”符号的按钮，点击后可以设置该函数相关的属性。主要包括如下内容。<br><img src="/posts/fe7db33d/%E5%87%BD%E6%95%B0%E8%AE%BE%E7%BD%AE.png" class="" title="绘制图像"></p>
+<ol>
+<li>坐标形式<br>单变量函数和参数方程共有。设置图像以直角坐标或极坐标形式呈现。</li>
+<li>线性变换<br>单变量函数和参数方程共有。表示一个2*2矩阵。在绘制过程中，图像的每一个坐标点会与该矩阵相乘。</li>
+<li>位移<br>单变量函数和参数方程共有。表示一个二维矢量。在绘制过程中，图像的每一个坐标点会与该矢量相加。</li>
+<li>积分<br>单变量函数特有。表示一个积分区间。默认不计算积分（积分范围NaN-&gt;NaN）。若输入正确的积分范围，则会在左侧窗口内将求积分的面积涂色。并在信息卡上显示积分结果。</li>
+<li>求导<br>单变量函数特有。点击求导按钮后会求一阶导数，并将得到的新函数添加到函数列表栏的末尾。图像也会在左侧窗口内显示。</li>
+<li>参数范围<br>参数方程特有。用以表示参数的范围。左侧窗口内只会绘制参数范围内的图像。</li>
+</ol>
+<h2 id="三、保存文件"><a href="#三、保存文件" class="headerlink" title="三、保存文件"></a>三、保存文件</h2><h3 id="1、保存当前函数图像"><a href="#1、保存当前函数图像" class="headerlink" title="1、保存当前函数图像"></a>1、保存当前函数图像</h3><p>点击主窗口上侧菜单栏“文件”选项。其中第一项“保存”可以将当前绘制的图像保存为图片格式（当前暂时只支持jpg格式）。</p>
+<h3 id="2、查看默认保存位置"><a href="#2、查看默认保存位置" class="headerlink" title="2、查看默认保存位置"></a>2、查看默认保存位置</h3><p>第二项“打开默认保存路径”会打开exe所在路径之下的SaveImage文件夹。可用于作为保存文件的位置。</p>
+<h2 id="四、设置"><a href="#四、设置" class="headerlink" title="四、设置"></a>四、设置</h2><h3 id="1、绘制设置"><a href="#1、绘制设置" class="headerlink" title="1、绘制设置"></a>1、绘制设置</h3><p>点击菜单栏“设置”选项，会打开一个设置窗口。<br><img src="/posts/fe7db33d/%E8%AE%BE%E7%BD%AE%E7%AA%97%E5%8F%A3.png" class="" title="设置窗口"><br>其中前三项用于绘制设置。</p>
+<ol>
+<li>显示范围<br>相对位置用于设置当前显示位置与默认位置的偏移量。可以理解该值为一个表示当前窗口显示的位置相对于原点的坐标。<br>显示宽度用于设置当前窗口宽度下，横坐标数值的变化范围。<br>（该项设置也可以在主界面显示窗口用鼠标拖动和滚轮实现。）</li>
+<li>线条颜色<br>设置图像曲线、坐标轴、积分区域的颜色。</li>
+<li>线条宽度<br>设置图像曲线、坐标轴线条的粗细。注意该粗细不会随着窗口的缩放而发生变化。</li>
+</ol>
+<h3 id="2、算法设置"><a href="#2、算法设置" class="headerlink" title="2、算法设置"></a>2、算法设置</h3><p>设置窗口第四项用于设置算法相关参数。算法原理详见设计文档。<br><img src="/posts/fe7db33d/%E7%AE%97%E6%B3%95%E8%AE%BE%E7%BD%AE.png" class="" title="算法设置"></p>
+<ol>
+<li>基本<br>最小绘制间隔即生成基本绘制点时自变量的间隔。</li>
+<li>平滑算法<br>平滑算法用于处理曲率较大的情况。平滑率表示连点绘制的曲线的“尖锐度”的阈值，过于“尖锐”的部分将被试图平滑。最大递归层数用于避免过深的递归，减少绘制时间。</li>
+<li>Marching Square算法<br>Marching Square算法用于处理一般方程，能较有效地绘制隐函数图像。但计算量较大，以dx为单位长度绘制速度较慢。因此以dx乘以某一常数得到的长度作为新的单位长度，该常数即方块比例。</li>
+</ol>
+<h2 id="五、帮助"><a href="#五、帮助" class="headerlink" title="五、帮助"></a>五、帮助</h2><h3 id="1、查看源代码"><a href="#1、查看源代码" class="headerlink" title="1、查看源代码"></a>1、查看源代码</h3><p>点击菜单栏“帮助”选项，第一项“源代码”点击后会转到保存该程序源代码的github仓库。</p>
+<h3 id="2、操作说明"><a href="#2、操作说明" class="headerlink" title="2、操作说明"></a>2、操作说明</h3><p>第二项“操作说明”可以打开一个新的帮助窗口，其中记录了一些较为常见的操作的提示。可在使用时随时查看。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C#</a>
+              <a href="/tags/%E5%87%BD%E6%95%B0%E7%94%BB%E6%9D%BF/" rel="tag"># 函数画板</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/9a443429/" rel="prev" title="FunctionSketch设计文档">
+      <i class="fa fa-chevron-left"></i> FunctionSketch设计文档
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/2c835ddc/" rel="next" title="只出现一次的数字">
+      只出现一次的数字 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E7%AE%80%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">一、简述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%87%BD%E6%95%B0%E7%BB%98%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">二、函数绘制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E6%B7%BB%E5%8A%A0%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">1、添加函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E5%87%BD%E6%95%B0%E5%B1%9E%E6%80%A7%E8%AE%BE%E7%BD%AE"><span class="nav-number">2.2.</span> <span class="nav-text">2、函数属性设置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E4%BF%9D%E5%AD%98%E6%96%87%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">三、保存文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E4%BF%9D%E5%AD%98%E5%BD%93%E5%89%8D%E5%87%BD%E6%95%B0%E5%9B%BE%E5%83%8F"><span class="nav-number">3.1.</span> <span class="nav-text">1、保存当前函数图像</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E6%9F%A5%E7%9C%8B%E9%BB%98%E8%AE%A4%E4%BF%9D%E5%AD%98%E4%BD%8D%E7%BD%AE"><span class="nav-number">3.2.</span> <span class="nav-text">2、查看默认保存位置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%AE%BE%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">四、设置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E7%BB%98%E5%88%B6%E8%AE%BE%E7%BD%AE"><span class="nav-number">4.1.</span> <span class="nav-text">1、绘制设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E7%AE%97%E6%B3%95%E8%AE%BE%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">2、算法设置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%B8%AE%E5%8A%A9"><span class="nav-number">5.</span> <span class="nav-text">五、帮助</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E6%9F%A5%E7%9C%8B%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">5.1.</span> <span class="nav-text">1、查看源代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E6%93%8D%E4%BD%9C%E8%AF%B4%E6%98%8E"><span class="nav-number">5.2.</span> <span class="nav-text">2、操作说明</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

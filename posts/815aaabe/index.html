@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="简介正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。 正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。 基本语法这里将介绍正则表达式的基本语法。另外这里推荐网站">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基本正则表达式总结">
+<meta property="og:url" content="https://wokron.github.io/posts/815aaabe/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="简介正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。 正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。 基本语法这里将介绍正则表达式的基本语法。另外这里推荐网站">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-09-21T06:26:22.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="正则表达式">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/815aaabe/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>基本正则表达式总结 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/815aaabe/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基本正则表达式总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-21 14:26:22" itemprop="dateCreated datePublished" datetime="2022-09-21T14:26:22+08:00">2022-09-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。</p>
+<p>正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。</p>
+<h2 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h2><p>这里将介绍正则表达式的基本语法。另外这里推荐网站 <a target="_blank" rel="noopener" href="https://regex101.com/">regex101</a>，可以用于验证正则表达式。</p>
+<h3 id="字符与字符集"><a href="#字符与字符集" class="headerlink" title="字符与字符集"></a>字符与字符集</h3><p>正则表达式中一般的字符用于匹配字符串中对应的相同字符。例如正则表达式 “a” 可以匹配字符串中的字符 ‘a’ 。 “abc” 可以匹配字符串中的子串 “abc” 。</p>
+<blockquote>
+<p>对于在正则表达式中具有特殊含义的字符，需要进行转义，在原字符前加上反斜杠 “\“</p>
+</blockquote>
+<p>用方括号将一个或多个字符括起来表示一个字符集，一个字符集匹配在该字符集中出现的字符。例如 [abc]，可以匹配 ‘a’ ‘b’ 或 ‘c’。</p>
+<p>还可以在字符集中指定要匹配的字符的范围，例如 [a-z]，用来匹配所有的小写英文字母。在同一字符集内可以有多个范围，例如 [a-zA-Z0-9]。</p>
+<p>在字符集括号内的所有字符之前添加 “^” 表示对该字符集取反，即匹配所有不在字符集内的元素。例如 <sup><a href="#fn_a-b" id="reffn_a-b">a-b</a></sup> 匹配所有不是小写英文字母的元素。</p>
+<blockquote>
+<p>字符 “.” 可用于匹配换行符为所有字符。</p>
+</blockquote>
+<h3 id="限定符"><a href="#限定符" class="headerlink" title="限定符"></a>限定符</h3><p>限定符用来指定其前面的部分将要匹配几次。例如a{2,5}匹配2到5个a，即”aa”、”aaa”、”aaaa”和”aaaaa”。具体的限定符含义如下表所示：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>限定符</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{n}</td>
+<td>匹配内容n次</td>
+</tr>
+<tr>
+<td>{n,}</td>
+<td>匹配内容次数大于等于n次</td>
+</tr>
+<tr>
+<td>{n,m}</td>
+<td>匹配内容次数为n到m次</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配零次或多次，同{0,}</td>
+</tr>
+<tr>
+<td>+</td>
+<td>匹配一次或多次，同{1,}</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配零次或一次，同{0,1}</td>
+</tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>注意，限定符匹配默认遵循贪婪原则，即在同样能够完成匹配的情况下，会匹配尽可能多的字符。例如要匹配<code>&lt;html&gt;&lt;dir&gt;hello,world&lt;/dir&gt;&lt;/html&gt;</code>中的标签，若使用正则表达式 “&lt;.+&gt;”，则只会匹配整个字符串。<br>解决方法是在限定符后加上一个问号 “?” 。这样限定符的匹配模式便会切换为懒惰匹配，即在同样能够完成匹配的情况下，会匹配尽可能少的字符。</p>
+</blockquote>
+<h3 id="组"><a href="#组" class="headerlink" title="组"></a>组</h3><p>用括号将一部分表达式括起，可以将这部分表达式作为一个整体。</p>
+<p>比如说，需要匹配 “aacacaaac”，可以归纳出字符串中重复的部分 “a+c”，将该部分作为一个整体，则该部分重复了三次。最终得到可以匹配该字符串的正则表达式为 “(a+c){3}”。</p>
+<p>另外，组分为捕获组与非捕获组，捕获组即单纯的括号，非捕获组包括 “(?:exp)” “(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)”。这里先说明 “(exp)” 和 “(?:exp)” 的区别。”(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 会在后一节进一步解释。</p>
+<p>当使用捕获组时，表示对括号内会出现的内容更感兴趣。这时在匹配成功后缓存括号内的匹配内容，并可以访问该内容。而使用非捕获组，则说明仅仅将括号用于划分表达式，因此不会缓存括号内的匹配。</p>
+<h3 id="选择"><a href="#选择" class="headerlink" title="选择"></a>选择</h3><p>将不同的内容用 “|” 分割，用来表示进行该部分匹配时不同的匹配选项。例如 “learn(ed|t)” 可以匹配 “learnt” 和 “learned”。</p>
+<blockquote>
+<p>正如前一节所说，这里使用了捕获；不使用捕获的表达式为 “learn(?:ed|t)”</p>
+</blockquote>
+<p>“(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 也可以实现匹配选择的功能。</p>
+<p>exp1(?=exp2)会匹配 exp2 前面的 exp1。例如表达式 “wok(?=[0-9]+)” 只会匹配后面带数字的 “wok”, 例如 “wok123” 中的 “wok” , 而不会匹配 “wokron”、 “wokd234” 中的 “wok” 。</p>
+<blockquote>
+<p>“wok(?=[0-9]+)([0-9]+)” 可以捕获 “wok” 后的数字大小。</p>
+</blockquote>
+<p>exp1(?!exp2)会匹配后面不是 exp2 的 exp1。例如表达式”wok(?![0-9]+)” 只会匹配后面不带有数字的 “wok”。</p>
+<blockquote>
+<p>“^(?:000[1-9]|(?!000)\d{4})$”会匹配0001-9999的所有值。</p>
+</blockquote>
+<p>(?&lt;=exp1)exp2会匹配前缀为 exp1 的 exp2。例如表达式”(?&lt;=foo)bar”会匹配前缀为foo的bar。</p>
+<p>(?&lt;!epx1)exp2会匹配前缀不为 exp1 的 exp2。例如表达式”(?&lt;!foo)bar”会匹配所有前缀不为foo的bar。</p>
+<blockquote>
+<p>“^(?:000[1-9]|\d{3}(?&lt;!000)\d)$”同样可以匹配0001-9999的所有值。</p>
+</blockquote>
+<h3 id="定位符"><a href="#定位符" class="headerlink" title="定位符"></a>定位符</h3><p>定位符可以将正则表达式的匹配对象定位到行首或行尾。又或者单词的开头结尾。下表是一些定位符：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>定位符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>^</td>
+<td>匹配输入字符串开始的位置</td>
+</tr>
+<tr>
+<td>$</td>
+<td>匹配输入字符串结尾的位置</td>
+</tr>
+<tr>
+<td>\b</td>
+<td>匹配一个单词边界，即字与空格间的位置</td>
+</tr>
+<tr>
+<td>\B</td>
+<td>非单词边界匹配</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="常用元字符"><a href="#常用元字符" class="headerlink" title="常用元字符"></a>常用元字符</h3><p>这里总结了一些常用的元字符，见表格：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\</td>
+<td>将下一个字符标记为特殊字符、或转义符</td>
+</tr>
+<tr>
+<td>^</td>
+<td>匹配输入字符串的开始位置</td>
+</tr>
+<tr>
+<td>$</td>
+<td>匹配输入字符串的结束位</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配前面的子表达式零次或多次</td>
+</tr>
+<tr>
+<td>+</td>
+<td>匹配前面的子表达式一次或多次</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配前面的子表达式零次或一次</td>
+</tr>
+<tr>
+<td>{n}</td>
+<td>匹配确定的 n 次</td>
+</tr>
+<tr>
+<td>{n,}</td>
+<td>至少匹配n 次</td>
+</tr>
+<tr>
+<td>{n,m}</td>
+<td>最少匹配 n 次且最多匹配 m 次</td>
+</tr>
+<tr>
+<td>?</td>
+<td>跟在其他限制符后面，设置匹配模式为非贪婪</td>
+</tr>
+<tr>
+<td>.</td>
+<td>匹配除换行符（\n、\r）之外的任何单个字符</td>
+</tr>
+<tr>
+<td>x&#124;y</td>
+<td>匹配 x 或 y</td>
+</tr>
+<tr>
+<td>[xyz]</td>
+<td>字符集合。匹配所包含的任意一个字符</td>
+</tr>
+<tr>
+<td>[&#94;xyz]</td>
+<td>负值字符集合。匹配未包含的任意字符</td>
+</tr>
+<tr>
+<td>[a-z]</td>
+<td>字符范围。匹配指定范围内的任意字符</td>
+</tr>
+<tr>
+<td>[&#94;a-z]</td>
+<td>负值字符范围。匹配任何不在指定范围内的任意字符</td>
+</tr>
+<tr>
+<td>\b</td>
+<td>匹配一个单词边界，即单词和空格间的位置</td>
+</tr>
+<tr>
+<td>\B</td>
+<td>匹配非单词边界</td>
+</tr>
+<tr>
+<td>\d</td>
+<td>匹配一个数字字符。等价于 [0-9]</td>
+</tr>
+<tr>
+<td>\D</td>
+<td>匹配一个非数字字符。等价于 <sup><a href="#fn_0-9" id="reffn_0-9">0-9</a></sup></td>
+</tr>
+<tr>
+<td>\f</td>
+<td>匹配一个换页符。等价于 \x0c 和 \cL</td>
+</tr>
+<tr>
+<td>\n</td>
+<td>匹配一个换行符。等价于 \x0a 和 \cJ</td>
+</tr>
+<tr>
+<td>\r</td>
+<td>匹配一个回车符。等价于 \x0d 和 \cM</td>
+</tr>
+<tr>
+<td>\s</td>
+<td>匹配任何空白字符</td>
+</tr>
+<tr>
+<td>\S</td>
+<td>匹配任何非空白字符</td>
+</tr>
+<tr>
+<td>\t</td>
+<td>匹配一个制表符。等价于 \x09 和 \cI</td>
+</tr>
+<tr>
+<td>\v</td>
+<td>匹配一个垂直制表符。等价于 \x0b 和 \cK</td>
+</tr>
+<tr>
+<td>\w</td>
+<td>匹配字母、数字、下划线。等价于’[A-Za-z0-9_]’</td>
+</tr>
+<tr>
+<td>\W</td>
+<td>匹配非字母、数字、下划线。等价于 ‘<sup><a href="#fn_A-Za-z0-9_" id="reffn_A-Za-z0-9_">A-Za-z0-9_</a></sup>‘</td>
+</tr>
+<tr>
+<td>\num</td>
+<td>匹配 num，其中 num 是一个正整数。对所获取的匹配的引用。例如，’(.)\1’ 匹配两个连续的相同字符</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/" rel="tag"># 正则表达式</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/74b7a513/" rel="prev" title="MySCS云平台（一）——注册与登陆">
+      <i class="fa fa-chevron-left"></i> MySCS云平台（一）——注册与登陆
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/5371358e/" rel="next" title="机器学习笔记之一元线性回归">
+      机器学习笔记之一元线性回归 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">基本语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%8E%E5%AD%97%E7%AC%A6%E9%9B%86"><span class="nav-number">2.1.</span> <span class="nav-text">字符与字符集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%99%90%E5%AE%9A%E7%AC%A6"><span class="nav-number">2.2.</span> <span class="nav-text">限定符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%84"><span class="nav-number">2.3.</span> <span class="nav-text">组</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89%E6%8B%A9"><span class="nav-number">2.4.</span> <span class="nav-text">选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%BD%8D%E7%AC%A6"><span class="nav-number">2.5.</span> <span class="nav-text">定位符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E5%85%83%E5%AD%97%E7%AC%A6"><span class="nav-number">2.6.</span> <span class="nav-text">常用元字符</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

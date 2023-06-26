@@ -1,0 +1,2042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="StringCat的个人博客。记录学习、分享经验">
+<meta property="og:type" content="website">
+<meta property="og:title" content="StringCat的博客">
+<meta property="og:url" content="https://wokron.github.io/page/5/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="StringCat的个人博客。记录学习、分享经验">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="github,java,c#,python,pytorch,blog,engine,buaa,algorithm,software engineering">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/page/5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : true,
+    isPost : false,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content index posts-expand">
+            
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/757349f6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/757349f6/" class="post-title-link" itemprop="url">系统编程之shell编程</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-08 19:30:58" itemprop="dateCreated datePublished" datetime="2022-10-08T19:30:58+08:00">2022-10-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文将简单探索shell脚本编程，介绍shell的基本语法。</p>
+<h2 id="二、shell简介"><a href="#二、shell简介" class="headerlink" title="二、shell简介"></a>二、shell简介</h2><p>shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。</p>
+<p>而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。</p>
+<h2 id="三、前期准备"><a href="#三、前期准备" class="headerlink" title="三、前期准备"></a>三、前期准备</h2><h3 id="创建脚本"><a href="#创建脚本" class="headerlink" title="创建脚本"></a>创建脚本</h3><p>shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">vi c1.sh</span><br><span class="line">vim c2.sh</span><br><span class="line">&gt; c3.sh</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>shell脚本一般以<code>.sh</code>为后缀，但没有后缀依旧可以执行。</p>
+</blockquote>
+<p>创建的shell脚本，一定要在开头第一行加上如下语句：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">!/bin/bash</span></span><br></pre></td></tr></table></figure><br>这一行将指明该脚本执行所需要的命令解释器。</p>
+<h3 id="执行脚本"><a href="#执行脚本" class="headerlink" title="执行脚本"></a>执行脚本</h3><p>shell脚本的执行方法有<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sh &lt;scriptname&gt;</span><br><span class="line">bash &lt;scriptname&gt;</span><br></pre></td></tr></table></figure><br>或者使用chmod命令修改脚本为可执行，再直接使用 <code>./&lt;scriptname&gt;</code> 运行。</p>
+<h2 id="四、基本语法"><a href="#四、基本语法" class="headerlink" title="四、基本语法"></a>四、基本语法</h2><h3 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h3><p>shell中的变量分为环境变量、用户定义变量、内部变量。</p>
+<p>其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。</p>
+<h4 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h4><p>只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var=hello_world</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意shell对空格敏感，声明时等号两边不能有空格</p>
+</blockquote>
+<p>另外可以在变量名前添加 <code>readonly</code>关键字设为只读<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">readonly constVar</span><br></pre></td></tr></table></figure></p>
+<p>shell中声明数组同样直接写出数组名称<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">arr[0]=1</span><br><span class="line">arr[1]=5</span><br><span class="line">arr[10]=20</span><br></pre></td></tr></table></figure><br>未赋值的部分默认为NULL。</p>
+<blockquote>
+<p>注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 <code>bash &lt;scriptname&gt;</code></p>
+</blockquote>
+<h4 id="赋值"><a href="#赋值" class="headerlink" title="赋值"></a>赋值</h4><p>shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用<code>$&#123; &#125;</code> 进行取值。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var1=hi</span><br><span class="line">var2=$&#123;var1&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="引号"><a href="#引号" class="headerlink" title="引号"></a>引号</h4><p>shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。</p>
+<p>并且，为了满足命令处理的需要，shell设计出了引号变量值。</p>
+<p>shell中的引号包括单引号、双引号和倒引号。</p>
+<p><strong>单引号</strong>中的字符均作为普通字符出现。（可以包括空格）<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var1=hello_world</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">var2=hello world <span class="comment"># 不合法</span></span></span><br><span class="line">var3=&#x27;hello world&#x27;</span><br></pre></td></tr></table></figure></p>
+<p><strong>双引号</strong>中的字符大部分作为普通字符对待。除了<code>$\’</code>和双引号，这些变量依旧用于对字符串内容进行变量替换。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">var4=hello</span><br><span class="line">var5=friend</span><br><span class="line">var6=&quot;$var4, my $var5!&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">var6 means <span class="string">&quot;hello, my friend!&quot;</span>.</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>倒引号</strong>将引号内的内容当做命令，会先执行倒引号内的内容，再用执行后的输出替换倒引号的内容。</p>
+<blockquote>
+<p>倒引号可以和双引号组合使用，在双引号内使用倒引号<br>$(command) 与 `command` 功能相同</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var7=&quot;now pwd: `pwd`&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">var6 means <span class="string">&quot;now pwd: /home/username&quot;</span> (depend on the position <span class="built_in">where</span> you execute the script)</span></span><br></pre></td></tr></table></figure>
+<h3 id="基础操作"><a href="#基础操作" class="headerlink" title="基础操作"></a>基础操作</h3><h4 id="字符串操作"><a href="#字符串操作" class="headerlink" title="字符串操作"></a>字符串操作</h4><p>shell脚本自身具有一些字符串操作功能。</p>
+<ul>
+<li>字符串长度：<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;<span class="comment">#str&#125;</span></span></span><br></pre></td></tr></table></figure></li>
+<li>字符串截取：<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;str:position&#125;</span></span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;str:start:length&#125;</span></span><br></pre></td></tr></table></figure></li>
+<li>从字符串开头删除：<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;str<span class="comment">#substr&#125;</span></span></span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;str<span class="comment">##substr&#125;</span></span></span><br></pre></td></tr></table></figure></li>
+<li>从字符串末尾删除：<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;str%substr&#125;</span></span><br><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;str%%substr&#125;</span></span><br></pre></td></tr></table></figure></li>
+<li>字符串替换：<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">&#123;str/substr/replace&#125;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<blockquote>
+<p>字符串操作中出现匹配的部分都支持正则表达式。其中一个字符的为懒惰匹配，两个字符的为贪婪匹配。</p>
+<p>使用 <code>expr</code> 等命令，可以更好地进行处理。</p>
+</blockquote>
+<h4 id="数字运算"><a href="#数字运算" class="headerlink" title="数字运算"></a>数字运算</h4><p>shell默认变量为字符串，因此若要进行数字运算，需要特殊指明。</p>
+<p>具体地，有两种方法。一种是利用 <code>$(())</code> 运算符。指明括号内的表达式进行的不是字符串操作而是数字运算。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">num1=10</span><br><span class="line">num2=20</span><br><span class="line">num3=$(($num1+$num2)) # 30</span><br></pre></td></tr></table></figure></p>
+<p>另一种方法是调用 linux 的 expr 命令。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">num4=3</span><br><span class="line">num5=$num4</span><br><span class="line">num6=`expr $num4 \* $num5` # 9</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意乘号在shell脚本中有特殊含义，因此需要加入反斜杠转义。另外 expr 命令中变量和运算符各自作为参数，因此中间需要用空格隔开.</p>
+</blockquote>
+<h3 id="流程控制"><a href="#流程控制" class="headerlink" title="流程控制"></a>流程控制</h3><h4 id="条件表达式"><a href="#条件表达式" class="headerlink" title="条件表达式"></a>条件表达式</h4><p>shell 利用 <code>test condition</code> 和 <code>[condition]</code> 进行条件测试。其中“condition” 表示一个条件表达式。包括字符比较、数值比较、文件操作、逻辑操作。</p>
+<p>这一部分原理较为简单，但shell中判断符号与其他语言有较大差别，内容较多，就不一一列举了。</p>
+<blockquote>
+<p>注意使用条件表达式时，表达式与方括号间要有空格隔开</p>
+</blockquote>
+<h4 id="分支控制"><a href="#分支控制" class="headerlink" title="分支控制"></a>分支控制</h4><p>分支控制语句如下</p>
+<p>if 分支：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">if [ condition ]</span><br><span class="line">then</span><br><span class="line">    commands</span><br><span class="line">elif</span><br><span class="line">    commands</span><br><span class="line">else</span><br><span class="line">    commands</span><br><span class="line">fi</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意末尾的 fi</p>
+</blockquote>
+<p>case分支（类似switch）：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">case variable in</span><br><span class="line">var1)</span><br><span class="line">    commands</span><br><span class="line">    ;;</span><br><span class="line">var2 | var3)</span><br><span class="line">    commands</span><br><span class="line">    ;;</span><br><span class="line">*)</span><br><span class="line">    commands</span><br><span class="line">esac</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意两个连续的分号，类似于 break。进入同样分支的变量值要用 “|” 隔开。末尾要添加 esac。</p>
+</blockquote>
+<h4 id="循环控制"><a href="#循环控制" class="headerlink" title="循环控制"></a>循环控制</h4><p>循环控制语句如下</p>
+<p>while 循环：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">while [ condition ]</span><br><span class="line">do</span><br><span class="line">    commands</span><br><span class="line">done</span><br></pre></td></tr></table></figure></p>
+<p>until 循环：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">until [ condition ]</span><br><span class="line">do</span><br><span class="line">    commands</span><br><span class="line">done</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>until 循环与条件取反的 while 循环等价</p>
+</blockquote>
+<p>for 循环如下：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">for arg in args</span><br><span class="line">do</span><br><span class="line">    commands</span><br><span class="line">done</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>其中 args 是一组列出的变量名或字符串</p>
+</blockquote>
+<h3 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h3><h4 id="函数的定义"><a href="#函数的定义" class="headerlink" title="函数的定义"></a>函数的定义</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">function func_name&#123;</span><br><span class="line">    commands</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func_name()&#123;</span><br><span class="line">    commands</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>两种方式均可定义函数。</p>
+<h4 id="参数取值"><a href="#参数取值" class="headerlink" title="参数取值"></a>参数取值</h4><p>shell中的函数只有可变参数。另外，整个shell脚本本身也可以看做一个函数，它同样也只有可变参数。都具有相同的取参数的方式。</p>
+<p>shell中通过 <code>$0 $1 $2 ... $9</code>等参数来获取函数对应位置的参数。其中 <code>$0</code> 最开始为函数名/脚本名。当参数多于 10 个时，要获取十个之外的参数，可以使用 <code>shift</code> 命令，使得除了函数名/脚本名 $0 之外的所有参数整体左移一位。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">sh &lt;scriptname&gt;.sh 123 456</span></span><br><span class="line">echo $1 # 123</span><br><span class="line">shift</span><br><span class="line">echo $1 # 456</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p><code>echo</code> 为输出命令</p>
+</blockquote>
+<h4 id="函数返回值"><a href="#函数返回值" class="headerlink" title="函数返回值"></a>函数返回值</h4><p>函数通过 <code>return [n]</code> 语句来返回变量值 n。如果没有设置返回值，那么会默认返回函数最后一条命令执行后的返回值。</p>
+<p>在函数调用之后，可以使用 <code>$?</code> 获取函数的返回值。</p>
+<blockquote>
+<p>注意 return 的值必须只能是 0~255间的整数。要返回字符串或者更大的数字，可以直接使用 <code>echo</code> 输出内容，再通过倒引号获取输出的内容。</p>
+</blockquote>
+<h4 id="函数实例"><a href="#函数实例" class="headerlink" title="函数实例"></a>函数实例</h4><p>编写一个递归计算阶乘的函数<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">frac()</span><br><span class="line">&#123;</span><br><span class="line">    if [ $(($1)) -ge 1 ]</span><br><span class="line">    then</span><br><span class="line">        echo $((`frac $(($1-1))`*$1))</span><br><span class="line">    else</span><br><span class="line">        echo 1</span><br><span class="line">    fi</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">echo `frac 5` # 120</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/6d380668/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/6d380668/" class="post-title-link" itemprop="url">机器学习笔记之正则化</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-08 19:27:57" itemprop="dateCreated datePublished" datetime="2022-10-08T19:27:57+08:00">2022-10-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言——过拟合"><a href="#一、前言——过拟合" class="headerlink" title="一、前言——过拟合"></a>一、前言——过拟合</h2><p>我们知道，经过一组点可以有无数条曲线。这些曲线对于这组样本点的损失函数同为 0。但是对于预测来说，这些曲线产生的结果却并不相同。这就意味着，进行梯度下降到达某一最低点时，依旧不一定能得到“最好的”预测（拟合/分类）效果。甚至可能对于一些情况，此时的（预测/分类）效果反而更差了。这样的情况就称为过拟合。</p>
+<p>过拟合的存在是很合理的。从感性上讲，将机器学习的过程类比人类的认知，一个观念的形成不能超出经验之外，认知的结果永远是片面而非客观的。那么在与更广泛的客观现实接触之前，我们必然无法得知已经形成的认知是否是依旧可以应用的。</p>
+<p>这是一个很休谟的观点。但却无法解决现实问题。我们依旧需要找到减少过拟合的方法。</p>
+<h2 id="二、惩罚"><a href="#二、惩罚" class="headerlink" title="二、惩罚"></a>二、惩罚</h2><p>我们的思想中存在着一种先验观念，它规范天地万物，在冥冥中告诉我们什么是“合理的”。对于机器学习模型来说也是一样的，它应当具有这样的机制，告诉它什么情况是不可能的。</p>
+<p>就比如说，对于房价，我们知道一些特征是更加重要的，而另一些是更加不重要的。很显然，那些更重要的特征对应的权重应该较不重要的特征对应的权重大。那么我们就需要对那些不重要的权重进行“惩罚”，以避免这些权重过大，从而导致模型过拟合。这样的“惩罚”在损失函数中体现。即，当这些权重过大时，损失函数也会相应增大。</p>
+<p>具体而言，对如下的表达式</p>
+<script type="math/tex; mode=display">
+    y = w_1x_1 + w_2x_2 + w_3x_3 + b</script><p>假设要使第二、三个权重相对较小，则可以在损失函数中加上惩罚项 $\lambda_2 w_2 + \lambda_3 w_3$。其中 $\lambda_2, \lambda_3$ 取较大值。则损失函数变为</p>
+<script type="math/tex; mode=display">
+    J_{new}(\vec{w}, b) = J(\vec{w}, b) + \lambda_2 w_2 + \lambda_3 w_3</script><p>具体地比如说</p>
+<script type="math/tex; mode=display">
+    J_{new}(\vec{w}, b) = J(\vec{w}, b) + 1000 w_2 + 2000 w_3</script><p>那么此时很显然，当 $w_2, w_3$ 较大时，损失函数也会相应更大。</p>
+<p>可是对于大多数情况，我们无法事先知晓权重的重要程度。对于这些一般化的问题，还需要有一般化的解决办法。</p>
+<h2 id="三、正则化"><a href="#三、正则化" class="headerlink" title="三、正则化"></a>三、正则化</h2><p>正则化是惩罚的一种。该方法在损失函数中增加了正则项：</p>
+<script type="math/tex; mode=display">
+    \frac{\lambda}{2m} \sum_{j=1}^n w^2_j</script><p>其中 $\lambda$ 称为正则化参数。</p>
+<p>则新的损失函数为</p>
+<script type="math/tex; mode=display">
+    J_{new}(\vec{w}, b) = J(\vec{w}, b) + \frac{\lambda}{2m} \sum_{j=1}^n w^2_j</script><p>这里有几个值得解释的地方：</p>
+<h3 id="惩罚所有权重"><a href="#惩罚所有权重" class="headerlink" title="惩罚所有权重"></a>惩罚所有权重</h3><p>第一是<strong>对所有权重的惩罚</strong>。如果按照上一节的解释，很容易认为，正则化等同于对所有权重的相同比例的惩罚。这是否相当于对所有权重都不惩罚呢？若是如此，那么正则化是否还有意义？</p>
+<p>关键在于正则项的 $w^2_j$ 上。这是权重的平方而非权重本身。我们对损失函数求 $w_j$ 的偏导。</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J_{new}(\vec{w}, b)}}{\partial{w_j}}
+    = \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}}
+    + \frac{\lambda}{m} w_j</script><p>我们可以得到两个结论。<br>首先，正则项永远使权重不断趋于0。即便在到达或接近原损失函数最小值时，$\frac{\partial{J(\vec{w}, b)}}{\partial{w_j}} \approx 0$，但此时正则项依旧会发挥作用。这就使得权重无法安定在拟合效果最好的位置。</p>
+<p>并且，权重（绝对值）更大的特征，其权重值趋近于 0 的“速度”要快于权重更小的特征。这就避免了对所有权重同一的惩罚。</p>
+<p>由此我们也可以看出正则项“眼中”最好的权重是什么样子的。那就是所有权重均为 0。当然，通过合理选择学习率 $\alpha$ 和正则化参数 $\lambda$，是不可能让这种情况发生的。但正则项却可以实实在在地提供一种“拉力”，用来纠正过于“复杂”的模型结构，使得拟合得到的超平面倾向于平缓。</p>
+<h3 id="除-m-缩放"><a href="#除-m-缩放" class="headerlink" title="除 m 缩放"></a>除 m 缩放</h3><p>第二需要解释的是<strong>正则项中的除 m 缩放</strong>。这样做的目的是保证同一正则化参数在不同的样本数量下都有效。</p>
+<p>我们以正则化了的多元线性回归损失函数对 $w_j$ 偏导为例。</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}}
+    = \frac{1}{m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})x^{(i)}_j
+    + \frac{\lambda}{m} w_j</script><p>假设正则项并不除以 m，或者按照感觉，除以 n。那么在学习率和正则化参数不变的情况下，随着样本量的增加，梯度下降时正则化对权重的影响保持不变；可原损失函数却因为除以了m，对权重的影响减小。这样就会影响正则化参数在不同样本量时的有效性。</p>
+<p>因此对正则项也采取除 m。这样在样本量增加时，原损失函数和正则项对权重的影响就是同比例减小的了。</p>
+<h2 id="四、代码实现"><a href="#四、代码实现" class="headerlink" title="四、代码实现"></a>四、代码实现</h2><p>这一部分很简单，就不具体写出来了。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/ba0d6023/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/ba0d6023/" class="post-title-link" itemprop="url">机器学习笔记之逻辑回归</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-05 16:06:34" itemprop="dateCreated datePublished" datetime="2022-10-05T16:06:34+08:00">2022-10-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言——逻辑分类"><a href="#一、前言——逻辑分类" class="headerlink" title="一、前言——逻辑分类"></a>一、前言——逻辑分类</h2><p>机器学习研究的另一种问题为分类问题。给出一些信息，判断是或不是某种物体、属性。比如说给出病人的各项检测指标，判断其是否患病。</p>
+<p>对于是、否的判断，这里用 1、0 表示。则训练样本就与之前的线性与多项式回归样本类似。</p>
+<p>我们可以试着用一元线性回归来拟合分类问题的样本。</p>
+<p>比如对于如下的样本数据<br><img src="/posts/ba0d6023/scatter1.png" class="" title="scatter1"></p>
+<p>进行一元线性回归后得到<br><img src="/posts/ba0d6023/linear1.png" class="" title="linear1"></p>
+<p>我们将数值大于 0.5 的部分看做预测为真，小于 0.5 的部分看做预测为假。可以看到，此时一元线性回归就已经可以使所有样本点符合判断结果了。</p>
+<p>但如果我们在 x 值更大的区域增加更多的样本点，再进行回归<br><img src="/posts/ba0d6023/linear2.png" class="" title="linear2"></p>
+<p>可以看到，有一部分应为 1 的点被分在了 y &lt; 0.5 的部分，被预测为 0。这说明只凭线性回归无法解决分类问题。我们需要另一种回归方法。</p>
+<h2 id="二、逻辑回归"><a href="#二、逻辑回归" class="headerlink" title="二、逻辑回归"></a>二、逻辑回归</h2><p>线性回归失效的原因在于，拟合的目标是对所有点的方差最小，在分类边界上的样本可能因为其他样本的影响而被分到另一类。而为什么会受到其他样本的影响呢？因为线性回归得到的表达式值域趋向于无穷；而样本的结果却只有 0、1。所以对于一个样本，只要它的特征数值足够大或足够小，就足以产生极大的损失。（为什么可能出现足够远的样本？因为分类问题需要划分出一个边界，在边界两侧可能存在足够大的范围。）</p>
+<p>我们要对线性回归进行修改，需要将回归得到的表达式的值域缩小到 0 至 1 的范围。</p>
+<p>这里引入 Sigmoid 函数</p>
+<script type="math/tex; mode=display">
+    S(z) = \frac{1}{1 + e^{-z}}</script><p>它的图像如下<br><img src="/posts/ba0d6023/sigmoid.png" class="" title="sigmoid"></p>
+<p>该函数定义域为 $(-\infty, +\infty)$，值域为 $(0, 1)$</p>
+<p>假设原本线性回归的函数为</p>
+<script type="math/tex; mode=display">
+    f_{\vec{w}, b}(\vec{x}) = \vec{w} \cdot \vec{x} + b</script><p>则现在令</p>
+<script type="math/tex; mode=display">
+    f_{\vec{w}, b}(\vec{x}) = S(\vec{w} \cdot \vec{x} + b)</script><p>即</p>
+<script type="math/tex; mode=display">
+    f_{\vec{w}, b}(\vec{x}) = \frac{1}{1 + e^{\vec{w} \cdot \vec{x} + b}}</script><p>为新的函数。其中 $S(z)$ 即为 Sigmoid 函数。这样，表达式的值域就缩小为了 $(0, 1)$，从而消除了值域对损失的影响。</p>
+<h2 id="三、损失函数"><a href="#三、损失函数" class="headerlink" title="三、损失函数"></a>三、损失函数</h2><p>如果我们依旧采用线性回归时的损失函数计算方式，就会发现函数非凸，那么梯度下降法将不能得到很好的结果。因此我们重新定义损失函数。</p>
+<p>设单样本损失函数</p>
+<script type="math/tex; mode=display">
+    loss(f_{\vec{w},b}(\vec{x}^{(i)}), y^{(i)}) = \begin{cases}
+        -log(f_{\vec{w},b}(\vec{x}^{(i)}))  &  \text{if } y^{(i)} = 1 \\
+        -log(1 - f_{\vec{w},b}(\vec{x}^{(i)})) & \text{if } y^{(i)} = 0
+    \end{cases}</script><p>这个损失函数保证了在样本真实结果为真或为假的条件下都能以同样的标准衡量预测的误差。</p>
+<p>另外，因为 $y^{(i)}$ 的取值只有 0、1。所以可以将上式化简为单个公式的形式</p>
+<script type="math/tex; mode=display">
+    loss(f_{\vec{w},b}(\vec{x}^{(i)}), y^{(i)}) = 
+    -y^{(i)}log(f_{\vec{w},b}(\vec{x}^{(i)})) - (1 - y^{(i)})log(1 - f_{\vec{w},b}(\vec{x}^{(i)}))</script><p>则全样本代价函数</p>
+<script type="math/tex; mode=display">
+    J(\vec{w}, b) = \frac{1}{m} \sum_{i = 1}^m loss(f_{\vec{w},b}(\vec{x}^{(i)}), y^{(i)})</script><h2 id="四、梯度下降"><a href="#四、梯度下降" class="headerlink" title="四、梯度下降"></a>四、梯度下降</h2><p>我们对损失函数求导，得</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}}
+    = \frac{1}{m}\sum_{i=1}^m (f_{\vec{w},b}(\vec{x}^{(i)}) - y^{(i)}) x^{(i)}_j \\
+    \frac{\partial{J(\vec{w}, b)}}{\partial{b}}
+    = \frac{1}{m}\sum_{i=1}^m (f_{\vec{w},b}(\vec{x}^{(i)}) - y^{(i)})</script><p>可以发现求导后的公式形式与线性回归时的相同，这是有意为之的。但是要注意的是， $f_{\vec{w},b}(\vec{x}^{(i)})$ 在线性回归与逻辑回归时并不相同。逻辑回归时的表达式是线性回归时的加上 Sigmoid 函数。</p>
+<p>按照与线性回归相同的方法，以确定的步长 $\alpha$ 进行梯度下降，不断迭代</p>
+<script type="math/tex; mode=display">
+    w_j = w_j - \alpha \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}} \\
+    b = b - \alpha \frac{\partial{J(\vec{w}, b)}}{\partial{b}}</script><p>最终便可找到使损失函数最小的 $\vec{w}, b$。</p>
+<h2 id="五、代码实现"><a href="#五、代码实现" class="headerlink" title="五、代码实现"></a>五、代码实现</h2><p>在线性回归的基础上，修改损失函数的计算<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">sigmoid</span>(<span class="params">x</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> / (<span class="number">1</span> + np.exp(-x))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_loss</span>(<span class="params">actual_y, y</span>):</span><br><span class="line">    <span class="keyword">return</span> -y * math.log(actual_y) - (<span class="number">1</span> - y) * math.log(<span class="number">1</span> - actual_y)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m = X.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_cost = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        z = np.dot(X[i], w) + b</span><br><span class="line">        actual_y = sigmoid(z)</span><br><span class="line">        sum_cost += get_loss(actual_y, y[i])</span><br><span class="line">    total_cost = sum_cost / m</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure></p>
+<p>修改梯度的计算<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m, n = X.shape</span><br><span class="line"></span><br><span class="line">    sum_w = np.zeros((n, ))</span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        err = sigmoid(np.dot(w, X[i]) + b) - y[i]</span><br><span class="line">        sum_b += err</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">            sum_w[j] += X[i,j] * err</span><br><span class="line"></span><br><span class="line">    gradients_w = sum_w / m</span><br><span class="line">    gradient_b = sum_b / m</span><br><span class="line">    <span class="keyword">return</span> gradients_w, gradient_b</span><br></pre></td></tr></table></figure></p>
+<p>拟合结果<br><img src="/posts/ba0d6023/logical.png" class="" title="logical"></p>
+<p>损失函数<br><img src="/posts/ba0d6023/cost.png" class="" title="cost"></p>
+<p>对样本的预测<br><img src="/posts/ba0d6023/predict.png" class="" title="predict"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/dfc6ce5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/dfc6ce5/" class="post-title-link" itemprop="url">机器学习笔记之多项式回归</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-01 21:52:38" itemprop="dateCreated datePublished" datetime="2022-10-01T21:52:38+08:00">2022-10-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言——拟合多项式"><a href="#一、引言——拟合多项式" class="headerlink" title="一、引言——拟合多项式"></a>一、引言——拟合多项式</h2><p>考虑如图所示的样本数据：<br><img src="/posts/dfc6ce5/poly.png" class="" title="poly"></p>
+<p>如果我们用一元线性回归去拟合该数据，会发现直线与数据点拟合效果很差。<br><img src="/posts/dfc6ce5/linearTry.png" class="" title="linearTry"></p>
+<p>通过观察，我们很容易得知数据点满足二次函数，具体地，函数是 $\frac{1}{2}x^2 + 5$。既然用直线 $y = wx + b$ 不能拟合，那么换用二次函数 $y = w_1x^2 + w_2x + b$ 拟合的话效果会如何？</p>
+<h2 id="二、多项式回归的步骤"><a href="#二、多项式回归的步骤" class="headerlink" title="二、多项式回归的步骤"></a>二、多项式回归的步骤</h2><p>对于一元多项式函数</p>
+<script type="math/tex; mode=display">
+    y = w_1x + w_2x^2 + \cdots + w_nx^n + b</script><p>令 $x^i = y_i$，则原函数变为</p>
+<script type="math/tex; mode=display">
+    y = w_1y_1 + w_2y_2 + \cdots + w_ny_n + b</script><p>对于自变量 $x$，只需将 $x^2, x^3, \cdots, x^n$ 看成与 $x$ 不同的特征。此时一个一元多项式函数的拟合问题就转变成了我们已知的多元线性拟合问题。同理，对于多元多项式函数，也可以将其转化为多元线性函数进行拟合。</p>
+<h2 id="三、代码实现"><a href="#三、代码实现" class="headerlink" title="三、代码实现"></a>三、代码实现</h2><p>对于如下样本：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = np.array(<span class="built_in">range</span>(-<span class="number">1</span>, <span class="number">10</span>))</span><br><span class="line">y = (x ** <span class="number">2</span>) / <span class="number">2</span> + <span class="number">5</span></span><br></pre></td></tr></table></figure></p>
+<p>将 $x^2$ 也作为一个特征<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.c_[x.T, (x ** <span class="number">2</span>).T] <span class="comment"># np.c_ 用于进行列的扩展</span></span><br><span class="line">y_train = y</span><br></pre></td></tr></table></figure></p>
+<p>剩下的与多元线性回归同理<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">1e-3</span></span><br><span class="line">w = np.zeros(X_train.shape[<span class="number">1</span>])</span><br><span class="line">b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br></pre></td></tr></table></figure></p>
+<p>迭代信息：<br><img src="/posts/dfc6ce5/print.png" class="" title="print"></p>
+<p>拟合效果：<br><img src="/posts/dfc6ce5/result.png" class="" title="result"></p>
+<p>损失函数：<br><img src="/posts/dfc6ce5/cost.png" class="" title="cost"></p>
+<hr>
+<p><strong>扩展：</strong></p>
+<p>对于较为复杂的表达式，如 $y = sinx$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = np.array(<span class="built_in">range</span>(-<span class="number">1</span>, <span class="number">10</span>))</span><br><span class="line">y = np.sin(x)</span><br></pre></td></tr></table></figure></p>
+<p>只要增加多项式次数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.c_[x.T, (x**<span class="number">2</span>).T, (x**<span class="number">3</span>).T, (x**<span class="number">4</span>).T, (x**<span class="number">5</span>).T, (x**<span class="number">6</span>).T, (x**<span class="number">7</span>).T, (x**<span class="number">8</span>).T, (x**<span class="number">9</span>).T, (x**<span class="number">10</span>).T, (x**<span class="number">11</span>).T]</span><br></pre></td></tr></table></figure></p>
+<p>再加上特征缩放<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_train, _, _ = featureScaling(X_train)</span><br></pre></td></tr></table></figure></p>
+<p>在一定的步长和迭代次数下<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">0.2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">50000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br></pre></td></tr></table></figure></p>
+<p>同样可以取得一定的拟合效果<br><img src="/posts/dfc6ce5/complex.png" class="" title="complex"></p>
+<img src="/posts/dfc6ce5/complex_cost.png" class="" title="complex_cost">
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/9d18f94a/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/9d18f94a/" class="post-title-link" itemprop="url">机器学习笔记之特征缩放</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-01 17:16:30" itemprop="dateCreated datePublished" datetime="2022-10-01T17:16:30+08:00">2022-10-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言——参数数值对权重的影响"><a href="#一、引言——参数数值对权重的影响" class="headerlink" title="一、引言——参数数值对权重的影响"></a>一、引言——参数数值对权重的影响</h2><p>考虑有两个特征的房价预测。其一为房子面积，其二为卧室数量。参数的范围为</p>
+<script type="math/tex; mode=display">
+    x_1 \in [300, 2000] \\
+    x_2 \in [0, 5]</script><p>预测直线为</p>
+<script type="math/tex; mode=display">
+    y = w_1x_1 + w_2x_2 + b</script><p>从感性上认知，如果 $w_1$ 的数值大于 $w_2$，那么由特征 $x_1$ 贡献的房价就会远大于特征 $x_2$。因为这样的话，对于同等数值的变化，特征 $x_1$ 的贡献变化大于 $x_2$，而 $x_1$ 的范围又更大，则其对贡献的变化也会更加得大。这是很不合常理的。因此从感性上讲，$w_1$ 的数值应该小于 $w_2$。</p>
+<p>另外，根据损失函数的定义</p>
+<script type="math/tex; mode=display">
+    J(\vec{w}, b)  = \frac{1}{2m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})^2</script><p>当损失函数值固定时，改变权重 $w_1$, 则对应的权重 $w_2$ 的变化要大于 $w_1$。从图像来说，此时损失函数形成陡峭的“山谷”，它的等高线图类似于椭圆。这时进行梯度下降，在步长较大时可能出现在“崖壁”上来回跳跃的情况。</p>
+<img src="/posts/9d18f94a/contours.png" class="" title="contours">
+<p>为了避免这种情况，我们需要找到一种优化的方法。</p>
+<h2 id="二、特征缩放"><a href="#二、特征缩放" class="headerlink" title="二、特征缩放"></a>二、特征缩放</h2><p>我们要做的是避免出现不同特征的范围差距较大的情况。那么对于极差较大的特征，我们需要将其数值所在的区间范围缩小。这就是特征放缩。</p>
+<p>在进行过特征放缩后，损失函数从图像上看将会较原来更接近正圆形，这样的话，寻找通向最低点的路径将会更加容易。</p>
+<p>特征缩放有许多不同的方法，如：</p>
+<ol>
+<li>除数特征缩放</li>
+<li>均值归一化（Mean normalization）</li>
+<li>Z-score标准化（Z-score normalization）</li>
+</ol>
+<p>除数特征缩放指的是将该特征的所有值同除以某一个数，比如说最大值。</p>
+<script type="math/tex; mode=display">
+    x_{scaled} = \frac{x}{x_{max}}</script><p>均值归一化是以均值为参照对所有数值进行缩放，公式：</p>
+<script type="math/tex; mode=display">
+    x_{scaled} = \frac{x - x_{mean}}{x_{max} - x_{min}}</script><p>Z-score标准化将数值转换为正态分布。公式：</p>
+<script type="math/tex; mode=display">
+    x_{scaled} = \frac{x - \mu}{\sigma}</script><p>其中</p>
+<script type="math/tex; mode=display">
+    \mu = \frac{1}{m}\sum_{i = 1}^m x^{(i)} \\
+    \sigma^2 = \frac{1}{m}\sum_{i = 1}^m (x^{(i)} - \mu)^2</script><h2 id="三、代码实现"><a href="#三、代码实现" class="headerlink" title="三、代码实现"></a>三、代码实现</h2><p>利用 Z-score 标准化对特征进行缩放<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">featureScaling</span>(<span class="params">X</span>):</span><br><span class="line">    mu = np.mean(X, axis=<span class="number">0</span>)</span><br><span class="line">    <span class="comment"># mean 方法求平均值，其中 axis 参数指定对哪一个维度求平均。</span></span><br><span class="line"></span><br><span class="line">    sigma = np.std(X, axis=<span class="number">0</span>)</span><br><span class="line">    <span class="comment"># std 方法用来求标准差</span></span><br><span class="line"></span><br><span class="line">    X_scaled = (X - mu) / sigma</span><br><span class="line">    <span class="comment"># 直接利用运算符，X中的每一组样本，减去 mu， 除以 sigma。</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> X_scaled, mu, sigma</span><br></pre></td></tr></table></figure></p>
+<p>多元线性回归代码，在初始化 <code>X_train</code> 变量的代码后添加<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_train, mu, sigma = featureScaling(X_train)</span><br></pre></td></tr></table></figure></p>
+<p>并将步长改为 0.01（$0.01 \gg 1 \times 10^{-7}$ ！！！）<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">0.01</span></span><br></pre></td></tr></table></figure></p>
+<p>因为采用的是经过缩放后的特征值，所以回归之后得到的权重也和原来的权重不同。为了检验代码的正确性，在代码末尾增加语句：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(X_train.shape[<span class="number">0</span>]):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;predict:<span class="subst">&#123;np.dot(X_train[i], w) + b&#125;</span>, actual:<span class="subst">&#123;y_train[i]&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>执行代码，在迭代次数较多时能明显感到执行速度变快。最终结果：<br><img src="/posts/9d18f94a/result.png" class="" title="result"><br>说明梯度下降后得到的权重能够比较好的拟合样本数据</p>
+<p>损失函数值随着迭代次数增加而下降。<br><img src="/posts/9d18f94a/cost.png" class="" title="cost"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2cfef6f1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/2cfef6f1/" class="post-title-link" itemprop="url">机器学习笔记之多元线性回归</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-26 14:52:30" itemprop="dateCreated datePublished" datetime="2022-09-26T14:52:30+08:00">2022-09-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言——多特征的房价预测"><a href="#一、引言——多特征的房价预测" class="headerlink" title="一、引言——多特征的房价预测"></a>一、引言——多特征的房价预测</h2><p>现实中，某一变量并不一定只与单一变量有关。还以房价来举例，除了位置以外，房价还可能与房子面积、卧室数量、层数、房龄等因素有关。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center">面积</th>
+<th style="text-align:center">卧室数</th>
+<th style="text-align:center">层数</th>
+<th style="text-align:center">房龄</th>
+<th style="text-align:center">房价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">2104</td>
+<td style="text-align:center">5</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">45</td>
+<td style="text-align:center">460</td>
+</tr>
+<tr>
+<td style="text-align:center">1416</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">40</td>
+<td style="text-align:center">232</td>
+</tr>
+<tr>
+<td style="text-align:center">1534</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">30</td>
+<td style="text-align:center">315</td>
+</tr>
+<tr>
+<td style="text-align:center">852</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">36</td>
+<td style="text-align:center">178</td>
+</tr>
+<tr>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>对于多个特征的情况，我们需要对之前的一元线性回归进行推广。但在此之前，需要先约定一下使用的符号：</p>
+<p>和前面一样，这里将用 $x^{(i)}$ 表示第 i 组样本中的特征。 $y^{(i)}$ 表示第 i 组样本对应的目标结果。不同的是，对于第 j 个<strong>特征组</strong>，也就是第j个特征对应的数值的序列，采用 $x_{j}$ 表示。那么很自然的， $x^{(i)}_j$ 表示第 j 个特征中的第 i 个值，或者说表示第 i 组样本中的第 j 个特征。</p>
+<blockquote>
+<p>与上文中的列表相结合进行理解，相当于 $x^{(i)}$ 表示第 i 行中非房价的部分，$x_{j}$ 则表示第 j 列中的数值。</p>
+</blockquote>
+<p>要对多元特征进行拟合，也就是找到适当的 $w_1, w_2, …, w_n$ 使得对任意的 i，有</p>
+<script type="math/tex; mode=display">
+    y^{(i)} = w_1 * x^{(i)}_1 + w_2 * x^{(i)}_2 + ... + w_n * x^{(i)}_n + b</script><p>设</p>
+<script type="math/tex; mode=display">
+    \vec{w} = (w_1, w_2, ... w_n)</script><script type="math/tex; mode=display">
+    \vec{x}^{(i)} = (x^{(i)}_1, x^{(i)}_2, ..., x^{(i)}_n)</script><p>则原等式可以表示为</p>
+<script type="math/tex; mode=display">
+    y^{(i)} = \vec{w}\cdot\vec{x}^{(i)} + b</script><h2 id="二、损失函数"><a href="#二、损失函数" class="headerlink" title="二、损失函数"></a>二、损失函数</h2><p>假设给定 $\vec{w}, b$ 。对样本信息 $\vec{x}^{(i)}$ ，有对房价的预测</p>
+<script type="math/tex; mode=display">
+    \hat{y}^{(i)} = \vec{w}\cdot\vec{x}^{(i)} + b</script><p>与一元线性回归时同理，损失函数</p>
+<script type="math/tex; mode=display">
+    J(\vec{w}, b) = \frac{1}{2m}\sum_{i=1}^{m}(\hat{y}^{(i)} - y^{(i)})^2 = \frac{1}{2m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})^2</script><h2 id="三、梯度下降"><a href="#三、梯度下降" class="headerlink" title="三、梯度下降"></a>三、梯度下降</h2><p>对于损失函数，求对 $w_j$ 的偏导数：</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}} = \frac{1}{m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})x^{(i)}_j</script><p>对 $b$ 的偏导数：</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{b}} = \frac{1}{m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})</script><p>则每次迭代计算</p>
+<script type="math/tex; mode=display">
+    w_j = w_j -  \alpha \frac{\partial J(\mathbf{w},b)}{\partial w_j}</script><script type="math/tex; mode=display">
+    b = b -  \alpha \frac{\partial J(\mathbf{w},b)}{\partial b}</script><p>最终就可得到拟合样本数据的多元线性方程。</p>
+<h2 id="四、矩阵形式"><a href="#四、矩阵形式" class="headerlink" title="四、矩阵形式"></a>四、矩阵形式</h2><p>上述公式也可以表示为矩阵形式，设</p>
+<script type="math/tex; mode=display">
+    Y = \begin{bmatrix}
+        y^{(1)}&y^{(2)}&\cdots&y^{(m)}
+    \end{bmatrix}^T</script><script type="math/tex; mode=display">
+    W = \begin{bmatrix}
+        w_1&w_2&\cdots&w_n
+    \end{bmatrix}^T</script><script type="math/tex; mode=display">
+    X = \begin{bmatrix}
+        x^{(1)}_1 & x^{(1)}_2 & \cdots & x^{(1)}_n \\
+        x^{(2)}_1 & x^{(2)}_2 & \cdots & x^{(2)}_n \\
+        \vdots&\vdots& \ddots & \vdots \\
+        x^{(m)}_1 & x^{(m)}_2 & \cdots & x^{(m)}_n
+    \end{bmatrix}</script><script type="math/tex; mode=display">
+    B = \begin{bmatrix}
+        b&b&\cdots&b
+    \end{bmatrix}_{1\times{m}}^T</script><p>则原等式可以表示为</p>
+<script type="math/tex; mode=display">
+    Y = XW + B</script><p>对特定的 $W, B$ 对当前样本 $X$ 的预测为</p>
+<script type="math/tex; mode=display">
+    \hat{Y} = XW + B</script><p>则损失函数可以表示为</p>
+<script type="math/tex; mode=display">
+    J(W, B) = \frac{1}{2m}(Y - \hat{Y})^T(Y - \hat{Y})</script><p>设</p>
+<script type="math/tex; mode=display">
+    G = \begin{bmatrix}
+        \frac{\partial{J(W, B)}}{w_1}&\frac{\partial{J(W, B)}}{w_2}&\cdots&\frac{\partial{J(W, B)}}{w_n}
+    \end{bmatrix}^T</script><p>则有</p>
+<script type="math/tex; mode=display">
+    G = \frac{1}{m}X^T(\hat{Y} - Y)</script><p>另有</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(W, B)}}{b} = \frac{1}{m}sum(\hat{Y} - Y)</script><p>其中 $sum$ 表示对向量上各元素求和</p>
+<blockquote>
+<p>注意公式只经过个人推导，不保证正确性</p>
+</blockquote>
+<h2 id="五、代码实现"><a href="#五、代码实现" class="headerlink" title="五、代码实现"></a>五、代码实现</h2><h3 id="常规形式"><a href="#常规形式" class="headerlink" title="常规形式"></a>常规形式</h3><p>同样的，我们先导入<code>numpy</code>和<code>Matplotlib</code><br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br></pre></td></tr></table></figure></p>
+<p>之后定义一些需要用到的函数。</p>
+<p>计算损失函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m = X.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_cost = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        actual_y = np.dot(X[i], w) + b</span><br><span class="line">        sum_cost += (actual_y - y[i]) ** <span class="number">2</span></span><br><span class="line">    total_cost = sum_cost / (<span class="number">2</span> * m)</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure></p>
+<p>计算损失函数对应的梯度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m, n = X.shape</span><br><span class="line"></span><br><span class="line">    sum_w = np.zeros((n, ))</span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        err = (np.dot(w, X[i]) + b - y[i])</span><br><span class="line">        sum_b += err</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">            sum_w[j] += X[i,j] * err</span><br><span class="line"></span><br><span class="line">    gradients_w = sum_w / m</span><br><span class="line">    gradient_b = sum_b / m</span><br><span class="line">    <span class="keyword">return</span> gradients_w, gradient_b</span><br></pre></td></tr></table></figure></p>
+<p>进行一次梯度下降迭代<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">gradient_descent</span>(<span class="params">w, b, X, y, alpha</span>):</span><br><span class="line">    d_w, d_b = get_gradient(w, b, X, y)</span><br><span class="line">    w = w - alpha * d_w</span><br><span class="line">    b = b - alpha * d_b</span><br><span class="line">    <span class="keyword">return</span> w, b</span><br></pre></td></tr></table></figure></p>
+<p>接下来是主体部分</p>
+<p>设置已知数据<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.array(</span><br><span class="line">    [[<span class="number">2104</span>, <span class="number">5</span>, <span class="number">1</span>, <span class="number">45</span>],</span><br><span class="line">    [<span class="number">1416</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">40</span>],</span><br><span class="line">    [<span class="number">852</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">35</span>]])</span><br><span class="line">y_train = np.array([<span class="number">460</span>, <span class="number">232</span>, <span class="number">178</span>])</span><br></pre></td></tr></table></figure><br>初始化 $w$, $b$ 及步长 $\alpha$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">w = np.zeros((X_train.shape[<span class="number">1</span>], ))</span><br><span class="line">b = <span class="number">0</span></span><br><span class="line">alpha = <span class="number">1e-7</span></span><br></pre></td></tr></table></figure></p>
+<p>使用梯度下降迭代 1000 次。每 10 次打印当前的信息。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br><span class="line">    <span class="keyword">if</span> i % <span class="number">100</span> == <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;times:<span class="subst">&#123;i&#125;</span>, w:<span class="subst">&#123;np.around(w, <span class="number">3</span>)&#125;</span>, b:<span class="subst">&#123;b:<span class="number">0.2</span>f&#125;</span>, cost:<span class="subst">&#123;get_cost(w, b, X_train, y_train):<span class="number">.4</span>f&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure><br><img src="/posts/2cfef6f1/print.png" class="" title="print"></p>
+<p>代价随着迭代次数的增加而减少<br><img src="/posts/2cfef6f1/loss.png" class="" title="loss"></p>
+<h3 id="矩阵形式"><a href="#矩阵形式" class="headerlink" title="矩阵形式"></a>矩阵形式</h3><p>可以利用矩阵形式重写损失函数计算和梯度计算。<br>重写损失函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m= X.shape[<span class="number">0</span>]</span><br><span class="line">    B = np.ones((m, )) * b</span><br><span class="line">    actual_y = np.matmul(X, w.T) + B</span><br><span class="line">    err = actual_y - y.T</span><br><span class="line">    total_cost = np.matmul(err.T, err) / (<span class="number">2</span> * m)</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure><br>重写梯度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m, n = X.shape</span><br><span class="line">    </span><br><span class="line">    sum_w = np.zeros((n, ))</span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    B = np.ones((m, )) * b</span><br><span class="line">    y_hat = np.matmul(X, w.T) + B</span><br><span class="line">    sum_w = np.matmul(X.T, y_hat - y.T)</span><br><span class="line">    sum_b = np.<span class="built_in">sum</span>(y_hat - y.T)</span><br><span class="line"></span><br><span class="line">    gradients_w = sum_w / m</span><br><span class="line">    gradient_b = sum_b / m</span><br><span class="line">    <span class="keyword">return</span> gradients_w, gradient_b</span><br></pre></td></tr></table></figure><br>运行，与重写之前结果相同<br><img src="/posts/2cfef6f1/printMatrix.png" class="" title="printMatrix"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5371358e/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/5371358e/" class="post-title-link" itemprop="url">机器学习笔记之一元线性回归</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-25 10:22:13" itemprop="dateCreated datePublished" datetime="2022-09-25T10:22:13+08:00">2022-09-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言——房价预测问题"><a href="#一、引言——房价预测问题" class="headerlink" title="一、引言——房价预测问题"></a>一、引言——房价预测问题</h2><p><strong>问题：</strong><br>假设我们知道一些房价与距离的对应关系，通过这些已知的信息，能否预测在一定范围内任意距离对应的房价？</p>
+<p>首先考虑最为简单的情况，也就是只有两个房价信息的情况。<br><img src="/posts/5371358e/simpleScatterPrice.png" class="" title="scatter"></p>
+<p>如图所示，1km时对应房价为300，2km 时对应房价为500。很容易可以在这两点间连一条直线，这条直线就可以作为对房价的预测。这样用曲线对已知数据中的关系进行估计的方法称为拟合。</p>
+<blockquote>
+<p>（注意，本文只考虑以一元线性函数进行拟合）</p>
+</blockquote>
+<img src="/posts/5371358e/simplePredict.png" class="" title="predict">
+<p>类似的，增加房价信息为三个点，如果三点共线，则该直线依然可以作为对房价的拟合。<br><img src="/posts/5371358e/threePredict.png" class="" title="predict2"></p>
+<p>但更可能的情况是三点不共线，对于更多的数据的情况则更是如此。这样的话要如何找到一条直线来拟合房价信息呢？</p>
+<h2 id="二、损失函数"><a href="#二、损失函数" class="headerlink" title="二、损失函数"></a>二、损失函数</h2><p>我们需要找到一种标准来衡量直线对已有信息的拟合程度。</p>
+<p>假设当前直线为：</p>
+<script type="math/tex; mode=display">
+    y = wx+b</script><p>房子距离为 $x^{(1)},x^{(2)},x^{(3)}…,x^{(m)}$，对应的房价为 $y^{(1)},y^{(2)},y^{(3)}…,y^{(m)}$。<br>则对于每个距离 $x^{(i)}$，当前直线所预测的房价为:</p>
+<script type="math/tex; mode=display">
+    \hat{y}^{(i)} = wx^{(i)} + b</script><p>该房价与真正的房价的差距为</p>
+<script type="math/tex; mode=display">
+    d = |y^{(i)} - \hat{y}^{(i)}|</script><p>绝对值不可导，不妨用平方来代替</p>
+<script type="math/tex; mode=display">
+    d_2 = (y^{(i)} - \hat{y}^{(i)})^2</script><p>对于每个已知的房价信息，当前直线的预测都可能会有偏差，将这些偏差求和得到总的偏差</p>
+<script type="math/tex; mode=display">
+    \sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>为了排除样本数量不同对偏差的影响，将偏差总和除以样本数量</p>
+<script type="math/tex; mode=display">
+    \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>这也就是总体方差的计算式：</p>
+<script type="math/tex; mode=display">
+    \sigma^2 = \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>对于机器学习，我们将$\hat{y}^{(i)}$展开，并将方差除以2，得到一元线性回归的损失函数（loss function），即</p>
+<script type="math/tex; mode=display">
+    J(w, b) = \frac{1}{2m}\sum_{i=1}^{m}(y^{(i)} - wx^{(i)} - b)^2</script><p>在 $x^{(i)}$，$y^{(i)}$ 确定的情况下，损失函数是关于 $w$ 和 $b$ 的连续可导的二元函数。该函数可以用来衡量 $w，b$ 所确定的直线与已知数据之间的偏差。</p>
+<h2 id="三、梯度下降"><a href="#三、梯度下降" class="headerlink" title="三、梯度下降"></a>三、梯度下降</h2><p>既然我们已经可以用 $J(w, b)$ 衡量直线对数据的拟合程度了，那么对于“如何找到最佳的拟合曲线”这一问题，就转化为了“如何找到使得 $J(w, b)$ 最小的 $w，b$ 值”。</p>
+<p>我们可以确定一个任意的点 $(w_0, b_0)$ 作为初始位置，那么要到达 $J(w, b)$ 最小的位置， 要如何移动呢？我们要向能使 $J(w, b)$ 减小，并减小得最快的方向移动。具体的，也就是向着梯度的反方向移动。</p>
+<script type="math/tex; mode=display">
+    (w_1, b_1) = (w_0, b_0) - \alpha\nabla{J(w, b)}</script><p>或</p>
+<script type="math/tex; mode=display">
+    \left\{
+        \begin{array}{lr}
+            w_1 = w_0 - \alpha\frac{\partial{J(w, b)}}{\partial{w}} & \\
+            & \\
+            b_1 = b_0 - \alpha\frac{\partial{J(w, b)}}{\partial{b}}
+        \end{array}
+    \right.</script><p>其中 $\alpha$ 称为步长，表示一次迭代时的移动程度。</p>
+<p>通过多次重复迭代这一过程，最终得到的 $(w_n, b_n)$ 将位于梯度为 0 的位置。即损失函数的一个极小值点。这时对应的直线将能较好地拟合原本的数据。</p>
+<blockquote>
+<p>当然，极小值点不意味着对应的值便是损失函数的最小值。在一些情况下，这一算法也可能会使拟合的直线处于局部最优而非全局最优的情况。但本文暂不处理这种情况。</p>
+</blockquote>
+<h2 id="四、代码实现"><a href="#四、代码实现" class="headerlink" title="四、代码实现"></a>四、代码实现</h2><p>我们先导入<code>numpy</code>和<code>Matplotlib</code><br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br></pre></td></tr></table></figure></p>
+<p>之后定义一些需要用到的函数。</p>
+<p>计算损失函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, x, y</span>):</span><br><span class="line">    m = x.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_cost = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        actual_y = w * x[i] + b</span><br><span class="line">        sum_cost += (actual_y - y[i]) ** <span class="number">2</span></span><br><span class="line">    total_cost = (<span class="number">1</span> / (<span class="number">2</span> * m)) * sum_cost</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure></p>
+<p>计算损失函数对应的梯度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, x, y</span>):</span><br><span class="line">    m = x.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_w = <span class="number">0</span></span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        sum_w += x[i] * (w * x[i] + b - y[i])</span><br><span class="line">        sum_b += (w * x[i] + b - y[i])</span><br><span class="line">    gradient_w = (<span class="number">1</span> / m) * sum_w</span><br><span class="line">    gradient_b = (<span class="number">1</span> / m) * sum_b</span><br><span class="line">    <span class="keyword">return</span> gradient_w, gradient_b</span><br></pre></td></tr></table></figure></p>
+<p>进行一次梯度下降迭代<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">gradient_descent</span>(<span class="params">w, b, x, y, alpha</span>):</span><br><span class="line">    d_w, d_b = get_gradient(w, b, x, y)</span><br><span class="line">    w -= alpha * d_w</span><br><span class="line">    b -= alpha * d_b</span><br><span class="line">    <span class="keyword">return</span> w, b</span><br></pre></td></tr></table></figure></p>
+<p>接下来是主体部分</p>
+<p>设置已知数据<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x_train = np.array([<span class="number">1.0</span>, <span class="number">1.7</span>, <span class="number">2.0</span>, <span class="number">2.5</span>, <span class="number">3.0</span>, <span class="number">3.2</span>])</span><br><span class="line">y_train = np.array([<span class="number">250</span>, <span class="number">300</span>, <span class="number">480</span>, <span class="number">430</span>, <span class="number">630</span>, <span class="number">730</span>,])</span><br></pre></td></tr></table></figure><br>初始化 $w$, $b$ 及步长 $\alpha$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">w = <span class="number">0</span></span><br><span class="line">b = <span class="number">0</span></span><br><span class="line">alpha = <span class="number">1e-2</span></span><br></pre></td></tr></table></figure></p>
+<p>使用梯度下降迭代 20000 次。每 1000 次打印当前的信息。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">20000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, x_train, y_train, alpha)</span><br><span class="line">    <span class="keyword">if</span> i % <span class="number">1000</span> == <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;w:<span class="subst">&#123;w&#125;</span>, b:<span class="subst">&#123;b&#125;</span>, cost:<span class="subst">&#123;get_cost(w, b, x_train, y_train)&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure><br><img src="/posts/5371358e/print.png" class="" title="print"></p>
+<p>最后输出拟合结果<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.xlabel(<span class="string">&quot;house location(km)&quot;</span>)</span><br><span class="line">plt.ylabel(<span class="string">&quot;price($)&quot;</span>)</span><br><span class="line">plt.scatter(x_train, y_train)</span><br><span class="line">plt.plot([<span class="number">0</span>, <span class="number">4</span>], [b, w*<span class="number">4</span>+b])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure><br>拟合效果如图：<br><img src="/posts/5371358e/actualPredict.png" class="" title="predict3"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/815aaabe/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/815aaabe/" class="post-title-link" itemprop="url">基本正则表达式总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-21 14:26:22" itemprop="dateCreated datePublished" datetime="2022-09-21T14:26:22+08:00">2022-09-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。</p>
+<p>正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。</p>
+<h2 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h2><p>这里将介绍正则表达式的基本语法。另外这里推荐网站 <a target="_blank" rel="noopener" href="https://regex101.com/">regex101</a>，可以用于验证正则表达式。</p>
+<h3 id="字符与字符集"><a href="#字符与字符集" class="headerlink" title="字符与字符集"></a>字符与字符集</h3><p>正则表达式中一般的字符用于匹配字符串中对应的相同字符。例如正则表达式 “a” 可以匹配字符串中的字符 ‘a’ 。 “abc” 可以匹配字符串中的子串 “abc” 。</p>
+<blockquote>
+<p>对于在正则表达式中具有特殊含义的字符，需要进行转义，在原字符前加上反斜杠 “\“</p>
+</blockquote>
+<p>用方括号将一个或多个字符括起来表示一个字符集，一个字符集匹配在该字符集中出现的字符。例如 [abc]，可以匹配 ‘a’ ‘b’ 或 ‘c’。</p>
+<p>还可以在字符集中指定要匹配的字符的范围，例如 [a-z]，用来匹配所有的小写英文字母。在同一字符集内可以有多个范围，例如 [a-zA-Z0-9]。</p>
+<p>在字符集括号内的所有字符之前添加 “^” 表示对该字符集取反，即匹配所有不在字符集内的元素。例如 <sup><a href="#fn_a-b" id="reffn_a-b">a-b</a></sup> 匹配所有不是小写英文字母的元素。</p>
+<blockquote>
+<p>字符 “.” 可用于匹配换行符为所有字符。</p>
+</blockquote>
+<h3 id="限定符"><a href="#限定符" class="headerlink" title="限定符"></a>限定符</h3><p>限定符用来指定其前面的部分将要匹配几次。例如a{2,5}匹配2到5个a，即”aa”、”aaa”、”aaaa”和”aaaaa”。具体的限定符含义如下表所示：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>限定符</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{n}</td>
+<td>匹配内容n次</td>
+</tr>
+<tr>
+<td>{n,}</td>
+<td>匹配内容次数大于等于n次</td>
+</tr>
+<tr>
+<td>{n,m}</td>
+<td>匹配内容次数为n到m次</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配零次或多次，同{0,}</td>
+</tr>
+<tr>
+<td>+</td>
+<td>匹配一次或多次，同{1,}</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配零次或一次，同{0,1}</td>
+</tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>注意，限定符匹配默认遵循贪婪原则，即在同样能够完成匹配的情况下，会匹配尽可能多的字符。例如要匹配<code>&lt;html&gt;&lt;dir&gt;hello,world&lt;/dir&gt;&lt;/html&gt;</code>中的标签，若使用正则表达式 “&lt;.+&gt;”，则只会匹配整个字符串。<br>解决方法是在限定符后加上一个问号 “?” 。这样限定符的匹配模式便会切换为懒惰匹配，即在同样能够完成匹配的情况下，会匹配尽可能少的字符。</p>
+</blockquote>
+<h3 id="组"><a href="#组" class="headerlink" title="组"></a>组</h3><p>用括号将一部分表达式括起，可以将这部分表达式作为一个整体。</p>
+<p>比如说，需要匹配 “aacacaaac”，可以归纳出字符串中重复的部分 “a+c”，将该部分作为一个整体，则该部分重复了三次。最终得到可以匹配该字符串的正则表达式为 “(a+c){3}”。</p>
+<p>另外，组分为捕获组与非捕获组，捕获组即单纯的括号，非捕获组包括 “(?:exp)” “(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)”。这里先说明 “(exp)” 和 “(?:exp)” 的区别。”(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 会在后一节进一步解释。</p>
+<p>当使用捕获组时，表示对括号内会出现的内容更感兴趣。这时在匹配成功后缓存括号内的匹配内容，并可以访问该内容。而使用非捕获组，则说明仅仅将括号用于划分表达式，因此不会缓存括号内的匹配。</p>
+<h3 id="选择"><a href="#选择" class="headerlink" title="选择"></a>选择</h3><p>将不同的内容用 “|” 分割，用来表示进行该部分匹配时不同的匹配选项。例如 “learn(ed|t)” 可以匹配 “learnt” 和 “learned”。</p>
+<blockquote>
+<p>正如前一节所说，这里使用了捕获；不使用捕获的表达式为 “learn(?:ed|t)”</p>
+</blockquote>
+<p>“(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 也可以实现匹配选择的功能。</p>
+<p>exp1(?=exp2)会匹配 exp2 前面的 exp1。例如表达式 “wok(?=[0-9]+)” 只会匹配后面带数字的 “wok”, 例如 “wok123” 中的 “wok” , 而不会匹配 “wokron”、 “wokd234” 中的 “wok” 。</p>
+<blockquote>
+<p>“wok(?=[0-9]+)([0-9]+)” 可以捕获 “wok” 后的数字大小。</p>
+</blockquote>
+<p>exp1(?!exp2)会匹配后面不是 exp2 的 exp1。例如表达式”wok(?![0-9]+)” 只会匹配后面不带有数字的 “wok”。</p>
+<blockquote>
+<p>“^(?:000[1-9]|(?!000)\d{4})$”会匹配0001-9999的所有值。</p>
+</blockquote>
+<p>(?&lt;=exp1)exp2会匹配前缀为 exp1 的 exp2。例如表达式”(?&lt;=foo)bar”会匹配前缀为foo的bar。</p>
+<p>(?&lt;!epx1)exp2会匹配前缀不为 exp1 的 exp2。例如表达式”(?&lt;!foo)bar”会匹配所有前缀不为foo的bar。</p>
+<blockquote>
+<p>“^(?:000[1-9]|\d{3}(?&lt;!000)\d)$”同样可以匹配0001-9999的所有值。</p>
+</blockquote>
+<h3 id="定位符"><a href="#定位符" class="headerlink" title="定位符"></a>定位符</h3><p>定位符可以将正则表达式的匹配对象定位到行首或行尾。又或者单词的开头结尾。下表是一些定位符：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>定位符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>^</td>
+<td>匹配输入字符串开始的位置</td>
+</tr>
+<tr>
+<td>$</td>
+<td>匹配输入字符串结尾的位置</td>
+</tr>
+<tr>
+<td>\b</td>
+<td>匹配一个单词边界，即字与空格间的位置</td>
+</tr>
+<tr>
+<td>\B</td>
+<td>非单词边界匹配</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="常用元字符"><a href="#常用元字符" class="headerlink" title="常用元字符"></a>常用元字符</h3><p>这里总结了一些常用的元字符，见表格：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\</td>
+<td>将下一个字符标记为特殊字符、或转义符</td>
+</tr>
+<tr>
+<td>^</td>
+<td>匹配输入字符串的开始位置</td>
+</tr>
+<tr>
+<td>$</td>
+<td>匹配输入字符串的结束位</td>
+</tr>
+<tr>
+<td>*</td>
+<td>匹配前面的子表达式零次或多次</td>
+</tr>
+<tr>
+<td>+</td>
+<td>匹配前面的子表达式一次或多次</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配前面的子表达式零次或一次</td>
+</tr>
+<tr>
+<td>{n}</td>
+<td>匹配确定的 n 次</td>
+</tr>
+<tr>
+<td>{n,}</td>
+<td>至少匹配n 次</td>
+</tr>
+<tr>
+<td>{n,m}</td>
+<td>最少匹配 n 次且最多匹配 m 次</td>
+</tr>
+<tr>
+<td>?</td>
+<td>跟在其他限制符后面，设置匹配模式为非贪婪</td>
+</tr>
+<tr>
+<td>.</td>
+<td>匹配除换行符（\n、\r）之外的任何单个字符</td>
+</tr>
+<tr>
+<td>x&#124;y</td>
+<td>匹配 x 或 y</td>
+</tr>
+<tr>
+<td>[xyz]</td>
+<td>字符集合。匹配所包含的任意一个字符</td>
+</tr>
+<tr>
+<td>[&#94;xyz]</td>
+<td>负值字符集合。匹配未包含的任意字符</td>
+</tr>
+<tr>
+<td>[a-z]</td>
+<td>字符范围。匹配指定范围内的任意字符</td>
+</tr>
+<tr>
+<td>[&#94;a-z]</td>
+<td>负值字符范围。匹配任何不在指定范围内的任意字符</td>
+</tr>
+<tr>
+<td>\b</td>
+<td>匹配一个单词边界，即单词和空格间的位置</td>
+</tr>
+<tr>
+<td>\B</td>
+<td>匹配非单词边界</td>
+</tr>
+<tr>
+<td>\d</td>
+<td>匹配一个数字字符。等价于 [0-9]</td>
+</tr>
+<tr>
+<td>\D</td>
+<td>匹配一个非数字字符。等价于 <sup><a href="#fn_0-9" id="reffn_0-9">0-9</a></sup></td>
+</tr>
+<tr>
+<td>\f</td>
+<td>匹配一个换页符。等价于 \x0c 和 \cL</td>
+</tr>
+<tr>
+<td>\n</td>
+<td>匹配一个换行符。等价于 \x0a 和 \cJ</td>
+</tr>
+<tr>
+<td>\r</td>
+<td>匹配一个回车符。等价于 \x0d 和 \cM</td>
+</tr>
+<tr>
+<td>\s</td>
+<td>匹配任何空白字符</td>
+</tr>
+<tr>
+<td>\S</td>
+<td>匹配任何非空白字符</td>
+</tr>
+<tr>
+<td>\t</td>
+<td>匹配一个制表符。等价于 \x09 和 \cI</td>
+</tr>
+<tr>
+<td>\v</td>
+<td>匹配一个垂直制表符。等价于 \x0b 和 \cK</td>
+</tr>
+<tr>
+<td>\w</td>
+<td>匹配字母、数字、下划线。等价于’[A-Za-z0-9_]’</td>
+</tr>
+<tr>
+<td>\W</td>
+<td>匹配非字母、数字、下划线。等价于 ‘<sup><a href="#fn_A-Za-z0-9_" id="reffn_A-Za-z0-9_">A-Za-z0-9_</a></sup>‘</td>
+</tr>
+<tr>
+<td>\num</td>
+<td>匹配 num，其中 num 是一个正整数。对所获取的匹配的引用。例如，’(.)\1’ 匹配两个连续的相同字符</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/74b7a513/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/74b7a513/" class="post-title-link" itemprop="url">MySCS云平台（一）——注册与登陆</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-19 18:16:07" itemprop="dateCreated datePublished" datetime="2022-09-19T18:16:07+08:00">2022-09-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">软件开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、注册与登陆模块"><a href="#一、注册与登陆模块" class="headerlink" title="一、注册与登陆模块"></a>一、注册与登陆模块</h2><p>该模块执行注册和登陆操作。从本质上说，也就是进行用户信息的添加，以及更改当前登陆的用户信息。因此我们还要定义一个储存用户信息的类</p>
+<h2 id="（1）用户信息（UserInfo）"><a href="#（1）用户信息（UserInfo）" class="headerlink" title="（1）用户信息（UserInfo）"></a>（1）用户信息（UserInfo）</h2><p>为什么是UserInfo而不是User呢？因为用户的操作是读入的命令行，所以并不需要一个User类来执行操作。在注册登录模块只需要显示用户的信息而已。（或许多用户的时候User类会出现？）</p>
+<h3 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h3><p>重写toString方法</p>
+<h3 id="字段"><a href="#字段" class="headerlink" title="字段"></a>字段</h3><ol>
+<li>学工号</li>
+<li>姓、名</li>
+<li>邮箱</li>
+<li>密码</li>
+</ol>
+<h3 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h3><p>暂无。注意构造函数只能有包括全部信息的。</p>
+<h2 id="（2）注册与登陆控制器（LoginController）"><a href="#（2）注册与登陆控制器（LoginController）" class="headerlink" title="（2）注册与登陆控制器（LoginController）"></a>（2）注册与登陆控制器（LoginController）</h2><p>用来控制注册与登陆，在执行不正确的操作时会抛出异常。</p>
+<h3 id="方法-1"><a href="#方法-1" class="headerlink" title="方法"></a>方法</h3><p>注册：无返回值，参数为用户的各项信息，用来创建一个新的用户。当用户信息不合法、已存在、密码不一致等情况发生时抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">register</span><span class="params">(String ID, String firstName, String lastName, String email, String password, String passwordConfirm)</span>;</span><br></pre></td></tr></table></figure></p>
+<p>登陆：无返回值，参数为一个学工号和一个密码，用来登陆一个用户。当用户不存在、密码不正确或已经登录的时候抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">login</span><span class="params">(String ID, String password)</span>;</span><br></pre></td></tr></table></figure></p>
+<p>打印信息：无返回值，无参数或有一个学工号作为参数，打印当前登陆的信息或学号对应的人的信息。当未登录、输入的学号不合法、不存在等等情况发生时抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">printInfo</span><span class="params">()</span>;</span><br><span class="line"><span class="keyword">void</span> <span class="title function_">printInfo</span><span class="params">(String ID)</span>;</span><br></pre></td></tr></table></figure></p>
+<p>退出登陆：无返回值、无参数。退出当前登陆，如果当前没有登陆则抛出异常。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">logout</span><span class="params">()</span>;</span><br></pre></td></tr></table></figure></p>
+<h3 id="字段-1"><a href="#字段-1" class="headerlink" title="字段"></a>字段</h3><ol>
+<li>储存用户信息的列表（<code>List&lt;UserInfo&gt;</code>）</li>
+<li>当前登陆的用户<code>(UserInfo</code>)</li>
+<li>当前程序所处的状态（<code>LoginStatus</code>枚举）</li>
+</ol>
+<h3 id="算法-1"><a href="#算法-1" class="headerlink" title="算法"></a>算法</h3><p>一个有限状态机，包含这样几种状态：未登录、学生登陆、教师登录。利用函数进行状态转换。不合理的转换会抛出异常。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/a5aebc7b/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/a5aebc7b/" class="post-title-link" itemprop="url">系统编程之命令行编译</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-12 21:18:59" itemprop="dateCreated datePublished" datetime="2022-09-12T21:18:59+08:00">2022-09-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。</p>
+<h2 id="二、GCC"><a href="#二、GCC" class="headerlink" title="二、GCC"></a>二、GCC</h2><h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="编译选项"><a href="#编译选项" class="headerlink" title="编译选项"></a>编译选项</h4><ul>
+<li>无选项编译链接<ul>
+<li>用法：gcc test.c<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。</li>
+</ul>
+</li>
+<li>选项 -o<ul>
+<li>用法：gcc test.c -o test<br>作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。</li>
+</ul>
+</li>
+<li>选项 -E<ul>
+<li>用法：gcc -E test.c -o test.i<br>作用：将 test.c 预处理输出 test.i 文件。</li>
+</ul>
+</li>
+<li>选项 -S<ul>
+<li>用法：gcc -S test.i<br>作用：将预处理输出文件 test.i 编译成 test.s 文件。</li>
+</ul>
+</li>
+<li>选项 -c<ul>
+<li>用法：gcc -c test.s<br>作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。</li>
+</ul>
+</li>
+<li>无选项链接<ul>
+<li>用法：gcc test.o -o test<br>作用：将目标代码文件 test.o 链接成最终可执行文件 test。</li>
+</ul>
+</li>
+<li>选项 -O<ul>
+<li>用法：gcc -O1 test.c -o test<br>作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。</li>
+</ul>
+</li>
+</ul>
+<p>官方文档：<a target="_blank" rel="noopener" href="https://gcc.gnu.org/">GCC, the GNU Compiler Collection</a></p>
+<h4 id="搜索路径控制"><a href="#搜索路径控制" class="headerlink" title="搜索路径控制"></a>搜索路径控制</h4><ul>
+<li>-I <strong>dir</strong>：将 <strong>dir</strong> 增加至头文件搜索路径</li>
+<li>-L <strong>dir</strong>：将 <strong>dir</strong> 增加至库文件搜索路径</li>
+<li>-l <strong>library</strong> 或 -l<strong>library</strong>：指定编译时搜索的库名</li>
+</ul>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><h4 id="编译链接"><a href="#编译链接" class="headerlink" title="编译链接"></a>编译链接</h4><p>在这样的文件结构下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   └── dog.h</span><br><span class="line">├── main.c</span><br><span class="line">├── v1</span><br><span class="line">│   └── dog.c</span><br><span class="line">└── v2</span><br><span class="line">    └── dog.c</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li><p>将 <code>./main.c</code> 编译为 <code>./main.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c main.c</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v1/dog.c</code> 编译为 <code>./v1/dog.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c ./v1/dog.c -o ./v1/dog.o</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v2/dog.c</code> 编译为 <code>./v2/dog.o</code>（仅编译）</p>
+<blockquote>
+<p>指令：gcc -I ./include -c ./v2/dog.c -o ./v2/dog.o</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v1/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog1</code></p>
+<blockquote>
+<p>指令：gcc main.o ./v1/dog.o -o dog1</p>
+</blockquote>
+</li>
+<li><p>将 <code>./v2/dog.o</code> 与 <code>./main.o</code> 链接为 <code>./dog2</code></p>
+<blockquote>
+<p>指令：gcc main.o ./v2/dog.o -o dog2</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="静态和动态库"><a href="#静态和动态库" class="headerlink" title="静态和动态库"></a>静态和动态库</h4><p>执行下面的命令：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v1/dog.o</span><br><span class="line">gcc -o main main.o -L. -ldog</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>第一条生成了一个名为libdog.a的静态库。<code>cr</code>意为“create and replace”，指如果库不存在则创建，如果存在则用新文件替换库中的同名文件。后接要生成的静态库名称，再之后接要添加入库中的文件。<br>第二条将第一条中生成的静态库与main.o文件链接，生成一个名为main的可执行文件。<code>-L</code>后跟地址表示将该地址添加到库文件的搜索路径，<code>-L.</code>表示将当前目录添加到搜索路径。<code>-l</code>指定编译时搜索的库名。</p>
+</blockquote>
+<p>再执行以下命令：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ar cr libdog.a ./v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
+<p>两次运行main可执行文件结果相同。</p>
+<blockquote>
+<p>因为静态链接，程序在链接完成时就已确定。第二次只是更改了静态库本身，而没有改变链接后生成的可执行文件。</p>
+</blockquote>
+<hr>
+<p>执行下面的命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -c -fPIC v1/dog.c -o v1/dog.o -I include</span><br><span class="line">gcc -c -fPIC v2/dog.c -o v2/dog.o -I include</span><br><span class="line">gcc -shared -fPIC -o libdog.so v1/dog.o</span><br><span class="line">gcc main.c libdog.so -o main -I include</span><br></pre></td></tr></table></figure>
+<p>再将库文件路径设置为当前路径：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LD_LIBRARY_PATH=.</span><br><span class="line"><span class="built_in">export</span> LD_LIBRARY_PATH</span><br></pre></td></tr></table></figure>
+<p>执行 <code>./main</code>，之后再执行以下命令：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -shared -fPIC -o libdog.so v2/dog.o</span><br><span class="line">./main</span><br></pre></td></tr></table></figure>
+<p>两次运行main可执行文件结果不同。</p>
+<blockquote>
+<p>引用动态库时，动态库的程序并不保存在可执行文件内部，而是在运行时才会动态地连接到程序中。</p>
+</blockquote>
+<h2 id="三、GDB"><a href="#三、GDB" class="headerlink" title="三、GDB"></a>三、GDB</h2><h3 id="基本操作-1"><a href="#基本操作-1" class="headerlink" title="基本操作"></a>基本操作</h3><ul>
+<li>在使用 gcc 对程序编译时，需要<strong>加上-g 参数</strong>（产生调试信息）才能使 GDB 进行调试。</li>
+<li>输入 help 命令获得帮助</li>
+<li>输入 quit 或者按 Ctrl+D 组合键退出 GDB。</li>
+<li>启动程序准备调试方法<ul>
+<li>方法一：在执行 GDB 命令时加上要调试的可执行程序名称，如“GDB yourprogram”；</li>
+<li>方法二：先输入 GDB，在 GDB 中输入 file yourprogram 加载需要调试的程序。最后使用 run 或者 r 命令开始执行，也可以使用 run parameter 方式传递参数</li>
+</ul>
+</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center">命令</th>
+<th style="text-align:center">命令缩写</th>
+<th style="text-align:center">命令说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">list</td>
+<td style="text-align:center">l</td>
+<td style="text-align:center">显示多行源代码</td>
+</tr>
+<tr>
+<td style="text-align:center">break</td>
+<td style="text-align:center">b</td>
+<td style="text-align:center">设置断点，程序运行到断点的位置会停下来</td>
+</tr>
+<tr>
+<td style="text-align:center">info</td>
+<td style="text-align:center">i</td>
+<td style="text-align:center">描述程序运行的状态</td>
+</tr>
+<tr>
+<td style="text-align:center">run</td>
+<td style="text-align:center">r</td>
+<td style="text-align:center">开始运行程序</td>
+</tr>
+<tr>
+<td style="text-align:center">display</td>
+<td style="text-align:center">disp</td>
+<td style="text-align:center">跟踪查看某个变量，每次停下来都显示它的值</td>
+</tr>
+<tr>
+<td style="text-align:center">step</td>
+<td style="text-align:center">s</td>
+<td style="text-align:center">执行下一条语句，若该语句为函数调用，则进入函数执行其第一条语句</td>
+</tr>
+<tr>
+<td style="text-align:center">next</td>
+<td style="text-align:center">n</td>
+<td style="text-align:center">执行下一条语句，若该语句为函数调用，不会进入函数内部执行（即不会一步一步地调试函数内部语句）</td>
+</tr>
+<tr>
+<td style="text-align:center">print</td>
+<td style="text-align:center">p</td>
+<td style="text-align:center">打印内部变量</td>
+</tr>
+<tr>
+<td style="text-align:center">continue</td>
+<td style="text-align:center">c</td>
+<td style="text-align:center">继续程序的执行直到遇到下一个断点</td>
+</tr>
+<tr>
+<td style="text-align:center">set var</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">设置变量的值</td>
+</tr>
+<tr>
+<td style="text-align:center">start</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">开始执行程序，在 main 函数第一条语句前面停下</td>
+</tr>
+<tr>
+<td style="text-align:center">file</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">装入需要调试的文件</td>
+</tr>
+<tr>
+<td style="text-align:center">kill</td>
+<td style="text-align:center">k</td>
+<td style="text-align:center">终止正在调试的程序</td>
+</tr>
+<tr>
+<td style="text-align:center">watch</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">监视变量值的变化</td>
+</tr>
+<tr>
+<td style="text-align:center">backtrace</td>
+<td style="text-align:center">bt</td>
+<td style="text-align:center">查看函数调用的信息</td>
+</tr>
+<tr>
+<td style="text-align:center">frame</td>
+<td style="text-align:center">f</td>
+<td style="text-align:center">查看栈帧</td>
+</tr>
+<tr>
+<td style="text-align:center">quit</td>
+<td style="text-align:center">q</td>
+<td style="text-align:center">退出 GDB 环境</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>GDB 的更多使用方法可以参阅<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb/"><strong>GDB User Manual</strong></a> (<a target="_blank" rel="noopener" href="http://sourceware.org/gdb/current/onlinedocs/gdb.pdf">PDF</a>)</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有test.c文件：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> num;</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Enter a positive integer: &quot;</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">&quot;%d&quot;</span>, &amp;num);</span><br><span class="line">    &#125; <span class="keyword">while</span> (num &lt; <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> factorial;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">1</span>; i &lt;= num; i++)</span><br><span class="line">        factorial = factorial * i;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d! = %d\n&quot;</span>, num, factorial);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>接下来对该文件进行调试。<br>按顺序执行如下操作：</p>
+<p>（1）执行以下命令进入调试状态<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -g test.c -o <span class="built_in">test</span></span><br><span class="line">gdb <span class="built_in">test</span></span><br></pre></td></tr></table></figure><br>（2）在 main 函数处设置断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> main</span><br></pre></td></tr></table></figure><br>（3）输入 <code>run</code> 命令开始程序<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Breakpoint 1, main () at test.c:2</span><br><span class="line">2	int <span class="function"><span class="title">main</span></span>() &#123;</span><br></pre></td></tr></table></figure><br>（4）多次输入 <code>next</code> 命令使程序运行到第 14 行,使用 print 命令打印 num 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> num</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$1</span> = 2</span><br></pre></td></tr></table></figure><br>（5）继续调试至程序第 15 行,使用 <code>print</code> 命令打印 factorial 的值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span> factorial</span><br></pre></td></tr></table></figure><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$2</span> = -17088</span><br></pre></td></tr></table></figure><br>（6）使用 <code>run</code> 命令再次调试程序</p>
+<p>（7）在程序第 10 行加入断点<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">break</span> test.c:10</span><br></pre></td></tr></table></figure><br>（8）使用 <code>continue</code> 命令使程序运行到断点处</p>
+<p>（9）使用 <code>next</code> 命令</p>
+<p>（10）再次使用 <code>print</code> 命令打印 i 和 factorial 的值</p>
+<p>（11）使用 <code>p factorial=1</code> 命令改变 factorial 的值</p>
+<p>（12）使用 <code>info locals</code> 查看所有局部变量值<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i = 1</span><br><span class="line">num = 2</span><br><span class="line">factorial = 1</span><br></pre></td></tr></table></figure><br>（13）继续调试至程序结束</p>
+<blockquote>
+<p>易知程序出错在没有初始化变量factorial</p>
+<p>gdb能很好地展示程序的执行过程，方便查找出错的位置。</p>
+</blockquote>
+<h2 id="make"><a href="#make" class="headerlink" title="make"></a>make</h2><h3 id="基本操作-2"><a href="#基本操作-2" class="headerlink" title="基本操作"></a>基本操作</h3><h4 id="Makefile的格式"><a href="#Makefile的格式" class="headerlink" title="Makefile的格式"></a>Makefile的格式</h4><p>Makefile文件由一系列规则（rules）构成。每条规则的形式如下。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;target&gt; : &lt;prerequisites&gt; </span><br><span class="line">[tab]  &lt;commands&gt;</span><br></pre></td></tr></table></figure><br>第一行冒号前面的部分，叫做”目标”（target）；冒号后面的部分叫做”前置条件”（prerequisites）；第二行必须由一个tab键起首，后面跟着”命令”（commands）。</p>
+<ul>
+<li><p>目标</p>
+<ul>
+<li>一个目标（target）就构成一条规则。目标通常是文件名，指明Make命令所要构建的对象，比如上文的 a.txt 。目标可以是一个文件名，也可以是多个文件名，之间用空格分隔。</li>
+<li>除了文件名，目标还可以是某个操作的名字，称为”伪目标”（phony target）。</li>
+</ul>
+</li>
+<li><p>前置条件</p>
+<ul>
+<li>前置条件通常是一组文件名，之间用空格分隔。它指定了”目标”是否重新构建的判断标准：只要有一个前置文件不存在，或者有过更新（前置文件的last-modification时间戳比目标的时间戳新），”目标”就需要重新构建。</li>
+</ul>
+</li>
+<li><p>命令</p>
+<ul>
+<li>命令（commands）表示如何更新目标文件，由一行或多行的Shell命令组成。它是构建”目标”的具体指令，它的运行结果通常就是生成目标文件。</li>
+</ul>
+</li>
+</ul>
+<h4 id="语法选述"><a href="#语法选述" class="headerlink" title="语法选述"></a>语法选述</h4><ul>
+<li><p>注释</p>
+<ul>
+<li>井号（#）在Makefile中表示注释。</li>
+</ul>
+</li>
+<li><p>模式匹配</p>
+<ul>
+<li>Make命令允许对文件名，进行类似正则运算的匹配，主要用到的匹配符是%。比如，假定当前目录下有 f1.c 和 f2.c 两个源码文件，需要将它们编译为对应的对象文件。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%.o: %.c</span><br></pre></td></tr></table></figure>
+等同于下面的写法。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f1.o: f1.c</span><br><span class="line">f2.o: f2.c</span><br></pre></td></tr></table></figure>
+使用匹配符%，可以将大量同类型的文件，只用一条规则就完成构建。</li>
+</ul>
+</li>
+<li><p>通配符</p>
+<ul>
+<li>通配符（wildcard）用来指定一组符合条件的文件名。Makefile 的通配符与 Bash 一致</li>
+</ul>
+</li>
+<li><p>依赖路径</p>
+<ul>
+<li>大写的VPATH或小写的vpath，表示搜索文件时的路径。写法例如<code>VPATH src:include:lib</code>表示在<code>./src</code> <code>./include</code> <code>./lib</code> 三个路径下寻找文件。<code>vpath %.c ./src</code>表示以.c结尾的文件在<code>./src</code>路径下寻找。</li>
+</ul>
+</li>
+</ul>
+<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><p>当前文件夹下有如下结构：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── include</span><br><span class="line">│   ├── dylib.h</span><br><span class="line">│   ├── fun1.h</span><br><span class="line">│   └── fun2.h</span><br><span class="line">├── lib</span><br><span class="line">│   └── libdy.so</span><br><span class="line">├── Makefile</span><br><span class="line">└── src</span><br><span class="line">    ├── fun1.c</span><br><span class="line">    ├── fun2.c</span><br><span class="line">    └── main.c</span><br></pre></td></tr></table></figure><br>将这些资源编译成一个可执行文件，在Makefile文件中写下：<br><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">vpath</span> %.h ./<span class="keyword">include</span></span><br><span class="line"><span class="keyword">vpath</span> %.so ./lib</span><br><span class="line"><span class="keyword">vpath</span> %.c ./src</span><br><span class="line"></span><br><span class="line"><span class="section">main: main.o fun1.o fun2.o libdy.so</span></span><br><span class="line">    gcc <span class="variable">$^</span> -o main</span><br><span class="line"></span><br><span class="line"><span class="section">%.o: %.c</span></span><br><span class="line">    gcc <span class="variable">$^</span> -I <span class="keyword">include</span> -c</span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>: clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    rm *.o</span><br></pre></td></tr></table></figure><br>在终端中输入命令<code>make main</code>，即生成main文件（以及中间文件）。再输入<code>make clean</code>将中间文件删除。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+  </nav>
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

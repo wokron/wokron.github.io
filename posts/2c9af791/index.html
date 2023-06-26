@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。 本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。 本文所使用的例子是自己写的第一个神经网路，如下：123456789101112131415161718192021222324252">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用pytorch搭建神经网络">
+<meta property="og:url" content="https://wokron.github.io/posts/2c9af791/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。 本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。 本文所使用的例子是自己写的第一个神经网路，如下：123456789101112131415161718192021222324252">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-02T07:52:55.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.396Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="pytorch">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/2c9af791/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>用pytorch搭建神经网络 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2c9af791/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          用pytorch搭建神经网络
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-02 15:52:55" itemprop="dateCreated datePublished" datetime="2023-01-02T15:52:55+08:00">2023-01-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。</p>
+<p>本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。</p>
+<p>本文所使用的例子是自己写的第一个神经网路，如下：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os.path</span><br><span class="line"><span class="keyword">import</span> torch.utils.data</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">from</span> torch.utils.tensorboard <span class="keyword">import</span> SummaryWriter</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms, datasets</span><br><span class="line"></span><br><span class="line">device = torch.device(<span class="string">&quot;cpu&quot;</span>)</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;cuda available, use cuda to train module&quot;</span>)</span><br><span class="line">    device = torch.device(<span class="string">&quot;cuda&quot;</span>)</span><br><span class="line"></span><br><span class="line">train_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), download=<span class="literal">True</span>)</span><br><span class="line">test_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), train=<span class="literal">False</span>, download=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">train_set_size = <span class="built_in">len</span>(train_set)</span><br><span class="line">test_set_size = <span class="built_in">len</span>(test_set)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;train set size: <span class="subst">&#123;train_set_size&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;test set size: <span class="subst">&#123;test_set_size&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">train_dataloader = DataLoader(train_set, <span class="number">64</span>, shuffle=<span class="literal">True</span>, drop_last=<span class="literal">True</span>)</span><br><span class="line">test_dataloader = DataLoader(test_set, <span class="number">64</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyModule</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>(MyModule, self).__init__()</span><br><span class="line">        self.module1 = nn.Sequential(</span><br><span class="line">            nn.Conv2d(<span class="number">3</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">            nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">            nn.Conv2d(<span class="number">32</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">            nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">            nn.Conv2d(<span class="number">32</span>, <span class="number">64</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">            nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">            nn.Flatten(),</span><br><span class="line">            nn.Linear(<span class="number">1024</span>, <span class="number">64</span>),</span><br><span class="line">            nn.Linear(<span class="number">64</span>, <span class="number">10</span>),</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> self.module1(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># module</span></span><br><span class="line">my_module = MyModule().to(device)</span><br><span class="line"><span class="keyword">if</span> os.path.exists(<span class="string">&quot;./my_module/my_module_10.pt&quot;</span>):</span><br><span class="line">    my_module.load_state_dict(torch.load(<span class="string">&quot;./my_module/my_module_10.pt&quot;</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># loss function</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss().to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># learning rete</span></span><br><span class="line">learning_rate = <span class="number">1e-2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># optimizer</span></span><br><span class="line">optim = torch.optim.SGD(my_module.parameters(), lr=learning_rate)</span><br><span class="line"></span><br><span class="line">epoch = <span class="number">10</span></span><br><span class="line"></span><br><span class="line">writer = SummaryWriter(<span class="string">&quot;./logs/my_module_log&quot;</span>)</span><br><span class="line"></span><br><span class="line">total_train_step = <span class="number">0</span></span><br><span class="line">total_test_step = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(epoch):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;----- start training epoch <span class="subst">&#123;i + <span class="number">1</span>&#125;</span> -----&quot;</span>)</span><br><span class="line"></span><br><span class="line">    my_module.train()</span><br><span class="line">    <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> train_dataloader:</span><br><span class="line">        imgs = imgs.to(device)</span><br><span class="line">        targets = targets.to(device)</span><br><span class="line"></span><br><span class="line">        outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">        loss = loss_func(outputs, targets)</span><br><span class="line"></span><br><span class="line">        optim.zero_grad()</span><br><span class="line">        loss.backward()</span><br><span class="line">        optim.step()</span><br><span class="line"></span><br><span class="line">        total_train_step = total_train_step + <span class="number">1</span></span><br><span class="line">        writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), total_train_step)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;#&quot;</span>, end=<span class="string">&quot;&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> total_train_step % <span class="number">100</span> == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>()</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;train step:<span class="subst">&#123;total_train_step&#125;</span>, loss:<span class="subst">&#123;loss.item()&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    my_module.<span class="built_in">eval</span>()</span><br><span class="line">    total_test_loss = <span class="number">0</span></span><br><span class="line">    total_accuracy = <span class="number">0</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> test_dataloader:</span><br><span class="line">            imgs = imgs.to(device)</span><br><span class="line">            targets = targets.to(device)</span><br><span class="line"></span><br><span class="line">            outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">            loss = loss_func(outputs, targets)</span><br><span class="line">            total_test_loss = total_test_loss + loss.item()</span><br><span class="line"></span><br><span class="line">            step_accuracy = (outputs.argmax(<span class="number">1</span>) == targets).<span class="built_in">sum</span>()</span><br><span class="line">            total_accuracy = total_accuracy + step_accuracy</span><br><span class="line"></span><br><span class="line">    total_test_step = total_test_step + <span class="number">1</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;total loss in test set: <span class="subst">&#123;total_test_loss&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;accuracy in test set: <span class="subst">&#123;total_accuracy / test_set_size&#125;</span>&quot;</span>)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test loss&quot;</span>, total_test_loss, total_test_step)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test accuracy&quot;</span>, total_accuracy / test_set_size, total_test_step)</span><br><span class="line"></span><br><span class="line">    torch.save(my_module.state_dict(), <span class="string">f&quot;./my_module/my_module_<span class="subst">&#123;i+<span class="number">1</span>&#125;</span>.pt&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;save module success&quot;</span>)</span><br><span class="line"></span><br><span class="line">writer.close()</span><br></pre></td></tr></table></figure></p>
+<h2 id="二、数据的获取"><a href="#二、数据的获取" class="headerlink" title="二、数据的获取"></a>二、数据的获取</h2><p>数据是深度学习十分重要的一点。模型训练的过程离不开大量数据的不断获取。pytorch 提供了数据获取的方便接口，能够简洁的实现对数据的各项操作。</p>
+<h3 id="（1）Dataset"><a href="#（1）Dataset" class="headerlink" title="（1）Dataset"></a>（1）Dataset</h3><p><code>Dataset</code> 类是对数据总体的抽象。对于本地的数据，我们可以继承该类来实现数据的读取。<code>Dataset</code> 类需要实现特殊方法 <code>__getitem__</code> 和 <code>__len__</code>，以实现通过下标进行数据获取和通过 <code>len()</code> 获得数据总量。</p>
+<p>比如说我们有一个图片数据集需要训练分类，每个不同标签的图片放在对应标签名的文件夹下。在需要将所有图片作为数据总体读取时，若直接操作文件将十分繁琐不美观。因此可以继承 <code>Dataset</code> 类实现如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MyDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, root_dir, label_dir</span>):</span><br><span class="line">        self.root_dir = root_dir</span><br><span class="line">        self.label_dir = label_dir</span><br><span class="line">        self.total_path = os.path.join(self.root_dir, self.label_dir)</span><br><span class="line">        self.img_names = os.listdir(self.total_path)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, index</span>):</span><br><span class="line">        img_name = self.img_names[index]</span><br><span class="line">        img_path = os.path.join(self.total_path, img_name)</span><br><span class="line">        img = Image.<span class="built_in">open</span>(img_path)</span><br><span class="line">        label = self.label_dir</span><br><span class="line">        <span class="keyword">return</span> img, label</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(self.img_names)</span><br></pre></td></tr></table></figure>
+<p>并利用 <code>Dataset</code> 对 + 运算符的重载实现数据集的合并。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cat_train_dataset = MyDataset(<span class="string">&quot;./train&quot;</span>, <span class="string">&quot;cat&quot;</span>)</span><br><span class="line">dog_train_dataset = MyDataset(<span class="string">&quot;./train&quot;</span>, <span class="string">&quot;dog&quot;</span>)</span><br><span class="line">train_dataset = cat_train_dataset + dog_train_dataset</span><br></pre></td></tr></table></figure></p>
+<p>pytorch 也自带了许多数据集，可以通过一行代码实现下载和使用。如示例代码中：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torchvision import transforms, datasets</span></span><br><span class="line">train_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), download=<span class="literal">True</span>)</span><br><span class="line">test_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), train=<span class="literal">False</span>, download=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure><br>便获取了 torchvision 自带的数据集 CIFAR10。将其保存在本地。同时获取了对该数据集进行访问的 <code>Dataset</code> 实例 <code>train_set</code> 和 <code>test_set</code>。</p>
+<h3 id="（2）Dataloader"><a href="#（2）Dataloader" class="headerlink" title="（2）Dataloader"></a>（2）Dataloader</h3><p><code>Dataset</code> 对应了数据集，而 <code>Dataloader</code> 则对应了如何在训练中获取数据。如示例代码中：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_dataloader = DataLoader(train_set, <span class="number">64</span>, <span class="literal">True</span>, drop_last=<span class="literal">True</span>)</span><br><span class="line">test_dataloader = DataLoader(test_set, <span class="number">64</span>)</span><br></pre></td></tr></table></figure><br><code>Dataloader</code> 确定了对于数据集，要每次取 64 个作为一个批次（batch）；并且对于训练数据集，每一次训练打乱数据顺序，对于最后一个个数小于 64 的批次，将其丢弃。</p>
+<p>通过合理的设置 <code>Dataloader</code> 的参数，可以避免全量数据梯度下降训练过慢的缺点和单条数据随机梯度下降造成的无法找到最优解的问题。</p>
+<h3 id="（3）transformer"><a href="#（3）transformer" class="headerlink" title="（3）transformer"></a>（3）transformer</h3><p><code>transformer</code> 并不用于获取数据，而是处理数据，将数据进行各种变换。以 <code>torchvision</code> 中的 <code>transformer</code> 为例（其他方向也有各自的 <code>transformer</code>）。比如说 <code>ToTensor</code>可以将 <code>PIL.Image</code> 类型的数据转换为 <code>Tensor</code> 类型。</p>
+<blockquote>
+<p>示例代码在获取 CIFAR10 数据集时，也使用了 <code>transformer</code> 将数据统一转化为 <code>Tensor</code> 类型。</p>
+</blockquote>
+<p>但是其他的一些 <code>transformer</code> 也可以用于对数据进行修改，以从原有数据中创造出新的数据。比如说通过 <code>Resize</code> 修改图像的尺寸。</p>
+<p>另外需要介绍一个特殊的 <code>transformer</code>，<code>Compose</code>。<code>Compose</code> 可以将一系列不同的 <code>transformer</code> 组合成一个单一的变换。例如：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torchvision import transforms</span></span><br><span class="line">compose_trans = transforms.Compose([</span><br><span class="line">    transforms.Resize((<span class="number">200</span>, <span class="number">200</span>)),</span><br><span class="line">    transforms.ToTensor()</span><br><span class="line">])</span><br></pre></td></tr></table></figure><br>就创建了一个 <code>transformer</code>，先对调用者执行 <code>Resize</code> 操作，再执行 <code>ToTenser</code> 操作。</p>
+<h2 id="三、神经网络的构建"><a href="#三、神经网络的构建" class="headerlink" title="三、神经网络的构建"></a>三、神经网络的构建</h2><p><code>torch.nn</code> 提供了构建神经网络的组件，包括神经网络类 <code>Module</code>、各种神经网络层等等内容。</p>
+<blockquote>
+<p>nn 是 neural network 的缩写。这一点似乎很少有人提及？</p>
+</blockquote>
+<p>示例代码中我们继承 <code>nn.Module</code>，创建了自己的神经网络类：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torch import nn</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyModule</span>(nn.Module):</span><br></pre></td></tr></table></figure></p>
+<p>在其中，我们需要构造神经网络的结构。这在该类的构造函数中实现。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="built_in">super</span>(MyModule, self).__init__()</span><br><span class="line">    self.module1 = nn.Sequential(</span><br><span class="line">        nn.Conv2d(<span class="number">3</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">        nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">        nn.Conv2d(<span class="number">32</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">        nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">        nn.Conv2d(<span class="number">32</span>, <span class="number">64</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">        nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">        nn.Flatten(),</span><br><span class="line">        nn.Linear(<span class="number">1024</span>, <span class="number">64</span>),</span><br><span class="line">        nn.Linear(<span class="number">64</span>, <span class="number">10</span>),</span><br><span class="line">    )</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意这里我们首先需要调用父类的构造函数 <code>super(MyModule, self).__init__()</code>。</p>
+</blockquote>
+<p>在构造函数中，我们使用了 <code>torch.nn</code> 中的卷积层 <code>Conv2d</code>、最大池化层 <code>MaxPool2d</code>、线性层 <code>Linear</code> 等不同类型的神经网络层。</p>
+<p>这里需要另外说明的是 <code>nn.Sequential</code>，这个神经层可以将神经层序列按顺序合并为一层，方便后面的使用。</p>
+<p>另外 <code>nn.Flatten</code> 也需要说明，这一层会将前面传来的 <code>Tensor</code> 不管维数，统一转化为一维。</p>
+<p>一般的神经网络构造，就在构造函数中进行。除此之外，还需要定义 <code>forward</code> 函数。用来进行神经网络的前向传播。这一部分没有需要特别说明的地方。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">    <span class="keyword">return</span> self.module1(x)</span><br></pre></td></tr></table></figure>
+<h2 id="四、训练：损失函数与优化器"><a href="#四、训练：损失函数与优化器" class="headerlink" title="四、训练：损失函数与优化器"></a>四、训练：损失函数与优化器</h2><p>接下来进入了模型训练的部分，但在训练前我们还需要定义一些变量。这些变量对训练十分重要。</p>
+<h3 id="（1）损失函数"><a href="#（1）损失函数" class="headerlink" title="（1）损失函数"></a>（1）损失函数</h3><p>损失函数既是评价模型预测能力的指标，也是进行反向传播，调整模型的依据。pytorch 提供了许多损失函数，它们和神经网络层一样，都在 <code>torch.nn</code> 模块下。</p>
+<p>在示例代码中，我们使用了交叉熵损失函数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torch import nn</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss().to(device) <span class="comment"># 暂不考虑 to() 函数。</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）优化器"><a href="#（2）优化器" class="headerlink" title="（2）优化器"></a>（2）优化器</h3><p>优化器用于设置梯度下降的策略，在 <code>torch.optim</code> 模块中。不同的优化器参数可能有所不同，但都有步长（或学习率，learning rate）作为参数。示例代码中选用 <code>SGD</code>（随机梯度下降）作为优化器。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># learning rete</span></span><br><span class="line">learning_rate = <span class="number">1e-2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># optimizer</span></span><br><span class="line">optim = torch.optim.SGD(my_module.parameters(), lr=learning_rate)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意创建优化器需要传入要训练的模型具有的参数。在示例代码中即 <code>my_module.parameters()</code></p>
+</blockquote>
+<p>优化器在模型训练进行反向传播时使用，需要调用优化器的两个函数。 <code>zero_grad()</code> 和 <code>step()</code>。如在示例代码中有：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">optim.zero_grad()</span><br><span class="line">loss.backward()</span><br><span class="line">optim.step()</span><br></pre></td></tr></table></figure></p>
+<p>优化器必须这样成对调用两函数。</p>
+<h2 id="五、训练：训练主循环与模型评价"><a href="#五、训练：训练主循环与模型评价" class="headerlink" title="五、训练：训练主循环与模型评价"></a>五、训练：训练主循环与模型评价</h2><h3 id="（1）对模型进行迭代训练"><a href="#（1）对模型进行迭代训练" class="headerlink" title="（1）对模型进行迭代训练"></a>（1）对模型进行迭代训练</h3><p>训练的主体由一个双重循环构成。外层循环决定训练的轮数（epoch）；内层循环次数是数据的批数（batch）。pytorch 以一批为单位进行训练。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">epoch = <span class="number">10</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(epoch):</span><br></pre></td></tr></table></figure><br>epoch 参数决定训练的轮数。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">my_module.train()</span><br><span class="line"><span class="keyword">for</span> imgs, targets <span class="keyword">in</span> train_dataloader:</span><br></pre></td></tr></table></figure>
+<p>在一轮训练开始前，调用模型的 <code>train()</code> 方法。这只会影响一部分网络层的行为，但最好总是加上。</p>
+<p>对于每一批训练，迭代调用包含训练集数据的 <code>Dataloader</code>。每一次取得的元素是一个二元组，二元组的第一个元素为输入，第二个元素为预期输出，他们的数据类型都是 <code>Tensor</code>。需要注意的是，由于 <code>Dataloader</code> 以一个 batch 的大小进行读取，因此两个 <code>Tensor</code> 的第一维度均为 batch 的大小。</p>
+<p>之后，对每一批训练，需要进行前向传播求得预测结果；利用损失函数求得预测结果和期望结果间的损失；再反向传播，对模型进行修改。如示例代码：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">loss = loss_func(outputs, targets)</span><br><span class="line"></span><br><span class="line">optim.zero_grad()</span><br><span class="line">loss.backward()</span><br><span class="line">optim.step()</span><br></pre></td></tr></table></figure><br>这里出现了之前提到的优化器的使用。另外也需要注意，反向传播 <code>backward()</code> 的调用是在损失函数所计算得到的损失上的。</p>
+<h3 id="（2）对模型进行评价"><a href="#（2）对模型进行评价" class="headerlink" title="（2）对模型进行评价"></a>（2）对模型进行评价</h3><p>对模型进行评价的过程与训练时类似，只不过所用的数据集变成了测试集。也需要进行前向传播和求损失函数，根据所得结果进行评估。但是不能进行反向传播。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">my_module.<span class="built_in">eval</span>()</span><br><span class="line">total_test_loss = <span class="number">0</span></span><br><span class="line">total_accuracy = <span class="number">0</span></span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> test_dataloader:</span><br><span class="line">        imgs = imgs.to(device)</span><br><span class="line">        targets = targets.to(device)</span><br><span class="line"></span><br><span class="line">        outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">        loss = loss_func(outputs, targets)</span><br><span class="line">        total_test_loss = total_test_loss + loss.item()</span><br><span class="line"></span><br><span class="line">        step_accuracy = (outputs.argmax(<span class="number">1</span>) == targets).<span class="built_in">sum</span>()</span><br><span class="line">        total_accuracy = total_accuracy + step_accuracy</span><br></pre></td></tr></table></figure><br>注意在进行测试之前需要调用模型的 <code>eval()</code> 方法，与 <code>train()</code> 作用类似。另外，这里为了避免前向传播影响梯度，还需要调用 <code>torch.no_grad()</code>， 使用 <code>with</code> 语句在离开作用域时自动取消效果。</p>
+<p>在模型评价部分，我们得到了 <code>total_test_loss</code> 和 <code>total_accuracy</code>，可以作为评价模型的标准。</p>
+<h2 id="六、tensorboard的数据可视化"><a href="#六、tensorboard的数据可视化" class="headerlink" title="六、tensorboard的数据可视化"></a>六、tensorboard的数据可视化</h2><p>我们在训练和测试过程中得到了许多评价模型的数值。这些数值随着训练的进行发生变化。为了方便观察变化的趋势，来更好的评价训练过程，可以以训练步数为自变量，损失或准确率为因变量作图。tensorboard 就提供了方便的作图方法。</p>
+<p>事先创建 <code>SummaryWriter</code> 实例<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torch.utils.tensorboard import SummaryWriter</span></span><br><span class="line">writer = SummaryWriter(<span class="string">&quot;./logs/my_module_log&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>当求得损失或准确度时，调用 <code>add_scalar()</code> 方法将点添加到坐标图上。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在训练中</span></span><br><span class="line">        total_train_step = total_train_step + <span class="number">1</span></span><br><span class="line">        writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), total_train_step)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;#&quot;</span>, end=<span class="string">&quot;&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> total_train_step % <span class="number">100</span> == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>()</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;train step:<span class="subst">&#123;total_train_step&#125;</span>, loss:<span class="subst">&#123;loss.item()&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在测试中</span></span><br><span class="line">    total_test_step = total_test_step + <span class="number">1</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;total loss in test set: <span class="subst">&#123;total_test_loss&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;accuracy in test set: <span class="subst">&#123;total_accuracy / test_set_size&#125;</span>&quot;</span>)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test loss&quot;</span>, total_test_loss, total_test_step)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test accuracy&quot;</span>, total_accuracy / test_set_size, total_test_step)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>并且我们还将数值打印了出来。通过打印训练和测试信息，可以使人知道训练进行到了何种程度，并在训练出问题时及时终止。</p>
+</blockquote>
+<p>最后不要忘记关闭 <code>SummaryWriter</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">writer.close()</span><br></pre></td></tr></table></figure></p>
+<p>接着，我们需要在控制台执行命令<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tensorboard --logdir=logs/my_module_log</span><br></pre></td></tr></table></figure><br>然后便可在网页中查看 tensorboard 所绘制的图表。</p>
+<h2 id="七、模型的保存与加载"><a href="#七、模型的保存与加载" class="headerlink" title="七、模型的保存与加载"></a>七、模型的保存与加载</h2><p>对训练好的模型，我们需要将其保存到磁盘上，而不是随着程序结束而被内存释放。保存和加载模型有两种方式。</p>
+<p><strong>第一种</strong>如下所示<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">torch.save(my_module, <span class="string">&quot;./my_module.pt&quot;</span>)</span><br><span class="line"></span><br><span class="line">torch.load(<span class="string">&quot;./my_module.pt&quot;</span>)</span><br></pre></td></tr></table></figure><br>这将同时保存模型的结构和参数，但是需要注意，在加载使用模型时，依旧需要有模型类的定义。</p>
+<p><strong>第二种</strong>如下所示<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">torch.save(my_module.state_dict(), <span class="string">&quot;./my_module.pt&quot;</span>)</span><br><span class="line"></span><br><span class="line">my_module = MyModule().to(device)</span><br><span class="line">my_module.load_state_dict(torch.load(<span class="string">&quot;./my_module.pt&quot;</span>))</span><br></pre></td></tr></table></figure><br>这样的方式将只保存模型的参数，但不保存模型的结构。可以减小一部分文件大小。示例代码中使用的便是这种方法。</p>
+<h2 id="八、gpu加速"><a href="#八、gpu加速" class="headerlink" title="八、gpu加速"></a>八、gpu加速</h2><p>gpu 可以加速模型训练。pytorch 可以使用 NVIDIA 显卡进行加速。默认的情况，训练模型使用 cpu。我们需要将其切换到 cuda。切换到使用 cuda 有两种方法。</p>
+<p>我们可以对模型、损失函数、张量使用 cuda。在<strong>第一种</strong>方法中，我们要调用 <code>cuda()</code> 方法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 模型</span></span><br><span class="line">my_module = MyModule()</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    my_module = my_module.cuda()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 损失函数</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss()</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    loss_func = loss_func.cuda()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在训练中</span></span><br><span class="line">        <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> test_dataloader:</span><br><span class="line">            <span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">                imgs = imgs.cuda()</span><br><span class="line">                targets = targets.cuda()</span><br></pre></td></tr></table></figure><br>为了避免 cuda 不可用，要在使用 <code>cuda()</code> 前调用 <code>torch.cuda.is_available()</code> 做判断。</p>
+<p><strong>第二种</strong>方法较为简单，需要调用 <code>to()</code> 方法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 声明训练时使用的设备</span></span><br><span class="line">device = torch.device(<span class="string">&quot;cpu&quot;</span>)</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    device = torch.device(<span class="string">&quot;cuda&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 模型</span></span><br><span class="line">my_module = MyModule().to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 损失函数</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss().to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在训练中</span></span><br><span class="line">    <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> train_dataloader:</span><br><span class="line">        imgs = imgs.to(device)</span><br><span class="line">        targets = targets.to(device)</span><br></pre></td></tr></table></figure><br>在第二种方法中，我们事先声明了所用的设备，然后只需要对模型、损失函数、张量调用 <code>to()</code> 方法即可。避免了重复的判断。</p>
+<h2 id="九、总结"><a href="#九、总结" class="headerlink" title="九、总结"></a>九、总结</h2><p>以上便是 pytorch 的基本使用。我们可以从代码中总结出模型训练的一般流程：</p>
+<ol>
+<li>加载数据</li>
+<li>构建神经网络</li>
+<li>设置参数，比如损失函数、学习率等</li>
+<li>训练模型</li>
+<li>评价模型</li>
+<li>保存模型</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+              <a href="/tags/pytorch/" rel="tag"># pytorch</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/4754b2bd/" rel="prev" title="MySQL的中文插入问题">
+      <i class="fa fa-chevron-left"></i> MySQL的中文插入问题
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/c837c423/" rel="next" title="Django创建表结构">
+      Django创建表结构 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%95%B0%E6%8D%AE%E7%9A%84%E8%8E%B7%E5%8F%96"><span class="nav-number">2.</span> <span class="nav-text">二、数据的获取</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89Dataset"><span class="nav-number">2.1.</span> <span class="nav-text">（1）Dataset</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89Dataloader"><span class="nav-number">2.2.</span> <span class="nav-text">（2）Dataloader</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89transformer"><span class="nav-number">2.3.</span> <span class="nav-text">（3）transformer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E7%9A%84%E6%9E%84%E5%BB%BA"><span class="nav-number">3.</span> <span class="nav-text">三、神经网络的构建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%AE%AD%E7%BB%83%EF%BC%9A%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E4%B8%8E%E4%BC%98%E5%8C%96%E5%99%A8"><span class="nav-number">4.</span> <span class="nav-text">四、训练：损失函数与优化器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="nav-number">4.1.</span> <span class="nav-text">（1）损失函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E4%BC%98%E5%8C%96%E5%99%A8"><span class="nav-number">4.2.</span> <span class="nav-text">（2）优化器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E8%AE%AD%E7%BB%83%EF%BC%9A%E8%AE%AD%E7%BB%83%E4%B8%BB%E5%BE%AA%E7%8E%AF%E4%B8%8E%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7"><span class="nav-number">5.</span> <span class="nav-text">五、训练：训练主循环与模型评价</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E5%AF%B9%E6%A8%A1%E5%9E%8B%E8%BF%9B%E8%A1%8C%E8%BF%AD%E4%BB%A3%E8%AE%AD%E7%BB%83"><span class="nav-number">5.1.</span> <span class="nav-text">（1）对模型进行迭代训练</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E5%AF%B9%E6%A8%A1%E5%9E%8B%E8%BF%9B%E8%A1%8C%E8%AF%84%E4%BB%B7"><span class="nav-number">5.2.</span> <span class="nav-text">（2）对模型进行评价</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81tensorboard%E7%9A%84%E6%95%B0%E6%8D%AE%E5%8F%AF%E8%A7%86%E5%8C%96"><span class="nav-number">6.</span> <span class="nav-text">六、tensorboard的数据可视化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E6%A8%A1%E5%9E%8B%E7%9A%84%E4%BF%9D%E5%AD%98%E4%B8%8E%E5%8A%A0%E8%BD%BD"><span class="nav-number">7.</span> <span class="nav-text">七、模型的保存与加载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81gpu%E5%8A%A0%E9%80%9F"><span class="nav-number">8.</span> <span class="nav-text">八、gpu加速</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">9.</span> <span class="nav-text">九、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

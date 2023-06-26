@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、问题描述在执行一个sql脚本的时候出现了这样的问题：1ERROR 1366 (HY000): Incorrect string value: &amp;#x27;\xA3\x8E\xE6\x9C\x89\xE5...&amp;#x27; for column &amp;#x27;name_zh&amp;#x27; at row 1 问题很明显是由于中文引起的。查看报错的语句：1INSERT INTO &#96;admin_menu&#96;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL的中文插入问题">
+<meta property="og:url" content="https://wokron.github.io/posts/4754b2bd/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、问题描述在执行一个sql脚本的时候出现了这样的问题：1ERROR 1366 (HY000): Incorrect string value: &amp;#x27;\xA3\x8E\xE6\x9C\x89\xE5...&amp;#x27; for column &amp;#x27;name_zh&amp;#x27; at row 1 问题很明显是由于中文引起的。查看报错的语句：1INSERT INTO &#96;admin_menu&#96;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-12-31T07:24:00.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/4754b2bd/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MySQL的中文插入问题 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/4754b2bd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL的中文插入问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-31 15:24:00" itemprop="dateCreated datePublished" datetime="2022-12-31T15:24:00+08:00">2022-12-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、问题描述"><a href="#一、问题描述" class="headerlink" title="一、问题描述"></a>一、问题描述</h2><p>在执行一个sql脚本的时候出现了这样的问题：<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ERROR 1366 (HY000): Incorrect string value: &#x27;\xA3\x8E\xE6\x9C\x89\xE5...&#x27; for column &#x27;name_zh&#x27; at row 1</span><br></pre></td></tr></table></figure></p>
+<p>问题很明显是由于中文引起的。查看报错的语句：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `admin_menu` <span class="keyword">VALUES</span> (<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;/admin&#x27;</span>, <span class="string">&#x27;AdminIndex&#x27;</span>, <span class="string">&#x27;首页&#x27;</span>, <span class="string">&#x27;el-icon-s-home&#x27;</span>, <span class="string">&#x27;AdminIndex&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);</span><br></pre></td></tr></table></figure><br>是 “首页” 无法被识别。考虑是字符集的问题。</p>
+<h2 id="二、问题处理"><a href="#二、问题处理" class="headerlink" title="二、问题处理"></a>二、问题处理</h2><h3 id="情况一：数据库字符集与脚本所用字符集不一致"><a href="#情况一：数据库字符集与脚本所用字符集不一致" class="headerlink" title="情况一：数据库字符集与脚本所用字符集不一致"></a>情况一：数据库字符集与脚本所用字符集不一致</h3><p>第一种可能是数据库所用的字符集和脚本字符集不一致，比如说建表时使用的字符集为 <code>latin1</code>，而脚本使用的却是 <code>utf-8</code>，这样就会导致错误。</p>
+<p>输入命令，查看建库语句<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> <span class="keyword">CREATE</span> DATABASE wj;</span><br></pre></td></tr></table></figure><br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+--------------+----------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| Database     | Create Database                                                                                                                        |</span><br><span class="line">+--------------+----------------------------------------------------------------------------------------------------------------------------------------+</span><br><span class="line">| white_jotter | CREATE DATABASE `wj` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION=&#x27;N&#x27; */ |</span><br><span class="line">+--------------+----------------------------------------------------------------------------------------------------------------------------------------+</span><br></pre></td></tr></table></figure><br>显示所用字符集为 <code>utf8mb4</code>，说明数据库字符集与脚本所用字符集一致。</p>
+<blockquote>
+<p>若不一致，应该使用如下指令来修改<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> DATABASE 数据库名 <span class="type">CHARACTER</span> <span class="keyword">SET</span> utf8mb4;</span><br></pre></td></tr></table></figure></p>
+<p>注意平常所说的 utf8 指 sql 中的 utf8mb4，而不是 sql 中的 utf8 或 utf8md3。sql 将 utf8md3 视为 utf8 似乎有历史的原因。utf8mb4 兼容 utf8md3，并可以表示更多的符号，一些表情符号也包含在 utf8mb4 中。</p>
+</blockquote>
+<h3 id="情况二：表字符集或列字符集与脚本所用字符集不一致"><a href="#情况二：表字符集或列字符集与脚本所用字符集不一致" class="headerlink" title="情况二：表字符集或列字符集与脚本所用字符集不一致"></a>情况二：表字符集或列字符集与脚本所用字符集不一致</h3><p>同样输入命令，查看建表语句<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> admin_menu;</span><br></pre></td></tr></table></figure><br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">+------------+------------------------------------------------------------------------+</span><br><span class="line">| admin_menu | CREATE TABLE `admin_menu` (</span><br><span class="line">  `id` int NOT NULL AUTO_INCREMENT,</span><br><span class="line">  `path` varchar(64) DEFAULT NULL,</span><br><span class="line">  `name` varchar(64) DEFAULT NULL,</span><br><span class="line">  `name_zh` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,</span><br><span class="line">  `icon_cls` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,</span><br><span class="line">  `component` varchar(64) DEFAULT NULL,</span><br><span class="line">  `parent_id` int DEFAULT NULL,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |</span><br><span class="line">+------------+------------------------------------------------------------------------+</span><br></pre></td></tr></table></figure></p>
+<p>显示表字符集和列字符集所用字符集依旧为 <code>utf8mb4</code>。</p>
+<blockquote>
+<p>类似的，如果不一致，应该使用如下指令来修改<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> 表名 <span class="type">CHARACTER</span> <span class="keyword">SET</span> utf8mb4;</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<h3 id="情况三：客户端字符集与脚本所用字符集不一致"><a href="#情况三：客户端字符集与脚本所用字符集不一致" class="headerlink" title="情况三：客户端字符集与脚本所用字符集不一致"></a>情况三：客户端字符集与脚本所用字符集不一致</h3><p>所谓的客户端字符集指的是用户输入的命令所用的字符集。</p>
+<p>通过如下指令查看：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> variables <span class="keyword">LIKE</span> <span class="string">&#x27;%char%&#x27;</span>;</span><br></pre></td></tr></table></figure><br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">+--------------------------+-------------------------------------------+</span><br><span class="line">| Variable_name            | Value                                     |</span><br><span class="line">+--------------------------+-------------------------------------------+</span><br><span class="line">| character_set_client     | gbk                                       |</span><br><span class="line">| character_set_connection | gbk                                       |</span><br><span class="line">| character_set_database   | utf8mb4                                   |</span><br><span class="line">| character_set_filesystem | binary                                    |</span><br><span class="line">| character_set_results    | gbk                                       |</span><br><span class="line">| character_set_server     | utf8mb4                                   |</span><br><span class="line">| character_set_system     | utf8mb3                                   |</span><br><span class="line">| character_sets_dir       | D:\MySQL\MySQL Server 8.0\share\charsets\ |</span><br><span class="line">+--------------------------+-------------------------------------------+</span><br></pre></td></tr></table></figure><br>第一行 <code>character_set_client</code> 便是用户字符集，为 <code>gbk</code> 而非 <code>utf8mb4</code>。这就是 sql 指令中出现中文会产生错误的原因。</p>
+<p>使用指令<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> character_set_client<span class="operator">=</span>utf8mb4;</span><br></pre></td></tr></table></figure><br>可以修改 <code>character_set_client</code> 为 <code>utf8mb4</code>。</p>
+<p>类似的命令也可以修改 <code>character_set_connection</code> 和 <code>character_set_results</code>。这两个字符集分别是连接数据库的字符集和数据库向客户端返回时的字符集。另外这三个字符集也可以通过一条命令同时修改：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> NAMES utf8mb4;</span><br></pre></td></tr></table></figure></p>
+<p>注意这样的设置在重启后将会还原，永久设置字符集可以通过修改配置文件 <code>my.ini</code> 实现（<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/20570246/change-database-variable-character-set-client-in-mysql">永久修改字符集</a>）。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/3fc6e65a/" rel="prev" title="系统编程之线程管理">
+      <i class="fa fa-chevron-left"></i> 系统编程之线程管理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/2c9af791/" rel="next" title="用pytorch搭建神经网络">
+      用pytorch搭建神经网络 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">一、问题描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E9%97%AE%E9%A2%98%E5%A4%84%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">二、问题处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%83%85%E5%86%B5%E4%B8%80%EF%BC%9A%E6%95%B0%E6%8D%AE%E5%BA%93%E5%AD%97%E7%AC%A6%E9%9B%86%E4%B8%8E%E8%84%9A%E6%9C%AC%E6%89%80%E7%94%A8%E5%AD%97%E7%AC%A6%E9%9B%86%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="nav-number">2.1.</span> <span class="nav-text">情况一：数据库字符集与脚本所用字符集不一致</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%83%85%E5%86%B5%E4%BA%8C%EF%BC%9A%E8%A1%A8%E5%AD%97%E7%AC%A6%E9%9B%86%E6%88%96%E5%88%97%E5%AD%97%E7%AC%A6%E9%9B%86%E4%B8%8E%E8%84%9A%E6%9C%AC%E6%89%80%E7%94%A8%E5%AD%97%E7%AC%A6%E9%9B%86%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="nav-number">2.2.</span> <span class="nav-text">情况二：表字符集或列字符集与脚本所用字符集不一致</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%83%85%E5%86%B5%E4%B8%89%EF%BC%9A%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%AD%97%E7%AC%A6%E9%9B%86%E4%B8%8E%E8%84%9A%E6%9C%AC%E6%89%80%E7%94%A8%E5%AD%97%E7%AC%A6%E9%9B%86%E4%B8%8D%E4%B8%80%E8%87%B4"><span class="nav-number">2.3.</span> <span class="nav-text">情况三：客户端字符集与脚本所用字符集不一致</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

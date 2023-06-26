@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、Lab3 前言不知道为什么，虽然写 Lab3 所用的时间比 Lab2 少，但这次的笔记居然比 Lab2 长。我认为可能是因为自己在本篇文章中讲了更多和实验本身无关的东西。不过既然讲了，应该也会对进一步认识操作系统起到一些作用吧。希望本篇文章不会显得太啰嗦。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BUAA-OS实验笔记之Lab3">
+<meta property="og:url" content="https://wokron.github.io/posts/5e49fa6a/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、Lab3 前言不知道为什么，虽然写 Lab3 所用的时间比 Lab2 少，但这次的笔记居然比 Lab2 长。我认为可能是因为自己在本篇文章中讲了更多和实验本身无关的东西。不过既然讲了，应该也会对进一步认识操作系统起到一些作用吧。希望本篇文章不会显得太啰嗦。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-03-30T06:36:34.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.376Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="MOS">
+<meta property="article:tag" content="os">
+<meta property="article:tag" content="BUAA">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/5e49fa6a/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>BUAA-OS实验笔记之Lab3 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5e49fa6a/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          BUAA-OS实验笔记之Lab3
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-30 14:36:34" itemprop="dateCreated datePublished" datetime="2023-03-30T14:36:34+08:00">2023-03-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、Lab3-前言"><a href="#一、Lab3-前言" class="headerlink" title="一、Lab3 前言"></a>一、Lab3 前言</h2><p>不知道为什么，虽然写 Lab3 所用的时间比 Lab2 少，但这次的笔记居然比 Lab2 长。我认为可能是因为自己在本篇文章中讲了更多和实验本身无关的东西。不过既然讲了，应该也会对进一步认识操作系统起到一些作用吧。希望本篇文章不会显得太啰嗦。<br><span id="more"></span></p>
+<h2 id="二、内核初始化（再续）"><a href="#二、内核初始化（再续）" class="headerlink" title="二、内核初始化（再续）"></a>二、内核初始化（再续）</h2><p>Lab2 中，我们在内核初始化阶段初始化了虚拟内存的相关信息，Lab3 中我们要继续这一过程。本次实验中我们会完成进程控制的初始化。</p>
+<h3 id="（1）再度-mips-init"><a href="#（1）再度-mips-init" class="headerlink" title="（1）再度 mips_init"></a>（1）再度 mips_init</h3><p>我们查看 Lab3 中 init/init.c 的 <code>mips_init</code> 函数的内容变化。与 Lab2 相比，其中多调用了如下的方法 <code>env_init</code>、<code>ENV_CREATE_PRIORITY</code>、<code>kclock_init</code> 和 <code>enable_irq</code>。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">mips_init</span><span class="params">()</span> &#123;</span><br><span class="line">	printk(<span class="string">&quot;init.c:\tmips_init() is called\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// lab2:</span></span><br><span class="line">	mips_detect_memory();</span><br><span class="line">	mips_vm_init();</span><br><span class="line">	page_init();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// lab3:</span></span><br><span class="line">	env_init();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// lab3:</span></span><br><span class="line">	ENV_CREATE_PRIORITY(user_bare_loop, <span class="number">1</span>);</span><br><span class="line">	ENV_CREATE_PRIORITY(user_bare_loop, <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// lab3:</span></span><br><span class="line">	kclock_init();</span><br><span class="line">	enable_irq();</span><br><span class="line">	<span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>env_init</code> 用于进程控制的初始化，<code>ENV_CREATE_PRIORITY</code> 手工创建了两个进程，<code>kclock_init</code> 和 <code>enable_irq</code> 设置了时钟中断并启用了中断。后两者将分别在第三和四节介绍。本届只介绍前者。</p>
+<h3 id="（2）进程管理的数据结构"><a href="#（2）进程管理的数据结构" class="headerlink" title="（2）进程管理的数据结构"></a>（2）进程管理的数据结构</h3><p>让我们深入在 kern/env.c 中的 <code>env_init</code>，在该函数中，首先初始化了两个列表<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">env_init</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line">	<span class="comment">/* Step 1: Initialize &#x27;env_free_list&#x27; with &#x27;LIST_INIT&#x27; and &#x27;env_sched_list&#x27; with</span></span><br><span class="line"><span class="comment">	 * &#x27;TAILQ_INIT&#x27;. */</span></span><br><span class="line">	<span class="comment">/* Exercise 3.1: Your code here. (1/2) */</span></span><br><span class="line">	LIST_INIT(&amp;env_free_list);</span><br><span class="line">	TAILQ_INIT(&amp;env_sched_list);</span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<p>这两个列表，准确来说是一个链表和一个尾队列（此类型的定义可以在 include/queue.h 中找到），其中的元素都是同一类型。我们可以在 include/env.h 中找到<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LIST_HEAD(Env_list, Env);</span><br><span class="line">TAILQ_HEAD(Env_sched_list, Env);</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>Env</code> 是如下的结构体，它被称为进程控制块（Process Control Block，PCB），其中保存了一个进程所拥有的不同的资源。或许因为是附属于进程，为进程提供支持的结构，就像是进程所处的环境一样，因此这里类型名为Env(ironment)。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Env</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Trapframe</span> <span class="title">env_tf</span>;</span>  <span class="comment">// Saved registers</span></span><br><span class="line">	LIST_ENTRY(Env) env_link; <span class="comment">// Free list</span></span><br><span class="line">	u_int env_id;		  <span class="comment">// Unique environment identifier</span></span><br><span class="line">	u_int env_asid;		  <span class="comment">// ASID</span></span><br><span class="line">	u_int env_parent_id;	  <span class="comment">// env_id of this env&#x27;s parent</span></span><br><span class="line">	u_int env_status;	  <span class="comment">// Status of the environment</span></span><br><span class="line">	Pde *env_pgdir;		  <span class="comment">// Kernel virtual address of page dir</span></span><br><span class="line">	TAILQ_ENTRY(Env) env_sched_link;</span><br><span class="line">	u_int env_pri;</span><br><span class="line">	<span class="comment">// Lab 4 IPC</span></span><br><span class="line">	u_int env_ipc_value;   <span class="comment">// data value sent to us</span></span><br><span class="line">	u_int env_ipc_from;    <span class="comment">// envid of the sender</span></span><br><span class="line">	u_int env_ipc_recving; <span class="comment">// env is blocked receiving</span></span><br><span class="line">	u_int env_ipc_dstva;   <span class="comment">// va at which to map received page</span></span><br><span class="line">	u_int env_ipc_perm;    <span class="comment">// perm of page mapping received</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Lab 4 fault handling</span></span><br><span class="line">	u_int env_user_tlb_mod_entry; <span class="comment">// user tlb mod handler</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Lab 6 scheduler counts</span></span><br><span class="line">	u_int env_runs; <span class="comment">// number of times been env_run&#x27;ed</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>进程控制块中内容众多，不好一一解释。因此这里只稍微介绍一下和本次实验有关的字段。</p>
+<ul>
+<li><code>env_link</code>、<code>env_sched_link</code>：根据类型就可以看出，这两个字段就是存储链表信息的字段</li>
+<li><code>env_tf</code>：此字段用于在陷入内核时保存当前进程所处状态的相关信息，比如寄存器的值、pc寄存器中的地址等等。它的类型名为 <code>Trapframe</code>，与栈帧（stack frame）类似，都是存储一段信息的结构，只不过此类型存储的是发生在陷入内核（trap）时的信息罢了。<code>Trapframe</code> 定义在 include/trap.h 中  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Trapframe</span> &#123;</span></span><br><span class="line">    <span class="comment">/* Saved main processor registers. */</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> regs[<span class="number">32</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Saved special registers. */</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> cp0_status;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> hi;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> lo;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> cp0_badvaddr;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> cp0_cause;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> cp0_epc;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li><code>env_id</code>：此字段是进程的标识符，每个进程都唯一</li>
+<li><code>env_status</code>：此字段中存储进程的当前状态，包括空闲、阻塞和可运行  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> ENV_FREE 0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ENV_RUNNABLE 1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ENV_NOT_RUNNABLE 2</span></span><br></pre></td></tr></table></figure></li>
+<li><code>env_asid</code>：表示进程的 asid，用于 tlb 中</li>
+<li><code>env_pgdir</code>：存储了当前进程拥有的页目录的虚拟地址</li>
+<li><code>env_pri</code>：表示当前进程的优先级</li>
+</ul>
+<p>在本实验接下来的代码中，我们都会使用或看到这些字段。</p>
+<p>现在让我们回到 <code>env_init</code>。看一下我们初始化的两个数据结构的名称。<code>env_free_list</code> 表示其中存储了所有空闲的进程控制块，<code>env_sched_list</code> 则意味着该列表用于组织进程的调度（schedule）。</p>
+<h3 id="（3）map-segment-函数"><a href="#（3）map-segment-函数" class="headerlink" title="（3）map_segment 函数"></a>（3）map_segment 函数</h3><p>我们查看 <code>env_init</code> 的后续内容。首先，我们将所有的进程控制块都插入 <code>env_free_list</code> 中。并且标记所有块都为 <code>ENV_FREE</code>。这里插入时顺序反向，这只是指导书的要求而已。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (i = NENV - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) &#123;</span><br><span class="line">	LIST_INSERT_HEAD(&amp;env_free_list, envs + i, env_link);</span><br><span class="line">	envs[i].env_status = ENV_FREE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在 <code>env_init</code> 中我们还需要做一件事，就是创建一个 “模板页目录”，设置该页将 pages 和 envs （即所有页控制块和所有进程控制块的内存空间）分别映射到 <code>UPAGES</code> 和 <code>UENVS</code> 的空间中。并且在后续进程创建新的页目录时，也要首先复制模板页目录中的内容。这样做的目的是使得用户程序也能够通过 <code>UPAGES</code> 和 <code>UENVS</code> 的用户地址空间获取 <code>Page</code> 和 <code>Env</code> 的信息。</p>
+<p>我们首先调用 <code>page_alloc</code> 申请一个页<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Page</span> *<span class="title">p</span>;</span></span><br><span class="line">panic_on(page_alloc(&amp;p));</span><br><span class="line">p-&gt;pp_ref++;</span><br></pre></td></tr></table></figure></p>
+<p>该页即 “模板页目录”，我们把它的地址存储到全局变量 <code>base_pgdir</code> 中<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base_pgdir = (Pde *)page2kva(p);</span><br></pre></td></tr></table></figure></p>
+<p>最后我们调用 <code>map_segment</code> 函数，该函数在指定的页目录中创建虚拟地址空间 <code>[va, va+size)</code> 到物理地址空间 <code>[pa, pa+size)</code> 的映射。并设置其权限（在这里我们设置其为只读，因为不希望用户程序修改内核空间的内容）。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">	map_segment(base_pgdir, <span class="number">0</span>, PADDR(pages), UPAGES, ROUND(npage * <span class="keyword">sizeof</span>(<span class="keyword">struct</span> Page), BY2PG),</span><br><span class="line">		    PTE_G);</span><br><span class="line">	map_segment(base_pgdir, <span class="number">0</span>, PADDR(envs), UENVS, ROUND(NENV * <span class="keyword">sizeof</span>(<span class="keyword">struct</span> Env), BY2PG),</span><br><span class="line">		    PTE_G);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这样 <code>env_init</code> 函数就结束了。我们初始化了两个列表；将所有进程控制块插入空闲进程表；创建了一个 “模板页目录” 并将一部分内核空间的内容映射到用户空间。</p>
+<p>接着我们考察 <code>map_segment</code> 函数。可以认为该函数是一个广义的 <code>page_insert</code>。它的功能是，在页目录 <code>pgdir</code> 中，将虚拟地址空间 <code>[va, va+size)</code> 映射到到物理地址空间 <code>[pa, pa+size)</code>，并赋予 <code>perm</code> 权限。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">map_segment</span><span class="params">(Pde *pgdir, u_int asid, u_long pa, u_long va, u_int size, u_int perm)</span> &#123;</span><br></pre></td></tr></table></figure></p>
+<p>它的实现也很简单，就是通过循环不断调用 <code>page_insert</code> 创建一个页大小的 <code>va</code> 到 <code>pa</code> 的映射，直到达到期望的 <code>size</code> 大小<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; size; i += BY2PG) &#123;</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Hint:</span></span><br><span class="line"><span class="comment">		 *  Map the virtual page &#x27;va + i&#x27; to the physical page &#x27;pa + i&#x27; using &#x27;page_insert&#x27;.</span></span><br><span class="line"><span class="comment">		 *  Use &#x27;pa2page&#x27; to get the &#x27;struct Page *&#x27; of the physical address.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="comment">/* Exercise 3.2: Your code here. */</span></span><br><span class="line">		page_insert(pgdir, asid, pa2page(pa + i), va + i, perm);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这样进程控制的初始化就完成了。</p>
+<h2 id="三、进程的创建"><a href="#三、进程的创建" class="headerlink" title="三、进程的创建"></a>三、进程的创建</h2><h3 id="（1）再再度-mips-init"><a href="#（1）再再度-mips-init" class="headerlink" title="（1）再再度 mips_init"></a>（1）再再度 mips_init</h3><p>我们再回到 <code>mips_init</code> 函数。进程控制初始化完成后，我们又调用 <code>ENV_CREATE_PRIORITY</code> 宏创建了两个进程。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// lab3:</span></span><br><span class="line">ENV_CREATE_PRIORITY(user_bare_loop, <span class="number">1</span>);</span><br><span class="line">ENV_CREATE_PRIORITY(user_bare_loop, <span class="number">2</span>);</span><br></pre></td></tr></table></figure></p>
+<p>该宏定义在 include/env.h 中。在同一个文件夹中还有另一个类似的宏 <code>ENV_CREATE</code>，相当于把 <code>ENV_CREATE_PRIORITY</code> 中的 <code>y</code> 设为 1。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> ENV_CREATE_PRIORITY(x, y) \</span></span><br><span class="line"><span class="meta">	(&#123; \</span></span><br><span class="line"><span class="meta">		extern u_char binary_##x##_start[]; \</span></span><br><span class="line"><span class="meta">		extern u_int binary_##x##_size; \</span></span><br><span class="line"><span class="meta">		env_create(binary_##x##_start, (u_int)binary_##x##_size, y); \</span></span><br><span class="line"><span class="meta">	&#125;)</span></span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<p>我们可以看出宏中定义了两个外部引用变量 <code>binary_##x##_start</code> 和 <code>binary_##x##_size</code>，对于 <code>mips_init</code> 中的使用来说即 <code>binary_user_bare_loop_start</code> 和 <code>binary_user_bare_loop_size</code>。接着我们调用了 <code>env_create</code> 函数。很明显该函数用于创建一个进程。</p>
+<h3 id="（2）一种神奇的操作"><a href="#（2）一种神奇的操作" class="headerlink" title="（2）一种神奇的操作"></a>（2）一种神奇的操作</h3><p><code>env_create</code> 定义在 kern/env.c 中。在介绍该函数的内容之前，我们可以解释一下该函数的参数。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> Env *<span class="title function_">env_create</span><span class="params">(<span class="type">const</span> <span class="type">void</span> *binary, <span class="type">size_t</span> size, <span class="type">int</span> priority)</span> &#123;</span><br></pre></td></tr></table></figure></p>
+<p>首先，<code>const void *binary</code> 是一个二进制的数据数组，该数组的大小为 <code>size_t size</code>，实际上此二进制数据即我们想要创建的进程的程序。最后一个参数 <code>int priority</code> 表示我们想要设置的进程的优先级，对应 <code>Env</code> 中的 <code>env_pri</code> 字段。</p>
+<p>你可能会想，“不对呀，我们从哪里读入的程序？” 确实，我们根本没有进行磁盘操作。我们还没有实现文件系统，我们所 “加载” 的程序实际上是被一同编译到内核中的一段 ELF 格式的数据。这段数据中存在标签 <code>binary_user_bare_loop_start</code> 和 <code>binary_user_bare_loop_size</code>，所以我们才可以只通过引用外部变量的形式就 “加载” 了程序文件。</p>
+<p>将 ELF 文件转化为 c 数组一同编译进内核程序的过程似乎较为复杂。本人也并不像如此深入此与操作系统无关的技术。但是经过简单的探索，我们还是可以了解到实现这一过程的程序的源代码为 tools/bintoc.c。此代码实现了一个程序，可以读取某一 ELF 文件的二进制内容，将其转化为一个 c 语言源代码文件。bintoc.c 的代码片段如下：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">   <span class="type">size_t</span> n = fread(binary, <span class="keyword">sizeof</span>(<span class="type">char</span>), size, bin);</span><br><span class="line">assert(n == size);</span><br><span class="line"><span class="built_in">fprintf</span>(out,</span><br><span class="line">	<span class="string">&quot;unsigned int binary_%s_%s_size = %d;\n&quot;</span></span><br><span class="line">	<span class="string">&quot;unsigned char binary_%s_%s_start[] = &#123;&quot;</span>,</span><br><span class="line">	prefix, bin_file, size, prefix, bin_file);</span><br><span class="line"><span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; size; i++) &#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(out, <span class="string">&quot;0x%x%c&quot;</span>, binary[i], i &lt; size - <span class="number">1</span> ? <span class="string">&#x27;,&#x27;</span> : <span class="string">&#x27;&#125;&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>另外，我们可以在 user/bar/Makefile 中找到如下内容<br><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">INCLUDES    := -I../../<span class="keyword">include</span></span><br><span class="line"></span><br><span class="line"><span class="section">%.b.c: %.b</span></span><br><span class="line">	<span class="variable">$(tools_dir)</span>/bintoc -f <span class="variable">$&lt;</span> -o <span class="variable">$@</span> -p user_bare</span><br></pre></td></tr></table></figure></p>
+<p>这些内容就足以使人察觉 “将 ELF 文件转化为 c 数组一同编译进内核程序” 的方法了。</p>
+<h3 id="（3）进入-env-alloc-函数"><a href="#（3）进入-env-alloc-函数" class="headerlink" title="（3）进入 env_alloc 函数"></a>（3）进入 env_alloc 函数</h3><p>说了这么多没用的，我们还是回到 <code>env_create</code> 吧。首先，该函数通过调用 <code>env_alloc</code> 申请了一个新的空闲进程控制块。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Env</span> *<span class="title">e</span>;</span></span><br><span class="line"><span class="comment">/* Step 1: Use &#x27;env_alloc&#x27; to alloc a new env. */</span></span><br><span class="line"><span class="comment">/* Exercise 3.7: Your code here. (1/3) */</span></span><br><span class="line">env_alloc(&amp;e, <span class="number">0</span>);</span><br></pre></td></tr></table></figure></p>
+<p><code>env_alloc</code> 与 <code>page_alloc</code> 类似，都从空闲块列表中取出一个空闲块。但是 <code>env_alloc</code> 的后续处理更加复杂。首先 <code>env_alloc</code> 中同样取出一个空闲块。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">env_alloc</span><span class="params">(<span class="keyword">struct</span> Env **new, u_int parent_id)</span> &#123;</span><br><span class="line">	<span class="type">int</span> r;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Env</span> *<span class="title">e</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Step 1: Get a free Env from &#x27;env_free_list&#x27; */</span></span><br><span class="line">	<span class="comment">/* Exercise 3.4: Your code here. (1/4) */</span></span><br><span class="line">	<span class="keyword">if</span> (LIST_EMPTY(&amp;env_free_list)) &#123;</span><br><span class="line">		<span class="keyword">return</span> -E_NO_FREE_ENV;</span><br><span class="line">	&#125;</span><br><span class="line">	e = LIST_FIRST(&amp;env_free_list);</span><br></pre></td></tr></table></figure></p>
+<p>接着我们调用 <code>env_setup_vm</code> 初始化进程控制块的用户地址空间。也就是为进程控制块创建对应的二级页表。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 2: Call a &#x27;env_setup_vm&#x27; to initialize the user address space for this new Env. */</span></span><br><span class="line"><span class="comment">/* Exercise 3.4: Your code here. (2/4) */</span></span><br><span class="line"><span class="keyword">if</span> ((r = env_setup_vm(e)) != <span class="number">0</span>) &#123;</span><br><span class="line">	<span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="（4）env-setup-vm-与页表自映射"><a href="#（4）env-setup-vm-与页表自映射" class="headerlink" title="（4）env_setup_vm 与页表自映射"></a>（4）env_setup_vm 与页表自映射</h3><p><code>env_setup_vm</code> 函数值得关注一下，我们查看一下该函数的内容。首先我们申请一个物理页作为页目录。可以看到我们这里设置了 <code>Env</code> 中 <code>env_pgdir</code> 字段的值<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">env_setup_vm</span><span class="params">(<span class="keyword">struct</span> Env *e)</span> &#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Page</span> *<span class="title">p</span>;</span></span><br><span class="line">	try(page_alloc(&amp;p));</span><br><span class="line">	<span class="comment">/* Exercise 3.3: Your code here. */</span></span><br><span class="line">	p-&gt;pp_ref++;</span><br><span class="line">	e-&gt;env_pgdir = (Pde *)page2kva(p);</span><br></pre></td></tr></table></figure></p>
+<p>值得讲解的在后面。是否还记得我们之前花大篇幅讲解的 “模板页目录”？现在正在创建二级页表，我们可以将 “模板页目录” 中的内容复制到当前进程的页目录中。我们复制了 <code>UTOP</code> 到 <code>UVPT</code> 的虚拟地址空间对应的页表项。这就是我们之前在 “模板页目录” 中映射的区域。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">memcpy</span>(e-&gt;env_pgdir + PDX(UTOP), base_pgdir + PDX(UTOP),</span><br><span class="line">       <span class="keyword">sizeof</span>(Pde) * (PDX(UVPT) - PDX(UTOP)));</span><br></pre></td></tr></table></figure></p>
+<p><code>env_setup_vm</code> 函数还没有结束。在最后我们还执行了这样的语句<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">	e-&gt;env_pgdir[PDX(UVPT)] = PADDR(e-&gt;env_pgdir) | PTE_V;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们将 <code>UVPT</code> 虚拟地址映射到页目录本身的物理地址，并设置只读权限。这样的话，页目录中的项所对应的，就不只是二级页表，还包含有一个一级页表，也就是页目录自身。这就是自映射。我们在 Lab2 时从指导书上学到了关于自映射的理论。但到了 Lab3 才把它用代码表示了出来。</p>
+<p>所以，自映射有什么用？指导书上的表达有些模糊不清，虽然我也没有信心能够表述明白，但我还是试一下吧。</p>
+<blockquote>
+<p>假设现在我们用比 <code>UVPT</code> 地址高一些的地址 <code>va</code> 进行访存，那么我们会取到那些信息呢？首先，这个地址会经过页目录，<code>PDX(va)</code> 的结果和 <code>UVPT</code> 相同，我们进入到索引对应的二级页表……不对，还是页目录自身！</p>
+<p>好的，我们在页目录中重新来一遍，这次通过 <code>PTX(va)</code> 计算索引，结果就不一定还是页目录项了。我们找到了一个物理页，取出了其中的数据。可是等等，这个物理页却不再是一般的物理页了，而是作为二级页表的物理页。</p>
+<p>另外假如我们恰好取得的 <code>PTX(va)</code> 值与 <code>PDX(va)</code> 相同，那么我们绕了两圈，最终还是处在页目录之中，我们取得的数据也是页目录中的内容。</p>
+<p>这样我们就可以明白自映射的作用了。它在用户内存空间中划分出一部分，使得用户可以通过访问这部分空间得到二级页表以及页目录中的数据。</p>
+<p>在 include/mmu.h 的内存分布图中，我们可以看出 <code>UVPT</code> 以上的 4kb（1024 个页表的大小）空间被标记为 <code>User VPT</code>。VPT 或为 virtual page table（虚拟页表）的意思。</p>
+</blockquote>
+<h3 id="（5）进程控制块的初始化"><a href="#（5）进程控制块的初始化" class="headerlink" title="（5）进程控制块的初始化"></a>（5）进程控制块的初始化</h3><p>我们回到 <code>env_alloc</code> 函数。此后的内容是初始化新申请的进程控制块。我们要设置一些字段的值后才算完成了进程控制块的申请。</p>
+<p>一些内容和后续的实验有关，我们先不考虑，我们考虑本次试验中涉及的部分。这里我们设置了 <code>env_id</code>、<code>env_parent_id</code> 和 <code>env_asid</code> 的值。其中 <code>env_parent_id</code> 设置为 <code>env_alloc</code> 的参数。而 <code>env_id</code> 和 <code>env_asid</code> 因为需要不重复，所以通过两个函数分别申请。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">e-&gt;env_user_tlb_mod_entry = <span class="number">0</span>; <span class="comment">// for lab4</span></span><br><span class="line">e-&gt;env_runs = <span class="number">0</span>;	       <span class="comment">// for lab6</span></span><br><span class="line"><span class="comment">/* Exercise 3.4: Your code here. (3/4) */</span></span><br><span class="line">e-&gt;env_id = mkenvid(e);</span><br><span class="line">e-&gt;env_parent_id = parent_id;</span><br><span class="line"><span class="keyword">if</span> ((r = asid_alloc(&amp;e-&gt;env_asid)) != <span class="number">0</span>) &#123;</span><br><span class="line">	<span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>mkenvid</code> 的内容较为简单，只是通过一个函数内的静态变量实现不重复的。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">u_int <span class="title function_">mkenvid</span><span class="params">(<span class="keyword">struct</span> Env *e)</span> &#123;</span><br><span class="line">	<span class="type">static</span> u_int i = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">return</span> ((++i) &lt;&lt; (<span class="number">1</span> + LOG2NENV)) | (e - envs);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>而 <code>asid_alloc</code> 则是设置了一个 <code>asid_bitmap</code> 用来管理 asid 的分配情况，这是因为 asid 是有限的（2^6=64）。当所有的 asid 都被分配以后，应该返回异常。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">uint32_t</span> asid_bitmap[NASID / <span class="number">32</span>] = &#123;<span class="number">0</span>&#125;; <span class="comment">// 64</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Overview:</span></span><br><span class="line"><span class="comment"> *  Allocate an unused ASID.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Post-Condition:</span></span><br><span class="line"><span class="comment"> *   return 0 and set &#x27;*asid&#x27; to the allocated ASID on success.</span></span><br><span class="line"><span class="comment"> *   return -E_NO_FREE_ENV if no ASID is available.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">asid_alloc</span><span class="params">(u_int *asid)</span> &#123;</span><br><span class="line">	<span class="keyword">for</span> (u_int i = <span class="number">0</span>; i &lt; NASID; ++i) &#123;</span><br><span class="line">		<span class="type">int</span> index = i &gt;&gt; <span class="number">5</span>;</span><br><span class="line">		<span class="type">int</span> inner = i &amp; <span class="number">31</span>;</span><br><span class="line">		<span class="keyword">if</span> ((asid_bitmap[index] &amp; (<span class="number">1</span> &lt;&lt; inner)) == <span class="number">0</span>) &#123;</span><br><span class="line">			asid_bitmap[index] |= <span class="number">1</span> &lt;&lt; inner;</span><br><span class="line">			*asid = i;</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> -E_NO_FREE_ENV;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>继续 <code>env_alloc</code> 函数，在最后，我们设置进程的 <code>status</code> 寄存器和 <code>sp</code> 寄存器的值。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">/* Step 4: Initialize the sp and &#x27;cp0_status&#x27; in &#x27;e-&gt;env_tf&#x27;. */</span></span><br><span class="line">	<span class="comment">// Timer interrupt (STATUS_IM4) will be enabled.</span></span><br><span class="line">	e-&gt;env_tf.cp0_status = STATUS_IM4 | STATUS_KUp | STATUS_IEp;</span><br><span class="line">	<span class="comment">// Keep space for &#x27;argc&#x27; and &#x27;argv&#x27;.</span></span><br><span class="line">	e-&gt;env_tf.regs[<span class="number">29</span>] = USTACKTOP - <span class="keyword">sizeof</span>(<span class="type">int</span>) - <span class="keyword">sizeof</span>(<span class="type">char</span> **);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Step 5: Remove the new Env from env_free_list. */</span></span><br><span class="line">	<span class="comment">/* Exercise 3.4: Your code here. (4/4) */</span></span><br><span class="line">	LIST_REMOVE(e, env_link);</span><br><span class="line"></span><br><span class="line">	*new = e;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>将<code>status</code> 寄存器的值设置为 <code>STATUS_IM4 | STATUS_KUp | STATUS_IEp</code>，表示响应 4 号中断，是用户状态且开启中断。所有的通用寄存器状态在 <code>Trapframe</code> 中存储在 <code>regs</code> 数组中，其中第 29 号寄存器为 <code>sp</code> 寄存器。这一点可从 include/asm/regdef.h 中得知<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> sp $29 <span class="comment">/* stack pointer */</span></span></span><br></pre></td></tr></table></figure></p>
+<p>在未执行的情况下，用户程序的 sp 寄存器应该处于栈顶 <code>USTACKTOP</code> 的位置。但为了给程序的 <code>main</code> 函数的参数 <code>argc</code> 和 <code>argv</code> 留出空间，需要减去 <code>sizeof(int) + sizeof(char **)</code> 的大小。</p>
+<p>这样我们就完成了对 <code>env_alloc</code> 函数的讲解。</p>
+<h3 id="（6）加载-ELF-文件"><a href="#（6）加载-ELF-文件" class="headerlink" title="（6）加载 ELF 文件"></a>（6）加载 ELF 文件</h3><p>经历了这么多，我们都快忘记最开始我们的目标，<code>env_create</code> 函数了。让我们接着 <code>env_alloc</code> 之后的内容。现在对于调用 <code>env_alloc</code> 得到的新进程控制块，我们设置它的优先级以及状态。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 2: Assign the &#x27;priority&#x27; to &#x27;e&#x27; and mark its &#x27;env_status&#x27; as runnable. */</span></span><br><span class="line"><span class="comment">/* Exercise 3.7: Your code here. (2/3) */</span></span><br><span class="line">e-&gt;env_pri = priority;</span><br><span class="line">e-&gt;env_status = ENV_RUNNABLE;</span><br></pre></td></tr></table></figure></p>
+<p>最后，我们调用 <code>load_icode</code> 为进程加载 ELF 程序，同时使用 <code>TAILQ_INSERT_HEAD</code> 宏将进程控制块加入到调度队列中<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">/* Step 3: Use &#x27;load_icode&#x27; to load the image from &#x27;binary&#x27;, and insert &#x27;e&#x27; into</span></span><br><span class="line"><span class="comment">	 * &#x27;env_sched_list&#x27; using &#x27;TAILQ_INSERT_HEAD&#x27;. */</span></span><br><span class="line">	<span class="comment">/* Exercise 3.7: Your code here. (3/3) */</span></span><br><span class="line">	load_icode(e, binary, size);</span><br><span class="line">	TAILQ_INSERT_HEAD(&amp;env_sched_list, e, env_sched_link);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> e;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们就差最后一步就完成了 “进程的创建” 这一节的内容了，现在我们要分析 <code>load_icode</code> 中加载二进制镜像功能的实现。函数名中 icode 似乎指 image code 的意思。<code>load_icode</code> 同样在 kern/env.c 中。</p>
+<p>首先该函数调用了 <code>elf_from</code> 函数从二进制数据中读取了页表信息。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">load_icode</span><span class="params">(<span class="keyword">struct</span> Env *e, <span class="type">const</span> <span class="type">void</span> *binary, <span class="type">size_t</span> size)</span> &#123;</span><br><span class="line">	<span class="comment">/* Step 1: Use &#x27;elf_from&#x27; to parse an ELF header from &#x27;binary&#x27;. */</span></span><br><span class="line">	<span class="type">const</span> Elf32_Ehdr *ehdr = elf_from(binary, size);</span><br><span class="line">	<span class="keyword">if</span> (!ehdr) &#123;</span><br><span class="line">		panic(<span class="string">&quot;bad elf at %x&quot;</span>, binary);</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>elf_from</code> 函数定义在 lib/elfloader.c 中。只是简单地对二进制数据做类型转换，并检查是否确为 ELF 文件头。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> Elf32_Ehdr *<span class="title function_">elf_from</span><span class="params">(<span class="type">const</span> <span class="type">void</span> *binary, <span class="type">size_t</span> size)</span> &#123;</span><br><span class="line">	<span class="type">const</span> Elf32_Ehdr *ehdr = (<span class="type">const</span> Elf32_Ehdr *)binary;</span><br><span class="line">	<span class="keyword">if</span> (size &gt;= <span class="keyword">sizeof</span>(Elf32_Ehdr) &amp;&amp; ehdr-&gt;e_ident[EI_MAG0] == ELFMAG0 &amp;&amp;</span><br><span class="line">	    ehdr-&gt;e_ident[EI_MAG1] == ELFMAG1 &amp;&amp; ehdr-&gt;e_ident[EI_MAG2] == ELFMAG2 &amp;&amp;</span><br><span class="line">	    ehdr-&gt;e_ident[EI_MAG3] == ELFMAG3 &amp;&amp; ehdr-&gt;e_type == <span class="number">2</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> ehdr;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着在 <code>load_icode</code> 中使用了一个宏 <code>ELF_FOREACH_PHDR_OFF</code> 来遍历所有的程序头表<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 2: Load the segments using &#x27;ELF_FOREACH_PHDR_OFF&#x27; and &#x27;elf_load_seg&#x27;.</span></span><br><span class="line"><span class="comment"> * As a loader, we just care about loadable segments, so parse only program headers here.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">size_t</span> ph_off;</span><br><span class="line">ELF_FOREACH_PHDR_OFF (ph_off, ehdr) &#123;</span><br></pre></td></tr></table></figure></p>
+<p>这个宏定义在 include/elf.h 中。很容易看出作用<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> ELF_FOREACH_PHDR_OFF(ph_off, ehdr) \</span></span><br><span class="line"><span class="meta">	(ph_off) = (ehdr)-&gt;e_phoff; \</span></span><br><span class="line"><span class="meta">	for (int _ph_idx = 0; _ph_idx <span class="string">&lt; (ehdr)-&gt;</span>e_phnum; ++_ph_idx, (ph_off) += (ehdr)-&gt;e_phentsize)</span></span><br></pre></td></tr></table></figure></p>
+<p>在循环中，取出对应的程序头，如果其中的 <code>p_type</code> 类型为 <code>PT_LOAD</code>，说明其对应的程序需要被加载到内存中。我们调用 <code>elf_load_seg</code> 函数来进行加载<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">	Elf32_Phdr *ph = (Elf32_Phdr *)(binary + ph_off);</span><br><span class="line">	<span class="keyword">if</span> (ph-&gt;p_type == PT_LOAD) &#123;</span><br><span class="line">		<span class="comment">// &#x27;elf_load_seg&#x27; is defined in lib/elfloader.c</span></span><br><span class="line">		<span class="comment">// &#x27;load_icode_mapper&#x27; defines the way in which a page in this segment</span></span><br><span class="line">		<span class="comment">// should be mapped.</span></span><br><span class="line">		panic_on(elf_load_seg(ph, binary + ph-&gt;p_offset, load_icode_mapper, e));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在 <code>load_icode</code> 函数的最后，我们将进程控制块中 trap frame 的 epc cp0 寄存器的值设置为 ELF 文件中设定的程序入口地址<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">/* Step 3: Set &#x27;e-&gt;env_tf.cp0_epc&#x27; to &#x27;ehdr-&gt;e_entry&#x27;. */</span></span><br><span class="line">	<span class="comment">/* Exercise 3.6: Your code here. */</span></span><br><span class="line">	e-&gt;env_tf.cp0_epc = ehdr-&gt;e_entry;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这样 <code>load_icode</code> 部分也完成了。让我们回过头查看一下 <code>elf_load_seg</code> 函数。该函数定义在 lib/elfloader.c 中。作用是根据程序头表中的信息将 <code>bin</code> 中的数据加载到指定位置。值得关注该函数的参数，<code>elf_mapper_t map_page</code> 是一个回调函数，用于将数据映射到虚拟地址所在的页上；<code>void *data</code> 则是回调函数中使用的参数。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">elf_load_seg</span><span class="params">(Elf32_Phdr *ph, <span class="type">const</span> <span class="type">void</span> *bin, <span class="type">elf_mapper_t</span> map_page, <span class="type">void</span> *data)</span> &#123;</span><br><span class="line">	u_long va = ph-&gt;p_vaddr;</span><br><span class="line">	<span class="type">size_t</span> bin_size = ph-&gt;p_filesz;</span><br><span class="line">	<span class="type">size_t</span> sgsize = ph-&gt;p_memsz;</span><br><span class="line">	u_int perm = PTE_V;</span><br><span class="line">	<span class="keyword">if</span> (ph-&gt;p_flags &amp; PF_W) &#123;</span><br><span class="line">		perm |= PTE_D;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>elf_mapper_t</code> 定义在 include/elf.h 中。此类型的函数接受数据要加载到的虚拟地址 <code>va</code>，数据加载的起始位置相对于页的偏移 <code>offset</code>，页的权限 <code>prem</code>，所要加载的数据 <code>src</code> 和要加载的数据大小 <code>len</code>。当然还有 <code>data</code>，但这个让我们留到后面。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="title function_">int</span> <span class="params">(*<span class="type">elf_mapper_t</span>)</span><span class="params">(<span class="type">void</span> *data, u_long va, <span class="type">size_t</span> offset, u_int perm, <span class="type">const</span> <span class="type">void</span> *src,</span></span><br><span class="line"><span class="params">			    <span class="type">size_t</span> len)</span>;</span><br></pre></td></tr></table></figure></p>
+<p>在 <code>elf_load_seg</code> 中，我们首先需要处理要加载的虚拟地址不与页对齐的情况。我们将最开头不对齐的部分 “剪切” 下来，先映射到内存的页中。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> r;</span><br><span class="line"><span class="type">size_t</span> i;</span><br><span class="line">u_long offset = va - ROUNDDOWN(va, BY2PG);</span><br><span class="line"><span class="keyword">if</span> (offset != <span class="number">0</span>) &#123;</span><br><span class="line">	<span class="keyword">if</span> ((r = map_page(data, va, offset, perm, bin, MIN(bin_size, BY2PG - offset))) !=</span><br><span class="line">	    <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> r;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着我们处理数据中间完整的部分。我们通过循环不断将数据加载到页上。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 1: load all content of bin into memory. */</span></span><br><span class="line"><span class="keyword">for</span> (i = offset ? MIN(bin_size, BY2PG - offset) : <span class="number">0</span>; i &lt; bin_size; i += BY2PG) &#123;</span><br><span class="line">	<span class="keyword">if</span> ((r = map_page(data, va + i, <span class="number">0</span>, perm, bin + i, MIN(bin_size - i, BY2PG))) != <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> r;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>最后我们处理段大小大于数据大小的情况。在这一部分，我们不断创建新的页，但是并不向其中加载任何内容。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">/* Step 2: alloc pages to reach `sgsize` when `bin_size` &lt; `sgsize`. */</span></span><br><span class="line">	<span class="keyword">while</span> (i &lt; sgsize) &#123;</span><br><span class="line">		<span class="keyword">if</span> ((r = map_page(data, va + i, <span class="number">0</span>, perm, <span class="literal">NULL</span>, MIN(bin_size - i, BY2PG))) != <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="keyword">return</span> r;</span><br><span class="line">		&#125;</span><br><span class="line">		i += BY2PG;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这节的最最后，我们查看一下在本次实验中使用的回调函数 <code>load_icode_mapper</code>。根据 <code>load_icode</code> 中 <code>elf_load_seg</code> 传入的参数可知，此时我们的 <code>data</code> 为要加载程序镜像的进程对应的进程控制块。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">panic_on(elf_load_seg(ph, binary + ph-&gt;p_offset, load_icode_mapper, e));</span><br></pre></td></tr></table></figure></p>
+<p><code>load_icode_mapper</code> 定义在 kern/env.c 中。在函数的一开始，我们就将 <code>data</code> 还原为进程控制块<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">load_icode_mapper</span><span class="params">(<span class="type">void</span> *data, u_long va, <span class="type">size_t</span> offset, u_int perm, <span class="type">const</span> <span class="type">void</span> *src,</span></span><br><span class="line"><span class="params">			     <span class="type">size_t</span> len)</span> &#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Env</span> *<span class="title">env</span> =</span> (<span class="keyword">struct</span> Env *)data;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Page</span> *<span class="title">p</span>;</span></span><br><span class="line">	<span class="type">int</span> r;</span><br></pre></td></tr></table></figure></p>
+<p>我们想要将数据加载到内存，首先需要申请物理页。调用 <code>page_alloc</code> 函数申请空闲页<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 1: Allocate a page with &#x27;page_alloc&#x27;. */</span></span><br><span class="line"><span class="comment">/* Exercise 3.5: Your code here. (1/2) */</span></span><br><span class="line"><span class="keyword">if</span> ((r = page_alloc(&amp;p)) != <span class="number">0</span>) &#123;</span><br><span class="line">	<span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着，如果存在需要拷贝的数据，则将该数据复制到新申请的页所对应的内存空间中。我们使用 <code>page2kva</code> 获取页所对应的内核虚拟地址。另外注意这里需要考虑 <code>offset</code>。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 2: If &#x27;src&#x27; is not NULL, copy the &#x27;len&#x27; bytes started at &#x27;src&#x27; into &#x27;offset&#x27; at this</span></span><br><span class="line"><span class="comment"> * page. */</span></span><br><span class="line"><span class="comment">// Hint: You may want to use &#x27;memcpy&#x27;.</span></span><br><span class="line"><span class="keyword">if</span> (src != <span class="literal">NULL</span>) &#123;</span><br><span class="line">	<span class="comment">/* Exercise 3.5: Your code here. (2/2) */</span></span><br><span class="line">	<span class="built_in">memcpy</span>((<span class="type">void</span> *)(page2kva(p) + offset), src, len);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>最后我们调用 <code>page_insert</code> 将虚拟地址映射到页上。为了区别不同进程的相同虚拟地址，我们需要附加 asid 信息，asid 保存在进程控制块中，这也是我们需要将进程控制块传入回调函数的原因。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">/* Step 3: Insert &#x27;p&#x27; into &#x27;env-&gt;env_pgdir&#x27; at &#x27;va&#x27; with &#x27;perm&#x27;. */</span></span><br><span class="line">	<span class="keyword">return</span> page_insert(env-&gt;env_pgdir, env-&gt;env_asid, p, va, perm);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>到此为止，我们终于完成了进程创建的流程。在这一过程中，我们申请了新的进程控制块，初始化了该控制块的虚拟内存管理机制以及 trap frame 等其他信息。并将程序镜像加载到了该进程独占的虚拟内存空间中。</p>
+<p>但是到目前为止，我们的进程还未运行起来，还不是动态的程序；仅是在内存空间中的一些有组织的数据而已。在接下来的小节中，我们会让进程运行起来。</p>
+<h2 id="四、异常处理"><a href="#四、异常处理" class="headerlink" title="四、异常处理"></a>四、异常处理</h2><h3 id="（1）中断的初始化"><a href="#（1）中断的初始化" class="headerlink" title="（1）中断的初始化"></a>（1）中断的初始化</h3><p>让我们在这一次实验中最后一次查看一下 <code>mips_init</code> 函数。在该函数的最后是一个死循环。这样的程序要如何退出呢？看似在这种情况下，其他程序都不能执行。这似乎是正确的，如果在没有开启中断的情况下。</p>
+<p>然而，我们在死循环之前调用了两个函数 <code>kclock_init</code>，<code>enable_irq</code>。这两个函数是跳出死循环，实现进程运行的关键。</p>
+<p>让我们深入 <code>kclock_init</code>，这是一个用汇编编写的函数，定义在 kern/kclock.S 中。该函数的作用是启用时钟。使其以 200Hz 的频率触发时钟中断。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">LEAF(kclock_init)</span><br><span class="line">	li      t0, <span class="number">200</span> <span class="comment">// the timer interrupt frequency in Hz</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Write &#x27;t0&#x27; into the timer (RTC) frequency register.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * Hint:</span></span><br><span class="line"><span class="comment">	 *   You may want to use &#x27;sw&#x27; instruction and constants &#x27;DEV_RTC_ADDRESS&#x27; and</span></span><br><span class="line"><span class="comment">	 *   &#x27;DEV_RTC_HZ&#x27; defined in include/drivers/dev_rtc.h.</span></span><br><span class="line"><span class="comment">	 *   To access device through mmio, a physical address must be converted to a</span></span><br><span class="line"><span class="comment">	 *   kseg1 address.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * Reference: http://gavare.se/gxemul/gxemul-stable/doc/experiments.html#expdevices</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="comment">/* Exercise 3.11: Your code here. */</span></span><br><span class="line">	sw	t0, (KSEG1 | DEV_RTC_ADDRESS | DEV_RTC_HZ)</span><br><span class="line"></span><br><span class="line">	jr      ra</span><br><span class="line"><span class="title function_">END</span><span class="params">(kclock_init)</span></span><br></pre></td></tr></table></figure></p>
+<p>这个函数的内容很简单，只是将数值 200 存入内存中的某一地址。地址 <code>KSEG1 | DEV_RTC_ADDRESS | DEV_RTC_HZ</code> 的形式我们已经在 Lab1 和 Lab2 遇到过类似的了。唯一需要注意的是这里汇编的写法，直接将一个表达式作为汇编指令的参数。如果事先未见过这种写法似乎很难想到。</p>
+<p>但是现在 cpu 依旧无法收到时钟异常。如果还记得 Lab1 中关于 <code>_start</code> 函数的内容，应该可以记得我们在最开始便屏蔽了中断<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">EXPORT(_start)</span><br><span class="line">.<span class="built_in">set</span> at</span><br><span class="line">.<span class="built_in">set</span> reorder</span><br><span class="line">	<span class="comment">/* disable interrupts */</span></span><br><span class="line">	mtc0    zero, CP0_STATUS</span><br></pre></td></tr></table></figure></p>
+<p>现在我们要中断使能，实现该功能的函数即 <code>enable_irq</code>，位于 kern/env_asm.S 中。irq 为 interrupt request 的缩写。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">LEAF(enable_irq)</span><br><span class="line">	li      t0, (STATUS_CU0 | STATUS_IM4 | STATUS_IEc)</span><br><span class="line">	mtc0    t0, CP0_STATUS</span><br><span class="line">	jr      ra</span><br><span class="line"><span class="title function_">END</span><span class="params">(enable_irq)</span></span><br></pre></td></tr></table></figure></p>
+<p>可以看到该函数的内容与 <code>_start</code> 中的指令相对应。这里我们为 cp0 寄存器 <code>status</code> 设置了值 <code>STATUS_CU0 | STATUS_IM4 | STATUS_IEc</code>。如果对 <code>status</code> 寄存器还有印象，应该能记得在 “进程控制块的初始化” 一节中我们设置了 trap frame 中的 <code>status</code> 寄存器的值。那时我们似乎已经设置了 4 号中断（4 号中断就是时钟中断），也使能了中断，为何现在还要设置？</p>
+<p>因为那时我们只是设置了进程开始运行时，<code>status</code> 的状态；而还未设置当前的内核初始化环境中的状态。当系统切换到用户态，运行进程的时候，我们会用进程的状态覆盖之前的状态。现在设置 <code>status</code> 寄存器后，我们才能通过时钟中断进行上下文切换。也就是说，<code>enable_irq</code> 只是开启了内核初始化程序的中断，而开启中断的唯一目的就是通过时钟中断切换到第一个进程。</p>
+<p>另外请注意，在之前我们设置的值为 <code>STATUS_IEp</code>，而此处为 <code>STATUS_IEc</code>，为什么两者位置却同样表示中断使能？实际上这来自于用户态和内核态的区别，具体可见实验指导书。</p>
+<h3 id="（2）异常处理流程"><a href="#（2）异常处理流程" class="headerlink" title="（2）异常处理流程"></a>（2）异常处理流程</h3><p>中断是一种异常，当产生时钟中断时，cpu 就将执行异常处理流程。具体来说，当异常产生时，cpu 就会自动跳转到虚拟地址 <code>0x80000080</code> 处（特别的，当在用户态产生 TLB miss 异常时，会跳转到 <code>0x80000000</code>），从此处执行程序。这一程序应该完成异常的处理，并使 cpu 返回正常程序。</p>
+<p>对于 MOS 来说，此处实现了一个异常分发函数，根据异常的不同类型选择不同的异常处理函数。此函数在 init/entry.S 中。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">.section .text.tlb_miss_entry</span><br><span class="line">tlb_miss_entry:</span><br><span class="line">	j       exc_gen_entry</span><br><span class="line"></span><br><span class="line">.section .text.exc_gen_entry</span><br><span class="line">exc_gen_entry:</span><br><span class="line">	SAVE_ALL</span><br><span class="line"><span class="comment">/* Exercise 3.9: Your code here. */</span></span><br><span class="line">	mfc0 	t0, CP0_CAUSE</span><br><span class="line">	andi 	t0, <span class="number">0x7c</span></span><br><span class="line">	lw 	t0, exception_handlers(t0)</span><br><span class="line">	jr 	t0</span><br></pre></td></tr></table></figure></p>
+<p><code>tlb_miss_entry</code> 用于处理 TLB miss 异常，但实际上就是跳转到 <code>exc_gen_entry</code>。而在 <code>exc_gen_entry</code> 中，我们首先使用了一个宏 <code>SAVE_ALL</code>，该宏定义了一大段指令，用于将所有的寄存器值存储到栈帧中。这样我们便保存了异常发生时的上下文。唯一需要注意的是，在 <code>SAVE_ALL</code> 中，我们将栈帧的初始位置设置为 <code>KSTACKTOP</code>（之前的 <code>sp</code> 位置保存在 <code>TF_REG29(sp)</code>）。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// clang-format off</span></span><br><span class="line">.macro SAVE_ALL</span><br><span class="line">.<span class="built_in">set</span> noreorder</span><br><span class="line">.<span class="built_in">set</span> noat</span><br><span class="line">	move    k0, sp</span><br><span class="line">.<span class="built_in">set</span> reorder</span><br><span class="line">	bltz    sp, <span class="number">1f</span></span><br><span class="line">	li      sp, KSTACKTOP</span><br><span class="line">.<span class="built_in">set</span> noreorder</span><br><span class="line"><span class="number">1</span>:</span><br><span class="line">	subu    sp, sp, TF_SIZE</span><br><span class="line">	sw      k0, TF_REG29(sp)</span><br><span class="line">	mfc0    k0, CP0_STATUS</span><br><span class="line">	sw      k0, TF_STATUS(sp)</span><br><span class="line"><span class="comment">// omit...</span></span><br><span class="line">	sw      $<span class="number">0</span>, TF_REG0(sp)</span><br><span class="line">	sw      $<span class="number">1</span>, TF_REG1(sp)</span><br><span class="line">	sw      $<span class="number">2</span>, TF_REG2(sp)</span><br><span class="line">	sw      $<span class="number">3</span>, TF_REG3(sp)</span><br><span class="line"><span class="comment">// omit...</span></span><br></pre></td></tr></table></figure></p>
+<p>接下来我们获取 <code>cause</code> 寄存器的值，取其 2-6 位，这部分对应异常码，用于区别不同的异常。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mfc0 	t0, CP0_CAUSE</span><br><span class="line">andi 	t0, <span class="number">0x7c</span></span><br></pre></td></tr></table></figure></p>
+<p>接下来的这一部分，我们从 <code>exception_handlers</code> 数组中取出异常码对应的处理函数，并跳转到该异常处理函数。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lw 	t0, exception_handlers(t0)</span><br><span class="line">jr 	t0</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>exception_handlers</code> 定义在 kern/traps.c 中。该数组是一个函数数组，其中每个元素都是异常码对应的异常处理函数。此数组称为异常向量组。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="type">void</span> <span class="title function_">handle_int</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"><span class="keyword">extern</span> <span class="type">void</span> <span class="title function_">handle_tlb</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"><span class="keyword">extern</span> <span class="type">void</span> <span class="title function_">handle_sys</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"><span class="keyword">extern</span> <span class="type">void</span> <span class="title function_">handle_mod</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"><span class="keyword">extern</span> <span class="type">void</span> <span class="title function_">handle_reserved</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> (*exception_handlers[<span class="number">32</span>])(<span class="type">void</span>) = &#123;</span><br><span class="line">    [<span class="number">0</span> ... <span class="number">31</span>] = handle_reserved,</span><br><span class="line">    [<span class="number">0</span>] = handle_int,</span><br><span class="line">    [<span class="number">2</span> ... <span class="number">3</span>] = handle_tlb,</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> !defined(LAB) || LAB &gt;= 4</span></span><br><span class="line">    [<span class="number">1</span>] = handle_mod,</span><br><span class="line">    [<span class="number">8</span>] = handle_sys,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>需要注意的有两点。</p>
+<ul>
+<li>第一是此数组的定义似乎语法很奇怪。此语法是 GNU C 的扩展语法，<code>[first ... last] = value</code> 用于对数组上某个区间上元素赋同一个值。</li>
+<li>第二是 <code>exc_gen_entry</code> 中我们直接将 <code>andi     t0, 0x7c</code> 的结果作为索引。这里需要注意一个地址 4 字节。</li>
+</ul>
+<p>最后，<code>tlb_miss_entry</code> 和 <code>exc_gen_entry</code> 还未被放在 <code>0x80000000</code> 和 <code>0x80000080</code> 处。我们需要在 kernel.lds 中添加内容，将这两个标签固定在特定的地址位置。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">SECTIONS &#123;</span><br><span class="line">	<span class="comment">/* Exercise 3.10: Your code here. */</span></span><br><span class="line">	. = <span class="number">0x80000000</span>;</span><br><span class="line">	.tlb_miss_entry : &#123;</span><br><span class="line">		*(.text.tlb_miss_entry)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	. = <span class="number">0x80000080</span>;</span><br><span class="line">	.exc_gen_entry : &#123;</span><br><span class="line">		*(.text.exc_gen_entry)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// omit...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）异常处理函数在哪里定义？"><a href="#（3）异常处理函数在哪里定义？" class="headerlink" title="（3）异常处理函数在哪里定义？"></a>（3）异常处理函数在哪里定义？</h3><p>如果你想了解一下不同异常的异常处理函数，可能会发现自己根本找不到 <code>handle_tlb</code>、<code>handle_mod</code> 等函数的定义。实际上这些函数都定义在 kern/genex.S 中。</p>
+<p>当然，<code>handle_int</code> 的定义我们可以很直接地找到，此函数与中断有关，因此我们放到后面。</p>
+<p>请关注位于该文件开头的宏 <code>BUILD_HANDLER</code>，构建处理函数。我们可以看到该宏有两个参数，<code>exception</code> 和 <code>handler</code>。在该宏中，我们定义了一个 <code>handle_\exception</code> 的函数，该函数调用 <code>\handler</code> 函数。返回后再调用 <code>ret_from_exception</code>（并且不返回？！）。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">.macro BUILD_HANDLER exception handler</span><br><span class="line"><span class="title function_">NESTED</span><span class="params">(handle_\exception, TF_SIZE, zero)</span></span><br><span class="line">	move    a0, sp</span><br><span class="line">	jal     \handler</span><br><span class="line">	j       ret_from_exception</span><br><span class="line"><span class="title function_">END</span><span class="params">(handle_\exception)</span></span><br><span class="line">.endm</span><br></pre></td></tr></table></figure></p>
+<p>让我们先不关注对 <code>ret_from_exception</code> 的调用。通过查看该宏的定义，应该可以理解 <code>handle_tlb</code> 是在哪里定义的了。我们可以在 genex.S 的最后看到如下语句。这就是异常处理函数的定义。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">BUILD_HANDLER tlb do_tlb_refill</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> !defined(LAB) || LAB &gt;= 4</span></span><br><span class="line">BUILD_HANDLER mod do_tlb_mod</span><br><span class="line">BUILD_HANDLER sys do_syscall</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">BUILD_HANDLER reserved do_reserved</span><br></pre></td></tr></table></figure></p>
+<p>我们可以看到一个似曾相识的名字 <code>do_tlb_refill</code>。这个函数可以说是 Lab2 的核心。在 Lab2 的测试中我们只是模拟 tlb 的重填，而在 Lab3 中，我们终于将该函数实际应用了。</p>
+<p>其他的异常处理函数与本次实验无关，因此在本篇文章中就不考虑了。</p>
+<h3 id="（4）ret-from-exception-函数"><a href="#（4）ret-from-exception-函数" class="headerlink" title="（4）ret_from_exception 函数"></a>（4）ret_from_exception 函数</h3><p>当异常处理完成后，我们便希望能返回到正常的程序中。<code>ret_from_exception</code> 便用于从异常处理程序中返回，除了使用 <code>BUILD_HANDLER</code> 创建的处理函数，<code>handle_int</code> 的处理过程中也使用了 <code>ret_from_exception</code>，这我们留到下一节介绍。</p>
+<p>现在我们分析 <code>ret_from_exception</code> 函数。该函数定义在 kern/genex.S 中。首先该函数调用了一个宏 <code>RESTORE_SOME</code>，用于还原栈帧中通过调用 <code>SAVE_ALL</code> 保存的（部分）上下文。该宏和 <code>SAVE_ALL</code> 一样定义在 include/stackframe.h 中，不再详细介绍。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FEXPORT(ret_from_exception)</span><br><span class="line">	RESTORE_SOME</span><br></pre></td></tr></table></figure></p>
+<p>接着将 epc 寄存器的值加载到 k0 寄存器，epc 寄存器中存储有异常处理结束后的返回地址（各位应该还对 <code>TrapFrame</code> 结构体中的 <code>cp0_epc</code> 字段有印象）；随后将所有栈帧中关于上下文的内容弹出。<code>TF_REG29(sp)</code> 地址中保存了 sp 寄存器在调用 <code>SAVE_ALL</code> 之前的地址。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lw      k0, TF_EPC(sp)</span><br><span class="line">lw      sp, TF_REG29(sp) <span class="comment">/* Deallocate stack */</span></span><br></pre></td></tr></table></figure></p>
+<p>最后，跳转到 k0 中的返回地址。但在此之后还有另一条指令 <code>rfe</code>，用来从异常中恢复（恢复 <code>status</code> 寄存器，从内核态恢复到用户态）。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">.<span class="built_in">set</span> noreorder</span><br><span class="line">	jr      k0</span><br><span class="line">	rfe</span><br><span class="line">.<span class="built_in">set</span> reorder</span><br></pre></td></tr></table></figure></p>
+<p>这样关于异常处理的部分我们就介绍完成了。</p>
+<h2 id="五、进程的调度"><a href="#五、进程的调度" class="headerlink" title="五、进程的调度"></a>五、进程的调度</h2><h3 id="（1）从-handle-int-函数继续"><a href="#（1）从-handle-int-函数继续" class="headerlink" title="（1）从 handle_int 函数继续"></a>（1）从 handle_int 函数继续</h3><p>在操作系统中，使用时钟来划分时间片。当时钟中断发生时，就需要进行进程调度。在上一节中我们分析了 MOS 中的异常处理原理。在这一节中我们会从 <code>handle_int</code> 函数继续，讨论进程的调度机制的实现。</p>
+<p>我们查看 <code>handle_int</code> 函数。首先经过一系列运算，从 <code>status</code> 寄存器中获得了 IM4 的值。正如前面提到过的，此值表示是否开启 4 号中断。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">NESTED(handle_int, TF_SIZE, zero)</span><br><span class="line">	mfc0    t0, CP0_CAUSE</span><br><span class="line">	mfc0    t2, CP0_STATUS</span><br><span class="line">	and     t0, t2</span><br><span class="line">	andi    t1, t0, STATUS_IM4</span><br></pre></td></tr></table></figure></p>
+<p>那么，如果是 4 号中断，也就是时钟中断，就转到时钟中断的处理。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bnez    t1, timer_irq</span><br><span class="line"><span class="comment">// <span class="doctag">TODO:</span> handle other irqs</span></span><br></pre></td></tr></table></figure></p>
+<p>在对时钟中断的处理中，我们首先将 <code>KSEG1 | DEV_RTC_ADDRESS | DEV_RTC_INTERRUPT_ACK</code> 地址的值置零。此地址中数值存储了本次中断的相关信息。清零说明我们已经完成了对中断的处理。随后我们调用 <code>schedule</code> 函数，进行进程的调度。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">timer_irq:</span><br><span class="line">	sw      zero, (KSEG1 | DEV_RTC_ADDRESS | DEV_RTC_INTERRUPT_ACK)</span><br><span class="line">	li      a0, <span class="number">0</span></span><br><span class="line">	j       schedule</span><br><span class="line"><span class="title function_">END</span><span class="params">(handle_int)</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）调度方法"><a href="#（2）调度方法" class="headerlink" title="（2）调度方法"></a>（2）调度方法</h3><p><code>schedule</code> 函数位于 kern/sched.c 中。它有一个参数 <code>int yield</code>，用于表示是否强制让出当前进程的运行，了解过 java 多线程的应该对 yield 这个词有所认识。接下来就让我们深入这个函数。</p>
+<p>首先，<code>schedule</code> 函数中存在一个静态变量 <code>count</code>，用于表示当前进程剩余的时间片。而 <code>curenv</code> 则是一个 <code>Env *</code> 类型的全局变量，用于表示当前运行的进程。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">schedule</span><span class="params">(<span class="type">int</span> yield)</span> &#123;</span><br><span class="line">	<span class="type">static</span> <span class="type">int</span> count = <span class="number">0</span>; <span class="comment">// remaining time slices of current env</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Env</span> *<span class="title">e</span> =</span> curenv;</span><br></pre></td></tr></table></figure></p>
+<p>接着就是进程调度方法的主体，这也是本次实验我们需要填写的部分。实际上，注释已经将如何实现写得很清楚了。我们现在就分析一下该方法的原理。</p>
+<p>首先我们考虑需要进行进程切换的情况，这在注释中有说明。</p>
+<ul>
+<li>yield 为真时：此时当前进程必须让出</li>
+<li>count 减为 0 时：此时分给进程的时间片被用完，将执行权让给其他进程</li>
+<li>无当前进程：这必然是内核刚刚完成初始化，第一次产生时钟中断的情况，需要分配一个进程执行</li>
+<li>进程状态不是可运行：当前进程不能再继续执行，让给其他进程<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (yield || count &lt;= <span class="number">0</span> || e == <span class="literal">NULL</span> || e-&gt;env_status != ENV_RUNNABLE) &#123;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>首先我们考虑发生进程切换的情况。我们需要从进程调度队列中取出头部的进程控制块。这时我们需要判断一些情况。当之前的进程还是可运行的时，我们需要将其插入调度队列队尾，等待下一次轮到其执行，注意在此之前需要判断 <code>e</code> 非空。而当调度队列为空时，内核崩溃，因为操作系统中必须至少有一个进程。</p>
+<p>这里需要着重注意的是，<code>env_sched_list</code> 要存储所有状态为 <code>ENV_RUNNABLE</code> 的进程控制块，这也包括当前正在运行的进程控制块 <code>curenv</code>。这样做主要是因为在 <code>env_free</code> 函数（这个函数在 Lab4 中介绍）和之后的实验中我们预设所有状态为 <code>ENV_RUNNABLE</code> 的进程控制块都在 <code>env_sched_list</code> 中，这样就可以毫无顾忌地使用类似 <code>TAILQ_REMOVE(&amp;env_sched_list, (e), env_sched_link)</code> 的语句了。而假若对不在队列中的元素调用 <code>TAILQ_REMOVE</code>，则可能发生异常情况，使得列表中其他元素被一并删除。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (e != <span class="literal">NULL</span>) &#123;</span><br><span class="line">	TAILQ_REMOVE(&amp;env_sched_list, e, env_sched_link);</span><br><span class="line">	<span class="keyword">if</span> (e-&gt;env_status == ENV_RUNNABLE) &#123;</span><br><span class="line">		TAILQ_INSERT_TAIL(&amp;env_sched_list, e, env_sched_link);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (TAILQ_EMPTY(&amp;env_sched_list)) &#123;</span><br><span class="line">	panic(<span class="string">&quot;schedule: no runnable envs&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>随后，我们设定调度队列头部的进程控制块为将要运行的进程（不要在这里使用 <code>TAILQ_REMOVE</code>），将剩余时间片更新为新的进程的优先级。你可能会想：“所谓优先级就是时间片的多少？” 确实，就是这样，背后并没有什么复杂的算法。真正的操作系统中的进程优先级也仅仅是这样的作用。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">	e = TAILQ_FIRST(&amp;env_sched_list);</span><br><span class="line"></span><br><span class="line">	count = e-&gt;env_pri;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>最后，不管发不发生进程切换，我们都要让 <code>count</code> 自减，表示当前进程用去了一个时间片的时间，之后我们调用 <code>env_run</code> 运行进程，来真正的消耗这一时间片的时间。这个调用位于判断语句之外，也就是说不论是否发生进程切换，都需要执行 <code>env_run</code>。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">	count--;</span><br><span class="line">	env_run(e);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）进程的运行"><a href="#（3）进程的运行" class="headerlink" title="（3）进程的运行"></a>（3）进程的运行</h3><p><code>env_run</code> 是如何让进程运行的？让我们查看这个函数，它位于 kern/env.c 中。</p>
+<p>唠叨一句无关的。在该函数的开头调用了 <code>pre_env_run</code> 用于打印评测信息。说实话有点丑。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">env_run</span><span class="params">(<span class="keyword">struct</span> Env *e)</span> &#123;</span><br><span class="line">	assert(e-&gt;env_status == ENV_RUNNABLE);</span><br><span class="line">	pre_env_run(e); <span class="comment">// WARNING: DO NOT MODIFY THIS LINE!</span></span><br></pre></td></tr></table></figure></p>
+<p>此时全局变量 <code>curenv</code> 中还是切换前的进程控制块，我们保存该进程的上下文，将栈帧中 trap frame 的信息转换为 <code>Trapframe</code> 存储在 <code>env_tf</code> 中。至于为什么 trap frame 的信息存储在 <code>[KSTACKTOP - 1, KSTACKTOP)</code> 的范围内，参考关于 <code>SAVE_ALL</code> 宏的内容。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 1:</span></span><br><span class="line"><span class="comment"> *   If &#x27;curenv&#x27; is NULL, this is the first time through.</span></span><br><span class="line"><span class="comment"> *   If not, we may be switching from a previous env, so save its context into</span></span><br><span class="line"><span class="comment"> *   &#x27;curenv-&gt;env_tf&#x27; first.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">if</span> (curenv) &#123;</span><br><span class="line">	curenv-&gt;env_tf = *((<span class="keyword">struct</span> Trapframe *)KSTACKTOP - <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着，我们将 <code>curenv</code> 的值变为 <code>e</code> 的值，实现当前进程的切换。注释 <code>lab6</code> 的内容暂不考虑。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 2: Change &#x27;curenv&#x27; to &#x27;e&#x27;. */</span></span><br><span class="line">curenv = e;</span><br><span class="line">curenv-&gt;env_runs++; <span class="comment">// lab6</span></span><br></pre></td></tr></table></figure></p>
+<p>之后，我们将全局变量 <code>cur_pgdir</code> 设置为当前进程对应的页目录，实现页目录的切换。各位或许还对 <code>cur_pgdir</code> 有印象，在 Lab2 的笔记中有提到。那时我说</p>
+<blockquote>
+<p>值得注意的是，<code>_do_tlb_refill</code> 调用该函数时页目录基地址参数使用的是全局变量 <code>cur_pgdir</code>。可是这个全局变量并没有任何被赋值。这也是在 Lab2 中页式内存管理无法使用的一个原因。<br>现在我们为 <code>cur_pgdir</code> 赋了值，就可以愉快地使用用户内存空间范围的虚拟地址了。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Step 3: Change &#x27;cur_pgdir&#x27; to &#x27;curenv-&gt;env_pgdir&#x27;, switching to its address space. */</span></span><br><span class="line"><span class="comment">/* Exercise 3.8: Your code here. (1/2) */</span></span><br><span class="line">cur_pgdir = curenv-&gt;env_pgdir;</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<p>最后，我们调用 <code>env_pop_tf</code> 函数，根据栈帧还原进程上下文，并运行程序。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">/* Step 4: Use &#x27;env_pop_tf&#x27; to restore the curenv&#x27;s saved context (registers) and return/go</span></span><br><span class="line"><span class="comment">	 * to user mode.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * Hint:</span></span><br><span class="line"><span class="comment">	 *  - You should use &#x27;curenv-&gt;env_asid&#x27; here.</span></span><br><span class="line"><span class="comment">	 *  - &#x27;env_pop_tf&#x27; is a &#x27;noreturn&#x27; function: it restores PC from &#x27;cp0_epc&#x27; thus not</span></span><br><span class="line"><span class="comment">	 *    returning to the kernel caller, making &#x27;env_run&#x27; a &#x27;noreturn&#x27; function as well.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="comment">/* Exercise 3.8: Your code here. (2/2) */</span></span><br><span class="line">	env_pop_tf(&amp;curenv-&gt;env_tf, curenv-&gt;env_asid);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>env_pop_tf</code> 函数定义在 kern/env_asm.S 中，内容较为简单。该函数将传入的 asid 值设置到 <code>EntryHi</code> 寄存器中，表示之后的虚拟内存访问都来自于 asid 所对应的进程。另外该函数将<code>sp</code> 寄存器地址设置为当前进程的 trap frame 地址，这样在最后调用 <code>ret_from_exception</code> 从异常处理中返回时，将使用当前进程的 trap frame 恢复上下文。程序也将从当前进程的 epc 中执行（epc 的值在 <code>load_icode</code> 中根据 elf 头设置为程序入口地址）。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">LEAF(env_pop_tf)</span><br><span class="line">.<span class="built_in">set</span> reorder</span><br><span class="line">.<span class="built_in">set</span> at</span><br><span class="line">	sll     a1, a1, <span class="number">6</span></span><br><span class="line">	mtc0    a1, CP0_ENTRYHI</span><br><span class="line">	move    sp, a0</span><br><span class="line">	j       ret_from_exception</span><br><span class="line"><span class="title function_">END</span><span class="params">(env_pop_tf)</span></span><br></pre></td></tr></table></figure></p>
+<p>最后，所有的寄存器都恢复成了当前进程所需要的状态，cpu 就像只知道当前进程这一个程序一样不断执行一条条指令，直到经过了一个时钟周期，又一个中断发生……</p>
+<p><strong>（Lab3 完）</strong></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MOS/" rel="tag"># MOS</a>
+              <a href="/tags/os/" rel="tag"># os</a>
+              <a href="/tags/BUAA/" rel="tag"># BUAA</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/db841b3c/" rel="prev" title="BUAA OS实验笔记之Lab2">
+      <i class="fa fa-chevron-left"></i> BUAA OS实验笔记之Lab2
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/c02d6fc9/" rel="next" title="BUAA-OS实验笔记之Lab4">
+      BUAA-OS实验笔记之Lab4 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81Lab3-%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、Lab3 前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%86%85%E6%A0%B8%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%88%E5%86%8D%E7%BB%AD%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">二、内核初始化（再续）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E5%86%8D%E5%BA%A6-mips-init"><span class="nav-number">2.1.</span> <span class="nav-text">（1）再度 mips_init</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.2.</span> <span class="nav-text">（2）进程管理的数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89map-segment-%E5%87%BD%E6%95%B0"><span class="nav-number">2.3.</span> <span class="nav-text">（3）map_segment 函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">3.</span> <span class="nav-text">三、进程的创建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E5%86%8D%E5%86%8D%E5%BA%A6-mips-init"><span class="nav-number">3.1.</span> <span class="nav-text">（1）再再度 mips_init</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E4%B8%80%E7%A7%8D%E7%A5%9E%E5%A5%87%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="nav-number">3.2.</span> <span class="nav-text">（2）一种神奇的操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E8%BF%9B%E5%85%A5-env-alloc-%E5%87%BD%E6%95%B0"><span class="nav-number">3.3.</span> <span class="nav-text">（3）进入 env_alloc 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89env-setup-vm-%E4%B8%8E%E9%A1%B5%E8%A1%A8%E8%87%AA%E6%98%A0%E5%B0%84"><span class="nav-number">3.4.</span> <span class="nav-text">（4）env_setup_vm 与页表自映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%885%EF%BC%89%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E5%9D%97%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">3.5.</span> <span class="nav-text">（5）进程控制块的初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%886%EF%BC%89%E5%8A%A0%E8%BD%BD-ELF-%E6%96%87%E4%BB%B6"><span class="nav-number">3.6.</span> <span class="nav-text">（6）加载 ELF 文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">四、异常处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E4%B8%AD%E6%96%AD%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">4.1.</span> <span class="nav-text">（1）中断的初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">4.2.</span> <span class="nav-text">（2）异常处理流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E5%87%BD%E6%95%B0%E5%9C%A8%E5%93%AA%E9%87%8C%E5%AE%9A%E4%B9%89%EF%BC%9F"><span class="nav-number">4.3.</span> <span class="nav-text">（3）异常处理函数在哪里定义？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89ret-from-exception-%E5%87%BD%E6%95%B0"><span class="nav-number">4.4.</span> <span class="nav-text">（4）ret_from_exception 函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%B0%83%E5%BA%A6"><span class="nav-number">5.</span> <span class="nav-text">五、进程的调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E4%BB%8E-handle-int-%E5%87%BD%E6%95%B0%E7%BB%A7%E7%BB%AD"><span class="nav-number">5.1.</span> <span class="nav-text">（1）从 handle_int 函数继续</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E8%B0%83%E5%BA%A6%E6%96%B9%E6%B3%95"><span class="nav-number">5.2.</span> <span class="nav-text">（2）调度方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%BF%90%E8%A1%8C"><span class="nav-number">5.3.</span> <span class="nav-text">（3）进程的运行</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

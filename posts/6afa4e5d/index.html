@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、transformer 简介transformer 是 Google 在 2017 年发表的文章 Attention Is All You Need 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。 对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用transformer进行机器翻译">
+<meta property="og:url" content="https://wokron.github.io/posts/6afa4e5d/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、transformer 简介transformer 是 Google 在 2017 年发表的文章 Attention Is All You Need 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。 对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wokron.github.io/posts/6afa4e5d/train_loss.png">
+<meta property="og:image" content="https://wokron.github.io/posts/6afa4e5d/train_acc.png">
+<meta property="og:image" content="https://wokron.github.io/posts/6afa4e5d/test_loss.png">
+<meta property="og:image" content="https://wokron.github.io/posts/6afa4e5d/test_acc.png">
+<meta property="og:image" content="https://wokron.github.io/posts/6afa4e5d/example.png">
+<meta property="article:published_time" content="2023-03-12T05:25:50.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="pytorch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wokron.github.io/posts/6afa4e5d/train_loss.png">
+
+<link rel="canonical" href="https://wokron.github.io/posts/6afa4e5d/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>使用transformer进行机器翻译 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/6afa4e5d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用transformer进行机器翻译
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-12 13:25:50" itemprop="dateCreated datePublished" datetime="2023-03-12T13:25:50+08:00">2023-03-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、transformer-简介"><a href="#一、transformer-简介" class="headerlink" title="一、transformer 简介"></a>一、transformer 简介</h2><p>transformer 是 Google 在 2017 年发表的文章 <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a> 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。</p>
+<p>对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗忘；使用 CNN，我们必须通过增加层数来扩大获取信息的范围。这两种方法都有很大的局限。</p>
+<p>注意力方法则可以直接获得全局信息。方法是对一条序列，求其对于本身的注意力，这被称为自注意力。</p>
+<blockquote>
+<p>transformer 的原理和模型较为复杂，在这里只是简单说明。</p>
+</blockquote>
+<h2 id="二、数据集"><a href="#二、数据集" class="headerlink" title="二、数据集"></a>二、数据集</h2><p>此为训练模型所用的<a target="_blank" rel="noopener" href="https://www.kaggle.com/datasets/concyclics/machine-translation-chinese-and-english">数据集</a>。设定英文为源语言，中文为要翻译成的语言。</p>
+<h3 id="（1）Dataset-类编写"><a href="#（1）Dataset-类编写" class="headerlink" title="（1）Dataset 类编写"></a>（1）Dataset 类编写</h3><p>我们根据路径打开文件，获取中英文序列和单词表。并将序列直接转化为 tensor，方便读取。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslateDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, en_path, zh_path</span>):</span><br><span class="line">        en_seqs, self.en_vocab = get_seq_and_vocab(en_path, get_tokenizer(<span class="string">&quot;basic_english&quot;</span>))</span><br><span class="line"></span><br><span class="line">        zh_seqs, self.zh_vocab = get_seq_and_vocab(zh_path, zh_simple_tokenizer)</span><br><span class="line"></span><br><span class="line">        self.items = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(en_seqs)):</span><br><span class="line">            en_seq = en_seqs[i]</span><br><span class="line">            zh_seq = zh_seqs[i]</span><br><span class="line"></span><br><span class="line">            src = en_seq</span><br><span class="line">            tgt = zh_seq[:-<span class="number">1</span>]</span><br><span class="line">            pdt = zh_seq[<span class="number">1</span>:]</span><br><span class="line"></span><br><span class="line">            self.items.append((</span><br><span class="line">                torch.as_tensor(src),</span><br><span class="line">                torch.as_tensor(tgt),</span><br><span class="line">                torch.as_tensor(pdt),</span><br><span class="line">            ))</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>get_seq_and_vocab</code> 方法用于根据路径打开文件，根据第二个参数选择的 tokenizer 进行分词。构建序列和单词表。</p>
+<p>我们首先定义了存储序列的列表和记录词频的字典。<code>Counter</code> 类可以直接根据列表统计列表中元素频率。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_seq_and_vocab</span>(<span class="params">file_path, tokenizer</span>):</span><br><span class="line">    token_freq = Counter()</span><br><span class="line">    seqs = []</span><br></pre></td></tr></table></figure></p>
+<p>打开文件，依次读取文件中每一行，通过 <code>tokenizer</code> 进行分词。序列保存到 <code>seqs</code> 中。更新词频。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;UTF-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">with</span> tqdm(f) <span class="keyword">as</span> tqdm_file:</span><br><span class="line">        tqdm_file.set_description(<span class="string">f&quot;Load <span class="subst">&#123;file_path&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> idx, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(tqdm_file):</span><br><span class="line">            <span class="keyword">if</span> args.debug <span class="keyword">and</span> idx &gt; <span class="number">10000</span>:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">            tokens_in_line = tokenizer(line)</span><br><span class="line">            tokens_in_line.insert(<span class="number">0</span>, <span class="string">&#x27;&lt;sos&gt;&#x27;</span>)</span><br><span class="line">            tokens_in_line.append(<span class="string">&#x27;&lt;eos&gt;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">            seqs.append(tokens_in_line)</span><br><span class="line"></span><br><span class="line">            token_freq += Counter(tokens_in_line)</span><br></pre></td></tr></table></figure></p>
+<p>根据词频生成单词表，把单词序列转化为数值序列。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">v = vocab(token_freq, <span class="number">5</span>, [<span class="string">&#x27;&lt;pad&gt;&#x27;</span>, <span class="string">&#x27;&lt;unk&gt;&#x27;</span>, <span class="string">&#x27;&lt;sos&gt;&#x27;</span>, <span class="string">&#x27;&lt;eos&gt;&#x27;</span>])</span><br><span class="line">v.set_default_index(v[<span class="string">&#x27;&lt;unk&gt;&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> idx <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(seqs)):</span><br><span class="line">    seqs[idx] = [v[token] <span class="keyword">for</span> token <span class="keyword">in</span> seqs[idx]]</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> seqs, v</span><br></pre></td></tr></table></figure></p>
+<p>英文分词可以使用 pytorch 自带的 <code>get_tokenizer(&quot;basic_english&quot;)</code>。中文分词可以采用如下方式。此方法考虑了中文中掺杂英文的情况。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">zh_simple_tokenizer</span>(<span class="params">line</span>):</span><br><span class="line">    <span class="keyword">return</span> re.findall(<span class="string">&quot;[a-zA-Z]+|[^\s]&quot;</span>, line)</span><br></pre></td></tr></table></figure></p>
+<p>最后在 <code>TranslateDataset</code> 中，简单实现 <code>__getitem__</code> 和 <code>__len__</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    <span class="keyword">return</span> self.items[item]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(self.items)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）保存和加载处理后的数据"><a href="#（2）保存和加载处理后的数据" class="headerlink" title="（2）保存和加载处理后的数据"></a>（2）保存和加载处理后的数据</h3><p>本数据集规模较大，如果每次都要重新进行分词处理的话需要耗费不少时间。因此可以只处理一次，以后只需调用之前处理后的结果即可。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> os.path.exists(args.processed_dataset_path):</span><br><span class="line">    dataset = torch.load(args.processed_dataset_path)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    dataset = TranslateDataset(args.en_path, args.zh_path)</span><br><span class="line">    torch.save(dataset, args.processed_dataset_path)</span><br></pre></td></tr></table></figure>
+<h3 id="（3）划分数据集"><a href="#（3）划分数据集" class="headerlink" title="（3）划分数据集"></a>（3）划分数据集</h3><p>因为本数据集只有完整的文件，没有进行划分，所以还需要对加载后的 <code>dataset</code> 进行划分。我们需要使用 <code>random_split</code> 方法实现。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">train_set, dev_set, test_set = random_split(</span><br><span class="line">    dataset,</span><br><span class="line">    [train_size, dev_size, test_size],</span><br><span class="line">    generator=torch.Generator().manual_seed(<span class="number">42</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>需要注意的是，<code>random_split</code> 会进行随机划分。随机划分有助于避免过拟合，但是如果每次运行程序划分的方式都不同，就会导致信息泄露。为了使每次运行时的随机划分结果一致，需要指定随机划分的种子，即代码中的 <code>generator=torch.Generator().manual_seed(42)</code>。</p>
+<h2 id="三、模型"><a href="#三、模型" class="headerlink" title="三、模型"></a>三、模型</h2><h3 id="（1）整体结构"><a href="#（1）整体结构" class="headerlink" title="（1）整体结构"></a>（1）整体结构</h3><p>我们要实现一个机器翻译模型。它的输入是源语句 src，和经过右移的目标语句 tgt，输出是包含结束词的目标语句 predict。</p>
+<p>首先，我们将输入的序列扩展为词向量<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslationModel</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, <span class="built_in">input</span></span>):</span><br><span class="line">        src, tgt = <span class="built_in">input</span>  <span class="comment"># (seq1_len, batch_size) (seq2_len, batch_size)</span></span><br><span class="line">        src_embed = self.embed(src)  <span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">        tgt_embed = self.embed(tgt)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>随后，我们为词向量添加位置编码。采取此操作的原因是注意力模型中整个序列被同时输入，模型无法得知位置信息，因此需要添加位置编码。具体的添加位置编码的方式会在后面说明。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">src_embed_encoded = self.positional_encoding(src_embed)</span><br><span class="line"><span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">tgt_embed_encoded = self.positional_encoding(tgt_embed)</span><br><span class="line"><span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>我们根据输入 <code>src</code> 和 <code>tgt</code> 确定各类掩码，并将掩码与 <code>src_embed_encoded</code>、<code>tgt_embed_encoded</code> 一同输入到 transformer 中。</p>
+<p><code>tgt_mask</code> 用于处理预测时的时序问题。因为如果将 tgt_embed_encoded 直接输入到 transformer，则 transformer 就会在同一时刻得知序列的全部信息，无法实现逐词生成。</p>
+<p><code>src_pad_mask</code> 和 <code>src_pad_mask</code> 用于将 <code>&#39;&lt;pad&gt;&#39;</code> 忽略。避免填充词影响模型的权重。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tgt_mask = get_tgt_mask(tgt.shape[<span class="number">0</span>])  <span class="comment"># (seq2_len, seq2_len)</span></span><br><span class="line">src_pad_mask = get_pad_mask(src)  <span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">tgt_pad_mask = get_pad_mask(tgt)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br><span class="line"></span><br><span class="line">out = self.transformer(</span><br><span class="line">    src_embed_encoded,</span><br><span class="line">    tgt_embed_encoded,</span><br><span class="line">    tgt_mask=tgt_mask,</span><br><span class="line">    src_key_padding_mask=src_pad_mask,</span><br><span class="line">    tgt_key_padding_mask=tgt_pad_mask,</span><br><span class="line">)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>最后将 transformer 的输出经过多层感知机调整为适当的形状，输出预测结果。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">predict = self.multi(out)  <span class="comment"># (seq2_len, batch_size, class_num)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> predict</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）词向量"><a href="#（2）词向量" class="headerlink" title="（2）词向量"></a>（2）词向量</h3><p>我们定义嵌入层为 <code>TokenEmbedding</code>，而不是直接使用 <code>nn.Embedding</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslationModel</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size, class_num, dropout</span>):</span><br><span class="line">        <span class="built_in">super</span>(TranslationModel, self).__init__()</span><br><span class="line">        self.embed = TokenEmbedding(vocab_size, embed_size)</span><br></pre></td></tr></table></figure></p>
+<p><code>TokenEmbedding</code> 定义如下。很容易看出，我们只是将 <code>Embedding</code> 输出的词向量乘以了 $\sqrt{\text{emb size}}$。这样做更便于训练。具体原因可见<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/442509602">Transformer 3. word embedding 输入为什么要乘以 embedding size的开方</a>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TokenEmbedding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size</span>):</span><br><span class="line">        <span class="built_in">super</span>(TokenEmbedding, self).__init__()</span><br><span class="line"></span><br><span class="line">        self.embedding = nn.Embedding(vocab_size, embed_size)</span><br><span class="line">        self.embed_size = embed_size</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, seq</span>):</span><br><span class="line">        <span class="keyword">return</span> self.embedding(seq) * math.sqrt(self.embed_size)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）位置编码"><a href="#（3）位置编码" class="headerlink" title="（3）位置编码"></a>（3）位置编码</h3><p>在模型中，我们随后定义了位置编码层<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.positional_encoding = PositionalEncoding(embed_size, dropout)</span><br></pre></td></tr></table></figure></p>
+<p><code>PositionalEncoding</code> 定义如下。位置编码得到的结果是一个形状为 <code>(max_len, 1, embed_size)</code> 的张量 $pos<em>embedding$。其中 $p</em>{i1}$ 表示第 $i$ 个位置的编码。将该编码与原来的 <code>seq_embed</code> 相加，就得到了经过位置编码后的词向量序列。</p>
+<p>关于位置编码的原理，可以参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/338592312">一文教你彻底理解Transformer中Positional Encoding</a>。该编码使用正余弦函数生成，可以保证不同位置的编码唯一。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, embed_size, dropout, max_len=<span class="number">5000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line"></span><br><span class="line">        den = torch.exp(- torch.arange(<span class="number">0</span>, embed_size, <span class="number">2</span>) * math.log(<span class="number">10000</span>) / embed_size)</span><br><span class="line">        pos = torch.arange(<span class="number">0</span>, max_len).reshape(max_len, <span class="number">1</span>)</span><br><span class="line">        pos_embedding = torch.zeros((max_len, embed_size))</span><br><span class="line">        pos_embedding[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(pos * den)</span><br><span class="line">        pos_embedding[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(pos * den)</span><br><span class="line">        pos_embedding = pos_embedding.unsqueeze(-<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        self.dropout = nn.Dropout(dropout)</span><br><span class="line">        self.register_buffer(<span class="string">&#x27;pos_embedding&#x27;</span>, pos_embedding)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, seq_embed</span>):</span><br><span class="line">        seq_embed_encoded = seq_embed + self.pos_embedding[:seq_embed.size(<span class="number">0</span>), :]</span><br><span class="line">        <span class="comment"># (seq_len, batch_size, embed_size) + (seq_len, 1, embed_size)</span></span><br><span class="line">        <span class="keyword">return</span> self.dropout(seq_embed_encoded)</span><br></pre></td></tr></table></figure>
+<h3 id="（4）掩码"><a href="#（4）掩码" class="headerlink" title="（4）掩码"></a>（4）掩码</h3><p>填充掩码用来屏蔽 <code>&#39;&lt;pad&gt;&#39;</code> 索引，是一个和输入同大小的张量，其中每一个值表示对应的位置是否需要被屏蔽。计算方式如下，进行了转置是因为 pytorch 的 transformer 要求第一维为 batch。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_pad_mask</span>(<span class="params">seq, pad_idx=<span class="number">0</span></span>):</span><br><span class="line">    <span class="keyword">return</span> (seq == pad_idx).permute(<span class="number">1</span>, <span class="number">0</span>)</span><br></pre></td></tr></table></figure></p>
+<p>后继掩码用来模拟时间步，防止模型在进行预测时查看未来的单词。我们需要用一个三角形矩阵来模拟此过程。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_tgt_mask</span>(<span class="params">size</span>):</span><br><span class="line">    mask = torch.tril(torch.ones(size, size) == <span class="number">1</span>).<span class="built_in">float</span>()</span><br><span class="line">    mask = mask.masked_fill(mask == <span class="number">0</span>, <span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>))</span><br><span class="line">    mask = mask.masked_fill(mask == <span class="number">1</span>, <span class="built_in">float</span>(<span class="number">0.0</span>))</span><br><span class="line">    mask = mask.to(args.device)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> mask</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、训练"><a href="#四、训练" class="headerlink" title="四、训练"></a>四、训练</h2><p>训练时的通用步骤不再详述。只说明一些值得注意的地方。</p>
+<h3 id="（1）自定义-collate-fn"><a href="#（1）自定义-collate-fn" class="headerlink" title="（1）自定义 collate_fn"></a>（1）自定义 collate_fn</h3><p>因为序列长度不定，所以需要自行对其，需要自定义 <code>dataloader</code> 的 <code>collate_fn</code>。在其中，使用了 <code>pad_sequence</code> 对一批序列进行对齐。<code>pad_sequence</code> 的默认填充值为 0。如果 <code>&#39;&lt;pad&gt;&#39;</code> 的对应值不是 0，还需要自行设定。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">collate_fn</span>(<span class="params">data</span>):</span><br><span class="line">    src, tgt, pdt = <span class="built_in">zip</span>(*data)</span><br><span class="line">    src = pad_sequence(src)</span><br><span class="line">    tgt = pad_sequence(tgt)</span><br><span class="line">    pdt = pad_sequence(pdt)</span><br><span class="line">    <span class="keyword">return</span> [src, tgt], pdt</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）交叉熵损失函数-ignore-index-的设置"><a href="#（2）交叉熵损失函数-ignore-index-的设置" class="headerlink" title="（2）交叉熵损失函数 ignore_index 的设置"></a>（2）交叉熵损失函数 ignore_index 的设置</h3><p>虽然我们使用 <code>&#39;&lt;pad&gt;&#39;</code> 进行了对齐，但是 <code>&#39;&lt;pad&gt;&#39;</code> 还没有被认为是特殊的符号。此时在损失函数中，<code>&#39;&lt;pad&gt;&#39;</code> 与其他字符的预测差距还是会被计算到损失之中。又因为 <code>&#39;&lt;pad&gt;&#39;</code>会在序列中经常出现，所以如果不特殊处理 <code>&#39;&lt;pad&gt;&#39;</code>，则训练后预测的结果便一定总是 <code>&lt;pad&gt;</code>。</p>
+<p>因此我们希望损失函数忽略 <code>&#39;&lt;pad&gt;&#39;</code>。只需要设定 <code>ignore_index</code> 参数。如下所示将 <code>ignore_index</code> 设定为 <code>&#39;&lt;pad&gt;&#39;</code> 对应的数值。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">loss_fn = nn.CrossEntropyLoss(ignore_index=dataset.zh_vocab[<span class="string">&#x27;&lt;pad&gt;&#x27;</span>]).to(args.device)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）计算损失函数时对输入进行处理"><a href="#（3）计算损失函数时对输入进行处理" class="headerlink" title="（3）计算损失函数时对输入进行处理"></a>（3）计算损失函数时对输入进行处理</h3><p>阅读一下 pytorch 文档中关于交叉熵损失函数的说明，就可以得知我们的模型默认的输出不能直接传入损失函数进行计算，必须重新设定维度。</p>
+<p>模型的预测形状为 <code>(seq_len, batch_size, class_num)</code>， 需要的输入为 <code>(batch_size, class_num, seq_len)</code>；目标的形状为 <code>(seq_len, batch_size)</code>，需要的输入为 <code>(batch_size, seq_len)</code>。因此重新定义了 <code>criterion</code> 方法作为损失函数，使用 <code>permute</code> 方法调整维度。将 <code>criterion</code> 传入 <code>train</code>、<code>eval</code> 方法中作为损失函数。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">criterion</span>(<span class="params">predict, target</span>):</span><br><span class="line">    <span class="keyword">return</span> loss_fn(predict.permute(<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>), target.permute(<span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(args.max_epoch):</span><br><span class="line">    global_epoch += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    train(train_loader, net, criterion, optim)</span><br><span class="line"></span><br><span class="line">    save_checkpoint(net, optim, global_epoch, global_train_step)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;dev&quot;</span>, dev_loader, net, criterion)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;test&quot;</span>, test_loader, net, criterion)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（4）训练结果"><a href="#（4）训练结果" class="headerlink" title="（4）训练结果"></a>（4）训练结果</h3><img src="/posts/6afa4e5d/train_loss.png" class="" title="train_loss">
+<img src="/posts/6afa4e5d/train_acc.png" class="" title="train_acc">
+<img src="/posts/6afa4e5d/test_loss.png" class="" title="test_loss">
+<img src="/posts/6afa4e5d/test_acc.png" class="" title="test_acc">
+<blockquote>
+<p>本来应该用机器翻译的评价指标，如 BLEU 的，但是一开始没有考虑到</p>
+<p>从图中可以看到，模型的翻译能力并不算强，并且还有继续训练下去的空间。为什么不继续训练了呢？因为 Colab 时间用完了<code>:(</code><br><img src="/posts/6afa4e5d/example.png" class="" title="example"></p>
+</blockquote>
+<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><p>本次实践了 transformer 模型的构建和训练。在训练过程中学到了一些知识，主要有</p>
+<ul>
+<li>transformer 模型的结构</li>
+<li>注意力的掩码机制</li>
+<li>位置编码</li>
+<li>损失函数 ignore_index 的使用</li>
+<li>数据集处理后的存储和加载</li>
+<li>通过scheduler动态调整学习率的方法（本次未使用，之后应该会应用）</li>
+<li>深度学习上层架构，如 ignite、lightning（本次未使用，之后应该会应用）</li>
+</ul>
+<p>也出现了一些问题</p>
+<ul>
+<li>未考虑张量形状，导致出现了“位置编码时为不同 batch 赋予了不同的编码“的bug</li>
+<li>因为上一条内容浪费了大量的训练时间</li>
+<li>未能设置适当的学习率，导致训练缓慢</li>
+<li>没有使用 BLEU 等指标进行评价</li>
+<li>没有对中文进行分词，一字多义可能增加了训练难度</li>
+</ul>
+<p>希望下一次避免犯下类似的错误。</p>
+<h2 id="六、参考资料"><a href="#六、参考资料" class="headerlink" title="六、参考资料"></a>六、参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/264468193">【通俗易懂】大白话讲解 Transformer</a></li>
+<li><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/beginner/translation_transformer.html">Language Translation with nn.Transformer and torchtext</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+              <a href="/tags/pytorch/" rel="tag"># pytorch</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/3c5d5cf3/" rel="prev" title="ESIM网络的搭建和训练">
+      <i class="fa fa-chevron-left"></i> ESIM网络的搭建和训练
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/a08f03c8/" rel="next" title="BUAA OS实验笔记之Lab1">
+      BUAA OS实验笔记之Lab1 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81transformer-%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">一、transformer 简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">2.</span> <span class="nav-text">二、数据集</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89Dataset-%E7%B1%BB%E7%BC%96%E5%86%99"><span class="nav-number">2.1.</span> <span class="nav-text">（1）Dataset 类编写</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E4%BF%9D%E5%AD%98%E5%92%8C%E5%8A%A0%E8%BD%BD%E5%A4%84%E7%90%86%E5%90%8E%E7%9A%84%E6%95%B0%E6%8D%AE"><span class="nav-number">2.2.</span> <span class="nav-text">（2）保存和加载处理后的数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E5%88%92%E5%88%86%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">2.3.</span> <span class="nav-text">（3）划分数据集</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%A8%A1%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">三、模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E6%95%B4%E4%BD%93%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">（1）整体结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E8%AF%8D%E5%90%91%E9%87%8F"><span class="nav-number">3.2.</span> <span class="nav-text">（2）词向量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-number">3.3.</span> <span class="nav-text">（3）位置编码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89%E6%8E%A9%E7%A0%81"><span class="nav-number">3.4.</span> <span class="nav-text">（4）掩码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%AE%AD%E7%BB%83"><span class="nav-number">4.</span> <span class="nav-text">四、训练</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E8%87%AA%E5%AE%9A%E4%B9%89-collate-fn"><span class="nav-number">4.1.</span> <span class="nav-text">（1）自定义 collate_fn</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E4%BA%A4%E5%8F%89%E7%86%B5%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0-ignore-index-%E7%9A%84%E8%AE%BE%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">（2）交叉熵损失函数 ignore_index 的设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E8%AE%A1%E7%AE%97%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E6%97%B6%E5%AF%B9%E8%BE%93%E5%85%A5%E8%BF%9B%E8%A1%8C%E5%A4%84%E7%90%86"><span class="nav-number">4.3.</span> <span class="nav-text">（3）计算损失函数时对输入进行处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89%E8%AE%AD%E7%BB%83%E7%BB%93%E6%9E%9C"><span class="nav-number">4.4.</span> <span class="nav-text">（4）训练结果</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">五、总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">6.</span> <span class="nav-text">六、参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

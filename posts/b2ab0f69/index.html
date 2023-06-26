@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、自然语言处理（nlp）简介一份思绪奔驰的前言：语言的边界就是思想的边界。如果从人类所具有的一切中挑出一个事物，让它来显示出人与其他生物的不同之处，那一定是语言。语言是我们用来思考和交流的方式，我们的一切文明都构筑在这简单的一维序列中，可我们却几乎不曾深入了解过它。 有人说，我们不曾真正的理解语言，我们所有对语言的运用和理解，不过建立在婴儿及此后对他人的声音与书本上符号的猜测上。或许正是如此，但">
+<meta property="og:type" content="article">
+<meta property="og:title" content="机器学习nlp基本知识">
+<meta property="og:url" content="https://wokron.github.io/posts/b2ab0f69/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、自然语言处理（nlp）简介一份思绪奔驰的前言：语言的边界就是思想的边界。如果从人类所具有的一切中挑出一个事物，让它来显示出人与其他生物的不同之处，那一定是语言。语言是我们用来思考和交流的方式，我们的一切文明都构筑在这简单的一维序列中，可我们却几乎不曾深入了解过它。 有人说，我们不曾真正的理解语言，我们所有对语言的运用和理解，不过建立在婴儿及此后对他人的声音与书本上符号的猜测上。或许正是如此，但">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-17T13:01:27.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="nlp">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/b2ab0f69/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>机器学习nlp基本知识 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/b2ab0f69/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          机器学习nlp基本知识
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-17 21:01:27" itemprop="dateCreated datePublished" datetime="2023-01-17T21:01:27+08:00">2023-01-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、自然语言处理（nlp）简介"><a href="#一、自然语言处理（nlp）简介" class="headerlink" title="一、自然语言处理（nlp）简介"></a>一、自然语言处理（nlp）简介</h2><p><strong>一份思绪奔驰的前言：</strong><br>语言的边界就是思想的边界。如果从人类所具有的一切中挑出一个事物，让它来显示出人与其他生物的不同之处，那一定是语言。语言是我们用来思考和交流的方式，我们的一切文明都构筑在这简单的一维序列中，可我们却几乎不曾深入了解过它。</p>
+<p>有人说，我们不曾真正的理解语言，我们所有对语言的运用和理解，不过建立在婴儿及此后对他人的声音与书本上符号的猜测上。或许正是如此，但是我们依旧要做出猜测，向着语言的神秘进发，这是我们的信念，是我们认识我们的认识的开始。</p>
+<h3 id="（1）作为语言学的-nlp"><a href="#（1）作为语言学的-nlp" class="headerlink" title="（1）作为语言学的 nlp"></a>（1）作为语言学的 nlp</h3><p>早在计算机的上古时代，深度学习还未诞生的时候，自然语言处理作为语言学的一个领域就已诞生了，这个领域也被语言学家们称为计算机语言学。两个名称在一起，才表达出 nlp 的真正含义——通过机器处理语言。nlp 最早的研究方向是机器翻译，那时人们人为地总结语言的规律，对词汇进行标注，对语句进行句法分析。结果是人为的规则覆盖面不足，所设计的系统无法扩展。</p>
+<h3 id="（2）作为机器学习研究领域的-nlp"><a href="#（2）作为机器学习研究领域的-nlp" class="headerlink" title="（2）作为机器学习研究领域的 nlp"></a>（2）作为机器学习研究领域的 nlp</h3><p>随着计算机的发展，出现了基于传统统计学习模型的自然语言处理方式。这些原始的模型较之之前有所进步，但受限于计算机性能，统计方法也遭遇了瓶颈。</p>
+<p>直到近年来算力的发展，使得深度神经网络成为可能。深度神经网络结构中潜在的学习能力，在 nlp 领域发挥了作用。通过多维数据表示语言和含义，深度学习以高效且与人类认知过程相似的方式发挥了巨大的效果。</p>
+<h2 id="二、词向量"><a href="#二、词向量" class="headerlink" title="二、词向量"></a>二、词向量</h2><p>词汇作为符号，其形象是离散的；但词汇的所指作为定义，其含义却是丰富而连续的。比如说“母亲”这个词汇，既表示了这个概念所对应的事物是在一种血缘关系中的一方（她是孩子的母亲）；又表示了这个事物是能繁殖者（母鸡）；在一定程度上，同样表示了非血缘关系，但具有类似血缘关系的行为的个体（大地是母亲）。</p>
+<blockquote>
+<p>偏个题，《来自深渊》中有对生骸语的类似的描述.</p>
+</blockquote>
+<p>因此，我们就不能再将词汇只作为离散的符号看待了，不能认为词汇之间是相互排斥的关系了。我们需要将词汇看做某些元含义在不同程度下的集合，或者从机器学习的角度，把这些元含义称作特征。那么也就是说，我们将每个词汇都看成一定维度的向量。</p>
+<p>但是我们要如何确定特征呢？特征的数量又有多少？如果人工地确定特征为“存在、含义、物质、精神”等等，这一过程将耗费精力且永无止境。实际上按照机器学习的一般策略，我们只需要通过统计文本，自发的构建词汇向量即可。</p>
+<p>这一方面有许多算法，如 N-gram 算法，GloVe 算法等等。另外也可以在深度学习的过程中利用反向传播自发的调整词向量，在 pytorch 中这通过 Embedding 层来实现。</p>
+<h2 id="三、循环神经网络（RNN）及其变体"><a href="#三、循环神经网络（RNN）及其变体" class="headerlink" title="三、循环神经网络（RNN）及其变体"></a>三、循环神经网络（RNN）及其变体</h2><h3 id="（1）朴素-RNN"><a href="#（1）朴素-RNN" class="headerlink" title="（1）朴素 RNN"></a>（1）朴素 RNN</h3><p>考虑我们说话或写作时的基本逻辑。对于一段语言序列，在之后的词汇总是和之前的词汇有关，未表达的部分总是已表达部分的补全或补充。循环神经网络的机制类似，我们需要用一个或多个隐藏变量作为对之前语句含义的表示，在输出下一个词汇时，会让隐藏变量参与决策；同时每多说完一个词汇，这个词汇也会更新隐藏变量，以实现表达含义的更新。</p>
+<p>具体来说，我们用 $t$ 表示时间序列，对某一时间 $t$，$x_t$ 表示输入，$y_t$ 表示输出，$h_t$ 表示隐含状态。那么朴素的 RNN 网络即：</p>
+<script type="math/tex; mode=display">
+    h_t = tanh(W^{(hx)} x_t + W^{(hh)} h_{t-1})</script><script type="math/tex; mode=display">
+    y_t = W^{(S)} h_t</script><blockquote>
+<p>容易看出 RNN 和 Moore 自动机有相似之处。</p>
+</blockquote>
+<p>其中 $W^{(hx)}, W^{(hh)}, W^{(S)} h_t$ 分别为三个不同的矩阵。RNN 的激活函数也可以选择 <code>ReLU</code>。同时可以为激活函数中的部分添加偏置（bias）$b^{(hx)}, b^{(hh)}$ 等。</p>
+<h3 id="（2）GRU"><a href="#（2）GRU" class="headerlink" title="（2）GRU"></a>（2）GRU</h3><p>但是简单的 RNN 也存在着问题，那就是其结构不能很好地控制对不同词汇的关注程度以及当前内容和上文的关系。我们希望设计一种机制，在 RNN 的基础上做到对上下文关系的更好掌握。其中一种机制就是 GRU（Gate Recurrent Unit，门循环单元），它是对 RNN 的推广。</p>
+<p>首先我们定义运算符 $\circ$，$k \circ M$，其中 $k$ 为数字 $M$ 为矩阵，表示对 $M$ 中每个元素均乘以 $k$。</p>
+<p>那么对某一时间 $t$，$x_t$ 表示输入，$h_t$ 表示隐含状态，我们定义更新门 $z_t$ 和重置门 $r_t$</p>
+<script type="math/tex; mode=display">
+    z_t = \sigma (W^{(z)} x_t + U^{(z)} h_{t-1})</script><script type="math/tex; mode=display">
+    r_t = \sigma (W^{(r)} x_t + U^{(r)} h_{t-1})</script><p>再令</p>
+<script type="math/tex; mode=display">
+    \tilde{h}_t = tanh (W x_t + r_t \circ U h_{t-1})</script><script type="math/tex; mode=display">
+    h_t = z_t \circ h_{t-1} + (1 - z_t) \circ \tilde{h}_t</script><p>我们就定义了隐含状态的更新方式，求输出的方式与 RNN 相同。</p>
+<p>所以 GRU 到底做了什么呢？GRU 实际上等同于在 RNN 上增加了两个连续的开关 $z<em>t$ 和 $r_t$。注意这两个变量由 Sigmoid 函数得到，他们的范围是 0~1。我们可以令 $z_t = 0, r_t = 1$，此时就有 $h_t = tanh (W x_t + U h</em>{t-1})$，这与 RNN 中相同。</p>
+<p>与 RNN 相比，我们在学习过程中多训练了两个开关。它们的取值暗示了语句中的某些结构。直观上讲，重置门 $r_t$ 反映了当前词汇与上文含义之间的关系和相互作用，当 $r_t = 0$ 时，当前词汇的含义不会受到上文意思的影响。而更新门 $z_t$ 则反映了当前词汇对整体语义的影响，当 $z_t = 0$ 时，更新后的语义将只与当前词汇的意思有关。</p>
+<p>更简单来说：</p>
+<ul>
+<li>$r_t$ 反映了上文对当前词汇的作用程度（如 “你妈” 的意思受到语境的影响）</li>
+<li>$z_t$ 反映了当前词汇对整体语义的影响程度（如词汇 “但是” 之后的部分更能反映整体语义）</li>
+</ul>
+<h3 id="（3）LSTM"><a href="#（3）LSTM" class="headerlink" title="（3）LSTM"></a>（3）LSTM</h3><p>我们还可以对 RNN 模型做相似但不同的改动，形成 LSTM （Long Short-Term Memory，长<strong>短期</strong>记忆）模型，这将使模型更加复杂，但同时也使得对前文语义的记忆得以更加长久的保存。</p>
+<p>与 GRU 类似，首先我们定义三个门，分别是输入门 $i_t$，遗忘门 $f_t$ 和输出门 $o_t$。</p>
+<script type="math/tex; mode=display">
+    i_t = \sigma (W^{(i)} x_t + U^{(i)} h_{t-1})</script><script type="math/tex; mode=display">
+    f_t = \sigma (W^{(f)} x_t + U^{(f)} h_{t-1})</script><script type="math/tex; mode=display">
+    o_t = \sigma (W^{(o)} x_t + U^{(o)} h_{t-1})</script><p>再定义记忆格（memory cell，或记忆细胞？）$c_t$，计算方式为</p>
+<script type="math/tex; mode=display">
+    \tilde{c}_t = tanh(W^{(c)}  x_t + U^{(c)} h_{t-1})</script><script type="math/tex; mode=display">
+    c_t = f_t \circ c_{t-1} + i_t \circ \tilde{c}_t</script><p>最后定义隐藏状态</p>
+<script type="math/tex; mode=display">
+    h_t = o_t \circ tanh(c_t)</script><p>LSTM 的特点是采用了两个隐藏状态 $c_t$ 和 $h_t$。从直觉上、或哲学上讲，这反映了两种不同的意义。一是作为表层的，被表达出来的语句的语义；另一是作为深层的，作为记忆的整体的意味。当我们在诉说或理解时，我们首先所接触到的是作为连续序列的语义，这一浅表的概念为了被更深入的理解，它就进入到记忆的层次，并再次从其中返回，在记忆上留下痕迹的同时带来新的表达并言说或写作下来。因此，我们可以将各个门理解为：</p>
+<ul>
+<li>输入门反映了新的词汇对记忆的影响</li>
+<li>遗忘门反映了旧的记忆在语言环境的更新下被抛弃的程度</li>
+<li>输出门反映了由记忆到能言说的语言的转变的过程。</li>
+</ul>
+<p>从这一模型中似乎也能体会出流利但没有内涵的口才与深思熟虑的话语间的差别。</p>
+<h3 id="（4）注意力机制"><a href="#（4）注意力机制" class="headerlink" title="（4）注意力机制"></a>（4）注意力机制</h3><p>我们试图让模型拥有更长的记忆，但是不管什么模型，应用什么样的隐藏状态，能存储的信息终归是有限的。只要时间序列足够长，总归会忘记最开始的内容。</p>
+<p>注意力机制能够解决这一问题。它的想法是，既然当下的隐藏状态中不包含对很久之前内容的记忆，那我只要选择包含之前内容的隐藏状态不就可以了吗？但是为了保持模型的可微性，我们不能仅仅离散的选择一些包含需要的内容的前面的隐藏状态，而是按照一定方法依据权重，选择在此之前的所有的隐藏状态。</p>
+<blockquote>
+<p>这实际上形成了一种类似于内存访问的机制。只不过内存是离散的地址和数据，而注意力机制却是连续的“地址”和“数据”。也有依照这一对应关系进一步推广的研究，如神经图灵机，但在此不做赘述。</p>
+</blockquote>
+<p>注意力机制本身的实现如下。首先我们要以前一个隐藏状态 $h_{t-1}$ 作为评价其他更早的隐藏状态 $\overline{h}_s$ 的基准。对每一个 $\overline{h}_s$ 实施评价函数</p>
+<script type="math/tex; mode=display">
+    score(h_{t-1}, \overline{h}_s)</script><p>接着运用 softmax 函数获取百分比权重</p>
+<script type="math/tex; mode=display">
+    a_t(s) = \frac{e^{score(s)}}{\sum_{s'}score(s')}</script><p>然后按照权重对隐藏状态进行合成即可。</p>
+<script type="math/tex; mode=display">
+    c_t = \sum_s a_t(s) \overline{h}_s</script><p>对于评价函数，可以有多种选择，其中比较好的一种为</p>
+<script type="math/tex; mode=display">
+    score(h_{t-1}, \overline{h}_s) = h_t^T W_a \overline{h}_s</script><p>$W_a$ 也可以在训练的过程中不断学习优化。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+              <a href="/tags/nlp/" rel="tag"># nlp</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/b452423a/" rel="prev" title="Spring面向切面">
+      <i class="fa fa-chevron-left"></i> Spring面向切面
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/e7ad966d/" rel="next" title="用pytorch实现简单循环神经网络">
+      用pytorch实现简单循环神经网络 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86%EF%BC%88nlp%EF%BC%89%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">一、自然语言处理（nlp）简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E4%BD%9C%E4%B8%BA%E8%AF%AD%E8%A8%80%E5%AD%A6%E7%9A%84-nlp"><span class="nav-number">1.1.</span> <span class="nav-text">（1）作为语言学的 nlp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E4%BD%9C%E4%B8%BA%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%A0%94%E7%A9%B6%E9%A2%86%E5%9F%9F%E7%9A%84-nlp"><span class="nav-number">1.2.</span> <span class="nav-text">（2）作为机器学习研究领域的 nlp</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E8%AF%8D%E5%90%91%E9%87%8F"><span class="nav-number">2.</span> <span class="nav-text">二、词向量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%BE%AA%E7%8E%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%88RNN%EF%BC%89%E5%8F%8A%E5%85%B6%E5%8F%98%E4%BD%93"><span class="nav-number">3.</span> <span class="nav-text">三、循环神经网络（RNN）及其变体</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E6%9C%B4%E7%B4%A0-RNN"><span class="nav-number">3.1.</span> <span class="nav-text">（1）朴素 RNN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89GRU"><span class="nav-number">3.2.</span> <span class="nav-text">（2）GRU</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89LSTM"><span class="nav-number">3.3.</span> <span class="nav-text">（3）LSTM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%9C%BA%E5%88%B6"><span class="nav-number">3.4.</span> <span class="nav-text">（4）注意力机制</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

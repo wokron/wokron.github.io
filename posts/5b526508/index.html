@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、引言对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。  模型的这种能力称为泛化能力  这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增">
+<meta property="og:type" content="article">
+<meta property="og:title" content="机器学习之模型评估与优化">
+<meta property="og:url" content="https://wokron.github.io/posts/5b526508/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、引言对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。  模型的这种能力称为泛化能力  这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-16T08:22:46.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/5b526508/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>机器学习之模型评估与优化 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5b526508/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          机器学习之模型评估与优化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-16 16:22:46" itemprop="dateCreated datePublished" datetime="2022-10-16T16:22:46+08:00">2022-10-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。</p>
+<blockquote>
+<p>模型的这种能力称为泛化能力</p>
+</blockquote>
+<p>这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增加样本数量等）。因此我们需要方法，来一般化地评估模型的质量。</p>
+<h2 id="二、泛化能力的衡量指标"><a href="#二、泛化能力的衡量指标" class="headerlink" title="二、泛化能力的衡量指标"></a>二、泛化能力的衡量指标</h2><p>正如前一节所说，泛化能力的衡量就是衡量模型对训练样本集之外的数据集的预测效果。我们知道衡量模型对训练样本预测效果的指标是损失函数，那么对于其他数据，我们同样可以把损失函数的概念迁移到这里来。</p>
+<p>我们可以将已经获得的数据划分为两部分，一部分用于训练模型，称为训练集；另一部分用于测试模型的泛化能力，称为测试集。对于用训练集训练后的数据，我们再求该模型对测试集数据的损失函数。</p>
+<p>举个例子，如果我们采用简单的平方误差损失函数，则我们就是要求</p>
+<script type="math/tex; mode=display">
+    J_{test}(\vec{w},b) = 
+    \frac{1}{2m_{test}}\sum_{i=0}^{m_{test}-1} ( f_{\vec{w},b}(\vec{x}^{(i)}_{test}) - y^{(i)}_{test} )^2</script><p>$J_{test}(\vec{w},b)$ 就是我们对该模型泛化能力的衡量指标，称为测试误差。</p>
+<p>我们可以将该指标与训练集的损失函数值 $J<em>{train}(\vec{w},b)$（注意这里没有正则项，称为训练误差）进行比较。一般的情况是 $J</em>{test}(\vec{w},b)$ 大于 $J_{train}(\vec{w},b)$。</p>
+<p>我们还可以将该模型的泛化能力与其他模型的泛化能力，或者与人类的误差进行比较。这样我们就可以评价我们所训练的模型的优劣了。</p>
+<h2 id="三、交叉验证集"><a href="#三、交叉验证集" class="headerlink" title="三、交叉验证集"></a>三、交叉验证集</h2><p>在我们继续评估模型之前，我们要先来考虑一些我们究竟要如何进行优化。你可能会想，我们既然有了评价模型泛化能力的指标 $J_{test}$，那么只要试图让该指标减小不就可以了吗？这是一个很直接的想法。</p>
+<p>但问题是，如果我们向着使 $J_{test}$ 减小的目标优化，那么测试集与训练集有什么区别呢？按照这种方法，测试集就相当于变成了训练集的一部分，而不再能成为衡量训练集之外泛化能力的样本了。</p>
+<p>因此，我们不能将训练集作为优化的方向，而只能将其作为评价的指标。我们需要再分出一部分数据，作为优化时的参考。这就是交叉验证（Cross-validation）集。对应的衡量指标为 $J_{cv}$</p>
+<h2 id="四、模型评价"><a href="#四、模型评价" class="headerlink" title="四、模型评价"></a>四、模型评价</h2><p>我们用偏差和方差来评价一个模型。</p>
+<ul>
+<li>偏差表示模型对训练集的预测相对于真实情况的误差，如果模型对训练样本都不能很好地拟合或分类，就称其为高偏差的。 $J_{train}$ 可衡量模型的偏差。</li>
+<li>方差表示模型对测试集的预测相对于真实情况的误差（也就是泛化能力本身），如果模型不能很好地预测测试集中数据，就称其为高方差的。$J_{cv}$ 可衡量模型的方差。</li>
+</ul>
+<blockquote>
+<p>一般来说，模型的方差会大于偏差。因此高偏差的模型都是高方差的。</p>
+<p>随着模型复杂度的提升，模型的偏差会逐渐降低，但偏差会先降低再升高；随着训练样本量的提升，偏差会逐渐减小，方差会逐渐升高，直到最后方差和偏差程度接近。</p>
+</blockquote>
+<h2 id="五、倾斜数据集的误差指标"><a href="#五、倾斜数据集的误差指标" class="headerlink" title="五、倾斜数据集的误差指标"></a>五、倾斜数据集的误差指标</h2><p>对于正面例子和负面例子比例差距较大的训练样本（也就是说，被标记为某一结果的样本数量占样本总数的比例很大或很小），根据全概率分布可知，可能就算全部预测同一结果，其正确的概率也很大。因此我们需要能消除样本本身概率分布导致的正确率偏差的指标。</p>
+<p>有两种误差指标用于评价这种情况。分别为准确率（Precision）和召回率（Recall）。</p>
+<ul>
+<li>准确率衡量的是，模型预测为某一结果的情况中，有多少是预测正确的。</li>
+<li>召回率衡量的是，对所有真正为某一结果的情况，有多少是模型预测到的。</li>
+</ul>
+<p>也就是说，设</p>
+<ul>
+<li>TP表示将正类预测为正类的数量</li>
+<li>FN表示将正类预测为负类的数量</li>
+<li>FP表示将负类预测为正类的数量</li>
+<li>TN表示将负类预测为负类的数量</li>
+</ul>
+<p>则准确率为</p>
+<script type="math/tex; mode=display">
+    P = \frac{TP}{TP + FP}</script><p>召回率为</p>
+<script type="math/tex; mode=display">
+    R = \frac{TP}{TP + FN}</script><p>可以这样理解，把预测的过程当做选择的过程，准确率高就是“不重”，不过多的选择，以致把许多不属于的也包括在内；召回率高就是“不漏”，不过少地选择，把一些属于的漏掉了。</p>
+<p>我们很容易就能得知，准确率和召回率在一定程度上是矛盾的。想要准确率高，就很可能漏掉一些；想要召回率高，就可能包含了不属于的东西。</p>
+<blockquote>
+<p>对于逻辑回归来说，提高阈值（即把多少数值以上的设定为真），准确率上升，召回率下降；降低阈值，准确率下降，召回率上升。</p>
+</blockquote>
+<p>要权衡准确率和召回率，对模型进行整体的评价的方法是采用 F1 分数（F1 Score）。即</p>
+<script type="math/tex; mode=display">
+    F1 = \frac{1}{\frac{1}{2}(\frac{1}{P} + \frac{1}{R})}</script><blockquote>
+<p>相当于对准确率和召回率的调和平均</p>
+</blockquote>
+<h2 id="五、优化策略"><a href="#五、优化策略" class="headerlink" title="五、优化策略"></a>五、优化策略</h2><p>优化模型需要考虑不同的情况。</p>
+<p>一种是模型具有高偏差的情况。<br>模型具有高偏差，常常意味着当前的模型复杂度不足以拟合当前数据。此时若一味地增加训练数据量，并不会使得拟合效果提高太多。应该做的是提高模型复杂度。如增加特征、增加层数、减小正则化系数等等。</p>
+<p>另一种是模型具有高方差，且偏差较低的情况。<br>这种情况常常意味着模型对样本产生了过拟合。需要做的是降低拟合程度。采取如减少特征、增大正则化系数等手段。增加训练数据量在这种情况下可以起到效果。</p>
+<p><strong>这里再介绍一些增加数据量的方法：</strong></p>
+<p>除了通过各种手段获取新数据以外，我们还可以利用现有数据创造新数据。如对于图像，可以将其经过旋转、伸缩、扭曲等操作生成新的图像；又比如音频，可以增加背景音、噪声等来模拟更加真实的环境。这些手段都能增加模型的稳健性和泛用性。</p>
+<p>迁移学习同样是一种利用数据的手段。该方法获得经过其他数据训练过的用于完成类似任务的模型，修改部分神经层（如输出层），再进行当前任务的训练。这样做相当于使用了其他任务中的数据。（这种方法可行的原因是，相似的任务，在位置靠前的部分常有类似的处理过程）</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/76c44d63/" rel="prev" title="机器学习之神经网络基础">
+      <i class="fa fa-chevron-left"></i> 机器学习之神经网络基础
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/55036469/" rel="next" title="机器学习之决策树">
+      机器学习之决策树 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%B3%9B%E5%8C%96%E8%83%BD%E5%8A%9B%E7%9A%84%E8%A1%A1%E9%87%8F%E6%8C%87%E6%A0%87"><span class="nav-number">2.</span> <span class="nav-text">二、泛化能力的衡量指标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E4%BA%A4%E5%8F%89%E9%AA%8C%E8%AF%81%E9%9B%86"><span class="nav-number">3.</span> <span class="nav-text">三、交叉验证集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BB%B7"><span class="nav-number">4.</span> <span class="nav-text">四、模型评价</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%80%BE%E6%96%9C%E6%95%B0%E6%8D%AE%E9%9B%86%E7%9A%84%E8%AF%AF%E5%B7%AE%E6%8C%87%E6%A0%87"><span class="nav-number">5.</span> <span class="nav-text">五、倾斜数据集的误差指标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5"><span class="nav-number">6.</span> <span class="nav-text">五、优化策略</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

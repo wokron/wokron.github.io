@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、引言——房价预测问题问题：假设我们知道一些房价与距离的对应关系，通过这些已知的信息，能否预测在一定范围内任意距离对应的房价？ 首先考虑最为简单的情况，也就是只有两个房价信息的情况。 如图所示，1km时对应房价为300，2km 时对应房价为500。很容易可以在这两点间连一条直线，这条直线就可以作为对房价的预测。这样用曲线对已知数据中的关系进行估计的方法称为拟合。  （注意，本文只考虑以一元线性函">
+<meta property="og:type" content="article">
+<meta property="og:title" content="机器学习笔记之一元线性回归">
+<meta property="og:url" content="https://wokron.github.io/posts/5371358e/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、引言——房价预测问题问题：假设我们知道一些房价与距离的对应关系，通过这些已知的信息，能否预测在一定范围内任意距离对应的房价？ 首先考虑最为简单的情况，也就是只有两个房价信息的情况。 如图所示，1km时对应房价为300，2km 时对应房价为500。很容易可以在这两点间连一条直线，这条直线就可以作为对房价的预测。这样用曲线对已知数据中的关系进行估计的方法称为拟合。  （注意，本文只考虑以一元线性函">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wokron.github.io/posts/5371358e/simpleScatterPrice.png">
+<meta property="og:image" content="https://wokron.github.io/posts/5371358e/simplePredict.png">
+<meta property="og:image" content="https://wokron.github.io/posts/5371358e/threePredict.png">
+<meta property="og:image" content="https://wokron.github.io/posts/5371358e/print.png">
+<meta property="og:image" content="https://wokron.github.io/posts/5371358e/actualPredict.png">
+<meta property="article:published_time" content="2022-09-25T02:22:13.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.392Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wokron.github.io/posts/5371358e/simpleScatterPrice.png">
+
+<link rel="canonical" href="https://wokron.github.io/posts/5371358e/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>机器学习笔记之一元线性回归 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5371358e/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          机器学习笔记之一元线性回归
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-25 10:22:13" itemprop="dateCreated datePublished" datetime="2022-09-25T10:22:13+08:00">2022-09-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、引言——房价预测问题"><a href="#一、引言——房价预测问题" class="headerlink" title="一、引言——房价预测问题"></a>一、引言——房价预测问题</h2><p><strong>问题：</strong><br>假设我们知道一些房价与距离的对应关系，通过这些已知的信息，能否预测在一定范围内任意距离对应的房价？</p>
+<p>首先考虑最为简单的情况，也就是只有两个房价信息的情况。<br><img src="/posts/5371358e/simpleScatterPrice.png" class="" title="scatter"></p>
+<p>如图所示，1km时对应房价为300，2km 时对应房价为500。很容易可以在这两点间连一条直线，这条直线就可以作为对房价的预测。这样用曲线对已知数据中的关系进行估计的方法称为拟合。</p>
+<blockquote>
+<p>（注意，本文只考虑以一元线性函数进行拟合）</p>
+</blockquote>
+<img src="/posts/5371358e/simplePredict.png" class="" title="predict">
+<p>类似的，增加房价信息为三个点，如果三点共线，则该直线依然可以作为对房价的拟合。<br><img src="/posts/5371358e/threePredict.png" class="" title="predict2"></p>
+<p>但更可能的情况是三点不共线，对于更多的数据的情况则更是如此。这样的话要如何找到一条直线来拟合房价信息呢？</p>
+<h2 id="二、损失函数"><a href="#二、损失函数" class="headerlink" title="二、损失函数"></a>二、损失函数</h2><p>我们需要找到一种标准来衡量直线对已有信息的拟合程度。</p>
+<p>假设当前直线为：</p>
+<script type="math/tex; mode=display">
+    y = wx+b</script><p>房子距离为 $x^{(1)},x^{(2)},x^{(3)}…,x^{(m)}$，对应的房价为 $y^{(1)},y^{(2)},y^{(3)}…,y^{(m)}$。<br>则对于每个距离 $x^{(i)}$，当前直线所预测的房价为:</p>
+<script type="math/tex; mode=display">
+    \hat{y}^{(i)} = wx^{(i)} + b</script><p>该房价与真正的房价的差距为</p>
+<script type="math/tex; mode=display">
+    d = |y^{(i)} - \hat{y}^{(i)}|</script><p>绝对值不可导，不妨用平方来代替</p>
+<script type="math/tex; mode=display">
+    d_2 = (y^{(i)} - \hat{y}^{(i)})^2</script><p>对于每个已知的房价信息，当前直线的预测都可能会有偏差，将这些偏差求和得到总的偏差</p>
+<script type="math/tex; mode=display">
+    \sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>为了排除样本数量不同对偏差的影响，将偏差总和除以样本数量</p>
+<script type="math/tex; mode=display">
+    \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>这也就是总体方差的计算式：</p>
+<script type="math/tex; mode=display">
+    \sigma^2 = \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>对于机器学习，我们将$\hat{y}^{(i)}$展开，并将方差除以2，得到一元线性回归的损失函数（loss function），即</p>
+<script type="math/tex; mode=display">
+    J(w, b) = \frac{1}{2m}\sum_{i=1}^{m}(y^{(i)} - wx^{(i)} - b)^2</script><p>在 $x^{(i)}$，$y^{(i)}$ 确定的情况下，损失函数是关于 $w$ 和 $b$ 的连续可导的二元函数。该函数可以用来衡量 $w，b$ 所确定的直线与已知数据之间的偏差。</p>
+<h2 id="三、梯度下降"><a href="#三、梯度下降" class="headerlink" title="三、梯度下降"></a>三、梯度下降</h2><p>既然我们已经可以用 $J(w, b)$ 衡量直线对数据的拟合程度了，那么对于“如何找到最佳的拟合曲线”这一问题，就转化为了“如何找到使得 $J(w, b)$ 最小的 $w，b$ 值”。</p>
+<p>我们可以确定一个任意的点 $(w_0, b_0)$ 作为初始位置，那么要到达 $J(w, b)$ 最小的位置， 要如何移动呢？我们要向能使 $J(w, b)$ 减小，并减小得最快的方向移动。具体的，也就是向着梯度的反方向移动。</p>
+<script type="math/tex; mode=display">
+    (w_1, b_1) = (w_0, b_0) - \alpha\nabla{J(w, b)}</script><p>或</p>
+<script type="math/tex; mode=display">
+    \left\{
+        \begin{array}{lr}
+            w_1 = w_0 - \alpha\frac{\partial{J(w, b)}}{\partial{w}} & \\
+            & \\
+            b_1 = b_0 - \alpha\frac{\partial{J(w, b)}}{\partial{b}}
+        \end{array}
+    \right.</script><p>其中 $\alpha$ 称为步长，表示一次迭代时的移动程度。</p>
+<p>通过多次重复迭代这一过程，最终得到的 $(w_n, b_n)$ 将位于梯度为 0 的位置。即损失函数的一个极小值点。这时对应的直线将能较好地拟合原本的数据。</p>
+<blockquote>
+<p>当然，极小值点不意味着对应的值便是损失函数的最小值。在一些情况下，这一算法也可能会使拟合的直线处于局部最优而非全局最优的情况。但本文暂不处理这种情况。</p>
+</blockquote>
+<h2 id="四、代码实现"><a href="#四、代码实现" class="headerlink" title="四、代码实现"></a>四、代码实现</h2><p>我们先导入<code>numpy</code>和<code>Matplotlib</code><br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br></pre></td></tr></table></figure></p>
+<p>之后定义一些需要用到的函数。</p>
+<p>计算损失函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, x, y</span>):</span><br><span class="line">    m = x.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_cost = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        actual_y = w * x[i] + b</span><br><span class="line">        sum_cost += (actual_y - y[i]) ** <span class="number">2</span></span><br><span class="line">    total_cost = (<span class="number">1</span> / (<span class="number">2</span> * m)) * sum_cost</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure></p>
+<p>计算损失函数对应的梯度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, x, y</span>):</span><br><span class="line">    m = x.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_w = <span class="number">0</span></span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        sum_w += x[i] * (w * x[i] + b - y[i])</span><br><span class="line">        sum_b += (w * x[i] + b - y[i])</span><br><span class="line">    gradient_w = (<span class="number">1</span> / m) * sum_w</span><br><span class="line">    gradient_b = (<span class="number">1</span> / m) * sum_b</span><br><span class="line">    <span class="keyword">return</span> gradient_w, gradient_b</span><br></pre></td></tr></table></figure></p>
+<p>进行一次梯度下降迭代<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">gradient_descent</span>(<span class="params">w, b, x, y, alpha</span>):</span><br><span class="line">    d_w, d_b = get_gradient(w, b, x, y)</span><br><span class="line">    w -= alpha * d_w</span><br><span class="line">    b -= alpha * d_b</span><br><span class="line">    <span class="keyword">return</span> w, b</span><br></pre></td></tr></table></figure></p>
+<p>接下来是主体部分</p>
+<p>设置已知数据<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x_train = np.array([<span class="number">1.0</span>, <span class="number">1.7</span>, <span class="number">2.0</span>, <span class="number">2.5</span>, <span class="number">3.0</span>, <span class="number">3.2</span>])</span><br><span class="line">y_train = np.array([<span class="number">250</span>, <span class="number">300</span>, <span class="number">480</span>, <span class="number">430</span>, <span class="number">630</span>, <span class="number">730</span>,])</span><br></pre></td></tr></table></figure><br>初始化 $w$, $b$ 及步长 $\alpha$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">w = <span class="number">0</span></span><br><span class="line">b = <span class="number">0</span></span><br><span class="line">alpha = <span class="number">1e-2</span></span><br></pre></td></tr></table></figure></p>
+<p>使用梯度下降迭代 20000 次。每 1000 次打印当前的信息。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">20000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, x_train, y_train, alpha)</span><br><span class="line">    <span class="keyword">if</span> i % <span class="number">1000</span> == <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;w:<span class="subst">&#123;w&#125;</span>, b:<span class="subst">&#123;b&#125;</span>, cost:<span class="subst">&#123;get_cost(w, b, x_train, y_train)&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure><br><img src="/posts/5371358e/print.png" class="" title="print"></p>
+<p>最后输出拟合结果<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.xlabel(<span class="string">&quot;house location(km)&quot;</span>)</span><br><span class="line">plt.ylabel(<span class="string">&quot;price($)&quot;</span>)</span><br><span class="line">plt.scatter(x_train, y_train)</span><br><span class="line">plt.plot([<span class="number">0</span>, <span class="number">4</span>], [b, w*<span class="number">4</span>+b])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure><br>拟合效果如图：<br><img src="/posts/5371358e/actualPredict.png" class="" title="predict3"></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/815aaabe/" rel="prev" title="基本正则表达式总结">
+      <i class="fa fa-chevron-left"></i> 基本正则表达式总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/2cfef6f1/" rel="next" title="机器学习笔记之多元线性回归">
+      机器学习笔记之多元线性回归 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%BC%95%E8%A8%80%E2%80%94%E2%80%94%E6%88%BF%E4%BB%B7%E9%A2%84%E6%B5%8B%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">一、引言——房价预测问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="nav-number">2.</span> <span class="nav-text">二、损失函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D"><span class="nav-number">3.</span> <span class="nav-text">三、梯度下降</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">四、代码实现</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

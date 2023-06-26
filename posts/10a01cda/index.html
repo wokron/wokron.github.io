@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言我的笔记本现在用起来很慢了。每次听到它嗡嗡的风扇声却又看不到它跑不出来结果的时候，就感觉它好似一头老驴，使劲却又力不从心，腿打着颤却也拉不动身后的货。所以我谋划着新买一台，就让之前的那台好好休息吧。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux-Mint双系统的安装及美化">
+<meta property="og:url" content="https://wokron.github.io/posts/10a01cda/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言我的笔记本现在用起来很慢了。每次听到它嗡嗡的风扇声却又看不到它跑不出来结果的时候，就感觉它好似一头老驴，使劲却又力不从心，腿打着颤却也拉不动身后的货。所以我谋划着新买一台，就让之前的那台好好休息吧。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/complex-of-linux.jpg">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/disk1.png">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/disk2.png">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/disk3.png">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/usb.png">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/install1.jpg">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/install2.jpg">
+<meta property="og:image" content="https://wokron.github.io/posts/10a01cda/install3.jpg">
+<meta property="article:published_time" content="2023-06-24T13:50:32.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.380Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Mint">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wokron.github.io/posts/10a01cda/complex-of-linux.jpg">
+
+<link rel="canonical" href="https://wokron.github.io/posts/10a01cda/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux-Mint双系统的安装及美化 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/10a01cda/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux-Mint双系统的安装及美化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-24 21:50:32" itemprop="dateCreated datePublished" datetime="2023-06-24T21:50:32+08:00">2023-06-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">踩坑记录</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>我的笔记本现在用起来很慢了。每次听到它嗡嗡的风扇声却又看不到它跑不出来结果的时候，就感觉它好似一头老驴，使劲却又力不从心，腿打着颤却也拉不动身后的货。所以我谋划着新买一台，就让之前的那台好好休息吧。</p>
+<span id="more"></span>
+<p>一想到买台新的笔记本，我的思绪就沿着这条道一直走下去：“要买什么样的配置呢？买了新的电脑要做些什么项目呢？要玩什么游戏呢？” 诸如此类。装一个 linux 系统也是这时产生的想法。有人可能会想，“这有什么用呢？难道 windows 就不能用吗？如果不得不用 linux，wsl 也是很好地办法，或者用虚拟机，甚至直接用 docker，都可以解决。” 确实，如果就满足当下的使用而言，将 linux 作为一个个人使用的真正的系统，相对于 windows 似乎并没有什么优点。</p>
+<p>不过呢，我选择折腾这么一阵也并没有什么经过考量的理由，而仅仅是因为自己在主观上更加喜欢 linux 罢了。在我不算太长的接触并学习 linux 的时间里，我从这个系统中感受到了设计的一致性，这是我在更长时间的对 windows 的接触和学习中所没有体会到的。当然，或许在之后看来，我现在的理解也不过是浅薄的认识罢了。但是现在，我还是决定安装一个 linux 系统。</p>
+<p>如果有读者的话，希望不要嫌弃我太过啰嗦（笑）。</p>
+<h2 id="二、为什么是薄荷"><a href="#二、为什么是薄荷" class="headerlink" title="二、为什么是薄荷"></a>二、为什么是薄荷</h2><p>众所周知，linux 是内核，许多不同的组织在 linux 内核的基础上增加了其他必要的软件和应用，开发了不同的发行版。发行版的江湖中帮派林立，主要有三大派系，debian 系、redhat 系和 suse 系。各个派系中又有无数相互关联却又相互区分的发行版。如 debian 的 ubuntu、deepin；redhat 的 fedora、suse 的 opensuse。只需要把这些发行版的大名亮出来，就足以让人眼花缭乱了。</p>
+<img src="/posts/10a01cda/complex-of-linux.jpg" class="" title="complex-of-linux">
+<p>本人也在这些发行版中漂移不定了一段时间，但最终选择了 debian 系的 mint（薄荷）。主要有一下几个原因</p>
+<ul>
+<li>debian 系有着 apt 的超级牛力加持，.deb 格式的软件包使用作为广泛</li>
+<li>mint 基于 ubuntu，ubuntu 是使用最为广泛的 linux 发行版</li>
+<li>mint 精简了 ubuntu 下的一些功能，如 snap；并对初学者较为友好</li>
+</ul>
+<h2 id="三、安装操作系统"><a href="#三、安装操作系统" class="headerlink" title="三、安装操作系统"></a>三、安装操作系统</h2><p>我新买的电脑是联想拯救者 R9000P，配置如下<br>|设备|配置|<br>|—-|—-|<br>|处理器|AMD Ryzen 9 7945HX|<br>|内存| 16G|<br>|硬盘| 1T|<br>|显卡| Nvidia 4060 |</p>
+<p>要安装的操作系统配置<br>|名称|版本|<br>|—-|—-|<br>|操作系统|Linux Mint 21.1 Cinnamon|<br>|Cinnamon 版本|5.6.8|<br>|Linux 内核|5.15.0-75-generic|</p>
+<p>接下开始安装。</p>
+<h3 id="（1）windows-分盘"><a href="#（1）windows-分盘" class="headerlink" title="（1）windows 分盘"></a>（1）windows 分盘</h3><p>如果电脑中只有一个系统，那么当然就是这个系统占用所有的磁盘空间了。但是对于双系统，就需要将不同系统所使用的磁盘空间分离开来。</p>
+<img src="/posts/10a01cda/disk1.png" class="" title="disk1">
+<p>这里直接使用 windows 自带的磁盘管理工具进行分盘。可以在搜索栏里搜索 “磁盘分区” 并点击 “创建并格式化磁盘分区”。</p>
+<img src="/posts/10a01cda/disk2.png" class="" title="disk2">
+<p>之后在想要分盘的磁盘空间处点击右键，选择压缩卷。随后修改“输入压缩空间量”部分的数值，将其设定为你想要分配给另一个操作系统的磁盘空间大小。点击压缩。</p>
+<img src="/posts/10a01cda/disk3.png" class="" title="disk3">
+<p>此时应该会出现一块未分配的磁盘空间。这就是将来我们要将 linux 操作系统挂载到的位置。当然此处我已经为 linux 系统分配了 200g 的空间，并已经成功安装了。</p>
+<h3 id="（2）usb-启动盘的制作"><a href="#（2）usb-启动盘的制作" class="headerlink" title="（2）usb 启动盘的制作"></a>（2）usb 启动盘的制作</h3><p>接下来我们要将一个 u 盘做成 linux 系统的启动盘。首先我们要去 <a target="_blank" rel="noopener" href="https://linuxmint.com/">linux mint 官网</a>下载 mint 发行版的光盘镜像。</p>
+<p>这里本人选择下来 Cinnamon 版。除此之外 mint 还提供了 MATE 和 Xfce 版。Cinnamon、MATE 和 Xfce 是不同的 linux 桌面环境，与 windows 统一的桌面（explorer.exe）不同，linux 中提供了多种多样的桌面环境。对于 mint 来说，Cinnamon 是其自身开发的桌面环境，因此我便选择该桌面了。</p>
+<p>Cinnamon 版的<a target="_blank" rel="noopener" href="https://linuxmint.com/edition.php?id=302">下载页</a>中提供了不同的镜像源，可以选择清华源进行<a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/linuxmint-cd/stable/21.1/linuxmint-21.1-cinnamon-64bit.iso">下载</a>。</p>
+<p>为了将该镜像装入 u 盘中，还需要下载 usb 启动盘制作工具。这里使用 Universal USB Installer（2.0.1.5）。可以在此<a target="_blank" rel="noopener" href="https://www.pendrivelinux.com/universal-usb-installer-easy-as-1-2-3/">下载页</a>下载，或者直接点击<a target="_blank" rel="noopener" href="https://www.pendrivelinux.com/downloads/Universal-USB-Installer/Universal-USB-Installer-2.0.1.5.exe">此处</a>。</p>
+<blockquote>
+<p>在继续之前需要强调一点，就是制作启动盘时，u 盘会被格式化，其中原有的数据都会被删除，因此请在制作之前做好 u 盘数据的备份。</p>
+</blockquote>
+<p>下载完 Universal USB Installer 后直接双击打开即可。随后选择发行版、镜像位置以及要制作成启动盘的 u 盘。点击 Create 按钮进行制作。此过程可能需要几分钟。</p>
+<img src="/posts/10a01cda/usb.png" class="" title="usb">
+<p>完成之后，u 盘就变成了 linux 系统的启动盘。现在将电脑关机，接下来就要开始真正的系统安装。</p>
+<h3 id="（3）安装-linux-系统"><a href="#（3）安装-linux-系统" class="headerlink" title="（3）安装 linux 系统"></a>（3）安装 linux 系统</h3><blockquote>
+<p>此节的部分图片引用自 <a target="_blank" rel="noopener" href="https://www.sysgeek.cn/install-linux-mint-21/">如何安装 Linux Mint 21 桌面版，详细步骤</a></p>
+</blockquote>
+<p>把 usb 启动盘插到要安装的电脑上，开机，并进入 boot menu。进入的方法可能因为笔记本的型号不同而有所差别，但对于 R9000P 来说，方法是在开机但还未启动的时候按 F12 键（为了避免错过可以不断按 F12 直到成功进入）。在 boot menu 中可以选择启动方式。这里需要选择带有 linpus lite 的启动选项（上下方向键选择、回车键确认）。之后就进入了一个 linux mint 的桌面环境。</p>
+<p>但是目前的这个 linux mint 依旧在 u 盘上，需要双击桌面上的 Install Linux Mint 将系统安装到磁盘上。</p>
+<img src="/posts/10a01cda/install1.jpg" class="" title="install">
+<p>在安装界面，首先选择语言、键盘布局等，这些当然都选择 Chinese 即可。之后也需要安装多媒体编码译码器。</p>
+<p>随后选择安装类型。因为要安装双系统，所以不能选 “清除整个磁盘并安装 Linux Mint” 选项，而要选择 “其它选项”。</p>
+<img src="/posts/10a01cda/install2.jpg" class="" title="instal2">
+<p>接着要选择操作系统要安装到的分区，这个分区我们已经在 windows 中划分出来了。右键点击该分区，选择 Ext4 日志文件系统，挂载点为根目录 <code>/</code>。继续。</p>
+<img src="/posts/10a01cda/install3.jpg" class="" title="install">
+<p>然后设置位置，当然是自行选择了。该位置会影响时区。</p>
+<p>最后创建用户账户，也是自行填写即可。点击继续后就会开始 linux mint 系统的安装。安装完成后重启，并在 crub 系统选择界面选择 linux mint 进入即可。</p>
+<h3 id="（4）踩坑和解决"><a href="#（4）踩坑和解决" class="headerlink" title="（4）踩坑和解决"></a>（4）踩坑和解决</h3><p>这一部分记录了我在安装时踩得坑，或许比较幸运，并没有花费太长的时间解决。</p>
+<h4 id="成功安装但无法启动"><a href="#成功安装但无法启动" class="headerlink" title="成功安装但无法启动"></a>成功安装但无法启动</h4><p>接着上一节，重启之后你可能会发现新安装的系统无法启动。显示的错误提示类似于如下内容<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">error: bad shim signature</span><br><span class="line">error: you need to load the kernel first</span><br></pre></td></tr></table></figure></p>
+<p>或是<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">错误：无效的 shim 签名。</span><br><span class="line">错误：您需要先加载内核。</span><br></pre></td></tr></table></figure></p>
+<p>这是由于 UEFI 开启了 secure boot 导致的。secure boot 要求在其上运行的系统必须具有正确的 shim 签名，否则无法运行。对于预装的 windows 系统来说，当然内置了 shim 签名；但是自行安装的系统，尤其是作为自由软件的 linux，就不太能提供正确的签名了。这一行为虽然确实能在一定程度上保护硬件的安全，但却更是被微软作为保持其 windows 系统垄断地位的手段。secure boot 模式可以在 bios 中选择是否启用。此前似乎也存在一旦关闭 secure boot 则无法再次启用的情况，不过厂商最终还是做出了让步。</p>
+<p>要禁用 secure boot，首先需要关机再重新开机，在系统启动之前进入 bios，对于 R9000P 来说就是按 F2 键。不同厂商的 bios 外观不同，因此无法统一说明。但是只要找到 secure boot 相关的选项，并禁用该选项即可。应用修改后重新尝试进入 linux 系统。</p>
+<h4 id="休眠后黑屏无法唤醒"><a href="#休眠后黑屏无法唤醒" class="headerlink" title="休眠后黑屏无法唤醒"></a>休眠后黑屏无法唤醒</h4><p>合上笔记本的盖子，或者长时间不使用笔记本，笔记本就会进入休眠状态。此时采取按键等手段在正常情况下应该能唤醒笔记本。但是本人的笔记本在 linux 系统下会保持黑屏，但是电源灯、键盘灯、鼠标灯均表明系统已经被唤醒。</p>
+<p>很明显，这是显示的问题。原因其实是 linux mint 系统在安装时默认采用 Nvidia 显卡的开源驱动 Nouveau，该驱动并没有得到 Nvidia 的认可与支持，只是让用户安装完系统即可进入桌面罢了。</p>
+<p>所以还需要更换显卡的驱动，linux mint 提供了很方便的更换手段。其实在一开始进入 linux mint 时的欢迎页上，就有更换驱动的选项，可惜我那时并没有更新。不过就算错过了，只要在搜索栏里搜索 driver 并选择驱动管理器选项也可以更换显卡驱动。</p>
+<p>只需要将原本开源的驱动改为 linux mint 标识了 “推荐” 的驱动即可，注意需要重启。之后再让笔记本进入休眠状态并唤醒，就不会出现黑屏了。</p>
+<h2 id="四、系统的美化"><a href="#四、系统的美化" class="headerlink" title="四、系统的美化"></a>四、系统的美化</h2><p>系统装是装上了，可总感觉有些朴素，长得也和 windows 没有什么区别。其实 linux 桌面的精髓是定制化。美化也是其中很重要的一部分。这一部分当然不是为了让读者做出和我一样的桌面，而只是记录一些可以用于美化的手段，也便于自己日后的使用。</p>
+<h3 id="（1）主题配置"><a href="#（1）主题配置" class="headerlink" title="（1）主题配置"></a>（1）主题配置</h3><p>在搜索框中输入 theme 找到 “主题” 功能，可以用来修改桌面的整体外貌。可以在其中的 “添加/删除” 直接下载配置好的主题并应用；或者可以在如下的资源网站中搜索主题并下载。</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.cinnamon-look.org/">https://www.cinnamon-look.org/</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.pling.com/">https://www.pling.com/</a></li>
+</ul>
+<p>下载后，将其中的内容放到用户 home 目录下的隐藏文件夹中即可。比如对于图标，放入 .icons 中；对于主题，放入 .themes 文件夹中。</p>
+<h3 id="（2）桌面小程序"><a href="#（2）桌面小程序" class="headerlink" title="（2）桌面小程序"></a>（2）桌面小程序</h3><p>右击面板可以为面板添加不同的小程序。这里可以列出我所使用的一些小程序</p>
+<ul>
+<li>Cinnamenu</li>
+<li>Corner bar</li>
+<li>XApp 状态小应用</li>
+<li>日历</li>
+<li>窗口列表</li>
+<li>…</li>
+</ul>
+<h3 id="（3）桌面布局"><a href="#（3）桌面布局" class="headerlink" title="（3）桌面布局"></a>（3）桌面布局</h3><p>mint 可以修改桌面的布局。比如右击面板，点击移动可以将面板移动到桌面的上面。另外右键面板后也可以启用面板编辑模式，从而按照自己的需要排布分布在面板上的不同小程序的位置。</p>
+<h3 id="（4）plank"><a href="#（4）plank" class="headerlink" title="（4）plank"></a>（4）plank</h3><p>plank 提供了一个轻量简洁的面板，可以直接通过 apt 下载<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install plank</span><br></pre></td></tr></table></figure></p>
+<p>下载完成后在搜索栏中搜索 plank 并点击打开，就可以看到桌面底端出现了一个面板。我们可以将该程序添加到开机启动项中。只需要在搜索栏中搜索 setting，点击系统设置；在系统设置中搜索 “开机自启动程序”，并将 plank 添加到其中即可。这样就得到了一个看上去更加美观的面板了。</p>
+<h3 id="（5）grub-的美化"><a href="#（5）grub-的美化" class="headerlink" title="（5）grub 的美化"></a>（5）grub 的美化</h3><p>每次开机选择系统时都会进入 gnu grub 界面。可是这个界面实在是显得有些古老了。其实 grub 也是可以美化的。比如我们可以在<a target="_blank" rel="noopener" href="https://www.gnome-look.org/browse?cat=109&amp;ord=plinged">这个网站</a>找到 grub 美化的主题。</p>
+<p>选择喜欢的主题后下载，解压后直接运行其中的 install.sh 脚本即可。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/Mint/" rel="tag"># Mint</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/2e230ee5/" rel="prev" title="BUAA-OS实验笔记之Lab6">
+      <i class="fa fa-chevron-left"></i> BUAA-OS实验笔记之Lab6
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF%E8%96%84%E8%8D%B7"><span class="nav-number">2.</span> <span class="nav-text">二、为什么是薄荷</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%AE%89%E8%A3%85%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.</span> <span class="nav-text">三、安装操作系统</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89windows-%E5%88%86%E7%9B%98"><span class="nav-number">3.1.</span> <span class="nav-text">（1）windows 分盘</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89usb-%E5%90%AF%E5%8A%A8%E7%9B%98%E7%9A%84%E5%88%B6%E4%BD%9C"><span class="nav-number">3.2.</span> <span class="nav-text">（2）usb 启动盘的制作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E5%AE%89%E8%A3%85-linux-%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.3.</span> <span class="nav-text">（3）安装 linux 系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89%E8%B8%A9%E5%9D%91%E5%92%8C%E8%A7%A3%E5%86%B3"><span class="nav-number">3.4.</span> <span class="nav-text">（4）踩坑和解决</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%88%90%E5%8A%9F%E5%AE%89%E8%A3%85%E4%BD%86%E6%97%A0%E6%B3%95%E5%90%AF%E5%8A%A8"><span class="nav-number">3.4.1.</span> <span class="nav-text">成功安装但无法启动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%91%E7%9C%A0%E5%90%8E%E9%BB%91%E5%B1%8F%E6%97%A0%E6%B3%95%E5%94%A4%E9%86%92"><span class="nav-number">3.4.2.</span> <span class="nav-text">休眠后黑屏无法唤醒</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%BE%8E%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">四、系统的美化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E4%B8%BB%E9%A2%98%E9%85%8D%E7%BD%AE"><span class="nav-number">4.1.</span> <span class="nav-text">（1）主题配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E6%A1%8C%E9%9D%A2%E5%B0%8F%E7%A8%8B%E5%BA%8F"><span class="nav-number">4.2.</span> <span class="nav-text">（2）桌面小程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E6%A1%8C%E9%9D%A2%E5%B8%83%E5%B1%80"><span class="nav-number">4.3.</span> <span class="nav-text">（3）桌面布局</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89plank"><span class="nav-number">4.4.</span> <span class="nav-text">（4）plank</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%885%EF%BC%89grub-%E7%9A%84%E7%BE%8E%E5%8C%96"><span class="nav-number">4.5.</span> <span class="nav-text">（5）grub 的美化</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

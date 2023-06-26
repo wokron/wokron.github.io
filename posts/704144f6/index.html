@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言本文是“2D物理引擎基础”的第三篇文章，主要介绍物体刚体力学的相关知识以及碰撞发生后的处理办法。后者背后的数学原理较为复杂，因此这里大多情况只是罗列公式并做简要说明。 二、刚体力学连续的刚体力学我们考虑二维的情况。假设有一刚体，质量为 $M$，转动惯量为 $I$，在距质心 $\vec{r}$ 处受到一力 $\vec{F}$ 的作用。 那么刚体所受相对于质心的力矩 $\vec{M}$ 为：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2D物理引擎基础之刚体力学与碰撞约束">
+<meta property="og:url" content="https://wokron.github.io/posts/704144f6/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言本文是“2D物理引擎基础”的第三篇文章，主要介绍物体刚体力学的相关知识以及碰撞发生后的处理办法。后者背后的数学原理较为复杂，因此这里大多情况只是罗列公式并做简要说明。 二、刚体力学连续的刚体力学我们考虑二维的情况。假设有一刚体，质量为 $M$，转动惯量为 $I$，在距质心 $\vec{r}$ 处受到一力 $\vec{F}$ 的作用。 那么刚体所受相对于质心的力矩 $\vec{M}$ 为：">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-02-10T01:47:10.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.376Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="数学">
+<meta property="article:tag" content="物理引擎">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/704144f6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>2D物理引擎基础之刚体力学与碰撞约束 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/704144f6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          2D物理引擎基础之刚体力学与碰撞约束
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-10 09:47:10" itemprop="dateCreated datePublished" datetime="2023-02-10T09:47:10+08:00">2023-02-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文是“2D物理引擎基础”的第三篇文章，主要介绍物体刚体力学的相关知识以及碰撞发生后的处理办法。后者背后的数学原理较为复杂，因此这里大多情况只是罗列公式并做简要说明。</p>
+<h2 id="二、刚体力学"><a href="#二、刚体力学" class="headerlink" title="二、刚体力学"></a>二、刚体力学</h2><h3 id="连续的刚体力学"><a href="#连续的刚体力学" class="headerlink" title="连续的刚体力学"></a>连续的刚体力学</h3><p>我们考虑二维的情况。假设有一刚体，质量为 $M$，转动惯量为 $I$，在距质心 $\vec{r}$ 处受到一力 $\vec{F}$ 的作用。</p>
+<p>那么刚体所受相对于质心的力矩 $\vec{M}$ 为：</p>
+<script type="math/tex; mode=display">
+    \vec{M} = \vec{r} \times \vec{F}</script><p>注意 $\vec{M}$ 的方向垂直于平面，后面的角速度同理。</p>
+<p>在 $\Delta{t}$ 时间内速度变化 $\Delta{\vec{v}}$ 有</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{v}} = \int_{t_0}^{t0+\Delta{t}} \frac{\vec{F}(t)}{M} dt</script><p>同样的，角速度变化 $\Delta{\vec{w}}$ 有</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{w}} = \int_{t_0}^{t0+\Delta{t}} \frac{\vec{M(t)}}{I} dt</script><p>类似的，也有位置和角度的变化</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{p}} = \int_{t_0}^{t0+\Delta{t}} \vec{v}(t) dt</script><script type="math/tex; mode=display">
+    \Delta{\vec{\theta}} = \int_{t_0}^{t0+\Delta{t}} \vec{w}(t) dt</script><p>还有冲量</p>
+<script type="math/tex; mode=display">
+    \vec{I} = \int_{t_0}^{t0+\Delta{t}} \vec{F}(t) dt</script><p>以及角冲量（或称冲量矩）</p>
+<script type="math/tex; mode=display">
+    \vec{H} = \int_{t_0}^{t0+\Delta{t}} \vec{M}(t) dt</script><p>并有等式</p>
+<script type="math/tex; mode=display">
+    \vec{I} = M \Delta{\vec{v}}</script><script type="math/tex; mode=display">
+    \vec{H} = I \Delta{\vec{w}}</script><h3 id="离散的刚体模拟"><a href="#离散的刚体模拟" class="headerlink" title="离散的刚体模拟"></a>离散的刚体模拟</h3><p>正如第一篇文章中说过的，一般情况下计算机无法计算连续，只能通过离散的方式进行近似。物理引擎中进行的模拟会导致误差，但这对于视觉效果来说已经足够了。</p>
+<h4 id="力的视角"><a href="#力的视角" class="headerlink" title="力的视角"></a>力的视角</h4><p>同样的，我们假设有一刚体，质量为 $M$，转动惯量为 $I$，在距质心 $\vec{r}$ 处受到一力 $\vec{F}$ 的作用。在 $\Delta{t}$ 的时间间隔下，有力矩</p>
+<script type="math/tex; mode=display">
+    \vec{M} = \vec{r} \times \vec{F}</script><p>速度和角速度的变化为</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{v}} = \frac{\vec{F}}{M} \Delta{t}</script><script type="math/tex; mode=display">
+    \Delta{\vec{w}} = \frac{\vec{M}}{I} \Delta{t}</script><p>位置和角度的变化为</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{p}} =  \vec{v} \Delta{t}</script><script type="math/tex; mode=display">
+    \Delta{\vec{\theta}} =  \vec{w} \Delta{t}</script><h4 id="冲量的视角"><a href="#冲量的视角" class="headerlink" title="冲量的视角"></a>冲量的视角</h4><p>假设物体在距质心 $\vec{r}$ 处极短的时间内受到一冲量 $\vec{I}$ 的作用，这个冲量将直接引起速度和角速度的变化。</p>
+<p>首先，这个冲量相对于质心的冲量矩为</p>
+<script type="math/tex; mode=display">
+    \vec{H} = \vec{r} \times \vec{I}</script><p>冲量更新速度</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{v}} = \frac{\vec{I}}{M}</script><p>冲量矩更新角速度</p>
+<script type="math/tex; mode=display">
+    \Delta{\vec{w}} = \frac{\vec{H}}{I}</script><p>最后需要提一句，距离质点 $\vec{r}$ 处在全局坐标系的速度为</p>
+<script type="math/tex; mode=display">
+    \vec{v}_p = \vec{v} + \vec{w} \times \vec{r}</script><blockquote>
+<p>这些概念和公式并不复杂，只是有些时候难以准确记忆。罗列公式的意义也就在于此</p>
+</blockquote>
+<h2 id="三、碰撞约束"><a href="#三、碰撞约束" class="headerlink" title="三、碰撞约束"></a>三、碰撞约束</h2><p>约束是物理引擎中的重要概念，指的是在一些情况下，通过某些手段，改变物体的位置、速度等数据，实现物体满足某种限制效果的方法。</p>
+<p>本部分专门介绍碰撞约束，研究物体与物体发生碰撞后，限制物体不相互穿透的方法。我们的输入是碰撞的物体的物理属性、接触点、碰撞法线和穿透深度；输出是对碰撞物体的速度、角速度进行的修改。一般来说，物理引擎使用冲量对物体速度进行修改。</p>
+<h3 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h3><p>我们首先考虑一个简单的问题，两个小球在平面上发生正碰，他们的初始速度分别为 $\vec{v}_a, \vec{v}_b$，由 A 到 B 的碰撞法线为 $\vec{n}$。恢复系数为 $C_r$。他们碰撞后速度改变，这等效于对两者施加怎样的冲量？</p>
+<p>首先，我们计算两物体的相对速度</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{v}_{ab} = \vec{v}_b - \vec{v}_a
+\end{equation}</script><p>那么反弹后的相对速度应为</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_{ab} = -C_r \vec{v}_{ab}
+\end{equation}</script><p>另一方面我们要对两物体施加冲量，因为牛顿第三定理，两个作用力等大反向，因此冲量的大小也相等，设为 $\lambda_n$</p>
+<p>则冲量的作用效果为</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_a = \vec{v}_a - \frac{\lambda_n \vec{n}}{m_a}
+\end{equation}</script><script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_b = \vec{v}_b + \frac{\lambda_n \vec{n}}{m_b}
+\end{equation}</script><p>$(4)-(3)$ 得</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \vec{u}_b - \vec{u}_a = \vec{v}_b - \vec{v}_a + (\frac{1}{m_a} + \frac{1}{m_b}) \lambda_n \vec{n}
+\end{equation}</script><p>带入 $(1), (2)$ 式得</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \lambda_n = \frac{-(1+C_r)\vec{v}_{ab}}{(\frac{1}{m_a} + \frac{1}{m_b})\vec{n}}
+\end{equation}</script><p>等式右侧上下同点乘 $\vec{n}$ 得</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+    \lambda_n = \frac{-(1+C_r)(\vec{v}_b - \vec{v}_a) \cdot \vec{n}}{(\frac{1}{m_a} + \frac{1}{m_b})}
+\end{equation}</script><p>因此我们只需对物体 A 施加 $-\lambda_n \vec{n}$，对 B 施加 $\lambda_n \vec{n}$ 大小的冲量就足以实现碰撞后分开的约束效果。</p>
+<h3 id="刚体力学的碰撞约束"><a href="#刚体力学的碰撞约束" class="headerlink" title="刚体力学的碰撞约束"></a>刚体力学的碰撞约束</h3><p>上一小节的例子只考虑了一个很简化的情况。只有正碰，而没有考虑斜碰时的摩擦力和旋转等问题。更一般的公式是如下所示的：</p>
+<p>首先我们定义切向方向，它是与碰撞法线垂直，且位于速度同侧的单位向量或零向量，即</p>
+<script type="math/tex; mode=display">
+    \vec{v}_R = \vec{v}_b - \vec{v}_a</script><script type="math/tex; mode=display">
+    \vec{t} = normalize(\vec{v}_R - (\vec{v}_R \cdot \vec{n}) \vec{n})</script><p>那么法向的冲量大小为</p>
+<script type="math/tex; mode=display">
+    \lambda_n = \frac{-(1+C_r)(\vec{v}_b - \vec{v}_a) \cdot \vec{n}}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{n})^2}{I_a} + \frac{(\vec{r}_b \times \vec{n})^2}{I_b}}</script><p>切向的冲量大小为</p>
+<script type="math/tex; mode=display">
+    \lambda_t = \frac{-(\vec{v}_b - \vec{v}_a) \cdot \vec{t}}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{t})^2}{I_a} + \frac{(\vec{r}_b \times \vec{t})^2}{I_b}}</script><p>其中 $\vec{r}_a, \vec{r}_b$ 表示从物体质心到接触点的位置向量。</p>
+<blockquote>
+<p>注意两个公式中 $\vec{n}$ 和 $\vec{t}$ 的不同。并且注意这里的速度 $\vec{v}_a, \vec{v}_b$ 考虑了角速度，即</p>
+<script type="math/tex; mode=display">
+    \vec{v} = \vec{v}_{\text{linear}} + \vec{w}_{\text{rotate}} \times \vec{r}</script></blockquote>
+<p>这样只要对物体 A 施加 $-(\lambda_n \vec{n} + \lambda_t \vec{t})$，对物体 B 施加 $\lambda_n \vec{n} + \lambda_t \vec{t}$ 大小的冲量就可以实现物体的碰撞的约束。</p>
+<p>值得注意的是，我们在上面的公式中多次看到质量的倒数和转动惯量的倒数，这一数值在物理引擎中经常使用，我们可以将其在一开始便计算并储存起来。另外，冲量等式中分母部分也较为常见，我们同样可以将其提出作为单独的参数。此参数被称为（法向/切向）有效质量。</p>
+<script type="math/tex; mode=display">
+    M_n^{-1} = \frac{1}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{n})^2}{I_a} + \frac{(\vec{r}_b \times \vec{n})^2}{I_b}}</script><script type="math/tex; mode=display">
+    M_t^{-1} = \frac{1}{\frac{1}{m_a} + \frac{1}{m_b} + \frac{(\vec{r}_a \times \vec{t})^2}{I_a} + \frac{(\vec{r}_b \times \vec{t})^2}{I_b}}</script><p>我们修改原有的 Body 类<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">self.mass = density * get_area(self.points)</span><br><span class="line">self.inv_mass = <span class="number">1</span> / self.mass <span class="comment"># add inv_mass</span></span><br><span class="line">self.inertia = get_moments_of_inertia(self.points, self.mass)</span><br><span class="line">self.inv_inertia = <span class="number">1</span> / self.inertia <span class="comment"># add inv_inertia</span></span><br></pre></td></tr></table></figure></p>
+<p>并编写计算有效质量的函数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_effective_mass</span>(<span class="params">body_a, ra, body_b, rb, unit_vect</span>):</span><br><span class="line">    ma = body_a.inv_mass</span><br><span class="line">    mb = body_b.inv_mass</span><br><span class="line"></span><br><span class="line">    ia = (np.cross(ra, unit_vect))**<span class="number">2</span> * body_a.inv_inertia</span><br><span class="line">    ib = (np.cross(rb, unit_vect))**<span class="number">2</span> * body_b.inv_inertia</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> / (ma + mb + ia + ib)</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>unit_vect</code> 表示切向量或者法向量。</p>
+<h3 id="摩擦力的模拟"><a href="#摩擦力的模拟" class="headerlink" title="摩擦力的模拟"></a>摩擦力的模拟</h3><p>很多时候我们还需要考虑摩擦力的影响，这样我们就需要对切向的冲量进行调整。具体来说，我们假设最大静摩擦系数等于动摩擦系数，那么就需要满足</p>
+<script type="math/tex; mode=display">
+    F_f \le \mu F_n</script><blockquote>
+<p>注意 $F_f, F_n$ 是力的大小，不考虑方向</p>
+</blockquote>
+<p>不等式两边同乘 $\Delta{t}$ 就变成冲量不等式，即</p>
+<script type="math/tex; mode=display">
+    \lambda_t \le \mu \lambda_n</script><p>因此对摩擦力的限制即为</p>
+<script type="math/tex; mode=display">
+    \lambda'_t = clamp_{[-\mu\lambda_n, \mu\lambda_n]}(\lambda_t)</script><blockquote>
+<p>clamp 函数将 $\lambda_t$ 限制在区间 $[-\mu\lambda_n, \mu\lambda_n]$ 间。</p>
+</blockquote>
+<h3 id="速度约束"><a href="#速度约束" class="headerlink" title="速度约束"></a>速度约束</h3><p>据此我们可以编写实施约束的代码。首先，我们将碰撞相关的信息打包成一个类。在物理引擎理论中，这似乎被称作 Manifold。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Manifold</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, body_a, body_b, collide_result</span>):</span><br><span class="line">        self.body_a = body_a</span><br><span class="line">        self.body_b = body_b</span><br><span class="line">        self.normal, self.contact_points = collide_result</span><br><span class="line"></span><br><span class="line">        self.ra = []</span><br><span class="line">        self.rb = []</span><br><span class="line">        <span class="keyword">for</span> point, depth <span class="keyword">in</span> self.contact_points:</span><br><span class="line">            self.ra.append(point - body_a.position)</span><br><span class="line">            self.rb.append(point - body_b.position)</span><br></pre></td></tr></table></figure><br>其中传入的 <code>collide_result</code> 参数即 <code>sat3</code> 函数的输出。</p>
+<p>接着，我们编写碰撞中约束速度的函数：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">velocity_constrain</span>(<span class="params">manifold</span>):</span><br><span class="line">    body_a = manifold.body_a</span><br><span class="line">    body_b = manifold.body_b</span><br><span class="line">    contact_points = manifold.contact_points</span><br><span class="line">    n = manifold.normal</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(contact_points)):</span><br><span class="line">        p, depth = contact_points[i]</span><br><span class="line"></span><br><span class="line">        ra = manifold.ra[i]</span><br><span class="line">        rb = manifold.rb[i]</span><br><span class="line"></span><br><span class="line">        va = body_a.v + cross_product(body_a.w, ra)</span><br><span class="line">        vb = body_b.v + cross_product(body_b.w, rb)</span><br><span class="line"></span><br><span class="line">        rv = vb - va</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> np.dot(rv, n) &gt; <span class="number">0</span>: <span class="comment"># 如果速度方向背离了碰撞方向，则说明物体已经分离</span></span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        </span><br><span class="line">        t = normalize(rv - np.dot(rv, n) * n)</span><br><span class="line"></span><br><span class="line">        effective_mass_n = get_effective_mass(body_a, ra, body_b, rb, n)</span><br><span class="line">        effective_mass_t = get_effective_mass(body_a, ra, body_b, rb, t)</span><br><span class="line"></span><br><span class="line">        cr = <span class="built_in">min</span>(body_a.restitution, body_b.restitution)</span><br><span class="line"></span><br><span class="line">        lambda_n = -(<span class="number">1</span> + cr) * np.dot(rv, n) * effective_mass_n</span><br><span class="line"></span><br><span class="line">        body_a.apply_impulse(-lambda_n * n, p)</span><br><span class="line">        body_b.apply_impulse(lambda_n * n, p)</span><br><span class="line"></span><br><span class="line">        lambda_t = - np.dot(rv, t) * effective_mass_t</span><br><span class="line"></span><br><span class="line">        mu = np.sqrt(body_a.friction * body_b.friction)</span><br><span class="line"></span><br><span class="line">        max_friction = <span class="built_in">abs</span>(mu * lambda_n)</span><br><span class="line"></span><br><span class="line">        lambda_t = clamp(lambda_t, -max_friction, max_friction)</span><br><span class="line"></span><br><span class="line">        body_a.apply_impulse(-lambda_t * t, p)</span><br><span class="line">        body_b.apply_impulse(lambda_t * t, p)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cross_product</span>(<span class="params">s, a</span>):</span><br><span class="line">    <span class="keyword">return</span> np.array([-s * a[<span class="number">1</span>], s * a[<span class="number">0</span>]])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">clamp</span>(<span class="params">value, smallest, largest</span>):</span><br><span class="line">    <span class="keyword">if</span> value &lt; smallest:</span><br><span class="line">        <span class="keyword">return</span> smallest</span><br><span class="line">    <span class="keyword">elif</span> largest &lt; value:</span><br><span class="line">        <span class="keyword">return</span> largest</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> value</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p><strong>十分需要注意的是</strong>，碰撞约束的求解是一个迭代的过程，这是因为每次碰撞检测只会考虑某两个物体；对于多对物体，我们需要先求出所有发生碰撞的物体对，将碰撞信息存入 <code>Manifold</code> 类中。接着多次迭代，每一次迭代对所有的 Manifold 求解速度约束。只有这样才能尽量求得全局的约束结果。</p>
+</blockquote>
+<h3 id="穿透问题与位置约束"><a href="#穿透问题与位置约束" class="headerlink" title="穿透问题与位置约束"></a>穿透问题与位置约束</h3><p>容易发现，我们上面的代码并没有使用穿透深度。在一些情况下，因为在碰撞后的第一帧就进行了速度处理，此时穿透深度较小，很快就能修正，所以视觉上并无大碍。但很多时候，如施加了重力的情况下，单纯的修改速度不足以抵消重力的影响，此时穿透深度会越来越大，最终会使物体陷入地面。</p>
+<p>因此，我们除了进行速度约束以外，还需要根据穿透深度进行位置的修正。这就是位置约束。</p>
+<p>我们设当前穿透深度为 $x$，最大允许穿透深度为 $x_{max}$，则有</p>
+<script type="math/tex; mode=display">
+    \lambda_{pos} = \beta M^{-1}_{n} max(x - x_{max}, 0) \quad (0 \lt \beta \lt 1)</script><p>其中 $\beta$ 是人为穿透的解决程度（虽然不太理解这有什么意义）。</p>
+<p>类似于冲量，最终的位置的变化量为</p>
+<script type="math/tex; mode=display">
+    \Delta \vec{p}_a = -\frac{\lambda_{pos}\vec{n}}{m_a}</script><script type="math/tex; mode=display">
+    \Delta \vec{p}_b = \frac{\lambda_{pos}\vec{n}}{m_b}</script><blockquote>
+<p>本方法的数学原理并不清楚，但似乎 box2d 中是这样做的？</p>
+</blockquote>
+<p>据此我们能写出代码。需要注意一点，位置变化会引起接触点的变化，我们希望得知接触点分离的时刻，这通过保留物体质心到接触点的向量实现。这也是我们在 <code>Manifold</code> 类中加入 <code>ra, rb</code> 的原因。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">position_constrain</span>(<span class="params">manifold</span>):</span><br><span class="line">    body_a = manifold.body_a</span><br><span class="line">    body_b = manifold.body_b</span><br><span class="line">    contact_points = manifold.contact_points</span><br><span class="line">    n = manifold.normal</span><br><span class="line"></span><br><span class="line">    bias_factor = <span class="number">0.8</span></span><br><span class="line">    max_depth = <span class="number">0.005</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(contact_points)):</span><br><span class="line">        p, depth = contact_points[i]</span><br><span class="line"></span><br><span class="line">        ra = manifold.ra[i]</span><br><span class="line">        rb = manifold.rb[i]</span><br><span class="line"></span><br><span class="line">        pa = ra + body_a.position</span><br><span class="line">        pb = rb + body_b.position</span><br><span class="line"></span><br><span class="line">        c = pa - pb</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> np.dot(c, n) &lt; <span class="number">0</span>: <span class="comment"># 判断接触点是否分离</span></span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        bias = bias_factor * <span class="built_in">max</span>((depth - max_depth), <span class="number">0</span>)</span><br><span class="line">        lambda_p = get_effective_mass(body_a, ra, body_b, rb, n) * bias</span><br><span class="line"></span><br><span class="line">        correction = lambda_p * n</span><br><span class="line"></span><br><span class="line">        body_a.position = body_a.position - body_a.inv_mass * correction</span><br><span class="line"></span><br><span class="line">        body_b.position = body_b.position + body_b.inv_mass * correction</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>位置约束的求解也是一个迭代过程。发生在速度约束的迭代完成后。</p>
+</blockquote>
+<h2 id="四、总结"><a href="#四、总结" class="headerlink" title="四、总结"></a>四、总结</h2><p>这一篇文章内容较多，简单介绍了一下刚体力学的知识，接着主要是碰撞约束的求解方法。在一些应详细解释的地方因能力不足，未能详述，实在抱歉。但还是希望这篇文章能对自己和他人有所帮助吧。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E5%AD%A6/" rel="tag"># 数学</a>
+              <a href="/tags/%E7%89%A9%E7%90%86%E5%BC%95%E6%93%8E/" rel="tag"># 物理引擎</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/f58966b1/" rel="prev" title="2D物理引擎基础之碰撞检测">
+      <i class="fa fa-chevron-left"></i> 2D物理引擎基础之碰撞检测
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/afa82b33/" rel="next" title="Java和C#中的反射机制">
+      Java和C#中的反射机制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%88%9A%E4%BD%93%E5%8A%9B%E5%AD%A6"><span class="nav-number">2.</span> <span class="nav-text">二、刚体力学</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9E%E7%BB%AD%E7%9A%84%E5%88%9A%E4%BD%93%E5%8A%9B%E5%AD%A6"><span class="nav-number">2.1.</span> <span class="nav-text">连续的刚体力学</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%BB%E6%95%A3%E7%9A%84%E5%88%9A%E4%BD%93%E6%A8%A1%E6%8B%9F"><span class="nav-number">2.2.</span> <span class="nav-text">离散的刚体模拟</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%9B%E7%9A%84%E8%A7%86%E8%A7%92"><span class="nav-number">2.2.1.</span> <span class="nav-text">力的视角</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%B2%E9%87%8F%E7%9A%84%E8%A7%86%E8%A7%92"><span class="nav-number">2.2.2.</span> <span class="nav-text">冲量的视角</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%A2%B0%E6%92%9E%E7%BA%A6%E6%9D%9F"><span class="nav-number">3.</span> <span class="nav-text">三、碰撞约束</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">3.1.</span> <span class="nav-text">一个例子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9A%E4%BD%93%E5%8A%9B%E5%AD%A6%E7%9A%84%E7%A2%B0%E6%92%9E%E7%BA%A6%E6%9D%9F"><span class="nav-number">3.2.</span> <span class="nav-text">刚体力学的碰撞约束</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%91%A9%E6%93%A6%E5%8A%9B%E7%9A%84%E6%A8%A1%E6%8B%9F"><span class="nav-number">3.3.</span> <span class="nav-text">摩擦力的模拟</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9F%E5%BA%A6%E7%BA%A6%E6%9D%9F"><span class="nav-number">3.4.</span> <span class="nav-text">速度约束</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A9%BF%E9%80%8F%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BD%8D%E7%BD%AE%E7%BA%A6%E6%9D%9F"><span class="nav-number">3.5.</span> <span class="nav-text">穿透问题与位置约束</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">四、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

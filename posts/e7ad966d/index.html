@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、歌词生成项目想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 最浅显易懂的 PyTorch 深度学习入门 的启发，并利用 up 主提供的 源码 中的数据集。 相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。 二、数据的获取（1）编写数据集原作者用爬虫获取的歌词数据被">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用pytorch实现简单循环神经网络">
+<meta property="og:url" content="https://wokron.github.io/posts/e7ad966d/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、歌词生成项目想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 最浅显易懂的 PyTorch 深度学习入门 的启发，并利用 up 主提供的 源码 中的数据集。 相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。 二、数据的获取（1）编写数据集原作者用爬虫获取的歌词数据被">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-17T13:02:34.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.396Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="pytorch">
+<meta property="article:tag" content="rnn">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/e7ad966d/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>用pytorch实现简单循环神经网络 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/e7ad966d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          用pytorch实现简单循环神经网络
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-17 21:02:34" itemprop="dateCreated datePublished" datetime="2023-01-17T21:02:34+08:00">2023-01-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、歌词生成项目"><a href="#一、歌词生成项目" class="headerlink" title="一、歌词生成项目"></a>一、歌词生成项目</h2><p>想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1oq4y1E7Vd">最浅显易懂的 PyTorch 深度学习入门</a> 的启发，并利用 up 主提供的 <a target="_blank" rel="noopener" href="https://github.com/rossning92/ai-lyrics-writing">源码</a> 中的数据集。</p>
+<p>相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。</p>
+<h2 id="二、数据的获取"><a href="#二、数据的获取" class="headerlink" title="二、数据的获取"></a>二、数据的获取</h2><h3 id="（1）编写数据集"><a href="#（1）编写数据集" class="headerlink" title="（1）编写数据集"></a>（1）编写数据集</h3><p>原作者用爬虫获取的歌词数据被保存在 lyrics.txt 文件中。我们要将数据按可供训练的模型加载。具体来说</p>
+<ul>
+<li>我们希望每一次获取数据，都能得到输入和目标输出（对本项目来说就是两段有一个文字偏差的序列）</li>
+<li>并且将文字数字化，即 nlp 的 tokenize</li>
+<li>为了实现批量训练，需要每次获取定长的序列</li>
+</ul>
+<p>为了实现第一点，我们要继承 dataset；实现第二点，需要根据数据建立字符表；实现第三点，需要定长截取歌词句子的一部分。</p>
+<blockquote>
+<p>另外，为了减少每次加载数据所用的时间，还需要将数据集的信息持久化。</p>
+</blockquote>
+<p>我们的 LyricsDataset 具体实现如下。首先，我们在构造函数中通过传入的路径加载数据，判断是否已经存在处理过后的数据，如存在则加载；如不存在则读入原始数据并处理</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LyricsDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, root_path, seq_size</span>):</span><br><span class="line">        self.seq_size = seq_size</span><br><span class="line"></span><br><span class="line">        processed_name = <span class="string">&quot;/processed/lyrics.pth&quot;</span></span><br><span class="line">        raw_name = <span class="string">&quot;/raw/lyrics.txt&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> os.path.exists(root_path + processed_name):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;find processed data&quot;</span>)</span><br><span class="line">            self.__load_processed_data(root_path + processed_name)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;processed data not found, will process raw data&quot;</span>)</span><br><span class="line">            self.__load_raw_data(root_path + raw_name)</span><br><span class="line">            self.__save_processed_data(root_path + processed_name)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__load_raw_data</span>(<span class="params">self, file_path</span>):</span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            sentences = f.readlines()</span><br><span class="line"></span><br><span class="line">        self.vocab = &#123;<span class="string">&quot;&lt;sos&gt;&quot;</span>: <span class="number">0</span>, <span class="string">&quot;&lt;eos&gt;&quot;</span>: <span class="number">1</span>&#125;</span><br><span class="line">        self.data = []</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> sentence <span class="keyword">in</span> sentences:</span><br><span class="line">            sentence = sentence.strip()</span><br><span class="line">            self.data.append(self.vocab[<span class="string">&quot;&lt;sos&gt;&quot;</span>])</span><br><span class="line">            <span class="keyword">for</span> char <span class="keyword">in</span> sentence:</span><br><span class="line">                <span class="keyword">if</span> char <span class="keyword">not</span> <span class="keyword">in</span> self.vocab:</span><br><span class="line">                    self.vocab[char] = <span class="built_in">len</span>(self.vocab)</span><br><span class="line">                self.data.append(self.vocab[char])</span><br><span class="line">            self.data.append(self.vocab[<span class="string">&quot;&lt;eos&gt;&quot;</span>])</span><br><span class="line"></span><br><span class="line">        self.index2word = &#123;u: v <span class="keyword">for</span> v, u <span class="keyword">in</span> self.vocab.items()&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__save_processed_data</span>(<span class="params">self, file_path</span>):</span><br><span class="line">        torch.save(&#123;<span class="string">&quot;data&quot;</span>: self.data, <span class="string">&quot;vocab&quot;</span>: self.vocab&#125;, file_path)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__load_processed_data</span>(<span class="params">self, file_path</span>):</span><br><span class="line">        data_dict = torch.load(file_path)</span><br><span class="line">        self.data = data_dict[<span class="string">&quot;data&quot;</span>]</span><br><span class="line">        self.vocab = data_dict[<span class="string">&quot;vocab&quot;</span>]</span><br><span class="line">        self.index2word = &#123;u: v <span class="keyword">for</span> v, u <span class="keyword">in</span> self.vocab.items()&#125;</span><br></pre></td></tr></table></figure>
+<p>我们将所有的字转化为数值并按顺序添加到 <code>data</code> 属性中，这将有助于后续操作。另外我们还提供了由数值转化回字的字典，这是翻转（nlp 意义下的）字典的键值得到的。</p>
+<p>在保存和加载数据的时候，我们使用了 <code>torch</code> 的 <code>save()</code> 和 <code>load()</code> 方法，这些方法提供了简单的序列化和反序列化功能，并非只能保存模型的参数。另外在保存模型的时候，也可以通过字典同时保存一些附加信息。这将在之后有所体现。</p>
+<blockquote>
+<p>这里还可以补充两个 python 中的知识。</p>
+<ol>
+<li>python 中也有类方法的访问修饰，在方法名前有两个下划线的是 <code>private</code>，一个下划线的是 <code>protected</code>，没有下划线的是 <code>public</code></li>
+<li>for 可用于容器中，如 <code>arr2 = [i+1 for i in arr]</code>，可用于对容器中所有元素做某种处理并保存在新容器中。代码中有使用 <code>index2word = &#123;u: v for v, u in self.vocab.items()&#125;</code>。注意对于字典需要调用 <code>items()</code> 以表示对键值对的操作，否则默认为对键集合操作。</li>
+</ol>
+</blockquote>
+<p>接着一如往常，我们要实现 <code>__getitem__</code> 和 <code>__len__</code>。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    start = item * self.seq_size + <span class="number">1</span></span><br><span class="line">    end = start + self.seq_size</span><br><span class="line"></span><br><span class="line">    input_seq = self.data[start:end]</span><br><span class="line">    output_seq = self.data[start + <span class="number">1</span>:end + <span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> torch.tensor(input_seq), torch.tensor(output_seq)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">int</span>((<span class="built_in">len</span>(self.data) - <span class="number">1</span>) / self.seq_size)</span><br></pre></td></tr></table></figure>
+<p>在初始化的时候，我们传入了 <code>seq_size</code> 参数用于指定一条文字转化而成的序列的长度。在通过下标读取数据的过程中，我们也以序列作为基本的数据单元。另外请注意，我们为了方便后续操作，将序列转化为了一维的张量（<code>[seq_size]</code>）。</p>
+<p>在编写获取长度的函数时，原作者的实现似乎除了些问题。这里指示的长度应该是总共能获取的序列的个数，肯定不能仅仅 <code>len(self.data)</code> 就可以了。应该是字符的总数除以序列的长度向下取整。<code>len(self.data) - 1</code> 考虑了输入和目标一个字符的偏差。</p>
+<h3 id="（2）划分数据集"><a href="#（2）划分数据集" class="headerlink" title="（2）划分数据集"></a>（2）划分数据集</h3><p>我们现在能获取数据集了，可是这个数据集包含了所有数据，我们还希望划分出训练集和测试集。<code>torch</code> 提供一个随机划分的方法 <code>random_split</code>，但这无法在程序多次执行时保持不变。不过我们可以选择将划分后的数据集保存。这里我们定义一个函数</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_or_split_dataset</span>(<span class="params">dataset_root, dataset, lengths: <span class="built_in">list</span></span>):</span><br><span class="line">    processed_path = dataset_root + <span class="string">&quot;/processed&quot;</span></span><br><span class="line">    train_set_path = processed_path + <span class="string">&quot;/train.pth&quot;</span></span><br><span class="line">    test_set_path = processed_path + <span class="string">&quot;/test.pth&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(train_set_path) <span class="keyword">or</span> <span class="keyword">not</span> os.path.exists(test_set_path):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;train and test datasets not found, start random split&quot;</span>)</span><br><span class="line">        train_set, test_set = random_split(dataset, lengths)</span><br><span class="line">        torch.save(train_set, train_set_path)</span><br><span class="line">        torch.save(test_set, test_set_path)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;find train and test datasets&quot;</span>)</span><br><span class="line">        train_set = torch.load(train_set_path)</span><br><span class="line">        test_set = torch.load(test_set_path)</span><br><span class="line">    <span class="keyword">return</span> train_set, test_set</span><br></pre></td></tr></table></figure>
+<p>就可以同时实现划分或加载了<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">train_set, test_set = load_or_split_dataset(</span><br><span class="line">    dataset_root</span><br><span class="line">    lyrics_dataset,</span><br><span class="line">    [train_set_size, test_set_size])</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）加载数据"><a href="#（3）加载数据" class="headerlink" title="（3）加载数据"></a>（3）加载数据</h3><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_loader = DataLoader(train_set, batch_size, drop_last=<span class="literal">True</span>)</span><br><span class="line">test_loader = DataLoader(test_set, batch_size, drop_last=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>按照常规创建 <code>DataLoader</code>。注意需要加上 <code>drop_last=True</code>，否则 RNN 网络可能会因为无法批处理而报错，类似<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RuntimeError: Expected hidden[0] size (2, 20, 256), got (2, 50, 256)</span><br></pre></td></tr></table></figure></p>
+<p>此时每次从 DataLoader 中获取的数据为两个二维张量（<code>[batch_size, seq_size]</code>）</p>
+<h2 id="三、网络的搭建"><a href="#三、网络的搭建" class="headerlink" title="三、网络的搭建"></a>三、网络的搭建</h2><p>先给出总体的模型结构，这个模型只使用了 LSTM 循环神经网络加上线性层作为输出，结构较为简单，与原作者的模型相比变化不大。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LyricsModule</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size, hidden_size, num_rnn_layers</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        self.embed = nn.Embedding(vocab_size, embed_size)</span><br><span class="line">        self.rnn = nn.LSTM(embed_size, hidden_size, num_rnn_layers, batch_first=<span class="literal">True</span>)</span><br><span class="line">        self.linear = nn.Sequential(</span><br><span class="line">            nn.Linear(hidden_size, hidden_size),</span><br><span class="line">            nn.Linear(hidden_size, vocab_size)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, <span class="built_in">input</span>, hidden=<span class="literal">None</span></span>):</span><br><span class="line">        word_vec = self.embed(<span class="built_in">input</span>)</span><br><span class="line">        x, hidden_next = self.rnn(word_vec, hidden)</span><br><span class="line">        predict = self.linear(x)</span><br><span class="line">        <span class="keyword">return</span> predict, hidden_next</span><br></pre></td></tr></table></figure></p>
+<p>接下来要分层对该模型进行介绍。</p>
+<h3 id="（1）Embedding-层的使用"><a href="#（1）Embedding-层的使用" class="headerlink" title="（1）Embedding 层的使用"></a>（1）Embedding 层的使用</h3><p>在输入的一开始，我们使用了一层 <code>Embedding</code> 层。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.embed = nn.Embedding(vocab_size, embed_size)</span><br></pre></td></tr></table></figure><br>创建 <code>Embedding</code> 层需要两个必须的参数，<code>num_embeddings</code> 和 <code>embedding_dim</code>。这一层的作用，本质上是创建一个数值到向量的映射，<code>num_embeddings</code> 即为映射最多的数量；效果上，一是给传入的张量升高一个维度，维度的大小为 <code>embedding_dim</code>，二是给每个词指定一个词向量，这个词向量还可以在反向传播的过程中不断调整。</p>
+<p>对于传入模型的二维张量，经过 <code>Embedding</code> 层后变为三维张量（<code>[batch_size, seq_size, embedding_dim]</code>）</p>
+<h3 id="（2）LSTM-层的使用"><a href="#（2）LSTM-层的使用" class="headerlink" title="（2）LSTM 层的使用"></a>（2）LSTM 层的使用</h3><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.rnn = nn.LSTM(embed_size, hidden_size, num_rnn_layers, batch_first=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>LSTM 的数学表示在上一篇文章中就有说明，这里只看 pytorch 中 LSTM 的使用。<code>LSTM</code> 层输入一个三维张量，输出一个同等大小的三维张量，以及隐藏层。<code>LSTM</code> 有两个必须的参数 <code>input_size</code> 和 <code>hidden_size</code> ，分别指输入的特征数（第三维大小）和隐藏层的维度大小。在本模型使用时还使用了一个可选参数 <code>num_layers</code> 表示 <code>LSTM</code> 的层数。</p>
+<p>有几点需要注意的地方。</p>
+<ul>
+<li>如果不添加 <code>batch_first=True</code>，则 <code>LSTM</code> 层默认第一位为 seq_size，第二维才是 batch_size。添加后才为 <code>[batch_size, seq_size, embedding_dim]</code>。</li>
+<li><code>LSTM</code> 层以一个序列为一个输入单元，输出时就已经进行过 seq_size 次循环了。因此在训练的时候，不需要保存每一步后的隐藏状态并传递给下一步。</li>
+<li>每个隐藏状态是一个三维张量（<code>[batch_size, seq_size, hidden_size]</code>）表示对这一批中的不同序列，在经过第几次循环之后的隐藏状态。另外因为 LSTM 有两个隐藏状态 h_t 和 c_t，返回的隐藏状态实际上是一个二元组 <code>(h_t, c_t)</code>。</li>
+</ul>
+<h3 id="（3）模型的输出"><a href="#（3）模型的输出" class="headerlink" title="（3）模型的输出"></a>（3）模型的输出</h3><p>我们的目标是歌词的生成，也就是根据前一个字符判断下一个字符应该生成哪一个。那么这就需要对每一个字符的输入，对应一个字典字符数目维数的输出，选择最大的数值所对应的字符。也正是因为训练之前我们就需要确定确定的维数，所以要事先确定字典。</p>
+<p>对于张量来说，我们就是需要一个三维张量，其中第三维的维数为字典的字符总数。即 <code>[batch_size, seq_size, vocab_size]</code></p>
+<p>我们增加的线性层就将输出如此规范：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">self.linear = nn.Sequential(</span><br><span class="line">    nn.Linear(hidden_size, hidden_size),</span><br><span class="line">    nn.Linear(hidden_size, vocab_size)</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p><code>LSTM</code> 层的输出为二元组，因此不能用 <code>Sequential</code> 直接包含</p>
+</blockquote>
+<h2 id="四、更完善的训练结构"><a href="#四、更完善的训练结构" class="headerlink" title="四、更完善的训练结构"></a>四、更完善的训练结构</h2><p>在这一部分，我们希望优化代码，尽量减少每次训练时所需要的对代码的修改。首先，这需要及时对训练模型进行保存；其次我们还需要设置全局的 epoch。</p>
+<h3 id="（1）设置检查点"><a href="#（1）设置检查点" class="headerlink" title="（1）设置检查点"></a>（1）设置检查点</h3><p>我们要用 <code>torch.save()</code> 保存模型和优化器的参数，这些保存的信息称为检查点（checkpoint）。为了方便确定检查点保存模型的先后顺序，我们可以将日期加到文件的命名中。</p>
+<p>我们定义如下函数用来保存检查点<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">save_checkpoint</span>(<span class="params">root_path, module: Module, optimizer: Optimizer</span>):</span><br><span class="line">    checkpoint_name = <span class="string">&quot;checkpoint-&#123;&#125;.pth&quot;</span>.<span class="built_in">format</span>(datetime.now().strftime(<span class="string">&quot;%y%m%d-%H%M%S&quot;</span>))</span><br><span class="line">    torch.save(</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;module_state_dict&quot;</span>: module.state_dict(),</span><br><span class="line">            <span class="string">&quot;optim_state_dict&quot;</span>: optimizer.state_dict()</span><br><span class="line">        &#125;,</span><br><span class="line">        root_path + <span class="string">&quot;/&quot;</span> + checkpoint_name</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;save checkpoint file \&quot;<span class="subst">&#123;checkpoint_name&#125;</span>\&quot; success&quot;</span>)</span><br></pre></td></tr></table></figure><br>注意我们在确定检查点名字时获取了当前时间 <code>datetime.now().strftime(&quot;%y%m%d-%H%M%S&quot;)</code></p>
+<blockquote>
+<p>这里 <code>torch.save()</code> 保存的是一个字典</p>
+</blockquote>
+<p>接着我们定义函数以加载检查点数据<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_checkpoint</span>(<span class="params">checkpoint_path</span>):</span><br><span class="line">    checkpoint_info = torch.load(checkpoint_path)</span><br><span class="line">    <span class="keyword">return</span> checkpoint_info</span><br></pre></td></tr></table></figure></p>
+<p>通过检查点名称，我们可以找到最近一次训练后的数据，定义加载最近的检查点函数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_latest_checkpoint</span>(<span class="params">root_path</span>):</span><br><span class="line">    checkpoints = glob.glob(root_path + <span class="string">&quot;/checkpoint-*.pth&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> load_checkpoint(checkpoints[-<span class="number">1</span>])</span><br></pre></td></tr></table></figure></p>
+<p>这样我们每次训练时就可以加载之前最近一次训练的数据，继续训练了。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">lyrics_module = LyricsModule(vocab_size, embed_size, hidden_size, num_layers).to(device)</span><br><span class="line"></span><br><span class="line">optimizer = torch.optim.Adam(lyrics_module.parameters(), learning_rate)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> checkpoint_exist(checkpoint_root):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;find exist checkpoint, load checkpoint information&quot;</span>)</span><br><span class="line">    checkpoint_info = load_latest_checkpoint(checkpoint_root)</span><br><span class="line">    lyrics_module.load_state_dict(checkpoint_info[<span class="string">&quot;module_state_dict&quot;</span>])</span><br><span class="line">    optimizer.load_state_dict(checkpoint_info[<span class="string">&quot;optim_state_dict&quot;</span>])</span><br></pre></td></tr></table></figure>
+<h3 id="（2）连续的训练过程"><a href="#（2）连续的训练过程" class="headerlink" title="（2）连续的训练过程"></a>（2）连续的训练过程</h3><p>我们通常使用 tensorboard 查看损失函数和准确度等参数的变化趋势。但是如果每次训练时的步数都从头开始，tensorboard 的图像就会交织在一起，无法分辨。因此我们需要确定全局的步数。</p>
+<p>我们在检查点中添加 <code>total_epoch</code>  参数，表示该检查点所保存的是几轮训练后的数据。在加载检查点是，<code>total_epoch</code> 也会一并加载。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">torch.save(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;total_epoch&quot;</span>: total_epoch, <span class="comment"># here!</span></span><br><span class="line">        <span class="string">&quot;module_state_dict&quot;</span>: module.state_dict(),</span><br><span class="line">        <span class="string">&quot;optim_state_dict&quot;</span>: optimizer.state_dict()</span><br><span class="line">    &#125;,</span><br><span class="line">    root_path + <span class="string">&quot;/&quot;</span> + checkpoint_name</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>这样我们就能在训练中确定当前的全局轮数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(epoch_size):</span><br><span class="line">    epoch = i + <span class="number">1</span></span><br><span class="line">    now_total_epoch = total_epoch + epoch</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;--- start epoch <span class="subst">&#123;epoch&#125;</span>, total epoch <span class="subst">&#123;now_total_epoch&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure><br>在训练中确定全局的训练步数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">global_train_step = (now_total_epoch - <span class="number">1</span>) * total_train_step + train_step</span><br><span class="line">writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), global_train_step)</span><br><span class="line">writer.add_scalar(<span class="string">&quot;train accuracy&quot;</span>, accuracy, global_train_step)</span><br></pre></td></tr></table></figure></p>
+<p>同样的在测试中<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">writer.add_scalar(<span class="string">&quot;test loss&quot;</span>, avg_loss, now_total_epoch)</span><br><span class="line">writer.add_scalar(<span class="string">&quot;test accuracy&quot;</span>, avg_accuracy, now_total_epoch)</span><br></pre></td></tr></table></figure></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+              <a href="/tags/pytorch/" rel="tag"># pytorch</a>
+              <a href="/tags/rnn/" rel="tag"># rnn</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/b2ab0f69/" rel="prev" title="机器学习nlp基本知识">
+      <i class="fa fa-chevron-left"></i> 机器学习nlp基本知识
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/367b3d22/" rel="next" title="2D物理引擎基础之物理属性">
+      2D物理引擎基础之物理属性 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%AD%8C%E8%AF%8D%E7%94%9F%E6%88%90%E9%A1%B9%E7%9B%AE"><span class="nav-number">1.</span> <span class="nav-text">一、歌词生成项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%95%B0%E6%8D%AE%E7%9A%84%E8%8E%B7%E5%8F%96"><span class="nav-number">2.</span> <span class="nav-text">二、数据的获取</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E7%BC%96%E5%86%99%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">2.1.</span> <span class="nav-text">（1）编写数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E5%88%92%E5%88%86%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">2.2.</span> <span class="nav-text">（2）划分数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E5%8A%A0%E8%BD%BD%E6%95%B0%E6%8D%AE"><span class="nav-number">2.3.</span> <span class="nav-text">（3）加载数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%BD%91%E7%BB%9C%E7%9A%84%E6%90%AD%E5%BB%BA"><span class="nav-number">3.</span> <span class="nav-text">三、网络的搭建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89Embedding-%E5%B1%82%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">3.1.</span> <span class="nav-text">（1）Embedding 层的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89LSTM-%E5%B1%82%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">3.2.</span> <span class="nav-text">（2）LSTM 层的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E6%A8%A1%E5%9E%8B%E7%9A%84%E8%BE%93%E5%87%BA"><span class="nav-number">3.3.</span> <span class="nav-text">（3）模型的输出</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%9B%B4%E5%AE%8C%E5%96%84%E7%9A%84%E8%AE%AD%E7%BB%83%E7%BB%93%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">四、更完善的训练结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E8%AE%BE%E7%BD%AE%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">4.1.</span> <span class="nav-text">（1）设置检查点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E8%BF%9E%E7%BB%AD%E7%9A%84%E8%AE%AD%E7%BB%83%E8%BF%87%E7%A8%8B"><span class="nav-number">4.2.</span> <span class="nav-text">（2）连续的训练过程</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

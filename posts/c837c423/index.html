@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、对象关系映射（ORM）面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。  面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。  二、django 的 ORM 实现djang">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Django创建表结构">
+<meta property="og:url" content="https://wokron.github.io/posts/c837c423/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、对象关系映射（ORM）面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。  面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。  二、django 的 ORM 实现djang">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-09T05:44:16.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.376Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="Django">
+<meta property="article:tag" content="数据库">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/c837c423/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Django创建表结构 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/c837c423/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Django创建表结构
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-09 13:44:16" itemprop="dateCreated datePublished" datetime="2023-01-09T13:44:16+08:00">2023-01-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、对象关系映射（ORM）"><a href="#一、对象关系映射（ORM）" class="headerlink" title="一、对象关系映射（ORM）"></a>一、对象关系映射（ORM）</h2><p>面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。</p>
+<blockquote>
+<p>面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。</p>
+</blockquote>
+<h2 id="二、django-的-ORM-实现"><a href="#二、django-的-ORM-实现" class="headerlink" title="二、django 的 ORM 实现"></a>二、django 的 ORM 实现</h2><p>django 通过 <code>models.Model</code> 类来对应数据库中的表结构，如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br></pre></td></tr></table></figure><br>即表示了 <code>User</code> 类，也对应了数据库中的 user 表。django 会根据类的声明自动在数据库中建表。</p>
+<p>django 用类中的属性来表示表的列字段。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    password = models.CharField(max_length=<span class="number">50</span>)</span><br></pre></td></tr></table></figure><br>定义了 user 表的主键、名字、密码信息。</p>
+<p>表间关系通过类与其属性表示，如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    password = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    courses = models.ManyToManyField(to=<span class="string">&quot;Course&quot;</span>)</span><br></pre></td></tr></table></figure><br><code>courses</code> 属性表示用户具有的课程，反映了用户与课程之间的关系。</p>
+<h2 id="三、类属性与数据库字段的对应"><a href="#三、类属性与数据库字段的对应" class="headerlink" title="三、类属性与数据库字段的对应"></a>三、类属性与数据库字段的对应</h2><p>如上一节所述，django 建立了类属性与数据库字段之间的对应关系。常见的如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">models.CharField</span><br><span class="line">models.TextField</span><br><span class="line">models.IntegerField</span><br><span class="line">models.FloatField</span><br></pre></td></tr></table></figure><br>就对应了数据库中的 char(n)，text，int，float 类型。不一一详述。</p>
+<h2 id="四、主键与外键"><a href="#四、主键与外键" class="headerlink" title="四、主键与外键"></a>四、主键与外键</h2><p>在表中要定义主键，作为该表一条记录的唯一标识。相应的，在 django 中定义主键需要在对应属性上添加 <code>primary_key=True</code> 参数。例如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure><br>未定义主键时，django 也会自动创建一个主键。</p>
+<p>通过外键可以设置表间的关系。外键通过属性 <code>models.ForeignKey</code> 定义。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Task</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure><br>就定义了一个外键，对数据库来说，保存的是 course 表中的主键信息。但对 Task 类来说，则是定义了一个 Course 类型的属性。但这两种观点的本质是一样的，都是建立了 task 到 course 的关系。更准确地说，是多到一的关系（不同的 task 可以对应同一个 course）。</p>
+<blockquote>
+<p>注意建立表间关系的时候，需要设置 on_delete 参数，表示外键所对应的记录被删除时，本记录的行为。在例子中 CASCADE 表示外键对应的删除后，本记录也删除。</p>
+</blockquote>
+<h2 id="五、表间关系的创建"><a href="#五、表间关系的创建" class="headerlink" title="五、表间关系的创建"></a>五、表间关系的创建</h2><p>外键是创建表间关系的基础。这一节将更深入讨论表间关系。表间关系可以分为三类，分别是一对一、多对一和多对多。可以通过如下例子进行理解：</p>
+<ul>
+<li>一对一：一个人对应唯一的身份证，一张身份证对应唯一的一个人。</li>
+<li>多对一：一个班级有许多学生，而一个学生只属于某个班级。</li>
+<li>多对多：一门课有许多的学生，一个学生会上不同的课。</li>
+</ul>
+<h3 id="一对一的创建"><a href="#一对一的创建" class="headerlink" title="一对一的创建"></a>一对一的创建</h3><p>在数据库中，一对一的关系比较随意，可以在 A 表中包含 B 表的主键，也可以在 B 表中包含 A 表的主键。只需要保证外键的唯一性即可。</p>
+<p>django 设置一对一关系，需要定义 <code>models.OneToOneField</code> 的属性。如在 <code>Person</code> 类中有<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">id_card = models.OneToOneField(to=<span class="string">&quot;IDCard&quot;</span>, on_delete=models.RESTRICT)</span><br></pre></td></tr></table></figure><br>这样就可以通过访问 <code>Person</code> 类的属性 <code>id_card</code> 来访问对应的表格数据了。</p>
+<blockquote>
+<p>models.RESTRICT 表示如果存在关系，则删除会产生异常</p>
+</blockquote>
+<h3 id="多对一的创建"><a href="#多对一的创建" class="headerlink" title="多对一的创建"></a>多对一的创建</h3><p>建立多对一关系，在数据库中需要让多的一方设置外键，包含一的一方的主键。</p>
+<p>而在 django 中，则只需要添加一个外键即可实现。如第五节中的例子<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure></p>
+<h3 id="多对多的创建"><a href="#多对多的创建" class="headerlink" title="多对多的创建"></a>多对多的创建</h3><p>多对多关系不能通过在任何一方或两方中添加外键实现。需要建立第三个表，称中间表或关系表，在该表中同时包含原来两个表的主键。</p>
+<p>django 通过添加 <code>models.ManyToManyField</code> 创建多对多关系。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Course</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.CharField(max_length=<span class="number">10</span>, primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    users = models.ManyToManyField(to=User)</span><br></pre></td></tr></table></figure><br>这样将自动创建一个中间表 course_user，包含 course 表和 user 表的主键。</p>
+<p>但是这样只能创建由 Course 到 User 的单向联系。通过 Course 可以访问 User，但从 User 却不能访问 Course。可以自行定义中间表来实现双向多对多关系。</p>
+<blockquote>
+<p>注意，如果在 User 表中添加属性 <code>courses = models.ManyToManyField(to=Courses)</code> 并不能解决问题。这只会创建另一个表 user_course，最终形成两个单向多对多关系。</p>
+</blockquote>
+<p>正确的方式是通过 <code>through=</code> 参数指定中间表。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Course</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.CharField(max_length=<span class="number">10</span>, primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    users = models.ManyToManyField(to=User, through=<span class="string">&quot;Course2User&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Course2User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br><span class="line">    user = models.ForeignKey(to=User, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure></p>
+<p>这样就可以通过中间表查询某个 <code>User</code> 对应的 <code>Course</code> 了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Django/" rel="tag"># Django</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/2c9af791/" rel="prev" title="用pytorch搭建神经网络">
+      <i class="fa fa-chevron-left"></i> 用pytorch搭建神经网络
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/94547693/" rel="next" title="Spring依赖注入">
+      Spring依赖注入 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%AF%B9%E8%B1%A1%E5%85%B3%E7%B3%BB%E6%98%A0%E5%B0%84%EF%BC%88ORM%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">一、对象关系映射（ORM）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81django-%E7%9A%84-ORM-%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">二、django 的 ORM 实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%B1%BB%E5%B1%9E%E6%80%A7%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E5%AD%97%E6%AE%B5%E7%9A%84%E5%AF%B9%E5%BA%94"><span class="nav-number">3.</span> <span class="nav-text">三、类属性与数据库字段的对应</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E4%B8%BB%E9%94%AE%E4%B8%8E%E5%A4%96%E9%94%AE"><span class="nav-number">4.</span> <span class="nav-text">四、主键与外键</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E8%A1%A8%E9%97%B4%E5%85%B3%E7%B3%BB%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">5.</span> <span class="nav-text">五、表间关系的创建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E5%AF%B9%E4%B8%80%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">5.1.</span> <span class="nav-text">一对一的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E5%AF%B9%E4%B8%80%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">5.2.</span> <span class="nav-text">多对一的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E5%AF%B9%E5%A4%9A%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">5.3.</span> <span class="nav-text">多对多的创建</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

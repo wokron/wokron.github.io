@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言——过拟合我们知道，经过一组点可以有无数条曲线。这些曲线对于这组样本点的损失函数同为 0。但是对于预测来说，这些曲线产生的结果却并不相同。这就意味着，进行梯度下降到达某一最低点时，依旧不一定能得到“最好的”预测（拟合&#x2F;分类）效果。甚至可能对于一些情况，此时的（预测&#x2F;分类）效果反而更差了。这样的情况就称为过拟合。 过拟合的存在是很合理的。从感性上讲，将机器学习的过程类比人类的认知，一个观念的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="机器学习笔记之正则化">
+<meta property="og:url" content="https://wokron.github.io/posts/6d380668/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言——过拟合我们知道，经过一组点可以有无数条曲线。这些曲线对于这组样本点的损失函数同为 0。但是对于预测来说，这些曲线产生的结果却并不相同。这就意味着，进行梯度下降到达某一最低点时，依旧不一定能得到“最好的”预测（拟合&#x2F;分类）效果。甚至可能对于一些情况，此时的（预测&#x2F;分类）效果反而更差了。这样的情况就称为过拟合。 过拟合的存在是很合理的。从感性上讲，将机器学习的过程类比人类的认知，一个观念的">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-10-08T11:27:57.000Z">
+<meta property="article:modified_time" content="2023-06-26T02:38:38.396Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="机器学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/6d380668/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>机器学习笔记之正则化 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/6d380668/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          机器学习笔记之正则化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-08 19:27:57" itemprop="dateCreated datePublished" datetime="2022-10-08T19:27:57+08:00">2022-10-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言——过拟合"><a href="#一、前言——过拟合" class="headerlink" title="一、前言——过拟合"></a>一、前言——过拟合</h2><p>我们知道，经过一组点可以有无数条曲线。这些曲线对于这组样本点的损失函数同为 0。但是对于预测来说，这些曲线产生的结果却并不相同。这就意味着，进行梯度下降到达某一最低点时，依旧不一定能得到“最好的”预测（拟合/分类）效果。甚至可能对于一些情况，此时的（预测/分类）效果反而更差了。这样的情况就称为过拟合。</p>
+<p>过拟合的存在是很合理的。从感性上讲，将机器学习的过程类比人类的认知，一个观念的形成不能超出经验之外，认知的结果永远是片面而非客观的。那么在与更广泛的客观现实接触之前，我们必然无法得知已经形成的认知是否是依旧可以应用的。</p>
+<p>这是一个很休谟的观点。但却无法解决现实问题。我们依旧需要找到减少过拟合的方法。</p>
+<h2 id="二、惩罚"><a href="#二、惩罚" class="headerlink" title="二、惩罚"></a>二、惩罚</h2><p>我们的思想中存在着一种先验观念，它规范天地万物，在冥冥中告诉我们什么是“合理的”。对于机器学习模型来说也是一样的，它应当具有这样的机制，告诉它什么情况是不可能的。</p>
+<p>就比如说，对于房价，我们知道一些特征是更加重要的，而另一些是更加不重要的。很显然，那些更重要的特征对应的权重应该较不重要的特征对应的权重大。那么我们就需要对那些不重要的权重进行“惩罚”，以避免这些权重过大，从而导致模型过拟合。这样的“惩罚”在损失函数中体现。即，当这些权重过大时，损失函数也会相应增大。</p>
+<p>具体而言，对如下的表达式</p>
+<script type="math/tex; mode=display">
+    y = w_1x_1 + w_2x_2 + w_3x_3 + b</script><p>假设要使第二、三个权重相对较小，则可以在损失函数中加上惩罚项 $\lambda_2 w_2 + \lambda_3 w_3$。其中 $\lambda_2, \lambda_3$ 取较大值。则损失函数变为</p>
+<script type="math/tex; mode=display">
+    J_{new}(\vec{w}, b) = J(\vec{w}, b) + \lambda_2 w_2 + \lambda_3 w_3</script><p>具体地比如说</p>
+<script type="math/tex; mode=display">
+    J_{new}(\vec{w}, b) = J(\vec{w}, b) + 1000 w_2 + 2000 w_3</script><p>那么此时很显然，当 $w_2, w_3$ 较大时，损失函数也会相应更大。</p>
+<p>可是对于大多数情况，我们无法事先知晓权重的重要程度。对于这些一般化的问题，还需要有一般化的解决办法。</p>
+<h2 id="三、正则化"><a href="#三、正则化" class="headerlink" title="三、正则化"></a>三、正则化</h2><p>正则化是惩罚的一种。该方法在损失函数中增加了正则项：</p>
+<script type="math/tex; mode=display">
+    \frac{\lambda}{2m} \sum_{j=1}^n w^2_j</script><p>其中 $\lambda$ 称为正则化参数。</p>
+<p>则新的损失函数为</p>
+<script type="math/tex; mode=display">
+    J_{new}(\vec{w}, b) = J(\vec{w}, b) + \frac{\lambda}{2m} \sum_{j=1}^n w^2_j</script><p>这里有几个值得解释的地方：</p>
+<h3 id="惩罚所有权重"><a href="#惩罚所有权重" class="headerlink" title="惩罚所有权重"></a>惩罚所有权重</h3><p>第一是<strong>对所有权重的惩罚</strong>。如果按照上一节的解释，很容易认为，正则化等同于对所有权重的相同比例的惩罚。这是否相当于对所有权重都不惩罚呢？若是如此，那么正则化是否还有意义？</p>
+<p>关键在于正则项的 $w^2_j$ 上。这是权重的平方而非权重本身。我们对损失函数求 $w_j$ 的偏导。</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J_{new}(\vec{w}, b)}}{\partial{w_j}}
+    = \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}}
+    + \frac{\lambda}{m} w_j</script><p>我们可以得到两个结论。<br>首先，正则项永远使权重不断趋于0。即便在到达或接近原损失函数最小值时，$\frac{\partial{J(\vec{w}, b)}}{\partial{w_j}} \approx 0$，但此时正则项依旧会发挥作用。这就使得权重无法安定在拟合效果最好的位置。</p>
+<p>并且，权重（绝对值）更大的特征，其权重值趋近于 0 的“速度”要快于权重更小的特征。这就避免了对所有权重同一的惩罚。</p>
+<p>由此我们也可以看出正则项“眼中”最好的权重是什么样子的。那就是所有权重均为 0。当然，通过合理选择学习率 $\alpha$ 和正则化参数 $\lambda$，是不可能让这种情况发生的。但正则项却可以实实在在地提供一种“拉力”，用来纠正过于“复杂”的模型结构，使得拟合得到的超平面倾向于平缓。</p>
+<h3 id="除-m-缩放"><a href="#除-m-缩放" class="headerlink" title="除 m 缩放"></a>除 m 缩放</h3><p>第二需要解释的是<strong>正则项中的除 m 缩放</strong>。这样做的目的是保证同一正则化参数在不同的样本数量下都有效。</p>
+<p>我们以正则化了的多元线性回归损失函数对 $w_j$ 偏导为例。</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}}
+    = \frac{1}{m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})x^{(i)}_j
+    + \frac{\lambda}{m} w_j</script><p>假设正则项并不除以 m，或者按照感觉，除以 n。那么在学习率和正则化参数不变的情况下，随着样本量的增加，梯度下降时正则化对权重的影响保持不变；可原损失函数却因为除以了m，对权重的影响减小。这样就会影响正则化参数在不同样本量时的有效性。</p>
+<p>因此对正则项也采取除 m。这样在样本量增加时，原损失函数和正则项对权重的影响就是同比例减小的了。</p>
+<h2 id="四、代码实现"><a href="#四、代码实现" class="headerlink" title="四、代码实现"></a>四、代码实现</h2><p>这一部分很简单，就不具体写出来了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/ba0d6023/" rel="prev" title="机器学习笔记之逻辑回归">
+      <i class="fa fa-chevron-left"></i> 机器学习笔记之逻辑回归
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/757349f6/" rel="next" title="系统编程之shell编程">
+      系统编程之shell编程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80%E2%80%94%E2%80%94%E8%BF%87%E6%8B%9F%E5%90%88"><span class="nav-number">1.</span> <span class="nav-text">一、前言——过拟合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%83%A9%E7%BD%9A"><span class="nav-number">2.</span> <span class="nav-text">二、惩罚</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%AD%A3%E5%88%99%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">三、正则化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%83%A9%E7%BD%9A%E6%89%80%E6%9C%89%E6%9D%83%E9%87%8D"><span class="nav-number">3.1.</span> <span class="nav-text">惩罚所有权重</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%99%A4-m-%E7%BC%A9%E6%94%BE"><span class="nav-number">3.2.</span> <span class="nav-text">除 m 缩放</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">四、代码实现</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>
