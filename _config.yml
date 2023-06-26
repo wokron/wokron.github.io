@@ -114,7 +114,7 @@ theme: next
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: git
-  repo: https://github.com/wokron/wokron.github.io.git
+  repo: git@github.com:wokron/wokron.github.io.git
   branch: master
 
 live2d:
