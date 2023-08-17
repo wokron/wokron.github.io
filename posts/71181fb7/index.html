@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言最近在尝试写一个简单的游戏引擎，我决定用 python 作为脚本，所以了解了一些混合编程的知识。 （1）python api从原理来说，根据文档所述，python 提供了 Python.h 头文件，能够将 c 或 c++ 代码编译成可供 python 引入的动态链接库。该库中定义的可供 python 调用的函数中所有的入参都是名为 PyObject 结构体的指针。在代码中可以通过一系列函数">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pybind11实现python与c++混合编程">
+<meta property="og:url" content="https://wokron.github.io/posts/71181fb7/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言最近在尝试写一个简单的游戏引擎，我决定用 python 作为脚本，所以了解了一些混合编程的知识。 （1）python api从原理来说，根据文档所述，python 提供了 Python.h 头文件，能够将 c 或 c++ 代码编译成可供 python 引入的动态链接库。该库中定义的可供 python 调用的函数中所有的入参都是名为 PyObject 结构体的指针。在代码中可以通过一系列函数">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-08-17T02:42:38.000Z">
+<meta property="article:modified_time" content="2023-08-17T07:19:09.777Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="c++">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="pybind11">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/71181fb7/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>pybind11实现python与c++混合编程 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/71181fb7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          pybind11实现python与c++混合编程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-08-17 10:42:38 / 修改时间：15:19:09" itemprop="dateCreated datePublished" datetime="2023-08-17T10:42:38+08:00">2023-08-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>最近在尝试写一个简单的<a target="_blank" rel="noopener" href="https://github.com/wokron/Gamo">游戏引擎</a>，我决定用 python 作为脚本，所以了解了一些混合编程的知识。</p>
+<h3 id="（1）python-api"><a href="#（1）python-api" class="headerlink" title="（1）python api"></a>（1）python api</h3><p>从原理来说，根据<a target="_blank" rel="noopener" href="https://docs.python.org/3/extending/extending.html">文档</a>所述，python 提供了 <code>Python.h</code> 头文件，能够将 c 或 c++ 代码编译成可供 python 引入的动态链接库。该库中定义的可供 python 调用的函数中所有的入参都是名为 <code>PyObject</code> 结构体的指针。在代码中可以通过一系列函数对 <code>PyObject</code> 进行操作。</p>
+<p>举一个简单的例子，我们希望 python 调用一个由 c 编写的简单的加法函数<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">add</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<span id="more"></span>
+<p>我们期望在 python 中这样调用<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># test_mymodule.py</span></span><br><span class="line"><span class="keyword">from</span> mymodule <span class="keyword">import</span> add</span><br><span class="line">a = <span class="number">10</span></span><br><span class="line">b = <span class="number">20</span></span><br><span class="line">c = add(a, b)</span><br><span class="line"><span class="keyword">assert</span> c == <span class="number">30</span></span><br></pre></td></tr></table></figure></p>
+<p>那么我们首先需要对该函数进行包装，包装函数 <code>_add</code> 的参数和返回值都应该是 <code>PyObject *</code>。在包装函数中调用了 <code>PyArg_ParseTuple</code> 将传入的参数转换为 <code>int</code> 类型，调用原本的 <code>add</code> 函数得到返回值，之后又通过 <code>PyLong_FromLong</code> 将 <code>int</code> 转换为 <code>PyObject</code>。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// mymodule.c</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;Python.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">add</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> PyObject *_add(PyObject *self, PyObject *args) &#123;</span><br><span class="line">    <span class="type">int</span> _a, _b, rt;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!PyArg_ParseTuple(args, <span class="string">&quot;ii&quot;</span>, &amp;_a, &amp;_b)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    rt = add(_a, _b);</span><br><span class="line">    <span class="keyword">return</span> PyLong_FromLong(rt);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在此之后还需要定义函数和模块，并定义初始化函数<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// mymodule.c</span></span><br><span class="line"><span class="comment">// omit...</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> PyMethodDef MyModuleMethods[] = &#123;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;add&quot;</span>,</span><br><span class="line">        _add,</span><br><span class="line">        METH_VARARGS,</span><br><span class="line">        <span class="string">&quot;a simple add function&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;<span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="number">0</span>, <span class="literal">NULL</span>&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">PyModuleDef</span> <span class="title">mymodule</span> =</span> &#123;</span><br><span class="line">    PyModuleDef_HEAD_INIT,</span><br><span class="line">    <span class="string">&quot;mymodule&quot;</span>,</span><br><span class="line">    <span class="string">&quot;this is my simple module&quot;</span>, </span><br><span class="line">    <span class="number">-1</span>,</span><br><span class="line">    MyModuleMethods</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">PyMODINIT_FUNC <span class="title function_">PyInit_mymodule</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> PyModule_Create(&amp;mymodule);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>最后构建并测试<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># build_test.sh</span></span><br><span class="line"><span class="comment">#!/bin/bash</span></span><br><span class="line">PYTHON_VER=3.10</span><br><span class="line">MODULE_NAME=mymodule</span><br><span class="line">TEST_FILE=test_mymodule.py</span><br><span class="line"></span><br><span class="line">gcc -fPIC -shared <span class="variable">$&#123;MODULE_NAME&#125;</span>.c -o <span class="variable">$&#123;MODULE_NAME&#125;</span>.so -I/usr/include/python<span class="variable">$&#123;PYTHON_VER&#125;</span>/ -lpython<span class="variable">$&#123;PYTHON_VER&#125;</span></span><br><span class="line"></span><br><span class="line">python <span class="variable">$&#123;TEST_FILE&#125;</span> || python3 <span class="variable">$&#123;TEST_FILE&#125;</span> || ! <span class="built_in">echo</span> <span class="string">&quot;fail to finish test&quot;</span> || <span class="built_in">exit</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;test pass&quot;</span></span><br></pre></td></tr></table></figure></p>
+<p>可是这种直接使用原始 api 的方式太过繁琐了，并不推荐。庆幸的是已经有库封装了这一过程，提供了更简便的实现方法。这就是 pybind11。</p>
+<h3 id="（2）用-pybind11-重写"><a href="#（2）用-pybind11-重写" class="headerlink" title="（2）用 pybind11 重写"></a>（2）用 pybind11 重写</h3><p>首先下载 pybind11 库，这里使用 git 的 submodule 的方式。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git submodule add -b stable https://github.com/pybind/pybind11 extern/pybind11</span><br><span class="line">git submodule update --init</span><br></pre></td></tr></table></figure></p>
+<p>之后在项目根目录的 CMakeLists.txt 中写入如下内容，源代码文件为 mymodule.cpp<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cmake_minimum_required(VERSION <span class="number">3.4</span>..<span class="number">.3</span><span class="number">.18</span>)</span><br><span class="line">project(example LANGUAGES CXX)</span><br><span class="line"></span><br><span class="line">add_subdirectory(<span class="keyword">extern</span>/pybind11)</span><br><span class="line">include_directories(<span class="keyword">extern</span>/pybind11/include)</span><br><span class="line"></span><br><span class="line">pybind11_add_module(mymodule mymodule.cpp)</span><br></pre></td></tr></table></figure></p>
+<p>此时要实现之前例子中的加法函数就很简单了。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// mymodule.cpp</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pybind11/pybind11.h&gt;</span></span></span><br><span class="line"><span class="keyword">namespace</span> py = pybind11;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> pybind11::literals;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">add</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    m.<span class="built_in">doc</span>() = <span class="string">&quot;this is my simple module&quot;</span>;</span><br><span class="line">    m.<span class="built_in">def</span>(<span class="string">&quot;add&quot;</span>, &amp;add, <span class="string">&quot;a simple add function&quot;</span>, <span class="string">&quot;a&quot;</span>_a, <span class="string">&quot;b&quot;</span>_a);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>当然本文不会详细解释 pybind11 的所有内容，只是列出一些自己用到的方法罢了，详细内容还请参考 <a target="_blank" rel="noopener" href="https://pybind11.readthedocs.io/en/stable/index.html">pybind11</a> 文档。</p>
+<h2 id="二、函数与结构体"><a href="#二、函数与结构体" class="headerlink" title="二、函数与结构体"></a>二、函数与结构体</h2><p>在 pybind11 中，每个模块在一个 <code>PYBIND11_MODULE</code> 宏所指定的区域内定义，其中第一个参数是模块名，第二个参数是模块 handler 变量的名称，为 m 即可。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(module_name, m) &#123;</span><br><span class="line">    <span class="comment">// omit...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>函数的绑定很简单，只需要使用 <code>m.def()</code> 即可。其中第一个参数是在 python 中调用所使用的函数名，第二个参数是 c++ 代码中要绑定的函数的函数指针，之后还可以添加对函数的描述、变量名、默认值等等内容，这里不再详述。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    m.<span class="built_in">def</span>(<span class="string">&quot;add&quot;</span>, &amp;add, <span class="string">&quot;a simple add function&quot;</span>, <span class="string">&quot;a&quot;</span>_a, <span class="string">&quot;b&quot;</span>_a);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>结构体和类没有本质区别，因此在 pybind11 中都是使用 <code>pybind11::class_&lt;T&gt;()</code> 定义。比如说这里有一个结构体。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Pet</span> &#123;</span><br><span class="line">    std::string name;</span><br><span class="line">    <span class="function"><span class="type">const</span> std::string &amp;<span class="title">getName</span><span class="params">()</span> <span class="type">const</span> </span>&#123; <span class="keyword">return</span> name; &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>可以将该结构体绑定到 python<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    py::<span class="built_in">class_</span>&lt;Pet&gt;(m, <span class="string">&quot;Pet&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>但是此时 Pet 在 Python 看来不过是一个没有任何属性和方法的类。使用 <code>class_&lt;T&gt;().def_readwrite()</code> 定义可读可写的属性、使用 <code>class_&lt;T&gt;().def()</code> 定义成员方法。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    py::<span class="built_in">class_</span>&lt;Pet&gt;(m, <span class="string">&quot;Pet&quot;</span>)</span><br><span class="line">        .<span class="built_in">def_readwrite</span>(<span class="string">&quot;name&quot;</span>, &amp;Pet::name)</span><br><span class="line">        .<span class="built_in">def</span>(<span class="string">&quot;get_name&quot;</span>, &amp;Pet::getName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>在 pybind11 中可以使用 lambda 表达式作为函数，此时需要注意，当 lambda 表达式作为成员方法时，需要让第一个参数为类的实例，例如<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">py::<span class="built_in">class_</span>&lt;Pet&gt;(m, <span class="string">&quot;Pet&quot;</span>)</span><br><span class="line">    .<span class="built_in">def</span>(<span class="string">&quot;pat&quot;</span>, [](<span class="type">const</span> Pet &amp;self, <span class="type">int</span> times)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;pat pet&quot;</span> + self.<span class="built_in">getName</span>() + std::<span class="built_in">tostring</span>(times) + <span class="string">&quot;times&quot;</span>;</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<h2 id="三、面向对象"><a href="#三、面向对象" class="headerlink" title="三、面向对象"></a>三、面向对象</h2><h3 id="（1）封装"><a href="#（1）封装" class="headerlink" title="（1）封装"></a>（1）封装</h3><p>面向对象编程中经常将属性设为 <code>private</code>，而使用 getter、setter 方法对值进行读写。c++ 和 java 并没有提供语法糖，可 python 与 c# 类似，提供了 <code>property</code> 简化这一过程。</p>
+<blockquote>
+<p>当然 python 的这一点可能有些人并不知道，可以尝试一下如下代码<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Pet</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, name</span>):</span><br><span class="line">        self.__name = name</span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">name</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> self.__name</span><br><span class="line">    </span><br><span class="line"><span class="meta">    @name.setter</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">name</span>(<span class="params">self, name</span>):</span><br><span class="line">        <span class="keyword">if</span> name == self.__name:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;name cannot be same&quot;</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.__name = name</span><br><span class="line"></span><br><span class="line">p = Pet(<span class="string">&quot;tom&quot;</span>)</span><br><span class="line"><span class="keyword">assert</span> p.name == <span class="string">&quot;tom&quot;</span></span><br><span class="line"></span><br><span class="line">p.name = <span class="string">&quot;kitty&quot;</span></span><br><span class="line"><span class="keyword">assert</span> p.name == <span class="string">&quot;kitty&quot;</span></span><br><span class="line"></span><br><span class="line">p.name = <span class="string">&quot;kitty&quot;</span></span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<p>pybind11 中提供了将 c++ 中的 getter、setter 函数改为 python 的 property 的方法。使用 <code>class_&lt;T&gt;().def_property()</code><br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    py::<span class="built_in">class_</span>&lt;Pet&gt;(m, <span class="string">&quot;Pet&quot;</span>)</span><br><span class="line">        .<span class="built_in">def_property</span>(<span class="string">&quot;name&quot;</span>, &amp;Pet::getName, &amp;Pet::setName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）继承"><a href="#（2）继承" class="headerlink" title="（2）继承"></a>（2）继承</h3><p>比如说现在想要为 <code>Pet</code> 类增加一个子类 <code>Dog</code>。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Dog</span> : Pet &#123;</span><br><span class="line">    <span class="function">std::string <span class="title">bark</span><span class="params">()</span> <span class="type">const</span> </span>&#123; <span class="keyword">return</span> <span class="string">&quot;woof!&quot;</span>; &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>那么在子类绑定的时候就要声明 Pet 为 Dog 的父类，注意此处 <code>class_&lt;Dog, Pet&gt;</code><br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">py::<span class="built_in">class_</span>&lt;Dog, Pet&gt;(m, <span class="string">&quot;Dog&quot;</span>)</span><br><span class="line">        .<span class="built_in">def</span>(<span class="string">&quot;bark&quot;</span>, &amp;Dog::bark);</span><br></pre></td></tr></table></figure></p>
+<p>对于多继承的情况，只需要在同样的位置添加多个父类即可。即 <code>class_&lt;Child, Father1, Father2, Father3&gt;</code> 的形式。</p>
+<p>大多数情况，只需要父类绑定其方法，子类也能够调用父类所绑定的方法。但是当父类为抽象类的时候就不同了，此时并不能绑定一个不存在的方法。这时需要使用一个辅助函数来实现，具体方法可见<a target="_blank" rel="noopener" href="https://pybind11.readthedocs.io/en/stable/advanced/classes.html#overriding-virtual-functions-in-python">此处</a></p>
+<h3 id="（3）多态"><a href="#（3）多态" class="headerlink" title="（3）多态"></a>（3）多态</h3><p>这里的多态主要指函数重载，分为两个方面。一是如何指定 c++ 侧重载的函数、二是如何在 python 侧实现重载。当然因为有了 pybind11 的帮助，这两点也很简单。</p>
+<p>c 语言中是没有函数多态的，因此函数名就是函数地址，但是 c++ 中就不同了，并不能通过函数名明确到底是哪一个函数。pybind11 中提供了根据函数签名获取地址的方法。这需要使用模板 <code>pybind11::overload_cast&lt;T1, T2, ...&gt;()</code>。其中 <code>T1, T2, ...</code> 是函数参数的类型，之后提供函数地址。例如<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    py::<span class="built_in">class_</span>&lt;Pet&gt;(m, <span class="string">&quot;Pet&quot;</span>)</span><br><span class="line">        .<span class="built_in">def</span>(<span class="string">&quot;get_name&quot;</span>, py::overload_cast&lt;&gt;(&amp;Pet::Name))</span><br><span class="line">        .<span class="built_in">def</span>(<span class="string">&quot;set_name&quot;</span>, py::<span class="built_in">overload_cast</span>&lt;std::string&gt;(&amp;Pet::Name));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>python 中同样是没有函数多态的，因为函数重载的目的就是实现可变参数个数和可变参数类型，而 python 使用 <code>*args</code> 和 <code>**kwargs</code> 已经从另一个角度解决了这一问题。不过不要担心， pybind11 已经为我们做出处理，我们并不需要关心这一问题。我们只需要大胆的使用相同的函数名即可。在进行调用时，pybind11 会尝试调用所有同名函数，直到成功调用并成功返回或找不到匹配的函数报错。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    py::<span class="built_in">class_</span>&lt;Pet&gt;(m, <span class="string">&quot;Pet&quot;</span>)</span><br><span class="line">        .<span class="built_in">def</span>(<span class="string">&quot;name&quot;</span>, py::overload_cast&lt;&gt;(&amp;Pet::Name))</span><br><span class="line">        .<span class="built_in">def</span>(<span class="string">&quot;name&quot;</span>, py::<span class="built_in">overload_cast</span>&lt;std::string&gt;(&amp;Pet::Name));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、单例模式"><a href="#四、单例模式" class="headerlink" title="四、单例模式"></a>四、单例模式</h2><p>说实话这不能算是一节内容，但是在 python 中绑定单例类还是很有意思的。首先写一个简单的单例：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MySingleton</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">static</span> MySingleton *<span class="title">GetInstance</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="type">static</span> MySingleton _instance;</span><br><span class="line">        <span class="keyword">return</span> &amp;instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="built_in">MySingleton</span>() &#123;&#125;</span><br><span class="line">    ~<span class="built_in">MySingleton</span>() &#123;&#125;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">MySingleton</span>(MySingleton <span class="type">const</span> &amp;) = <span class="keyword">delete</span>;</span><br><span class="line">    MySingleton &amp;<span class="keyword">operator</span>=(MySingleton <span class="type">const</span> &amp;) = <span class="keyword">delete</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>第一种方法当然是绑定静态方法，注意这里需要加上 <code>std::unique_ptr&lt;MySingleton, py::nodelete&gt;</code> 不引用析构函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    py::class_&lt;MySingleton, std::unique_ptr&lt;MySingleton, py::nodelete&gt;&gt;(m, <span class="string">&quot;MySingleton&quot;</span>)</span><br><span class="line">        .<span class="built_in">def_static</span>(<span class="string">&quot;get_instance&quot;</span>, &amp;MySingleton::GetInstance);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>第二种方法是这样，因为 pybind11 中可以使用 lambda 自定义构造函数，所以可以将 <code>GetInstance</code> 包装成构造函数使用。这样可以在 python 中构造“不同”的实例，但这些实例其实都指向一个单例。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PYBIND11_MODULE</span>(mymodule, m) &#123;</span><br><span class="line">    py::class_&lt;MySingleton, std::unique_ptr&lt;MySingleton, py::nodelete&gt;&gt;(m, <span class="string">&quot;MySingleton&quot;</span>)</span><br><span class="line">        .<span class="built_in">def</span>(py::<span class="built_in">init</span>([]()&#123; <span class="keyword">return</span> MySingleton::<span class="built_in">GetInstance</span>(); &#125;));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/c/" rel="tag"># c++</a>
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/pybind11/" rel="tag"># pybind11</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/33f55625/" rel="prev" title="Hexo博客迁移教程">
+      <i class="fa fa-chevron-left"></i> Hexo博客迁移教程
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89python-api"><span class="nav-number">1.1.</span> <span class="nav-text">（1）python api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E7%94%A8-pybind11-%E9%87%8D%E5%86%99"><span class="nav-number">1.2.</span> <span class="nav-text">（2）用 pybind11 重写</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%87%BD%E6%95%B0%E4%B8%8E%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">2.</span> <span class="nav-text">二、函数与结构体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1"><span class="nav-number">3.</span> <span class="nav-text">三、面向对象</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E5%B0%81%E8%A3%85"><span class="nav-number">3.1.</span> <span class="nav-text">（1）封装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E7%BB%A7%E6%89%BF"><span class="nav-number">3.2.</span> <span class="nav-text">（2）继承</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E5%A4%9A%E6%80%81"><span class="nav-number">3.3.</span> <span class="nav-text">（3）多态</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">四、单例模式</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

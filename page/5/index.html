@@ -159,6 +159,137 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5b526508/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/5b526508/" class="post-title-link" itemprop="url">机器学习之模型评估与优化</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-16 16:22:46" itemprop="dateCreated datePublished" datetime="2022-10-16T16:22:46+08:00">2022-10-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。</p>
+<blockquote>
+<p>模型的这种能力称为泛化能力</p>
+</blockquote>
+<p>这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增加样本数量等）。因此我们需要方法，来一般化地评估模型的质量。</p>
+<h2 id="二、泛化能力的衡量指标"><a href="#二、泛化能力的衡量指标" class="headerlink" title="二、泛化能力的衡量指标"></a>二、泛化能力的衡量指标</h2><p>正如前一节所说，泛化能力的衡量就是衡量模型对训练样本集之外的数据集的预测效果。我们知道衡量模型对训练样本预测效果的指标是损失函数，那么对于其他数据，我们同样可以把损失函数的概念迁移到这里来。</p>
+<p>我们可以将已经获得的数据划分为两部分，一部分用于训练模型，称为训练集；另一部分用于测试模型的泛化能力，称为测试集。对于用训练集训练后的数据，我们再求该模型对测试集数据的损失函数。</p>
+<p>举个例子，如果我们采用简单的平方误差损失函数，则我们就是要求</p>
+<script type="math/tex; mode=display">
+    J_{test}(\vec{w},b) = 
+    \frac{1}{2m_{test}}\sum_{i=0}^{m_{test}-1} ( f_{\vec{w},b}(\vec{x}^{(i)}_{test}) - y^{(i)}_{test} )^2</script><p>$J_{test}(\vec{w},b)$ 就是我们对该模型泛化能力的衡量指标，称为测试误差。</p>
+<p>我们可以将该指标与训练集的损失函数值 $J<em>{train}(\vec{w},b)$（注意这里没有正则项，称为训练误差）进行比较。一般的情况是 $J</em>{test}(\vec{w},b)$ 大于 $J_{train}(\vec{w},b)$。</p>
+<p>我们还可以将该模型的泛化能力与其他模型的泛化能力，或者与人类的误差进行比较。这样我们就可以评价我们所训练的模型的优劣了。</p>
+<h2 id="三、交叉验证集"><a href="#三、交叉验证集" class="headerlink" title="三、交叉验证集"></a>三、交叉验证集</h2><p>在我们继续评估模型之前，我们要先来考虑一些我们究竟要如何进行优化。你可能会想，我们既然有了评价模型泛化能力的指标 $J_{test}$，那么只要试图让该指标减小不就可以了吗？这是一个很直接的想法。</p>
+<p>但问题是，如果我们向着使 $J_{test}$ 减小的目标优化，那么测试集与训练集有什么区别呢？按照这种方法，测试集就相当于变成了训练集的一部分，而不再能成为衡量训练集之外泛化能力的样本了。</p>
+<p>因此，我们不能将训练集作为优化的方向，而只能将其作为评价的指标。我们需要再分出一部分数据，作为优化时的参考。这就是交叉验证（Cross-validation）集。对应的衡量指标为 $J_{cv}$</p>
+<h2 id="四、模型评价"><a href="#四、模型评价" class="headerlink" title="四、模型评价"></a>四、模型评价</h2><p>我们用偏差和方差来评价一个模型。</p>
+<ul>
+<li>偏差表示模型对训练集的预测相对于真实情况的误差，如果模型对训练样本都不能很好地拟合或分类，就称其为高偏差的。 $J_{train}$ 可衡量模型的偏差。</li>
+<li>方差表示模型对测试集的预测相对于真实情况的误差（也就是泛化能力本身），如果模型不能很好地预测测试集中数据，就称其为高方差的。$J_{cv}$ 可衡量模型的方差。</li>
+</ul>
+<blockquote>
+<p>一般来说，模型的方差会大于偏差。因此高偏差的模型都是高方差的。</p>
+<p>随着模型复杂度的提升，模型的偏差会逐渐降低，但偏差会先降低再升高；随着训练样本量的提升，偏差会逐渐减小，方差会逐渐升高，直到最后方差和偏差程度接近。</p>
+</blockquote>
+<h2 id="五、倾斜数据集的误差指标"><a href="#五、倾斜数据集的误差指标" class="headerlink" title="五、倾斜数据集的误差指标"></a>五、倾斜数据集的误差指标</h2><p>对于正面例子和负面例子比例差距较大的训练样本（也就是说，被标记为某一结果的样本数量占样本总数的比例很大或很小），根据全概率分布可知，可能就算全部预测同一结果，其正确的概率也很大。因此我们需要能消除样本本身概率分布导致的正确率偏差的指标。</p>
+<p>有两种误差指标用于评价这种情况。分别为准确率（Precision）和召回率（Recall）。</p>
+<ul>
+<li>准确率衡量的是，模型预测为某一结果的情况中，有多少是预测正确的。</li>
+<li>召回率衡量的是，对所有真正为某一结果的情况，有多少是模型预测到的。</li>
+</ul>
+<p>也就是说，设</p>
+<ul>
+<li>TP表示将正类预测为正类的数量</li>
+<li>FN表示将正类预测为负类的数量</li>
+<li>FP表示将负类预测为正类的数量</li>
+<li>TN表示将负类预测为负类的数量</li>
+</ul>
+<p>则准确率为</p>
+<script type="math/tex; mode=display">
+    P = \frac{TP}{TP + FP}</script><p>召回率为</p>
+<script type="math/tex; mode=display">
+    R = \frac{TP}{TP + FN}</script><p>可以这样理解，把预测的过程当做选择的过程，准确率高就是“不重”，不过多的选择，以致把许多不属于的也包括在内；召回率高就是“不漏”，不过少地选择，把一些属于的漏掉了。</p>
+<p>我们很容易就能得知，准确率和召回率在一定程度上是矛盾的。想要准确率高，就很可能漏掉一些；想要召回率高，就可能包含了不属于的东西。</p>
+<blockquote>
+<p>对于逻辑回归来说，提高阈值（即把多少数值以上的设定为真），准确率上升，召回率下降；降低阈值，准确率下降，召回率上升。</p>
+</blockquote>
+<p>要权衡准确率和召回率，对模型进行整体的评价的方法是采用 F1 分数（F1 Score）。即</p>
+<script type="math/tex; mode=display">
+    F1 = \frac{1}{\frac{1}{2}(\frac{1}{P} + \frac{1}{R})}</script><blockquote>
+<p>相当于对准确率和召回率的调和平均</p>
+</blockquote>
+<h2 id="五、优化策略"><a href="#五、优化策略" class="headerlink" title="五、优化策略"></a>五、优化策略</h2><p>优化模型需要考虑不同的情况。</p>
+<p>一种是模型具有高偏差的情况。<br>模型具有高偏差，常常意味着当前的模型复杂度不足以拟合当前数据。此时若一味地增加训练数据量，并不会使得拟合效果提高太多。应该做的是提高模型复杂度。如增加特征、增加层数、减小正则化系数等等。</p>
+<p>另一种是模型具有高方差，且偏差较低的情况。<br>这种情况常常意味着模型对样本产生了过拟合。需要做的是降低拟合程度。采取如减少特征、增大正则化系数等手段。增加训练数据量在这种情况下可以起到效果。</p>
+<p><strong>这里再介绍一些增加数据量的方法：</strong></p>
+<p>除了通过各种手段获取新数据以外，我们还可以利用现有数据创造新数据。如对于图像，可以将其经过旋转、伸缩、扭曲等操作生成新的图像；又比如音频，可以增加背景音、噪声等来模拟更加真实的环境。这些手段都能增加模型的稳健性和泛用性。</p>
+<p>迁移学习同样是一种利用数据的手段。该方法获得经过其他数据训练过的用于完成类似任务的模型，修改部分神经层（如输出层），再进行当前任务的训练。这样做相当于使用了其他任务中的数据。（这种方法可行的原因是，相似的任务，在位置靠前的部分常有类似的处理过程）</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/76c44d63/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1513,100 +1644,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/74b7a513/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/74b7a513/" class="post-title-link" itemprop="url">MySCS云平台（一）——注册与登陆</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-19 18:16:07" itemprop="dateCreated datePublished" datetime="2022-09-19T18:16:07+08:00">2022-09-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">软件开发</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、注册与登陆模块"><a href="#一、注册与登陆模块" class="headerlink" title="一、注册与登陆模块"></a>一、注册与登陆模块</h2><p>该模块执行注册和登陆操作。从本质上说，也就是进行用户信息的添加，以及更改当前登陆的用户信息。因此我们还要定义一个储存用户信息的类</p>
-<h2 id="（1）用户信息（UserInfo）"><a href="#（1）用户信息（UserInfo）" class="headerlink" title="（1）用户信息（UserInfo）"></a>（1）用户信息（UserInfo）</h2><p>为什么是UserInfo而不是User呢？因为用户的操作是读入的命令行，所以并不需要一个User类来执行操作。在注册登录模块只需要显示用户的信息而已。（或许多用户的时候User类会出现？）</p>
-<h3 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h3><p>重写toString方法</p>
-<h3 id="字段"><a href="#字段" class="headerlink" title="字段"></a>字段</h3><ol>
-<li>学工号</li>
-<li>姓、名</li>
-<li>邮箱</li>
-<li>密码</li>
-</ol>
-<h3 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h3><p>暂无。注意构造函数只能有包括全部信息的。</p>
-<h2 id="（2）注册与登陆控制器（LoginController）"><a href="#（2）注册与登陆控制器（LoginController）" class="headerlink" title="（2）注册与登陆控制器（LoginController）"></a>（2）注册与登陆控制器（LoginController）</h2><p>用来控制注册与登陆，在执行不正确的操作时会抛出异常。</p>
-<h3 id="方法-1"><a href="#方法-1" class="headerlink" title="方法"></a>方法</h3><p>注册：无返回值，参数为用户的各项信息，用来创建一个新的用户。当用户信息不合法、已存在、密码不一致等情况发生时抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">register</span><span class="params">(String ID, String firstName, String lastName, String email, String password, String passwordConfirm)</span>;</span><br></pre></td></tr></table></figure></p>
-<p>登陆：无返回值，参数为一个学工号和一个密码，用来登陆一个用户。当用户不存在、密码不正确或已经登录的时候抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">login</span><span class="params">(String ID, String password)</span>;</span><br></pre></td></tr></table></figure></p>
-<p>打印信息：无返回值，无参数或有一个学工号作为参数，打印当前登陆的信息或学号对应的人的信息。当未登录、输入的学号不合法、不存在等等情况发生时抛出异常<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">printInfo</span><span class="params">()</span>;</span><br><span class="line"><span class="keyword">void</span> <span class="title function_">printInfo</span><span class="params">(String ID)</span>;</span><br></pre></td></tr></table></figure></p>
-<p>退出登陆：无返回值、无参数。退出当前登陆，如果当前没有登陆则抛出异常。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">logout</span><span class="params">()</span>;</span><br></pre></td></tr></table></figure></p>
-<h3 id="字段-1"><a href="#字段-1" class="headerlink" title="字段"></a>字段</h3><ol>
-<li>储存用户信息的列表（<code>List&lt;UserInfo&gt;</code>）</li>
-<li>当前登陆的用户<code>(UserInfo</code>)</li>
-<li>当前程序所处的状态（<code>LoginStatus</code>枚举）</li>
-</ol>
-<h3 id="算法-1"><a href="#算法-1" class="headerlink" title="算法"></a>算法</h3><p>一个有限状态机，包含这样几种状态：未登录、学生登陆、教师登录。利用函数进行状态转换。不合理的转换会抛出异常。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1678,7 +1715,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">59</span>
+          <span class="site-state-item-count">60</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1691,7 +1728,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-count">55</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

@@ -159,6 +159,149 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2c9af791/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/2c9af791/" class="post-title-link" itemprop="url">用pytorch搭建神经网络</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-02 15:52:55" itemprop="dateCreated datePublished" datetime="2023-01-02T15:52:55+08:00">2023-01-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。</p>
+<p>本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。</p>
+<p>本文所使用的例子是自己写的第一个神经网路，如下：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os.path</span><br><span class="line"><span class="keyword">import</span> torch.utils.data</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">from</span> torch.utils.tensorboard <span class="keyword">import</span> SummaryWriter</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms, datasets</span><br><span class="line"></span><br><span class="line">device = torch.device(<span class="string">&quot;cpu&quot;</span>)</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;cuda available, use cuda to train module&quot;</span>)</span><br><span class="line">    device = torch.device(<span class="string">&quot;cuda&quot;</span>)</span><br><span class="line"></span><br><span class="line">train_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), download=<span class="literal">True</span>)</span><br><span class="line">test_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), train=<span class="literal">False</span>, download=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">train_set_size = <span class="built_in">len</span>(train_set)</span><br><span class="line">test_set_size = <span class="built_in">len</span>(test_set)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;train set size: <span class="subst">&#123;train_set_size&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;test set size: <span class="subst">&#123;test_set_size&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">train_dataloader = DataLoader(train_set, <span class="number">64</span>, shuffle=<span class="literal">True</span>, drop_last=<span class="literal">True</span>)</span><br><span class="line">test_dataloader = DataLoader(test_set, <span class="number">64</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyModule</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>(MyModule, self).__init__()</span><br><span class="line">        self.module1 = nn.Sequential(</span><br><span class="line">            nn.Conv2d(<span class="number">3</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">            nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">            nn.Conv2d(<span class="number">32</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">            nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">            nn.Conv2d(<span class="number">32</span>, <span class="number">64</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">            nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">            nn.Flatten(),</span><br><span class="line">            nn.Linear(<span class="number">1024</span>, <span class="number">64</span>),</span><br><span class="line">            nn.Linear(<span class="number">64</span>, <span class="number">10</span>),</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> self.module1(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># module</span></span><br><span class="line">my_module = MyModule().to(device)</span><br><span class="line"><span class="keyword">if</span> os.path.exists(<span class="string">&quot;./my_module/my_module_10.pt&quot;</span>):</span><br><span class="line">    my_module.load_state_dict(torch.load(<span class="string">&quot;./my_module/my_module_10.pt&quot;</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># loss function</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss().to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># learning rete</span></span><br><span class="line">learning_rate = <span class="number">1e-2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># optimizer</span></span><br><span class="line">optim = torch.optim.SGD(my_module.parameters(), lr=learning_rate)</span><br><span class="line"></span><br><span class="line">epoch = <span class="number">10</span></span><br><span class="line"></span><br><span class="line">writer = SummaryWriter(<span class="string">&quot;./logs/my_module_log&quot;</span>)</span><br><span class="line"></span><br><span class="line">total_train_step = <span class="number">0</span></span><br><span class="line">total_test_step = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(epoch):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;----- start training epoch <span class="subst">&#123;i + <span class="number">1</span>&#125;</span> -----&quot;</span>)</span><br><span class="line"></span><br><span class="line">    my_module.train()</span><br><span class="line">    <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> train_dataloader:</span><br><span class="line">        imgs = imgs.to(device)</span><br><span class="line">        targets = targets.to(device)</span><br><span class="line"></span><br><span class="line">        outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">        loss = loss_func(outputs, targets)</span><br><span class="line"></span><br><span class="line">        optim.zero_grad()</span><br><span class="line">        loss.backward()</span><br><span class="line">        optim.step()</span><br><span class="line"></span><br><span class="line">        total_train_step = total_train_step + <span class="number">1</span></span><br><span class="line">        writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), total_train_step)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;#&quot;</span>, end=<span class="string">&quot;&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> total_train_step % <span class="number">100</span> == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>()</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;train step:<span class="subst">&#123;total_train_step&#125;</span>, loss:<span class="subst">&#123;loss.item()&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    my_module.<span class="built_in">eval</span>()</span><br><span class="line">    total_test_loss = <span class="number">0</span></span><br><span class="line">    total_accuracy = <span class="number">0</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> test_dataloader:</span><br><span class="line">            imgs = imgs.to(device)</span><br><span class="line">            targets = targets.to(device)</span><br><span class="line"></span><br><span class="line">            outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">            loss = loss_func(outputs, targets)</span><br><span class="line">            total_test_loss = total_test_loss + loss.item()</span><br><span class="line"></span><br><span class="line">            step_accuracy = (outputs.argmax(<span class="number">1</span>) == targets).<span class="built_in">sum</span>()</span><br><span class="line">            total_accuracy = total_accuracy + step_accuracy</span><br><span class="line"></span><br><span class="line">    total_test_step = total_test_step + <span class="number">1</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;total loss in test set: <span class="subst">&#123;total_test_loss&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;accuracy in test set: <span class="subst">&#123;total_accuracy / test_set_size&#125;</span>&quot;</span>)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test loss&quot;</span>, total_test_loss, total_test_step)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test accuracy&quot;</span>, total_accuracy / test_set_size, total_test_step)</span><br><span class="line"></span><br><span class="line">    torch.save(my_module.state_dict(), <span class="string">f&quot;./my_module/my_module_<span class="subst">&#123;i+<span class="number">1</span>&#125;</span>.pt&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;save module success&quot;</span>)</span><br><span class="line"></span><br><span class="line">writer.close()</span><br></pre></td></tr></table></figure></p>
+<h2 id="二、数据的获取"><a href="#二、数据的获取" class="headerlink" title="二、数据的获取"></a>二、数据的获取</h2><p>数据是深度学习十分重要的一点。模型训练的过程离不开大量数据的不断获取。pytorch 提供了数据获取的方便接口，能够简洁的实现对数据的各项操作。</p>
+<h3 id="（1）Dataset"><a href="#（1）Dataset" class="headerlink" title="（1）Dataset"></a>（1）Dataset</h3><p><code>Dataset</code> 类是对数据总体的抽象。对于本地的数据，我们可以继承该类来实现数据的读取。<code>Dataset</code> 类需要实现特殊方法 <code>__getitem__</code> 和 <code>__len__</code>，以实现通过下标进行数据获取和通过 <code>len()</code> 获得数据总量。</p>
+<p>比如说我们有一个图片数据集需要训练分类，每个不同标签的图片放在对应标签名的文件夹下。在需要将所有图片作为数据总体读取时，若直接操作文件将十分繁琐不美观。因此可以继承 <code>Dataset</code> 类实现如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MyDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, root_dir, label_dir</span>):</span><br><span class="line">        self.root_dir = root_dir</span><br><span class="line">        self.label_dir = label_dir</span><br><span class="line">        self.total_path = os.path.join(self.root_dir, self.label_dir)</span><br><span class="line">        self.img_names = os.listdir(self.total_path)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, index</span>):</span><br><span class="line">        img_name = self.img_names[index]</span><br><span class="line">        img_path = os.path.join(self.total_path, img_name)</span><br><span class="line">        img = Image.<span class="built_in">open</span>(img_path)</span><br><span class="line">        label = self.label_dir</span><br><span class="line">        <span class="keyword">return</span> img, label</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(self.img_names)</span><br></pre></td></tr></table></figure>
+<p>并利用 <code>Dataset</code> 对 + 运算符的重载实现数据集的合并。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cat_train_dataset = MyDataset(<span class="string">&quot;./train&quot;</span>, <span class="string">&quot;cat&quot;</span>)</span><br><span class="line">dog_train_dataset = MyDataset(<span class="string">&quot;./train&quot;</span>, <span class="string">&quot;dog&quot;</span>)</span><br><span class="line">train_dataset = cat_train_dataset + dog_train_dataset</span><br></pre></td></tr></table></figure></p>
+<p>pytorch 也自带了许多数据集，可以通过一行代码实现下载和使用。如示例代码中：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torchvision import transforms, datasets</span></span><br><span class="line">train_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), download=<span class="literal">True</span>)</span><br><span class="line">test_set = datasets.CIFAR10(<span class="string">&quot;./CIFAR10&quot;</span>, transform=transforms.ToTensor(), train=<span class="literal">False</span>, download=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure><br>便获取了 torchvision 自带的数据集 CIFAR10。将其保存在本地。同时获取了对该数据集进行访问的 <code>Dataset</code> 实例 <code>train_set</code> 和 <code>test_set</code>。</p>
+<h3 id="（2）Dataloader"><a href="#（2）Dataloader" class="headerlink" title="（2）Dataloader"></a>（2）Dataloader</h3><p><code>Dataset</code> 对应了数据集，而 <code>Dataloader</code> 则对应了如何在训练中获取数据。如示例代码中：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_dataloader = DataLoader(train_set, <span class="number">64</span>, <span class="literal">True</span>, drop_last=<span class="literal">True</span>)</span><br><span class="line">test_dataloader = DataLoader(test_set, <span class="number">64</span>)</span><br></pre></td></tr></table></figure><br><code>Dataloader</code> 确定了对于数据集，要每次取 64 个作为一个批次（batch）；并且对于训练数据集，每一次训练打乱数据顺序，对于最后一个个数小于 64 的批次，将其丢弃。</p>
+<p>通过合理的设置 <code>Dataloader</code> 的参数，可以避免全量数据梯度下降训练过慢的缺点和单条数据随机梯度下降造成的无法找到最优解的问题。</p>
+<h3 id="（3）transformer"><a href="#（3）transformer" class="headerlink" title="（3）transformer"></a>（3）transformer</h3><p><code>transformer</code> 并不用于获取数据，而是处理数据，将数据进行各种变换。以 <code>torchvision</code> 中的 <code>transformer</code> 为例（其他方向也有各自的 <code>transformer</code>）。比如说 <code>ToTensor</code>可以将 <code>PIL.Image</code> 类型的数据转换为 <code>Tensor</code> 类型。</p>
+<blockquote>
+<p>示例代码在获取 CIFAR10 数据集时，也使用了 <code>transformer</code> 将数据统一转化为 <code>Tensor</code> 类型。</p>
+</blockquote>
+<p>但是其他的一些 <code>transformer</code> 也可以用于对数据进行修改，以从原有数据中创造出新的数据。比如说通过 <code>Resize</code> 修改图像的尺寸。</p>
+<p>另外需要介绍一个特殊的 <code>transformer</code>，<code>Compose</code>。<code>Compose</code> 可以将一系列不同的 <code>transformer</code> 组合成一个单一的变换。例如：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torchvision import transforms</span></span><br><span class="line">compose_trans = transforms.Compose([</span><br><span class="line">    transforms.Resize((<span class="number">200</span>, <span class="number">200</span>)),</span><br><span class="line">    transforms.ToTensor()</span><br><span class="line">])</span><br></pre></td></tr></table></figure><br>就创建了一个 <code>transformer</code>，先对调用者执行 <code>Resize</code> 操作，再执行 <code>ToTenser</code> 操作。</p>
+<h2 id="三、神经网络的构建"><a href="#三、神经网络的构建" class="headerlink" title="三、神经网络的构建"></a>三、神经网络的构建</h2><p><code>torch.nn</code> 提供了构建神经网络的组件，包括神经网络类 <code>Module</code>、各种神经网络层等等内容。</p>
+<blockquote>
+<p>nn 是 neural network 的缩写。这一点似乎很少有人提及？</p>
+</blockquote>
+<p>示例代码中我们继承 <code>nn.Module</code>，创建了自己的神经网络类：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torch import nn</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyModule</span>(nn.Module):</span><br></pre></td></tr></table></figure></p>
+<p>在其中，我们需要构造神经网络的结构。这在该类的构造函数中实现。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="built_in">super</span>(MyModule, self).__init__()</span><br><span class="line">    self.module1 = nn.Sequential(</span><br><span class="line">        nn.Conv2d(<span class="number">3</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">        nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">        nn.Conv2d(<span class="number">32</span>, <span class="number">32</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">        nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">        nn.Conv2d(<span class="number">32</span>, <span class="number">64</span>, <span class="number">5</span>, padding=<span class="number">2</span>),</span><br><span class="line">        nn.MaxPool2d(<span class="number">2</span>),</span><br><span class="line">        nn.Flatten(),</span><br><span class="line">        nn.Linear(<span class="number">1024</span>, <span class="number">64</span>),</span><br><span class="line">        nn.Linear(<span class="number">64</span>, <span class="number">10</span>),</span><br><span class="line">    )</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意这里我们首先需要调用父类的构造函数 <code>super(MyModule, self).__init__()</code>。</p>
+</blockquote>
+<p>在构造函数中，我们使用了 <code>torch.nn</code> 中的卷积层 <code>Conv2d</code>、最大池化层 <code>MaxPool2d</code>、线性层 <code>Linear</code> 等不同类型的神经网络层。</p>
+<p>这里需要另外说明的是 <code>nn.Sequential</code>，这个神经层可以将神经层序列按顺序合并为一层，方便后面的使用。</p>
+<p>另外 <code>nn.Flatten</code> 也需要说明，这一层会将前面传来的 <code>Tensor</code> 不管维数，统一转化为一维。</p>
+<p>一般的神经网络构造，就在构造函数中进行。除此之外，还需要定义 <code>forward</code> 函数。用来进行神经网络的前向传播。这一部分没有需要特别说明的地方。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">    <span class="keyword">return</span> self.module1(x)</span><br></pre></td></tr></table></figure>
+<h2 id="四、训练：损失函数与优化器"><a href="#四、训练：损失函数与优化器" class="headerlink" title="四、训练：损失函数与优化器"></a>四、训练：损失函数与优化器</h2><p>接下来进入了模型训练的部分，但在训练前我们还需要定义一些变量。这些变量对训练十分重要。</p>
+<h3 id="（1）损失函数"><a href="#（1）损失函数" class="headerlink" title="（1）损失函数"></a>（1）损失函数</h3><p>损失函数既是评价模型预测能力的指标，也是进行反向传播，调整模型的依据。pytorch 提供了许多损失函数，它们和神经网络层一样，都在 <code>torch.nn</code> 模块下。</p>
+<p>在示例代码中，我们使用了交叉熵损失函数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torch import nn</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss().to(device) <span class="comment"># 暂不考虑 to() 函数。</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）优化器"><a href="#（2）优化器" class="headerlink" title="（2）优化器"></a>（2）优化器</h3><p>优化器用于设置梯度下降的策略，在 <code>torch.optim</code> 模块中。不同的优化器参数可能有所不同，但都有步长（或学习率，learning rate）作为参数。示例代码中选用 <code>SGD</code>（随机梯度下降）作为优化器。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># learning rete</span></span><br><span class="line">learning_rate = <span class="number">1e-2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># optimizer</span></span><br><span class="line">optim = torch.optim.SGD(my_module.parameters(), lr=learning_rate)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意创建优化器需要传入要训练的模型具有的参数。在示例代码中即 <code>my_module.parameters()</code></p>
+</blockquote>
+<p>优化器在模型训练进行反向传播时使用，需要调用优化器的两个函数。 <code>zero_grad()</code> 和 <code>step()</code>。如在示例代码中有：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">optim.zero_grad()</span><br><span class="line">loss.backward()</span><br><span class="line">optim.step()</span><br></pre></td></tr></table></figure></p>
+<p>优化器必须这样成对调用两函数。</p>
+<h2 id="五、训练：训练主循环与模型评价"><a href="#五、训练：训练主循环与模型评价" class="headerlink" title="五、训练：训练主循环与模型评价"></a>五、训练：训练主循环与模型评价</h2><h3 id="（1）对模型进行迭代训练"><a href="#（1）对模型进行迭代训练" class="headerlink" title="（1）对模型进行迭代训练"></a>（1）对模型进行迭代训练</h3><p>训练的主体由一个双重循环构成。外层循环决定训练的轮数（epoch）；内层循环次数是数据的批数（batch）。pytorch 以一批为单位进行训练。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">epoch = <span class="number">10</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(epoch):</span><br></pre></td></tr></table></figure><br>epoch 参数决定训练的轮数。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">my_module.train()</span><br><span class="line"><span class="keyword">for</span> imgs, targets <span class="keyword">in</span> train_dataloader:</span><br></pre></td></tr></table></figure>
+<p>在一轮训练开始前，调用模型的 <code>train()</code> 方法。这只会影响一部分网络层的行为，但最好总是加上。</p>
+<p>对于每一批训练，迭代调用包含训练集数据的 <code>Dataloader</code>。每一次取得的元素是一个二元组，二元组的第一个元素为输入，第二个元素为预期输出，他们的数据类型都是 <code>Tensor</code>。需要注意的是，由于 <code>Dataloader</code> 以一个 batch 的大小进行读取，因此两个 <code>Tensor</code> 的第一维度均为 batch 的大小。</p>
+<p>之后，对每一批训练，需要进行前向传播求得预测结果；利用损失函数求得预测结果和期望结果间的损失；再反向传播，对模型进行修改。如示例代码：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">loss = loss_func(outputs, targets)</span><br><span class="line"></span><br><span class="line">optim.zero_grad()</span><br><span class="line">loss.backward()</span><br><span class="line">optim.step()</span><br></pre></td></tr></table></figure><br>这里出现了之前提到的优化器的使用。另外也需要注意，反向传播 <code>backward()</code> 的调用是在损失函数所计算得到的损失上的。</p>
+<h3 id="（2）对模型进行评价"><a href="#（2）对模型进行评价" class="headerlink" title="（2）对模型进行评价"></a>（2）对模型进行评价</h3><p>对模型进行评价的过程与训练时类似，只不过所用的数据集变成了测试集。也需要进行前向传播和求损失函数，根据所得结果进行评估。但是不能进行反向传播。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">my_module.<span class="built_in">eval</span>()</span><br><span class="line">total_test_loss = <span class="number">0</span></span><br><span class="line">total_accuracy = <span class="number">0</span></span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> test_dataloader:</span><br><span class="line">        imgs = imgs.to(device)</span><br><span class="line">        targets = targets.to(device)</span><br><span class="line"></span><br><span class="line">        outputs = my_module.forward(imgs)</span><br><span class="line"></span><br><span class="line">        loss = loss_func(outputs, targets)</span><br><span class="line">        total_test_loss = total_test_loss + loss.item()</span><br><span class="line"></span><br><span class="line">        step_accuracy = (outputs.argmax(<span class="number">1</span>) == targets).<span class="built_in">sum</span>()</span><br><span class="line">        total_accuracy = total_accuracy + step_accuracy</span><br></pre></td></tr></table></figure><br>注意在进行测试之前需要调用模型的 <code>eval()</code> 方法，与 <code>train()</code> 作用类似。另外，这里为了避免前向传播影响梯度，还需要调用 <code>torch.no_grad()</code>， 使用 <code>with</code> 语句在离开作用域时自动取消效果。</p>
+<p>在模型评价部分，我们得到了 <code>total_test_loss</code> 和 <code>total_accuracy</code>，可以作为评价模型的标准。</p>
+<h2 id="六、tensorboard的数据可视化"><a href="#六、tensorboard的数据可视化" class="headerlink" title="六、tensorboard的数据可视化"></a>六、tensorboard的数据可视化</h2><p>我们在训练和测试过程中得到了许多评价模型的数值。这些数值随着训练的进行发生变化。为了方便观察变化的趋势，来更好的评价训练过程，可以以训练步数为自变量，损失或准确率为因变量作图。tensorboard 就提供了方便的作图方法。</p>
+<p>事先创建 <code>SummaryWriter</code> 实例<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># from torch.utils.tensorboard import SummaryWriter</span></span><br><span class="line">writer = SummaryWriter(<span class="string">&quot;./logs/my_module_log&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>当求得损失或准确度时，调用 <code>add_scalar()</code> 方法将点添加到坐标图上。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在训练中</span></span><br><span class="line">        total_train_step = total_train_step + <span class="number">1</span></span><br><span class="line">        writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), total_train_step)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;#&quot;</span>, end=<span class="string">&quot;&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> total_train_step % <span class="number">100</span> == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>()</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;train step:<span class="subst">&#123;total_train_step&#125;</span>, loss:<span class="subst">&#123;loss.item()&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在测试中</span></span><br><span class="line">    total_test_step = total_test_step + <span class="number">1</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;total loss in test set: <span class="subst">&#123;total_test_loss&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;accuracy in test set: <span class="subst">&#123;total_accuracy / test_set_size&#125;</span>&quot;</span>)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test loss&quot;</span>, total_test_loss, total_test_step)</span><br><span class="line">    writer.add_scalar(<span class="string">&quot;test accuracy&quot;</span>, total_accuracy / test_set_size, total_test_step)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>并且我们还将数值打印了出来。通过打印训练和测试信息，可以使人知道训练进行到了何种程度，并在训练出问题时及时终止。</p>
+</blockquote>
+<p>最后不要忘记关闭 <code>SummaryWriter</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">writer.close()</span><br></pre></td></tr></table></figure></p>
+<p>接着，我们需要在控制台执行命令<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tensorboard --logdir=logs/my_module_log</span><br></pre></td></tr></table></figure><br>然后便可在网页中查看 tensorboard 所绘制的图表。</p>
+<h2 id="七、模型的保存与加载"><a href="#七、模型的保存与加载" class="headerlink" title="七、模型的保存与加载"></a>七、模型的保存与加载</h2><p>对训练好的模型，我们需要将其保存到磁盘上，而不是随着程序结束而被内存释放。保存和加载模型有两种方式。</p>
+<p><strong>第一种</strong>如下所示<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">torch.save(my_module, <span class="string">&quot;./my_module.pt&quot;</span>)</span><br><span class="line"></span><br><span class="line">torch.load(<span class="string">&quot;./my_module.pt&quot;</span>)</span><br></pre></td></tr></table></figure><br>这将同时保存模型的结构和参数，但是需要注意，在加载使用模型时，依旧需要有模型类的定义。</p>
+<p><strong>第二种</strong>如下所示<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">torch.save(my_module.state_dict(), <span class="string">&quot;./my_module.pt&quot;</span>)</span><br><span class="line"></span><br><span class="line">my_module = MyModule().to(device)</span><br><span class="line">my_module.load_state_dict(torch.load(<span class="string">&quot;./my_module.pt&quot;</span>))</span><br></pre></td></tr></table></figure><br>这样的方式将只保存模型的参数，但不保存模型的结构。可以减小一部分文件大小。示例代码中使用的便是这种方法。</p>
+<h2 id="八、gpu加速"><a href="#八、gpu加速" class="headerlink" title="八、gpu加速"></a>八、gpu加速</h2><p>gpu 可以加速模型训练。pytorch 可以使用 NVIDIA 显卡进行加速。默认的情况，训练模型使用 cpu。我们需要将其切换到 cuda。切换到使用 cuda 有两种方法。</p>
+<p>我们可以对模型、损失函数、张量使用 cuda。在<strong>第一种</strong>方法中，我们要调用 <code>cuda()</code> 方法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 模型</span></span><br><span class="line">my_module = MyModule()</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    my_module = my_module.cuda()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 损失函数</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss()</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    loss_func = loss_func.cuda()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在训练中</span></span><br><span class="line">        <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> test_dataloader:</span><br><span class="line">            <span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">                imgs = imgs.cuda()</span><br><span class="line">                targets = targets.cuda()</span><br></pre></td></tr></table></figure><br>为了避免 cuda 不可用，要在使用 <code>cuda()</code> 前调用 <code>torch.cuda.is_available()</code> 做判断。</p>
+<p><strong>第二种</strong>方法较为简单，需要调用 <code>to()</code> 方法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 声明训练时使用的设备</span></span><br><span class="line">device = torch.device(<span class="string">&quot;cpu&quot;</span>)</span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    device = torch.device(<span class="string">&quot;cuda&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 模型</span></span><br><span class="line">my_module = MyModule().to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 损失函数</span></span><br><span class="line">loss_func = nn.CrossEntropyLoss().to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在训练中</span></span><br><span class="line">    <span class="keyword">for</span> imgs, targets <span class="keyword">in</span> train_dataloader:</span><br><span class="line">        imgs = imgs.to(device)</span><br><span class="line">        targets = targets.to(device)</span><br></pre></td></tr></table></figure><br>在第二种方法中，我们事先声明了所用的设备，然后只需要对模型、损失函数、张量调用 <code>to()</code> 方法即可。避免了重复的判断。</p>
+<h2 id="九、总结"><a href="#九、总结" class="headerlink" title="九、总结"></a>九、总结</h2><p>以上便是 pytorch 的基本使用。我们可以从代码中总结出模型训练的一般流程：</p>
+<ol>
+<li>加载数据</li>
+<li>构建神经网络</li>
+<li>设置参数，比如损失函数、学习率等</li>
+<li>训练模型</li>
+<li>评价模型</li>
+<li>保存模型</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/4754b2bd/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1259,137 +1402,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5b526508/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/5b526508/" class="post-title-link" itemprop="url">机器学习之模型评估与优化</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-16 16:22:46" itemprop="dateCreated datePublished" datetime="2022-10-16T16:22:46+08:00">2022-10-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。</p>
-<blockquote>
-<p>模型的这种能力称为泛化能力</p>
-</blockquote>
-<p>这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增加样本数量等）。因此我们需要方法，来一般化地评估模型的质量。</p>
-<h2 id="二、泛化能力的衡量指标"><a href="#二、泛化能力的衡量指标" class="headerlink" title="二、泛化能力的衡量指标"></a>二、泛化能力的衡量指标</h2><p>正如前一节所说，泛化能力的衡量就是衡量模型对训练样本集之外的数据集的预测效果。我们知道衡量模型对训练样本预测效果的指标是损失函数，那么对于其他数据，我们同样可以把损失函数的概念迁移到这里来。</p>
-<p>我们可以将已经获得的数据划分为两部分，一部分用于训练模型，称为训练集；另一部分用于测试模型的泛化能力，称为测试集。对于用训练集训练后的数据，我们再求该模型对测试集数据的损失函数。</p>
-<p>举个例子，如果我们采用简单的平方误差损失函数，则我们就是要求</p>
-<script type="math/tex; mode=display">
-    J_{test}(\vec{w},b) = 
-    \frac{1}{2m_{test}}\sum_{i=0}^{m_{test}-1} ( f_{\vec{w},b}(\vec{x}^{(i)}_{test}) - y^{(i)}_{test} )^2</script><p>$J_{test}(\vec{w},b)$ 就是我们对该模型泛化能力的衡量指标，称为测试误差。</p>
-<p>我们可以将该指标与训练集的损失函数值 $J<em>{train}(\vec{w},b)$（注意这里没有正则项，称为训练误差）进行比较。一般的情况是 $J</em>{test}(\vec{w},b)$ 大于 $J_{train}(\vec{w},b)$。</p>
-<p>我们还可以将该模型的泛化能力与其他模型的泛化能力，或者与人类的误差进行比较。这样我们就可以评价我们所训练的模型的优劣了。</p>
-<h2 id="三、交叉验证集"><a href="#三、交叉验证集" class="headerlink" title="三、交叉验证集"></a>三、交叉验证集</h2><p>在我们继续评估模型之前，我们要先来考虑一些我们究竟要如何进行优化。你可能会想，我们既然有了评价模型泛化能力的指标 $J_{test}$，那么只要试图让该指标减小不就可以了吗？这是一个很直接的想法。</p>
-<p>但问题是，如果我们向着使 $J_{test}$ 减小的目标优化，那么测试集与训练集有什么区别呢？按照这种方法，测试集就相当于变成了训练集的一部分，而不再能成为衡量训练集之外泛化能力的样本了。</p>
-<p>因此，我们不能将训练集作为优化的方向，而只能将其作为评价的指标。我们需要再分出一部分数据，作为优化时的参考。这就是交叉验证（Cross-validation）集。对应的衡量指标为 $J_{cv}$</p>
-<h2 id="四、模型评价"><a href="#四、模型评价" class="headerlink" title="四、模型评价"></a>四、模型评价</h2><p>我们用偏差和方差来评价一个模型。</p>
-<ul>
-<li>偏差表示模型对训练集的预测相对于真实情况的误差，如果模型对训练样本都不能很好地拟合或分类，就称其为高偏差的。 $J_{train}$ 可衡量模型的偏差。</li>
-<li>方差表示模型对测试集的预测相对于真实情况的误差（也就是泛化能力本身），如果模型不能很好地预测测试集中数据，就称其为高方差的。$J_{cv}$ 可衡量模型的方差。</li>
-</ul>
-<blockquote>
-<p>一般来说，模型的方差会大于偏差。因此高偏差的模型都是高方差的。</p>
-<p>随着模型复杂度的提升，模型的偏差会逐渐降低，但偏差会先降低再升高；随着训练样本量的提升，偏差会逐渐减小，方差会逐渐升高，直到最后方差和偏差程度接近。</p>
-</blockquote>
-<h2 id="五、倾斜数据集的误差指标"><a href="#五、倾斜数据集的误差指标" class="headerlink" title="五、倾斜数据集的误差指标"></a>五、倾斜数据集的误差指标</h2><p>对于正面例子和负面例子比例差距较大的训练样本（也就是说，被标记为某一结果的样本数量占样本总数的比例很大或很小），根据全概率分布可知，可能就算全部预测同一结果，其正确的概率也很大。因此我们需要能消除样本本身概率分布导致的正确率偏差的指标。</p>
-<p>有两种误差指标用于评价这种情况。分别为准确率（Precision）和召回率（Recall）。</p>
-<ul>
-<li>准确率衡量的是，模型预测为某一结果的情况中，有多少是预测正确的。</li>
-<li>召回率衡量的是，对所有真正为某一结果的情况，有多少是模型预测到的。</li>
-</ul>
-<p>也就是说，设</p>
-<ul>
-<li>TP表示将正类预测为正类的数量</li>
-<li>FN表示将正类预测为负类的数量</li>
-<li>FP表示将负类预测为正类的数量</li>
-<li>TN表示将负类预测为负类的数量</li>
-</ul>
-<p>则准确率为</p>
-<script type="math/tex; mode=display">
-    P = \frac{TP}{TP + FP}</script><p>召回率为</p>
-<script type="math/tex; mode=display">
-    R = \frac{TP}{TP + FN}</script><p>可以这样理解，把预测的过程当做选择的过程，准确率高就是“不重”，不过多的选择，以致把许多不属于的也包括在内；召回率高就是“不漏”，不过少地选择，把一些属于的漏掉了。</p>
-<p>我们很容易就能得知，准确率和召回率在一定程度上是矛盾的。想要准确率高，就很可能漏掉一些；想要召回率高，就可能包含了不属于的东西。</p>
-<blockquote>
-<p>对于逻辑回归来说，提高阈值（即把多少数值以上的设定为真），准确率上升，召回率下降；降低阈值，准确率下降，召回率上升。</p>
-</blockquote>
-<p>要权衡准确率和召回率，对模型进行整体的评价的方法是采用 F1 分数（F1 Score）。即</p>
-<script type="math/tex; mode=display">
-    F1 = \frac{1}{\frac{1}{2}(\frac{1}{P} + \frac{1}{R})}</script><blockquote>
-<p>相当于对准确率和召回率的调和平均</p>
-</blockquote>
-<h2 id="五、优化策略"><a href="#五、优化策略" class="headerlink" title="五、优化策略"></a>五、优化策略</h2><p>优化模型需要考虑不同的情况。</p>
-<p>一种是模型具有高偏差的情况。<br>模型具有高偏差，常常意味着当前的模型复杂度不足以拟合当前数据。此时若一味地增加训练数据量，并不会使得拟合效果提高太多。应该做的是提高模型复杂度。如增加特征、增加层数、减小正则化系数等等。</p>
-<p>另一种是模型具有高方差，且偏差较低的情况。<br>这种情况常常意味着模型对样本产生了过拟合。需要做的是降低拟合程度。采取如减少特征、增大正则化系数等手段。增加训练数据量在这种情况下可以起到效果。</p>
-<p><strong>这里再介绍一些增加数据量的方法：</strong></p>
-<p>除了通过各种手段获取新数据以外，我们还可以利用现有数据创造新数据。如对于图像，可以将其经过旋转、伸缩、扭曲等操作生成新的图像；又比如音频，可以增加背景音、噪声等来模拟更加真实的环境。这些手段都能增加模型的稳健性和泛用性。</p>
-<p>迁移学习同样是一种利用数据的手段。该方法获得经过其他数据训练过的用于完成类似任务的模型，修改部分神经层（如输出层），再进行当前任务的训练。这样做相当于使用了其他任务中的数据。（这种方法可行的原因是，相似的任务，在位置靠前的部分常有类似的处理过程）</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1461,7 +1473,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">59</span>
+          <span class="site-state-item-count">60</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1474,7 +1486,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-count">55</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
