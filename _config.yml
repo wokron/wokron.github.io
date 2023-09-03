@@ -137,3 +137,10 @@ live2d:
 marked:
   prependRoot: true
   postAsset: true
+
+# hexo-generator-searchdb
+search:
+  path: search.xml
+  field: post
+  format: html
+  limit: 10
