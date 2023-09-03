@@ -159,6 +159,113 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/c837c423/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/c837c423/" class="post-title-link" itemprop="url">Django创建表结构</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-09 13:44:16" itemprop="dateCreated datePublished" datetime="2023-01-09T13:44:16+08:00">2023-01-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、对象关系映射（ORM）"><a href="#一、对象关系映射（ORM）" class="headerlink" title="一、对象关系映射（ORM）"></a>一、对象关系映射（ORM）</h2><p>面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。</p>
+<blockquote>
+<p>面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。</p>
+</blockquote>
+<h2 id="二、django-的-ORM-实现"><a href="#二、django-的-ORM-实现" class="headerlink" title="二、django 的 ORM 实现"></a>二、django 的 ORM 实现</h2><p>django 通过 <code>models.Model</code> 类来对应数据库中的表结构，如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br></pre></td></tr></table></figure><br>即表示了 <code>User</code> 类，也对应了数据库中的 user 表。django 会根据类的声明自动在数据库中建表。</p>
+<p>django 用类中的属性来表示表的列字段。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    password = models.CharField(max_length=<span class="number">50</span>)</span><br></pre></td></tr></table></figure><br>定义了 user 表的主键、名字、密码信息。</p>
+<p>表间关系通过类与其属性表示，如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    password = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    courses = models.ManyToManyField(to=<span class="string">&quot;Course&quot;</span>)</span><br></pre></td></tr></table></figure><br><code>courses</code> 属性表示用户具有的课程，反映了用户与课程之间的关系。</p>
+<h2 id="三、类属性与数据库字段的对应"><a href="#三、类属性与数据库字段的对应" class="headerlink" title="三、类属性与数据库字段的对应"></a>三、类属性与数据库字段的对应</h2><p>如上一节所述，django 建立了类属性与数据库字段之间的对应关系。常见的如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">models.CharField</span><br><span class="line">models.TextField</span><br><span class="line">models.IntegerField</span><br><span class="line">models.FloatField</span><br></pre></td></tr></table></figure><br>就对应了数据库中的 char(n)，text，int，float 类型。不一一详述。</p>
+<h2 id="四、主键与外键"><a href="#四、主键与外键" class="headerlink" title="四、主键与外键"></a>四、主键与外键</h2><p>在表中要定义主键，作为该表一条记录的唯一标识。相应的，在 django 中定义主键需要在对应属性上添加 <code>primary_key=True</code> 参数。例如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure><br>未定义主键时，django 也会自动创建一个主键。</p>
+<p>通过外键可以设置表间的关系。外键通过属性 <code>models.ForeignKey</code> 定义。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Task</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure><br>就定义了一个外键，对数据库来说，保存的是 course 表中的主键信息。但对 Task 类来说，则是定义了一个 Course 类型的属性。但这两种观点的本质是一样的，都是建立了 task 到 course 的关系。更准确地说，是多到一的关系（不同的 task 可以对应同一个 course）。</p>
+<blockquote>
+<p>注意建立表间关系的时候，需要设置 on_delete 参数，表示外键所对应的记录被删除时，本记录的行为。在例子中 CASCADE 表示外键对应的删除后，本记录也删除。</p>
+</blockquote>
+<h2 id="五、表间关系的创建"><a href="#五、表间关系的创建" class="headerlink" title="五、表间关系的创建"></a>五、表间关系的创建</h2><p>外键是创建表间关系的基础。这一节将更深入讨论表间关系。表间关系可以分为三类，分别是一对一、多对一和多对多。可以通过如下例子进行理解：</p>
+<ul>
+<li>一对一：一个人对应唯一的身份证，一张身份证对应唯一的一个人。</li>
+<li>多对一：一个班级有许多学生，而一个学生只属于某个班级。</li>
+<li>多对多：一门课有许多的学生，一个学生会上不同的课。</li>
+</ul>
+<h3 id="一对一的创建"><a href="#一对一的创建" class="headerlink" title="一对一的创建"></a>一对一的创建</h3><p>在数据库中，一对一的关系比较随意，可以在 A 表中包含 B 表的主键，也可以在 B 表中包含 A 表的主键。只需要保证外键的唯一性即可。</p>
+<p>django 设置一对一关系，需要定义 <code>models.OneToOneField</code> 的属性。如在 <code>Person</code> 类中有<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">id_card = models.OneToOneField(to=<span class="string">&quot;IDCard&quot;</span>, on_delete=models.RESTRICT)</span><br></pre></td></tr></table></figure><br>这样就可以通过访问 <code>Person</code> 类的属性 <code>id_card</code> 来访问对应的表格数据了。</p>
+<blockquote>
+<p>models.RESTRICT 表示如果存在关系，则删除会产生异常</p>
+</blockquote>
+<h3 id="多对一的创建"><a href="#多对一的创建" class="headerlink" title="多对一的创建"></a>多对一的创建</h3><p>建立多对一关系，在数据库中需要让多的一方设置外键，包含一的一方的主键。</p>
+<p>而在 django 中，则只需要添加一个外键即可实现。如第五节中的例子<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure></p>
+<h3 id="多对多的创建"><a href="#多对多的创建" class="headerlink" title="多对多的创建"></a>多对多的创建</h3><p>多对多关系不能通过在任何一方或两方中添加外键实现。需要建立第三个表，称中间表或关系表，在该表中同时包含原来两个表的主键。</p>
+<p>django 通过添加 <code>models.ManyToManyField</code> 创建多对多关系。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Course</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.CharField(max_length=<span class="number">10</span>, primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    users = models.ManyToManyField(to=User)</span><br></pre></td></tr></table></figure><br>这样将自动创建一个中间表 course_user，包含 course 表和 user 表的主键。</p>
+<p>但是这样只能创建由 Course 到 User 的单向联系。通过 Course 可以访问 User，但从 User 却不能访问 Course。可以自行定义中间表来实现双向多对多关系。</p>
+<blockquote>
+<p>注意，如果在 User 表中添加属性 <code>courses = models.ManyToManyField(to=Courses)</code> 并不能解决问题。这只会创建另一个表 user_course，最终形成两个单向多对多关系。</p>
+</blockquote>
+<p>正确的方式是通过 <code>through=</code> 参数指定中间表。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Course</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.CharField(max_length=<span class="number">10</span>, primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    users = models.ManyToManyField(to=User, through=<span class="string">&quot;Course2User&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Course2User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br><span class="line">    user = models.ForeignKey(to=User, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure></p>
+<p>这样就可以通过中间表查询某个 <code>User</code> 对应的 <code>Course</code> 了。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2c9af791/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1274,138 +1381,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/55036469/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/55036469/" class="post-title-link" itemprop="url">机器学习之决策树</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-17 08:07:31" itemprop="dateCreated datePublished" datetime="2022-10-17T08:07:31+08:00">2022-10-17</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>决策树是另一种十分有效的机器学习模型。该模型采取树状分支结构，能够很快地进行模型训练，并具有较高的准确率。</p>
-<p>本文将以决策树的最简单形式开始，即特征只包括真值特征，或只有两种选择的特征，且结果也只有两种的情况。</p>
-<h2 id="二、决策树基本模型"><a href="#二、决策树基本模型" class="headerlink" title="二、决策树基本模型"></a>二、决策树基本模型</h2><p>决策树是一个二叉树，树的非叶节点存储需要区分的特征，叶节点存储预测的分类。对于每一个要进行预测的数据，从根节点开始，根据当前节点所对应的特征，选择移动到左子节点或右子节点。直到最终移动到一个叶节点，返回预测结果。</p>
-<p>可以认为决策树的预测过程就是通过不同特征将当前数据分组归类的过程。决策树的构建过程，或者更一般地说，该模型的学习过程，也就是不断确定如何分类的过程。</p>
-<h2 id="三、决策树的构建"><a href="#三、决策树的构建" class="headerlink" title="三、决策树的构建"></a>三、决策树的构建</h2><p>总体上讲，对于我们已有的样本数据，构建决策树的过程时这样的。</p>
-<ol>
-<li>选择一个特征，将该特征作为当前节点的特征</li>
-<li>根据该特征将样本数据分为两组</li>
-<li>对于两组被分类的数据，分别递归执行如上操作，从而确定当前节点的左右子节点。直到当前数据已经全部是要预测的某个结果了、或者所有特征都被用完、又或者递归进行到了最大层数。</li>
-</ol>
-<p>可以看到，决策树构建的过程中大部分过程都可以用简单的程序逻辑实现。现在唯一要解决的就是在每个节点时，如何选择一个特征了。</p>
-<blockquote>
-<p>当然，对于神经网络来说也是这样的。唯一要解决的是如何选择权重。</p>
-</blockquote>
-<h2 id="四、特征的选择"><a href="#四、特征的选择" class="headerlink" title="四、特征的选择"></a>四、特征的选择</h2><p>我们要衡量选择不同特征对训练样本的区分效果。这点类似于损失函数。</p>
-<p>我们区分的目标是使得所有当前组的样本属于同一个预测结果。那么我们就要找到一种衡量纯度的指标，数据越纯指标越小，数据越不纯指标越大。这种指标就是熵。假设某一种类在数据总体中的占比为 $p_1$，则熵 $H(p_1)$ 为</p>
-<script type="math/tex; mode=display">
-    p_0 = 1 - p_1 \\
-    H(p_1) = -p_1log_2(p_1) - p_0 log_2(p_0)</script><p>即</p>
-<script type="math/tex; mode=display">
-    H(p_1) = -p_1log_2(p_1) - (1-p_1) log_2(1 - p_1)</script><p>当 $p_1 = 0$ 或 $p_1 = 1$ 时</p>
-<script type="math/tex; mode=display">
-    H(0) = H(0+0) = 0 \\
-    H(1) = H(1-0) = 0</script><blockquote>
-<p>可以看出熵与交叉熵损失函数之间有联系。确实，交叉熵损失函数也是用来衡量预测的纯度的。对于一个预测，我们总希望它接近 0 或者 1，也就是纯度最大的比例。</p>
-</blockquote>
-<p>我们不妨设决策树中预测可能结果中一个为正例，一个为负例。假设对于当前节点处的训练样本集合 $X$， 我们选择第 j 个特征，将该集合分为两个部分 $A<em>j$ 和 $B_j$。设此时 $A_j$ 和 $B_j$ 中正例所占比例分别为 $p</em>{Aj}, p_{Bj}$，则对应的熵为：</p>
-<script type="math/tex; mode=display">
-    H(p_{Aj}) 和 H(p_{Bj})</script><p>对于不同的 j，两个熵值均会不同，那么我们如何比较哪种选择更为合适呢？我们需要对熵取加权平均，权重为该集合中元素数量占原集合数量的比重。</p>
-<script type="math/tex; mode=display">
-    \frac{\#A_jH(p_{Aj}) + \#B_jH(p_{Bj})}{\#X}</script><blockquote>
-<p>这是很合理的。举个例子，假设选择了一个特征将一个样本和其他样本分开，虽然第一个样本的熵为 0，可是该分类对样本整体的影响较小，决定整体纯度的还是其他样本的部分，最终平均后的熵可能并不会减少太多</p>
-</blockquote>
-<p>我们将分类后的平均熵值对分类前的总熵的减少量称为信息增益（Information Gain）。假设选择某一特征时，子集合元素数量占原集合的比重为 $w^{left}, w^{right}$，则</p>
-<script type="math/tex; mode=display">
-    \text{Information Gain} = H(p^{root}_1) - (w^{left}H(p^{left}_1) + w^{right}H(p^{right}_1))</script><p>这样我们就解决了选择特征的问题，只要选择使信息增益最大的特征即可。</p>
-<blockquote>
-<p>很明显，如果一个特征在祖先节点已经被选择过了，则信息增益为 0。当所有特征的信息增益都为 0 时，说明所有特征都已经被使用过了，此时就可以返回递归了。</p>
-</blockquote>
-<h2 id="五、多取值特征"><a href="#五、多取值特征" class="headerlink" title="五、多取值特征"></a>五、多取值特征</h2><p>之前，我们的每一个特征都只能有两个取值，我们要将特征的取值推广到多个。这里采用的方法是将多取值特征转化为双取值特征。</p>
-<p>解决方案是采用独热（one-hot）编码。举例来说，如果有一个特征 x，取值为1、2或3。那么我们可以将其转化为三个特征 is_x_equal1、is_x_equal2和is_x_equal3。这样，三个新的特征就可以只取 0、1 两个值了。</p>
-<h2 id="六、连续取值特征"><a href="#六、连续取值特征" class="headerlink" title="六、连续取值特征"></a>六、连续取值特征</h2><p>对于连续取值的特征，我们要将其转化为离散特征。</p>
-<p>具体来说，我们可以取一个阈值 n，将样本按该特征的值分为大于 n 和小于等于 n 的两个部分。为了方便选择，我们可以取样本的值进行分割，也就是分别取每一个样本中该特征对应的值作为划分时所用的值，计算其信息增益，最后选择使信息增益最大的值作为对该特征的划分即可。</p>
-<h2 id="七、回归树——对连续取值结果的预测"><a href="#七、回归树——对连续取值结果的预测" class="headerlink" title="七、回归树——对连续取值结果的预测"></a>七、回归树——对连续取值结果的预测</h2><p>回归树是对决策树的进一步扩展。使得决策树模型可以学习结果为连续值的训练样本。</p>
-<p>这样，原本的计算信息增益的方法就不再适用了。现在的数据不再有纯度的分别了，取而代之的是疏密的区别。这里我们采用样本结果的方差来衡量数据的离散程度。依旧设子集合元素数量占原集合的比重为 $w^{left}, w^{right}$，样本结果的方差则为 $var^{root}, var^{left}, var^{right}$</p>
-<p>则增益的大小为</p>
-<script type="math/tex; mode=display">
-    \text{Gain} = var^{root} - (w^{left}var^{left} + w^{right}var^{right})</script><p>经过不断的递归构建，我们最终在叶节点处得到一组方差较小的样本。将这组样本的结果取平均，即得到叶节点对应的预测值。</p>
-<h2 id="八、决策树林"><a href="#八、决策树林" class="headerlink" title="八、决策树林"></a>八、决策树林</h2><p>决策树的缺点之一是其可能对数据中的微小变化十分敏感，以至于稍有不同的数据就会产生截然不同的决策树结构。对于需要有比较大可靠性的预测，这是需要避免的。</p>
-<p>解决方法是生成许多不同结构的决策树，通过这些决策树的预测结果表决或取平均，得到最终的预测结果。但确定的训练样本只会产生确定的决策树。因此这里采用随机化保证生成不同结构的决策树。</p>
-<p>也就是说，对于大小为 m 的训练集，我们从中随机放回抽取 m 个样本，组成一个新的训练集，用该训练集生成一个决策树。重复这样的过程多次，就可以得到许多不同结构的决策树。</p>
-<blockquote>
-<p>还有一种名为 XGBoost 的方法。这样方法在选取样本组成新的训练集的过程中，会倾向于选择之前并未被选取的样本，这样组成的样本集合将更为一般化，从而使得学习效果更好。</p>
-</blockquote>
-<p>这样，我们就得到了能解决大部分机器学习问题的决策树算法。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1473,7 +1452,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-count">61</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1486,7 +1465,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-count">56</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

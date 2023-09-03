@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、前言最近一段时间在用 c++ 写一个项目，因此学了学 cmake。说实话，cmake 奇怪的语法在一开始实在容易让人望而生畏。但是上手使用的话就会发现平常会用到的不过是其中的一小部分，并且通常有规律可循。掌握这一部分的内容，大概率就可以组织起一个规模较大的项目了。因此本文也就旨在讲述 cmake 的这一部分的内容。 当然，阅读本教程之前需要了解代码编译、链接的相关知识。关于编译相关的命令，可见">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CMake实用语法教程">
+<meta property="og:url" content="https://wokron.github.io/posts/38f6cfcb/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言最近一段时间在用 c++ 写一个项目，因此学了学 cmake。说实话，cmake 奇怪的语法在一开始实在容易让人望而生畏。但是上手使用的话就会发现平常会用到的不过是其中的一小部分，并且通常有规律可循。掌握这一部分的内容，大概率就可以组织起一个规模较大的项目了。因此本文也就旨在讲述 cmake 的这一部分的内容。 当然，阅读本教程之前需要了解代码编译、链接的相关知识。关于编译相关的命令，可见">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-09-03T03:00:23.000Z">
+<meta property="article:modified_time" content="2023-09-03T10:32:51.730Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="cmake">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/38f6cfcb/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CMake实用语法教程 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/38f6cfcb/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CMake实用语法教程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-09-03 11:00:23 / 修改时间：18:32:51" itemprop="dateCreated datePublished" datetime="2023-09-03T11:00:23+08:00">2023-09-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%99%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">教程</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>最近一段时间在用 c++ 写一个项目，因此学了学 cmake。说实话，cmake 奇怪的语法在一开始实在容易让人望而生畏。但是上手使用的话就会发现平常会用到的不过是其中的一小部分，并且通常有规律可循。掌握这一部分的内容，大概率就可以组织起一个规模较大的项目了。因此本文也就旨在讲述 cmake 的这一部分的内容。</p>
+<p>当然，阅读本教程之前需要了解代码编译、链接的相关知识。关于编译相关的命令，可见我的文章<a href="https://wokron.github.io/posts/a5aebc7b/">系统编程之命令行编译</a>。</p>
+<span id="more"></span>
+<p>cmake 下载方式如下（apt）<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install build-essential</span><br><span class="line">sudo apt-get install cmake</span><br></pre></td></tr></table></figure></p>
+<h2 id="二、第一步"><a href="#二、第一步" class="headerlink" title="二、第一步"></a>二、第一步</h2><p>说到第一个程序，那当然要请出经典的 <code>hello, world</code> 了。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;hello, world\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在本文中我会首先给出使用 gcc 编译的命令，之后再使用 cmake 做同样的事情。那么对于第一步，我们的 gcc 命令如下<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc main.cpp -o main</span><br></pre></td></tr></table></figure></p>
+<p>当然很简单，而对于 cmake 也类似。要使用 cmake，我们需要添加一个配置文件 CMakeLists.txt，其中包含要执行的操作。本小节中，CMakeLists.txt 的内容是<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(main)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(main main.cpp)</span><br></pre></td></tr></table></figure></p>
+<p>其中第一条指定了 cmake 版本要求，第二条指定了当前项目名，而第三条 <code>add_executable</code> 则实现了和 gcc 命令相同的操作：指定源文件 <code>main.cpp</code> 和输出文件名 <code>main</code>，生成一个可执行文件。</p>
+<p>要进行编译，需要首先使用 <code>cmake</code> 命令生成构建文件，这会在当前目录下生成包含 Makefile 在内的许多配置文件。之后再通过 <code>make</code> 指令即可完成编译。</p>
+<p>为了不影响源文件的结构，我们可以选择新建一个文件夹执行 <code>cmake</code> 命令。假设现在位于项目根目录，那么执行如下命令<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> build</span><br><span class="line"><span class="built_in">cd</span> build</span><br><span class="line">cmake ..</span><br></pre></td></tr></table></figure><br>即可生成构建文件。</p>
+<p>随后执行 <code>make</code> 命令完成编译并运行。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></p>
+<p>仅就这一节看来，cmake 和 gcc 并没有什么差距，反而步骤更加繁琐，但是随着项目结构越发复杂，cmake 的优势就会越发明显。</p>
+<h2 id="三、头文件的引入"><a href="#三、头文件的引入" class="headerlink" title="三、头文件的引入"></a>三、头文件的引入</h2><p>大部分实际的项目都不会只有一个文件。如果有多个源文件，编译器可以将其编译成同一个 .o 文件，源文件间的符号通过头文件共享。下面我们举如下的项目为例。<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">|-- CMakeLists.txt</span><br><span class="line">|-- include</span><br><span class="line">|   `-- add.h</span><br><span class="line">`-- src</span><br><span class="line">    |-- add.cpp</span><br><span class="line">    `-- main.cpp</span><br></pre></td></tr></table></figure></p>
+<p>add.h 中声明了函数 <code>int add(int a, int b)</code>，并在 add.cpp 中实现，而 main.cpp 则调用了该函数，因此需要引入头文件 add.h 获得该函数的声明。</p>
+<p>如果使用 gcc，可以使用如下命令编译。注意此处需要通过命令行参数 <code>-I</code> 设定头文件所在路径。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc src/add.cpp src/main.cpp -I ./include -o main</span><br></pre></td></tr></table></figure></p>
+<p>对于 cmake 来说，配置如下<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(main)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(main src/main.cpp src/add.cpp)</span><br><span class="line"><span class="keyword">target_include_directories</span>(main PRIVATE <span class="keyword">include</span>)</span><br></pre></td></tr></table></figure><br>可以看出 <code>add_executable</code> 指令之外，我们新增加了一条指令 <code>target_include_directories</code>，这条命令将路径 ./include 添加到生成目标文件 main 所需的头文件路径中。</p>
+<blockquote>
+<p>注意 <code>target_include_directories</code> 中除了目标和 include 路径外，还有一个符号 <code>PRIVATE</code>，该符号指定了头文件的作用范围，<code>PRIVATE</code> 表示头文件只用于当前的目标，而不用于链接当前目标的文件，类似还有 <code>PUBLIC</code>，将头文件向外暴露，和 <code>INTERFACE</code>，目标不使用，但向外暴露。当然现在不理解没有关系，在之后我们还会遇到。</p>
+</blockquote>
+<h2 id="四、库的编译和链接"><a href="#四、库的编译和链接" class="headerlink" title="四、库的编译和链接"></a>四、库的编译和链接</h2><p>有时候可能需要将一个模块编译成一个库，以便用于不同的程序。我们还以前一小节所用的代码为例，但这次我们重新组织代码结构。因为 main 模块调用了 add 模块提供的函数，所以我们可以直接把 add 模块编译成一个库，再将该库与 main 链接。</p>
+<p>因为要将 add 作为一个库，所以这里将 add 移到了一个文件夹中。<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">|-- add</span><br><span class="line">|   |-- include</span><br><span class="line">|   |   `-- add</span><br><span class="line">|   |       `-- add.h</span><br><span class="line">|   `-- src</span><br><span class="line">|       `-- add.cpp</span><br><span class="line">|-- CMakeLists.txt</span><br><span class="line">`-- main.cpp</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>这里有一个技巧，include 的路径下并不直接放头文件，而是在其中增加一层以库名为名的文件夹，这样引入的时候就需要使用 <code>#include &lt;add/add.h&gt;</code> 而不是 <code>#include &lt;add.h&gt;</code>，可以避免命名冲突。</p>
+</blockquote>
+<p>gcc 可以选择编译为静态库或动态链接库，对于静态库，使用如下的命令创建 add 模块的静态库<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -c add/src/add.cpp -I add/include <span class="comment"># just compile add</span></span><br><span class="line">ar cr libadd.a add.o <span class="comment"># create a static lib add (this name is libadd.a)</span></span><br></pre></td></tr></table></figure></p>
+<p>之后还需要将库文件与程序链接起来<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc main.cpp -I add/include -L . -l add -o main</span><br></pre></td></tr></table></figure></p>
+<p>同理，对于动态库，有<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -c -fPIC add/src/add.cpp -I add/include -o add.o</span><br><span class="line">gcc -shared -fPIC add.o -o libadd.so</span><br></pre></td></tr></table></figure></p>
+<p>之后进行链接<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc main.cpp libadd.so -I add/include -o main</span><br></pre></td></tr></table></figure></p>
+<p>执行时还需要设定动态库位置<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LD_LIBRARY_PATH=.</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>可以看出，随着项目越来越复杂，我们为了完成编译需要进行的操作越来越繁琐了。一般的情况下，多个命令可以写成 shell 脚本；如果依赖关系更加复杂，则需要 makefile 管理编译环节；但如果项目更加庞大，使用 makefile 也需要编写大量代码的话，cmake 之类更加高级的工具就是必然的选择了。</p>
+</blockquote>
+<p>对于 cmake 来说，库的编译和链接同样简单。我们需要引入两条新的指令。<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(main)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_library</span>(add add/src/add.cpp)</span><br><span class="line"><span class="keyword">target_include_directories</span>(add PUBLIC add/<span class="keyword">include</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(main main.cpp)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(main PRIVATE add)</span><br></pre></td></tr></table></figure><br>注意这里对于 add.cpp，我们不再使用 <code>add_executable</code> 而是 <code>add_library</code>。默认这将创建一个动态库（对于静态库，添加 <code>STATIC</code> 符号即可 <code>add_library(add STATIC add/src/add.cpp)</code>）。之后我们需要将该库与 main 模块链接，这需要使用 <code>target_link_libraries</code>，和引入头文件时类似，只不过这次参数不是路径而是库名。不论是静态库还是动态库，cmake 都使用统一的方法进行处理，实际上简化了流程。</p>
+<blockquote>
+<p>其实还有另一种“库”，就是只包含头文件的库，使用如下方式定义<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">add_library</span>(headerlib INTERFACE)</span><br><span class="line"><span class="keyword">target_include_directories</span>(headerlib INTERFACE headerlib/<span class="keyword">include</span>)</span><br></pre></td></tr></table></figure></p>
+<p>注意这里出现了 <code>PUBLIC</code> 和 <code>PRIVATE</code>。这次 add.h 被 main.cpp 引用，因此需要使用 <code>PUBLIC</code>。试想一下，将 add.cpp 中的 <code>#include &lt;add/add.h&gt;</code> 去掉（因为 add.cpp 中定义了 add 函数，所以可以去掉），那么这里就可以使用 <code>INTERFACE</code> 或 <code>PUBLIC</code>。</p>
+</blockquote>
+<h2 id="五、项目组织——子目录"><a href="#五、项目组织——子目录" class="headerlink" title="五、项目组织——子目录"></a>五、项目组织——子目录</h2><p>有时候如果你有一个规模较大的项目，将所有源文件堆在一起就不是一个很好的决定了。你可能需要拆分代码，将实现同一功能的源文件放在同一个文件夹中，并将其编译成一个库以便项目其他部分调用。但是一个项目拥有很多模块，如果所有模块的编译操作都在一个 CMakeLists.txt 文件中编写，则这个文件必然变得臃肿杂乱。合适的方法是在子目录中添加 CMakeLists.txt 文件，让该文件管理其目录下的编译操作，再将所有子目录合并到一起。</p>
+<p>在 cmake 中只需要一条语句就可以完成子目录的添加，那就是 <code>add_subdirectory</code>。为了便于理解，我们以如下的项目作为例子。<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">|-- add</span><br><span class="line">|   |-- CMakeLists.txt</span><br><span class="line">|   |-- include</span><br><span class="line">|   |   `-- add</span><br><span class="line">|   |       `-- add.h</span><br><span class="line">|   `-- src</span><br><span class="line">|       `-- add.cpp</span><br><span class="line">|-- CMakeLists.txt</span><br><span class="line">|-- fibo</span><br><span class="line">|   |-- CMakeLists.txt</span><br><span class="line">|   |-- include</span><br><span class="line">|   |   `-- fibo</span><br><span class="line">|   |       `-- fibo.h</span><br><span class="line">|   `-- src</span><br><span class="line">|       `-- fibo.cpp</span><br><span class="line">`-- main.cpp</span><br></pre></td></tr></table></figure></p>
+<p>在这个项目中，我们添加了一个 fibo 模块，用于计算斐波那契数，该模块使用 <code>add</code> 函数来完成加法运算。而 main.cpp 现在则添加了一个循环用来计算 1-10 的斐波那契数并输出。因此模块间有如下的引用关系：<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">fibo -&gt; add</span><br><span class="line">main -&gt; add</span><br><span class="line">main -&gt; fibo</span><br></pre></td></tr></table></figure></p>
+<p>我们在 add 和 fibo 文件夹中都添加了 CMakeLists.txt 用于模块内的编译操作。<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># add/CMakeLists.txt</span></span><br><span class="line"><span class="keyword">add_library</span>(add src/add.cpp)</span><br><span class="line"><span class="keyword">target_include_directories</span>(add PUBLIC <span class="keyword">include</span>)</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># fibo/CMakeLists.txt</span></span><br><span class="line"><span class="keyword">add_library</span>(fibo src/fibo.cpp)</span><br><span class="line"><span class="keyword">target_include_directories</span>(fibo INTERFACE <span class="keyword">include</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(fibo PRIVATE add)</span><br></pre></td></tr></table></figure>
+<p>而在项目路径下的 CMakeLists.txt 中使用 <code>add_subdirectory</code> 将 add 和 fibo 路径设定为子路径。这样 cmake 便会执行 add 和 fibo 的 CMakeLists.txt 中的指令。<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(main)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_subdirectory</span>(add)</span><br><span class="line"><span class="keyword">add_subdirectory</span>(fibo)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(main main.cpp)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(main PRIVATE add fibo)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>再一次，注意 <code>PUBLIC</code>、<code>INTERFACE</code> 和 <code>PRIVATE</code> 的使用，fibo 的源代码中没有引用 fibo.h 头文件，因此使用 <code>INTERFACE</code>；fibo 模块引用了 add 模块，但又不想向外提供 add 模块的接口，因此使用 <code>PRIVATE</code>（这时如果从 <code>target_link_libraries(main PRIVATE add fibo)</code> 中删除 add 则会报错）。</p>
+</blockquote>
+<p>使用 <code>add_subdirectory</code> 之后，项目结构多么清晰！</p>
+<h2 id="六、输入输出、变量与流程控制"><a href="#六、输入输出、变量与流程控制" class="headerlink" title="六、输入输出、变量与流程控制"></a>六、输入输出、变量与流程控制</h2><p>有时候你可能想要以多种不同的方式编译项目，比如说选择只编译某些模块或者选择是否编译单元测试。因此你希望在编译的时候输入某些参数选项，而 cmake 也确实提供了这一功能。</p>
+<p>cmake 实际上提供了输入、输出、变量和流程控制，像是一门编程语言。当然这一部分并不会深入，因为那样的话这篇文章就不能称为“实用”了。</p>
+<blockquote>
+<p>cmake 中的输入输出、变量与流程控制发生在调用 <code>cmake</code> 命令时。</p>
+</blockquote>
+<h3 id="输入输出"><a href="#输入输出" class="headerlink" title="输入输出"></a>输入输出</h3><p>cmake 中使用 <code>option</code> 设置布尔参数作为输入（当然也可以使用 set cache string 设置字符串参数，但不在本文范围内），使用 <code>message</code> 输出字符串，其中也可以包含参数。如下的例子中展示了具体的用法。<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(io)</span><br><span class="line"></span><br><span class="line"><span class="keyword">option</span>(OPTION_VAR <span class="string">&quot;this is help text&quot;</span> <span class="keyword">OFF</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">message</span>(<span class="string">&quot;the value of OPTION_VAR is $&#123;OPTION_VAR&#125;&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<h3 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h3><p>用户也可以使用 <code>set</code> 设置变量。语法为 <code>set(name &quot;value&quot;)</code>。另外 cmake 也内置了一些变量，如项目名 <code>PROJECT_NAME</code>、项目根路径 <code>CMAKE_SOURCE_DIR</code>、当前路径 <code>CMAKE_CURRENT_DIR</code> 等等。比如如下的例子<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(variable)</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span>(USER_VAR <span class="string">&quot;default&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">message</span>(<span class="string">&quot;the value of USER_VAR is $&#123;USER_VAR&#125;&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">message</span>(<span class="string">&quot;the name of project is $&#123;PROJECT_NAME&#125;&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">message</span>(<span class="string">&quot;the whole project&#x27;s dir is $&#123;CMAKE_SOURCE_DIR&#125;&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>运行后应该能看到类似下面的输出<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">the value of USER_VAR is default</span><br><span class="line">the name of project is variable</span><br><span class="line">the whole project&#x27;s dir is /home/wokron/Code/Projects/practical-cmake/variable</span><br></pre></td></tr></table></figure></p>
+<p>因为有了这些内置变量，我们也可以将之前的 CMakeLists.txt 继续化简，如用 <code>$&#123;PROJECT_NAME&#125;</code> 替换特定的目标名。</p>
+<h3 id="流程控制"><a href="#流程控制" class="headerlink" title="流程控制"></a>流程控制</h3><p>有了变量当然要有对变量的比较，cmake 提供了分支控制的方法。这里就只介绍一下分支控制。通过例子就可以理解分支控制的语法了。<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(controlflow)</span><br><span class="line"></span><br><span class="line"><span class="keyword">option</span>(OPTION_VAR <span class="string">&quot;this is option&quot;</span> <span class="keyword">ON</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(OPTION_VAR)</span><br><span class="line">    <span class="keyword">message</span>(<span class="string">&quot;OPTION_VAR is on&quot;</span>)</span><br><span class="line"><span class="keyword">else</span>()</span><br><span class="line">    <span class="keyword">message</span>(<span class="string">&quot;OPTION_VAR is off&quot;</span>)</span><br><span class="line"><span class="keyword">endif</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span>(STR_VAR <span class="string">&quot;123&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(STR_VAR <span class="keyword">MATCHES</span> <span class="string">&quot;123&quot;</span>)</span><br><span class="line">    <span class="keyword">message</span>(<span class="string">&quot;is 123!&quot;</span>)</span><br><span class="line"><span class="keyword">elseif</span>(STR_VAR <span class="keyword">MATCHES</span> <span class="string">&quot;456&quot;</span>)</span><br><span class="line">    <span class="keyword">message</span>(<span class="string">&quot;is 456&quot;</span>)</span><br><span class="line"><span class="keyword">else</span>()</span><br><span class="line">    <span class="keyword">message</span>(<span class="string">&quot;is other :(&quot;</span>)</span><br><span class="line"><span class="keyword">endif</span>()</span><br></pre></td></tr></table></figure></p>
+<p>通过参数和分支，就可以使我们项目的编译更加灵活，适应更复杂的情况。</p>
+<h3 id="增加子目录的情况"><a href="#增加子目录的情况" class="headerlink" title="增加子目录的情况"></a>增加子目录的情况</h3><p>在使用 <code>add_subdirectory</code> 时，cmake 究竟发生了什么？其实很简单，cmake 只是去执行子目录中的指令，等执行完成后再跳转回原本的位置而已。这一点实在类似于函数，因为子目录中的 CMakeLists.txt 中可能包含 <code>option</code>，而父目录中的 CMakeLists.txt 也可以通过使用 <code>option</code> 设置同名参数值来指定子目录的编译选项。这一点在引入第三方库的时候十分有用。如下的两个 CMakeLists.txt 实例可以很好的模拟这种情况。<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ./CMakeLists.txt</span></span><br><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(subdirectory)</span><br><span class="line"></span><br><span class="line"><span class="keyword">message</span>(<span class="string">&quot;this is $&#123;PROJECT_NAME&#125;&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">option</span>(EXTERN_OPTION <span class="string">&quot;&quot;</span> <span class="keyword">ON</span>)</span><br><span class="line"><span class="keyword">add_subdirectory</span>(extern)</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ./extern/CMakeLists.txt</span></span><br><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.8</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(extern_module)</span><br><span class="line"></span><br><span class="line"><span class="keyword">option</span>(EXTERN_OPTION <span class="string">&quot;this is option in extern&quot;</span> <span class="keyword">OFF</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">message</span>(<span class="string">&quot;this is $&#123;PROJECT_NAME&#125;&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(EXTERN_OPTION)</span><br><span class="line">    <span class="keyword">message</span>(<span class="string">&quot;will do something&quot;</span>)</span><br><span class="line"><span class="keyword">else</span>()</span><br><span class="line">    <span class="keyword">message</span>(<span class="string">&quot;will do other things&quot;</span>)</span><br><span class="line"><span class="keyword">endif</span>()</span><br></pre></td></tr></table></figure>
+<h2 id="七、测试"><a href="#七、测试" class="headerlink" title="七、测试"></a>七、测试</h2><p>cmake 提供了一个简单的测试功能。想要使用首先需要开启测试，这需要在根 CMakeLists.txt 中加入 <code>enable_testing</code><br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.10</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">project</span>(main)</span><br><span class="line"></span><br><span class="line"><span class="keyword">enable_testing</span>() <span class="comment"># here!!!</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">add_subdirectory</span>(add)</span><br><span class="line"><span class="keyword">add_subdirectory</span>(fibo)</span><br><span class="line"><span class="keyword">add_subdirectory</span>(<span class="keyword">test</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(main main.cpp)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(main PRIVATE add fibo)</span><br></pre></td></tr></table></figure></p>
+<p>之后我们需要创建用于测试的可执行文件，并使用 <code>add_test</code> 指令将其加入到测试中。这里我们选择使用一个新的子目录存储测试文件，当然也可以在其他位置，如每个模块目录内。test 目录下的 CMakeLists.txt 文件内容如下<br><figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">add_executable</span>(test_add test_add.cpp)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(test_add add)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(test_fibo test_fibo.cpp)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(test_fibo fibo)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_test</span>(NAME test_add <span class="keyword">COMMAND</span> test_add)</span><br><span class="line"><span class="keyword">add_test</span>(NAME test_fibo <span class="keyword">COMMAND</span> test_fibo)</span><br></pre></td></tr></table></figure></p>
+<p>以及测试文件的内容，这里就只是简单编写一下<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// test_add.cpp</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;add/add.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;assert.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">add</span>(<span class="number">1</span>, <span class="number">2</span>) == <span class="number">3</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">add</span>(<span class="number">1</span>, <span class="number">-1</span>) == <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">add</span>(<span class="number">1</span>, <span class="number">-2</span>) == <span class="number">-1</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">add</span>(<span class="number">100</span>, <span class="number">100</span>) == <span class="number">200</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// test_fibo.cpp</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;fibo/fibo.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;assert.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">1</span>) == <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">2</span>) == <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">3</span>) == <span class="number">2</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">4</span>) == <span class="number">3</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">5</span>) == <span class="number">5</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">6</span>) == <span class="number">8</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">7</span>) == <span class="number">13</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">8</span>) == <span class="number">21</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">9</span>) == <span class="number">34</span>);</span><br><span class="line">    <span class="built_in">assert</span>(<span class="built_in">fibonacci</span>(<span class="number">10</span>) == <span class="number">55</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>之后在 build 目录下执行如下命令<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cmake ..</span><br><span class="line">make</span><br><span class="line">make <span class="built_in">test</span></span><br></pre></td></tr></table></figure></p>
+<p>输出结果如下，测试成功！！！<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Test project /home/wokron/Code/Projects/practical-cmake/build/test</span><br><span class="line">    Start 1: test_add</span><br><span class="line">1/2 Test #1: test_add .........................   Passed    0.00 sec</span><br><span class="line">    Start 2: test_fibo</span><br><span class="line">2/2 Test #2: test_fibo ........................   Passed    0.00 sec</span><br><span class="line"></span><br><span class="line">100% tests passed, 0 tests failed out of 2</span><br><span class="line"></span><br><span class="line">Total Test time (real) =   0.00 sec</span><br></pre></td></tr></table></figure></p>
+<p>最终，我们的项目结构如下<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">|-- add</span><br><span class="line">|   |-- CMakeLists.txt</span><br><span class="line">|   |-- include</span><br><span class="line">|   |   `-- add</span><br><span class="line">|   |       `-- add.h</span><br><span class="line">|   `-- src</span><br><span class="line">|       `-- add.cpp</span><br><span class="line">|-- CMakeLists.txt</span><br><span class="line">|-- fibo</span><br><span class="line">|   |-- CMakeLists.txt</span><br><span class="line">|   |-- include</span><br><span class="line">|   |   `-- fibo</span><br><span class="line">|   |       `-- fibo.h</span><br><span class="line">|   `-- src</span><br><span class="line">|       `-- fibo.cpp</span><br><span class="line">|-- main.cpp</span><br><span class="line">`-- test</span><br><span class="line">    |-- CMakeLists.txt</span><br><span class="line">    |-- test_add.cpp</span><br><span class="line">    `-- test_fibo.cpp</span><br></pre></td></tr></table></figure></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cmake/" rel="tag"># cmake</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/71181fb7/" rel="prev" title="pybind11实现python与c++混合编程">
+      <i class="fa fa-chevron-left"></i> pybind11实现python与c++混合编程
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%AC%AC%E4%B8%80%E6%AD%A5"><span class="nav-number">2.</span> <span class="nav-text">二、第一步</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%A4%B4%E6%96%87%E4%BB%B6%E7%9A%84%E5%BC%95%E5%85%A5"><span class="nav-number">3.</span> <span class="nav-text">三、头文件的引入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%BA%93%E7%9A%84%E7%BC%96%E8%AF%91%E5%92%8C%E9%93%BE%E6%8E%A5"><span class="nav-number">4.</span> <span class="nav-text">四、库的编译和链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E9%A1%B9%E7%9B%AE%E7%BB%84%E7%BB%87%E2%80%94%E2%80%94%E5%AD%90%E7%9B%AE%E5%BD%95"><span class="nav-number">5.</span> <span class="nav-text">五、项目组织——子目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E3%80%81%E5%8F%98%E9%87%8F%E4%B8%8E%E6%B5%81%E7%A8%8B%E6%8E%A7%E5%88%B6"><span class="nav-number">6.</span> <span class="nav-text">六、输入输出、变量与流程控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA"><span class="nav-number">6.1.</span> <span class="nav-text">输入输出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%98%E9%87%8F"><span class="nav-number">6.2.</span> <span class="nav-text">变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E6%8E%A7%E5%88%B6"><span class="nav-number">6.3.</span> <span class="nav-text">流程控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E5%AD%90%E7%9B%AE%E5%BD%95%E7%9A%84%E6%83%85%E5%86%B5"><span class="nav-number">6.4.</span> <span class="nav-text">增加子目录的情况</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E6%B5%8B%E8%AF%95"><span class="nav-number">7.</span> <span class="nav-text">七、测试</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">61</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

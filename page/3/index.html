@@ -159,6 +159,109 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/99f60659/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/99f60659/" class="post-title-link" itemprop="url">Java注解与C#特性</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-20 12:45:30" itemprop="dateCreated datePublished" datetime="2023-02-20T12:45:30+08:00">2023-02-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、元数据简介"><a href="#一、元数据简介" class="headerlink" title="一、元数据简介"></a>一、元数据简介</h2><p>元数据是指用来描述数据的数据。对编程语言来说，元数据可以为程序中元素添加额外的信息。这一功能可以被用于描述代码间关系，以及代码与其他资源的联系。</p>
+<p>元数据可以被用于框架中。通过元数据可以实现在代码上对类的直接配置，避免编写如 xml 的配置文件。</p>
+<p>Java 和 C# 都具有为程序中元素，如类、方法等等，添加元数据的方式。Java中称为注解，而C#中称为特性。注解和特性都通过反射获取，关于两者的获取方式，已经在前一篇文章中有所记述。本篇只讨论注解和特性的定义和使用。</p>
+<h2 id="二、Java注解"><a href="#二、Java注解" class="headerlink" title="二、Java注解"></a>二、Java注解</h2><h3 id="注解的定义"><a href="#注解的定义" class="headerlink" title="注解的定义"></a>注解的定义</h3><p>如果想要自定义注解，需要继承 <code>Annotation</code> 类。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyAnnotation</span> <span class="keyword">extends</span> <span class="title class_">Annotation</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>同时还有另一种写法，由此可知注释本质上是接口<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation2 &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>和接口一样，注解可以添加静态变量</p>
+</blockquote>
+<p>我们可以为注解添加“参数”，比如 Spring 中的注解 <code>@Profile(value = &quot;dev&quot;)</code>。我们为其设置了 <code>value</code> 属性。</p>
+<p>但是注解本是接口，不可能有保存数据的能力，要如何设置注解的属性呢？实际上，注解的属性在编写 <code>Annotation</code> 时是一个方法。即</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyProfile &#123;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还可以为参数添加默认值<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation3 &#123;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span>;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">number</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">8</span>; <span class="comment">// set default number</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>注解经常和枚举一起使用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation4 &#123;</span><br><span class="line">    <span class="keyword">enum</span> <span class="title class_">SELECT_TYPE</span> &#123;TYPE_A, TYPE_B&#125;</span><br><span class="line">    SELECT_TYPE <span class="title function_">selectType</span><span class="params">()</span> <span class="keyword">default</span> TYPE_A;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="元注解"><a href="#元注解" class="headerlink" title="元注解"></a>元注解</h3><p>元注解是注解的元数据，也就是对注解的注解。元注解为注解设置额外的信息，如设置注解的作用对象等等。</p>
+<h4 id="Documented"><a href="#Documented" class="headerlink" title="@Documented"></a>@Documented</h4><p>设置@Documented表明该注解能够出现在javadoc中。默认注解不会出现在javadoc中。</p>
+<h4 id="Target"><a href="#Target" class="headerlink" title="@Target"></a>@Target</h4><p>设置注解的作用对象，如注解类、方法、构造方法等等。使用方式如下<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(&#123;ElementType.METHOD, ElementType.CONSTRUCTOR&#125;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MyAnnotation5 &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><code>@Target</code> 表明注解 <code>@MyAnnotation5</code> 只能修饰方法和构造函数。</p>
+<h4 id="Retention"><a href="#Retention" class="headerlink" title="@Retention"></a>@Retention</h4><p>@Retention 设置注解被保留的时间。分为“仅在源文件”、“在class文件中保留”和“直到运行时依旧存在”。对应枚举 <code>RetentionPolicy.SOURCE</code>、<code>RetentionPolicy.CLASS</code>和<code>RetentionPolicy.RUNTIME</code>。</p>
+<h4 id="Inherited"><a href="#Inherited" class="headerlink" title="@Inherited"></a>@Inherited</h4><p>@Inherited 表示该注解所修饰的类，其子类也具有该注解。即注解也可被继承。</p>
+<h4 id="Repeatable"><a href="#Repeatable" class="headerlink" title="@Repeatable"></a>@Repeatable</h4><p>@Repeatable 表示该注解可以多次修饰同一个地方。例如</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RepeatableAnnotation(&quot;123&quot;)</span></span><br><span class="line"><span class="meta">@RepeatableAnnotation(&quot;456&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestClass</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="注解的使用"><a href="#注解的使用" class="headerlink" title="注解的使用"></a>注解的使用</h3><p>注解可以看做存储有一定信息的类型。使用注解就是获取其存储的信息（或者特定的注解类型本身便可作为一种信息）。获取注解信息只需要调用注解接口定义的方法即可。</p>
+<h2 id="三、C-特性"><a href="#三、C-特性" class="headerlink" title="三、C#特性"></a>三、C#特性</h2><h3 id="特性的定义"><a href="#特性的定义" class="headerlink" title="特性的定义"></a>特性的定义</h3><p>在C#中，特性就是一个类。可以定义类的所有成员种类，如方法、属性、字段等等，获取后也可以像一般类实例一样使用。自定义特性只需要继承 <code>Attribute</code> 类即可。</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> MyTestAttribute : Attribute</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="built_in">string</span> Value &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyTestAttribute</span>()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyTestAttribute</span>(<span class="params"><span class="built_in">string</span> <span class="keyword">value</span></span>)</span></span><br><span class="line">    &#123;</span><br><span class="line">        Value = <span class="keyword">value</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>约定特性类名称以 Attribute 结尾。要使用特性时，既可以使用特性类名，也可以使用去掉末尾 Attribute 后的名称。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">MyTestAttribute(<span class="string">&quot;123&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">public</span> TestClass</span><br><span class="line">&#123; &#125;</span><br><span class="line"></span><br><span class="line">[<span class="meta">MyTest(<span class="string">&quot;456&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">public</span> TestClass2</span><br><span class="line">&#123; &#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意特性类作为特性使用构造函数时传入的参数只能是简单类型如 <code>bool, int, double, string, Type, enums</code> 等等。</p>
+</blockquote>
+<p>同时特性类型中的属性也可以在特性修饰时设置，还举 <code>MyTest</code> 为例。使用方法为 <code>propertyName = constPropertyValue</code>。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">MyTest(Value = <span class="string">&quot;789&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">public</span> TestClass3</span><br><span class="line">&#123; &#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="特性设置"><a href="#特性设置" class="headerlink" title="特性设置"></a>特性设置</h3><p>类似于Java注解的元注解，也有对特性进行设置的方式。只需要使用 <code>AttributeUsage</code> 注解。<br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">AttributeUsage(AttributeTargets.Class|AttributeTargets.Method, AllowMultiple = true, Inherited = true)</span>]</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">MyTest2Attribute</span> : <span class="title">Attribute</span></span><br><span class="line">&#123; &#125;</span><br></pre></td></tr></table></figure></p>
+<p>上面的例子展示了可以对特性进行的所有设置：作用对象、是否可重复、是否可继承。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/afa82b33/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1478,117 +1581,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/c837c423/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/c837c423/" class="post-title-link" itemprop="url">Django创建表结构</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-01-09 13:44:16" itemprop="dateCreated datePublished" datetime="2023-01-09T13:44:16+08:00">2023-01-09</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、对象关系映射（ORM）"><a href="#一、对象关系映射（ORM）" class="headerlink" title="一、对象关系映射（ORM）"></a>一、对象关系映射（ORM）</h2><p>面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。</p>
-<blockquote>
-<p>面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。</p>
-</blockquote>
-<h2 id="二、django-的-ORM-实现"><a href="#二、django-的-ORM-实现" class="headerlink" title="二、django 的 ORM 实现"></a>二、django 的 ORM 实现</h2><p>django 通过 <code>models.Model</code> 类来对应数据库中的表结构，如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br></pre></td></tr></table></figure><br>即表示了 <code>User</code> 类，也对应了数据库中的 user 表。django 会根据类的声明自动在数据库中建表。</p>
-<p>django 用类中的属性来表示表的列字段。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    password = models.CharField(max_length=<span class="number">50</span>)</span><br></pre></td></tr></table></figure><br>定义了 user 表的主键、名字、密码信息。</p>
-<p>表间关系通过类与其属性表示，如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    password = models.CharField(max_length=<span class="number">50</span>)</span><br><span class="line">    courses = models.ManyToManyField(to=<span class="string">&quot;Course&quot;</span>)</span><br></pre></td></tr></table></figure><br><code>courses</code> 属性表示用户具有的课程，反映了用户与课程之间的关系。</p>
-<h2 id="三、类属性与数据库字段的对应"><a href="#三、类属性与数据库字段的对应" class="headerlink" title="三、类属性与数据库字段的对应"></a>三、类属性与数据库字段的对应</h2><p>如上一节所述，django 建立了类属性与数据库字段之间的对应关系。常见的如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">models.CharField</span><br><span class="line">models.TextField</span><br><span class="line">models.IntegerField</span><br><span class="line">models.FloatField</span><br></pre></td></tr></table></figure><br>就对应了数据库中的 char(n)，text，int，float 类型。不一一详述。</p>
-<h2 id="四、主键与外键"><a href="#四、主键与外键" class="headerlink" title="四、主键与外键"></a>四、主键与外键</h2><p>在表中要定义主键，作为该表一条记录的唯一标识。相应的，在 django 中定义主键需要在对应属性上添加 <code>primary_key=True</code> 参数。例如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure><br>未定义主键时，django 也会自动创建一个主键。</p>
-<p>通过外键可以设置表间的关系。外键通过属性 <code>models.ForeignKey</code> 定义。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Task</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure><br>就定义了一个外键，对数据库来说，保存的是 course 表中的主键信息。但对 Task 类来说，则是定义了一个 Course 类型的属性。但这两种观点的本质是一样的，都是建立了 task 到 course 的关系。更准确地说，是多到一的关系（不同的 task 可以对应同一个 course）。</p>
-<blockquote>
-<p>注意建立表间关系的时候，需要设置 on_delete 参数，表示外键所对应的记录被删除时，本记录的行为。在例子中 CASCADE 表示外键对应的删除后，本记录也删除。</p>
-</blockquote>
-<h2 id="五、表间关系的创建"><a href="#五、表间关系的创建" class="headerlink" title="五、表间关系的创建"></a>五、表间关系的创建</h2><p>外键是创建表间关系的基础。这一节将更深入讨论表间关系。表间关系可以分为三类，分别是一对一、多对一和多对多。可以通过如下例子进行理解：</p>
-<ul>
-<li>一对一：一个人对应唯一的身份证，一张身份证对应唯一的一个人。</li>
-<li>多对一：一个班级有许多学生，而一个学生只属于某个班级。</li>
-<li>多对多：一门课有许多的学生，一个学生会上不同的课。</li>
-</ul>
-<h3 id="一对一的创建"><a href="#一对一的创建" class="headerlink" title="一对一的创建"></a>一对一的创建</h3><p>在数据库中，一对一的关系比较随意，可以在 A 表中包含 B 表的主键，也可以在 B 表中包含 A 表的主键。只需要保证外键的唯一性即可。</p>
-<p>django 设置一对一关系，需要定义 <code>models.OneToOneField</code> 的属性。如在 <code>Person</code> 类中有<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">id_card = models.OneToOneField(to=<span class="string">&quot;IDCard&quot;</span>, on_delete=models.RESTRICT)</span><br></pre></td></tr></table></figure><br>这样就可以通过访问 <code>Person</code> 类的属性 <code>id_card</code> 来访问对应的表格数据了。</p>
-<blockquote>
-<p>models.RESTRICT 表示如果存在关系，则删除会产生异常</p>
-</blockquote>
-<h3 id="多对一的创建"><a href="#多对一的创建" class="headerlink" title="多对一的创建"></a>多对一的创建</h3><p>建立多对一关系，在数据库中需要让多的一方设置外键，包含一的一方的主键。</p>
-<p>而在 django 中，则只需要添加一个外键即可实现。如第五节中的例子<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure></p>
-<h3 id="多对多的创建"><a href="#多对多的创建" class="headerlink" title="多对多的创建"></a>多对多的创建</h3><p>多对多关系不能通过在任何一方或两方中添加外键实现。需要建立第三个表，称中间表或关系表，在该表中同时包含原来两个表的主键。</p>
-<p>django 通过添加 <code>models.ManyToManyField</code> 创建多对多关系。如<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Course</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.CharField(max_length=<span class="number">10</span>, primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    users = models.ManyToManyField(to=User)</span><br></pre></td></tr></table></figure><br>这样将自动创建一个中间表 course_user，包含 course 表和 user 表的主键。</p>
-<p>但是这样只能创建由 Course 到 User 的单向联系。通过 Course 可以访问 User，但从 User 却不能访问 Course。可以自行定义中间表来实现双向多对多关系。</p>
-<blockquote>
-<p>注意，如果在 User 表中添加属性 <code>courses = models.ManyToManyField(to=Courses)</code> 并不能解决问题。这只会创建另一个表 user_course，最终形成两个单向多对多关系。</p>
-</blockquote>
-<p>正确的方式是通过 <code>through=</code> 参数指定中间表。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Course</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.CharField(max_length=<span class="number">10</span>, primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    name = models.CharField(max_length=<span class="number">50</span>, null=<span class="literal">False</span>)</span><br><span class="line">    users = models.ManyToManyField(to=User, through=<span class="string">&quot;Course2User&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Course2User</span>(models.Model):</span><br><span class="line">    <span class="built_in">id</span> = models.IntegerField(primary_key=<span class="literal">True</span>, null=<span class="literal">False</span>)</span><br><span class="line">    course = models.ForeignKey(to=<span class="string">&quot;Course&quot;</span>, on_delete=models.CASCADE)</span><br><span class="line">    user = models.ForeignKey(to=User, on_delete=models.CASCADE)</span><br></pre></td></tr></table></figure></p>
-<p>这样就可以通过中间表查询某个 <code>User</code> 对应的 <code>Course</code> 了。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1656,7 +1652,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-count">61</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1669,7 +1665,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-count">56</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

@@ -159,6 +159,134 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/55036469/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/55036469/" class="post-title-link" itemprop="url">机器学习之决策树</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-17 08:07:31" itemprop="dateCreated datePublished" datetime="2022-10-17T08:07:31+08:00">2022-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>决策树是另一种十分有效的机器学习模型。该模型采取树状分支结构，能够很快地进行模型训练，并具有较高的准确率。</p>
+<p>本文将以决策树的最简单形式开始，即特征只包括真值特征，或只有两种选择的特征，且结果也只有两种的情况。</p>
+<h2 id="二、决策树基本模型"><a href="#二、决策树基本模型" class="headerlink" title="二、决策树基本模型"></a>二、决策树基本模型</h2><p>决策树是一个二叉树，树的非叶节点存储需要区分的特征，叶节点存储预测的分类。对于每一个要进行预测的数据，从根节点开始，根据当前节点所对应的特征，选择移动到左子节点或右子节点。直到最终移动到一个叶节点，返回预测结果。</p>
+<p>可以认为决策树的预测过程就是通过不同特征将当前数据分组归类的过程。决策树的构建过程，或者更一般地说，该模型的学习过程，也就是不断确定如何分类的过程。</p>
+<h2 id="三、决策树的构建"><a href="#三、决策树的构建" class="headerlink" title="三、决策树的构建"></a>三、决策树的构建</h2><p>总体上讲，对于我们已有的样本数据，构建决策树的过程时这样的。</p>
+<ol>
+<li>选择一个特征，将该特征作为当前节点的特征</li>
+<li>根据该特征将样本数据分为两组</li>
+<li>对于两组被分类的数据，分别递归执行如上操作，从而确定当前节点的左右子节点。直到当前数据已经全部是要预测的某个结果了、或者所有特征都被用完、又或者递归进行到了最大层数。</li>
+</ol>
+<p>可以看到，决策树构建的过程中大部分过程都可以用简单的程序逻辑实现。现在唯一要解决的就是在每个节点时，如何选择一个特征了。</p>
+<blockquote>
+<p>当然，对于神经网络来说也是这样的。唯一要解决的是如何选择权重。</p>
+</blockquote>
+<h2 id="四、特征的选择"><a href="#四、特征的选择" class="headerlink" title="四、特征的选择"></a>四、特征的选择</h2><p>我们要衡量选择不同特征对训练样本的区分效果。这点类似于损失函数。</p>
+<p>我们区分的目标是使得所有当前组的样本属于同一个预测结果。那么我们就要找到一种衡量纯度的指标，数据越纯指标越小，数据越不纯指标越大。这种指标就是熵。假设某一种类在数据总体中的占比为 $p_1$，则熵 $H(p_1)$ 为</p>
+<script type="math/tex; mode=display">
+    p_0 = 1 - p_1 \\
+    H(p_1) = -p_1log_2(p_1) - p_0 log_2(p_0)</script><p>即</p>
+<script type="math/tex; mode=display">
+    H(p_1) = -p_1log_2(p_1) - (1-p_1) log_2(1 - p_1)</script><p>当 $p_1 = 0$ 或 $p_1 = 1$ 时</p>
+<script type="math/tex; mode=display">
+    H(0) = H(0+0) = 0 \\
+    H(1) = H(1-0) = 0</script><blockquote>
+<p>可以看出熵与交叉熵损失函数之间有联系。确实，交叉熵损失函数也是用来衡量预测的纯度的。对于一个预测，我们总希望它接近 0 或者 1，也就是纯度最大的比例。</p>
+</blockquote>
+<p>我们不妨设决策树中预测可能结果中一个为正例，一个为负例。假设对于当前节点处的训练样本集合 $X$， 我们选择第 j 个特征，将该集合分为两个部分 $A<em>j$ 和 $B_j$。设此时 $A_j$ 和 $B_j$ 中正例所占比例分别为 $p</em>{Aj}, p_{Bj}$，则对应的熵为：</p>
+<script type="math/tex; mode=display">
+    H(p_{Aj}) 和 H(p_{Bj})</script><p>对于不同的 j，两个熵值均会不同，那么我们如何比较哪种选择更为合适呢？我们需要对熵取加权平均，权重为该集合中元素数量占原集合数量的比重。</p>
+<script type="math/tex; mode=display">
+    \frac{\#A_jH(p_{Aj}) + \#B_jH(p_{Bj})}{\#X}</script><blockquote>
+<p>这是很合理的。举个例子，假设选择了一个特征将一个样本和其他样本分开，虽然第一个样本的熵为 0，可是该分类对样本整体的影响较小，决定整体纯度的还是其他样本的部分，最终平均后的熵可能并不会减少太多</p>
+</blockquote>
+<p>我们将分类后的平均熵值对分类前的总熵的减少量称为信息增益（Information Gain）。假设选择某一特征时，子集合元素数量占原集合的比重为 $w^{left}, w^{right}$，则</p>
+<script type="math/tex; mode=display">
+    \text{Information Gain} = H(p^{root}_1) - (w^{left}H(p^{left}_1) + w^{right}H(p^{right}_1))</script><p>这样我们就解决了选择特征的问题，只要选择使信息增益最大的特征即可。</p>
+<blockquote>
+<p>很明显，如果一个特征在祖先节点已经被选择过了，则信息增益为 0。当所有特征的信息增益都为 0 时，说明所有特征都已经被使用过了，此时就可以返回递归了。</p>
+</blockquote>
+<h2 id="五、多取值特征"><a href="#五、多取值特征" class="headerlink" title="五、多取值特征"></a>五、多取值特征</h2><p>之前，我们的每一个特征都只能有两个取值，我们要将特征的取值推广到多个。这里采用的方法是将多取值特征转化为双取值特征。</p>
+<p>解决方案是采用独热（one-hot）编码。举例来说，如果有一个特征 x，取值为1、2或3。那么我们可以将其转化为三个特征 is_x_equal1、is_x_equal2和is_x_equal3。这样，三个新的特征就可以只取 0、1 两个值了。</p>
+<h2 id="六、连续取值特征"><a href="#六、连续取值特征" class="headerlink" title="六、连续取值特征"></a>六、连续取值特征</h2><p>对于连续取值的特征，我们要将其转化为离散特征。</p>
+<p>具体来说，我们可以取一个阈值 n，将样本按该特征的值分为大于 n 和小于等于 n 的两个部分。为了方便选择，我们可以取样本的值进行分割，也就是分别取每一个样本中该特征对应的值作为划分时所用的值，计算其信息增益，最后选择使信息增益最大的值作为对该特征的划分即可。</p>
+<h2 id="七、回归树——对连续取值结果的预测"><a href="#七、回归树——对连续取值结果的预测" class="headerlink" title="七、回归树——对连续取值结果的预测"></a>七、回归树——对连续取值结果的预测</h2><p>回归树是对决策树的进一步扩展。使得决策树模型可以学习结果为连续值的训练样本。</p>
+<p>这样，原本的计算信息增益的方法就不再适用了。现在的数据不再有纯度的分别了，取而代之的是疏密的区别。这里我们采用样本结果的方差来衡量数据的离散程度。依旧设子集合元素数量占原集合的比重为 $w^{left}, w^{right}$，样本结果的方差则为 $var^{root}, var^{left}, var^{right}$</p>
+<p>则增益的大小为</p>
+<script type="math/tex; mode=display">
+    \text{Gain} = var^{root} - (w^{left}var^{left} + w^{right}var^{right})</script><p>经过不断的递归构建，我们最终在叶节点处得到一组方差较小的样本。将这组样本的结果取平均，即得到叶节点对应的预测值。</p>
+<h2 id="八、决策树林"><a href="#八、决策树林" class="headerlink" title="八、决策树林"></a>八、决策树林</h2><p>决策树的缺点之一是其可能对数据中的微小变化十分敏感，以至于稍有不同的数据就会产生截然不同的决策树结构。对于需要有比较大可靠性的预测，这是需要避免的。</p>
+<p>解决方法是生成许多不同结构的决策树，通过这些决策树的预测结果表决或取平均，得到最终的预测结果。但确定的训练样本只会产生确定的决策树。因此这里采用随机化保证生成不同结构的决策树。</p>
+<p>也就是说，对于大小为 m 的训练集，我们从中随机放回抽取 m 个样本，组成一个新的训练集，用该训练集生成一个决策树。重复这样的过程多次，就可以得到许多不同结构的决策树。</p>
+<blockquote>
+<p>还有一种名为 XGBoost 的方法。这样方法在选取样本组成新的训练集的过程中，会倾向于选择之前并未被选取的样本，这样组成的样本集合将更为一般化，从而使得学习效果更好。</p>
+</blockquote>
+<p>这样，我们就得到了能解决大部分机器学习问题的决策树算法。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5b526508/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1334,320 +1462,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/815aaabe/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/815aaabe/" class="post-title-link" itemprop="url">基本正则表达式总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-21 14:26:22" itemprop="dateCreated datePublished" datetime="2022-09-21T14:26:22+08:00">2022-09-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。</p>
-<p>正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。</p>
-<h2 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h2><p>这里将介绍正则表达式的基本语法。另外这里推荐网站 <a target="_blank" rel="noopener" href="https://regex101.com/">regex101</a>，可以用于验证正则表达式。</p>
-<h3 id="字符与字符集"><a href="#字符与字符集" class="headerlink" title="字符与字符集"></a>字符与字符集</h3><p>正则表达式中一般的字符用于匹配字符串中对应的相同字符。例如正则表达式 “a” 可以匹配字符串中的字符 ‘a’ 。 “abc” 可以匹配字符串中的子串 “abc” 。</p>
-<blockquote>
-<p>对于在正则表达式中具有特殊含义的字符，需要进行转义，在原字符前加上反斜杠 “\“</p>
-</blockquote>
-<p>用方括号将一个或多个字符括起来表示一个字符集，一个字符集匹配在该字符集中出现的字符。例如 [abc]，可以匹配 ‘a’ ‘b’ 或 ‘c’。</p>
-<p>还可以在字符集中指定要匹配的字符的范围，例如 [a-z]，用来匹配所有的小写英文字母。在同一字符集内可以有多个范围，例如 [a-zA-Z0-9]。</p>
-<p>在字符集括号内的所有字符之前添加 “^” 表示对该字符集取反，即匹配所有不在字符集内的元素。例如 <sup><a href="#fn_a-b" id="reffn_a-b">a-b</a></sup> 匹配所有不是小写英文字母的元素。</p>
-<blockquote>
-<p>字符 “.” 可用于匹配换行符为所有字符。</p>
-</blockquote>
-<h3 id="限定符"><a href="#限定符" class="headerlink" title="限定符"></a>限定符</h3><p>限定符用来指定其前面的部分将要匹配几次。例如a{2,5}匹配2到5个a，即”aa”、”aaa”、”aaaa”和”aaaaa”。具体的限定符含义如下表所示：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>限定符</th>
-<th>解释</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>{n}</td>
-<td>匹配内容n次</td>
-</tr>
-<tr>
-<td>{n,}</td>
-<td>匹配内容次数大于等于n次</td>
-</tr>
-<tr>
-<td>{n,m}</td>
-<td>匹配内容次数为n到m次</td>
-</tr>
-<tr>
-<td>*</td>
-<td>匹配零次或多次，同{0,}</td>
-</tr>
-<tr>
-<td>+</td>
-<td>匹配一次或多次，同{1,}</td>
-</tr>
-<tr>
-<td>?</td>
-<td>匹配零次或一次，同{0,1}</td>
-</tr>
-</tbody>
-</table>
-</div>
-<blockquote>
-<p>注意，限定符匹配默认遵循贪婪原则，即在同样能够完成匹配的情况下，会匹配尽可能多的字符。例如要匹配<code>&lt;html&gt;&lt;dir&gt;hello,world&lt;/dir&gt;&lt;/html&gt;</code>中的标签，若使用正则表达式 “&lt;.+&gt;”，则只会匹配整个字符串。<br>解决方法是在限定符后加上一个问号 “?” 。这样限定符的匹配模式便会切换为懒惰匹配，即在同样能够完成匹配的情况下，会匹配尽可能少的字符。</p>
-</blockquote>
-<h3 id="组"><a href="#组" class="headerlink" title="组"></a>组</h3><p>用括号将一部分表达式括起，可以将这部分表达式作为一个整体。</p>
-<p>比如说，需要匹配 “aacacaaac”，可以归纳出字符串中重复的部分 “a+c”，将该部分作为一个整体，则该部分重复了三次。最终得到可以匹配该字符串的正则表达式为 “(a+c){3}”。</p>
-<p>另外，组分为捕获组与非捕获组，捕获组即单纯的括号，非捕获组包括 “(?:exp)” “(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)”。这里先说明 “(exp)” 和 “(?:exp)” 的区别。”(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 会在后一节进一步解释。</p>
-<p>当使用捕获组时，表示对括号内会出现的内容更感兴趣。这时在匹配成功后缓存括号内的匹配内容，并可以访问该内容。而使用非捕获组，则说明仅仅将括号用于划分表达式，因此不会缓存括号内的匹配。</p>
-<h3 id="选择"><a href="#选择" class="headerlink" title="选择"></a>选择</h3><p>将不同的内容用 “|” 分割，用来表示进行该部分匹配时不同的匹配选项。例如 “learn(ed|t)” 可以匹配 “learnt” 和 “learned”。</p>
-<blockquote>
-<p>正如前一节所说，这里使用了捕获；不使用捕获的表达式为 “learn(?:ed|t)”</p>
-</blockquote>
-<p>“(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)” 也可以实现匹配选择的功能。</p>
-<p>exp1(?=exp2)会匹配 exp2 前面的 exp1。例如表达式 “wok(?=[0-9]+)” 只会匹配后面带数字的 “wok”, 例如 “wok123” 中的 “wok” , 而不会匹配 “wokron”、 “wokd234” 中的 “wok” 。</p>
-<blockquote>
-<p>“wok(?=[0-9]+)([0-9]+)” 可以捕获 “wok” 后的数字大小。</p>
-</blockquote>
-<p>exp1(?!exp2)会匹配后面不是 exp2 的 exp1。例如表达式”wok(?![0-9]+)” 只会匹配后面不带有数字的 “wok”。</p>
-<blockquote>
-<p>“^(?:000[1-9]|(?!000)\d{4})$”会匹配0001-9999的所有值。</p>
-</blockquote>
-<p>(?&lt;=exp1)exp2会匹配前缀为 exp1 的 exp2。例如表达式”(?&lt;=foo)bar”会匹配前缀为foo的bar。</p>
-<p>(?&lt;!epx1)exp2会匹配前缀不为 exp1 的 exp2。例如表达式”(?&lt;!foo)bar”会匹配所有前缀不为foo的bar。</p>
-<blockquote>
-<p>“^(?:000[1-9]|\d{3}(?&lt;!000)\d)$”同样可以匹配0001-9999的所有值。</p>
-</blockquote>
-<h3 id="定位符"><a href="#定位符" class="headerlink" title="定位符"></a>定位符</h3><p>定位符可以将正则表达式的匹配对象定位到行首或行尾。又或者单词的开头结尾。下表是一些定位符：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>定位符</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>^</td>
-<td>匹配输入字符串开始的位置</td>
-</tr>
-<tr>
-<td>$</td>
-<td>匹配输入字符串结尾的位置</td>
-</tr>
-<tr>
-<td>\b</td>
-<td>匹配一个单词边界，即字与空格间的位置</td>
-</tr>
-<tr>
-<td>\B</td>
-<td>非单词边界匹配</td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="常用元字符"><a href="#常用元字符" class="headerlink" title="常用元字符"></a>常用元字符</h3><p>这里总结了一些常用的元字符，见表格：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>字符</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>\</td>
-<td>将下一个字符标记为特殊字符、或转义符</td>
-</tr>
-<tr>
-<td>^</td>
-<td>匹配输入字符串的开始位置</td>
-</tr>
-<tr>
-<td>$</td>
-<td>匹配输入字符串的结束位</td>
-</tr>
-<tr>
-<td>*</td>
-<td>匹配前面的子表达式零次或多次</td>
-</tr>
-<tr>
-<td>+</td>
-<td>匹配前面的子表达式一次或多次</td>
-</tr>
-<tr>
-<td>?</td>
-<td>匹配前面的子表达式零次或一次</td>
-</tr>
-<tr>
-<td>{n}</td>
-<td>匹配确定的 n 次</td>
-</tr>
-<tr>
-<td>{n,}</td>
-<td>至少匹配n 次</td>
-</tr>
-<tr>
-<td>{n,m}</td>
-<td>最少匹配 n 次且最多匹配 m 次</td>
-</tr>
-<tr>
-<td>?</td>
-<td>跟在其他限制符后面，设置匹配模式为非贪婪</td>
-</tr>
-<tr>
-<td>.</td>
-<td>匹配除换行符（\n、\r）之外的任何单个字符</td>
-</tr>
-<tr>
-<td>x&#124;y</td>
-<td>匹配 x 或 y</td>
-</tr>
-<tr>
-<td>[xyz]</td>
-<td>字符集合。匹配所包含的任意一个字符</td>
-</tr>
-<tr>
-<td>[&#94;xyz]</td>
-<td>负值字符集合。匹配未包含的任意字符</td>
-</tr>
-<tr>
-<td>[a-z]</td>
-<td>字符范围。匹配指定范围内的任意字符</td>
-</tr>
-<tr>
-<td>[&#94;a-z]</td>
-<td>负值字符范围。匹配任何不在指定范围内的任意字符</td>
-</tr>
-<tr>
-<td>\b</td>
-<td>匹配一个单词边界，即单词和空格间的位置</td>
-</tr>
-<tr>
-<td>\B</td>
-<td>匹配非单词边界</td>
-</tr>
-<tr>
-<td>\d</td>
-<td>匹配一个数字字符。等价于 [0-9]</td>
-</tr>
-<tr>
-<td>\D</td>
-<td>匹配一个非数字字符。等价于 <sup><a href="#fn_0-9" id="reffn_0-9">0-9</a></sup></td>
-</tr>
-<tr>
-<td>\f</td>
-<td>匹配一个换页符。等价于 \x0c 和 \cL</td>
-</tr>
-<tr>
-<td>\n</td>
-<td>匹配一个换行符。等价于 \x0a 和 \cJ</td>
-</tr>
-<tr>
-<td>\r</td>
-<td>匹配一个回车符。等价于 \x0d 和 \cM</td>
-</tr>
-<tr>
-<td>\s</td>
-<td>匹配任何空白字符</td>
-</tr>
-<tr>
-<td>\S</td>
-<td>匹配任何非空白字符</td>
-</tr>
-<tr>
-<td>\t</td>
-<td>匹配一个制表符。等价于 \x09 和 \cI</td>
-</tr>
-<tr>
-<td>\v</td>
-<td>匹配一个垂直制表符。等价于 \x0b 和 \cK</td>
-</tr>
-<tr>
-<td>\w</td>
-<td>匹配字母、数字、下划线。等价于’[A-Za-z0-9_]’</td>
-</tr>
-<tr>
-<td>\W</td>
-<td>匹配非字母、数字、下划线。等价于 ‘<sup><a href="#fn_A-Za-z0-9_" id="reffn_A-Za-z0-9_">A-Za-z0-9_</a></sup>‘</td>
-</tr>
-<tr>
-<td>\num</td>
-<td>匹配 num，其中 num 是一个正整数。对所获取的匹配的引用。例如，’(.)\1’ 匹配两个连续的相同字符</td>
-</tr>
-</tbody>
-</table>
-</div>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1715,7 +1533,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-count">61</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1728,7 +1546,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">55</span>
+        <span class="site-state-item-count">56</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
