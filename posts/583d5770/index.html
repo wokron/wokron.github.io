@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一、前言——对象与过程d 碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang  c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式：      程序 &#x3D; 数据结构 + 算法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="面向对象的c语言">
+<meta property="og:url" content="https://wokron.github.io/posts/583d5770/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言——对象与过程d 碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang  c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式：      程序 &#x3D; 数据结构 + 算法">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-10-01T14:53:53.000Z">
+<meta property="article:modified_time" content="2023-10-02T09:35:26.481Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="C#">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="C">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Golang">
+<meta property="article:tag" content="面向对象">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/583d5770/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>面向对象的c语言 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/583d5770/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          面向对象的c语言
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-10-01 22:53:53" itemprop="dateCreated datePublished" datetime="2023-10-01T22:53:53+08:00">2023-10-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-10-02 17:35:26" itemprop="dateModified" datetime="2023-10-02T17:35:26+08:00">2023-10-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言——对象与过程d"><a href="#一、前言——对象与过程d" class="headerlink" title="一、前言——对象与过程d"></a>一、前言——对象与过程d</h2><blockquote>
+<p>碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang</p>
+</blockquote>
+<p>c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式：</p>
+<script type="math/tex; mode=display">
+    程序 = 数据结构 + 算法</script><span id="more"></span>
+<p>面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。</p>
+<p>了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何<strong>操纵</strong>数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，<strong>管理</strong>流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。</p>
+<h2 id="二、c语言的面向对象何以可能"><a href="#二、c语言的面向对象何以可能" class="headerlink" title="二、c语言的面向对象何以可能"></a>二、c语言的面向对象何以可能</h2><p>说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。</p>
+<p>让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是<strong>相同</strong>的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所<strong>不同</strong>。</p>
+<p>明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中<strong>相同</strong>的方法名对应的具体过程<strong>不同</strong>。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。</p>
+<p>此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。</p>
+<p>这样也可以理解为什么 c++ 中只能使用指针实现多态（引用本质还是指针）。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Child c;</span><br><span class="line">Father *f = &amp;c;  <span class="comment">// 正确</span></span><br><span class="line">Father f2 = c;   <span class="comment">// 错误</span></span><br></pre></td></tr></table></figure></p>
+<p>而 c++ 中使用 <code>new</code> 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// c++</span></span><br><span class="line">SomeClass *obj = <span class="keyword">new</span> <span class="built_in">SomeClass</span>();</span><br></pre></td></tr></table></figure><br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// java</span></span><br><span class="line"><span class="type">SomeClass</span> <span class="variable">obj</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SomeClass</span>();</span><br></pre></td></tr></table></figure><br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// c#</span></span><br><span class="line">SomeClass obj = <span class="keyword">new</span> SomeClass();</span><br></pre></td></tr></table></figure></p>
+<p>现在让我们结束一些形而上的讨论，看一下 c 语言到底应当如何实现面向对象。</p>
+<h2 id="三、封装的实现"><a href="#三、封装的实现" class="headerlink" title="三、封装的实现"></a>三、封装的实现</h2><p>所谓封装就是数据成员与方法结合，隐藏类内成员，对外暴露方法接口。这一点很是简单。</p>
+<p>假设现在有一个简单的 <code>Dog</code> 类，里面有一个字段 <code>name</code>。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> &#123;</span></span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><br>一般来说，想要访问 <code>name</code> 字段只需要直接指明字段名即可。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> <span class="title">dog</span>;</span></span><br><span class="line">    dog.name = <span class="string">&quot;scooby&quot;</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;the dog&#x27;s name is %s\n&quot;</span>, dog.name);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>不过为了封装，可以使用 <code>getter</code> <code>setter</code> 对字段进行读写。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">dog_get_name</span><span class="params">(<span class="keyword">struct</span> Dog *self)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> self-&gt;name;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">char</span> *<span class="title function_">dog_set_name</span><span class="params">(<span class="keyword">struct</span> Dog *self, <span class="type">char</span> name[])</span> &#123;</span><br><span class="line">    self-&gt;name = name;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里 <code>Dog</code> 作为了函数的第一个参数，以此表明该函数是属于 <code>Dog</code> 的方法。那么上面的程序就可以改写为下面的形式。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> <span class="title">dog</span>;</span></span><br><span class="line">    dog_set_name(&amp;dog, <span class="string">&quot;scooby&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;the dog&#x27;s name is %s\n&quot;</span>, dog_get_name(&amp;dog));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>当然对于简单的字段都要用程序封装实在是一种古板的做法，尤其是在使用 c 语言模拟面向对象的时候，但这只是一个例子而已。除此之外，golang 将首字母大写的属性公开的方法也有可取之处，c# 的 property 也模拟了类似的读写语法。<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// golang</span></span><br><span class="line"><span class="keyword">type</span> Dog <span class="keyword">struct</span> &#123;</span><br><span class="line">    Name <span class="type">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// csharp</span></span><br><span class="line"><span class="keyword">class</span> <span class="title">Dog</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="built_in">string</span> Name &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>另外，各位应该能看出这样的写法和 python 实在类似，我们可以用 python 写出类似的代码。从中也可以稍微体会到一些 python 特有的设计哲学。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Dog</span>:</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_name</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> self.name</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">set_name</span>(<span class="params">self, name</span>):</span><br><span class="line">        self.name = name</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    dog = Dog()</span><br><span class="line">    Dog.set_name(dog, <span class="string">&quot;scooby&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;the dog&#x27;s name is <span class="subst">&#123;Dog.get_name(dog)&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、继承的实现"><a href="#四、继承的实现" class="headerlink" title="四、继承的实现"></a>四、继承的实现</h2><p>在第二小节时说过，继承体现在子类与父类具有相同的内存结构，举个例子，假如有两个类 <code>Pet</code> 和 <code>Dog</code>，其中 <code>Pet</code> 具有属性 <code>name</code>，<code>Dog</code> 继承了 <code>Pet</code>，同时增加了属性 <code>color</code>。那么对于 <code>Dog</code> 中的 <code>name</code> 来说，其所在的位置应该与 <code>Pet</code> 中的位置相同。</p>
+<p>也就是说，对于 <code>Pet</code><br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> &#123;</span></span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">pet_describe</span><span class="params">(<span class="keyword">struct</span> Pet *self)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;the pet&#x27;s name is %s\n&quot;</span>, self-&gt;name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>那么 <code>Dog</code> 也应当具有相同的结构，<code>name</code> 应当位于最开始的位置<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 正确</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> &#123;</span> <span class="comment">// : Pet</span></span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">    <span class="type">char</span> *color;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">DogFalse</span> &#123;</span> <span class="comment">// : Pet</span></span><br><span class="line">    <span class="type">char</span> *color;</span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>对于错误的结构，会导致错误的输出。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> <span class="title">dog1</span> =</span> &#123;<span class="string">&quot;scooby&quot;</span>, <span class="string">&quot;brown&quot;</span>&#125;;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">DogFalse</span> <span class="title">dog2</span> =</span> &#123;<span class="string">&quot;white&quot;</span>, <span class="string">&quot;kitty&quot;</span>&#125;;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> *<span class="title">p1</span> =</span> &amp;dog1;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> *<span class="title">p2</span> =</span> &amp;dog2;</span><br><span class="line">    pet_describe(p1);</span><br><span class="line">    pet_describe(p2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">the pet&#x27;s name is scooby</span><br><span class="line">the pet&#x27;s name is white</span><br></pre></td></tr></table></figure></p>
+<p>除此之外，继承还有另一种实现方式，就是使用嵌套的结构体，因为最终在内存中，嵌套的结构都会被展平。此时 <code>Pet</code> 的定义不变，<code>Dog</code> 的定义变为如下形式<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> <span class="title">super</span>;</span></span><br><span class="line">    <span class="type">char</span> *color;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>但是这样存在一个问题，就是 <code>Pet</code> 类中的字段我们不再能直接访问，这违反了继承的原则，尽管这种写法和之前的写法中 <code>Dog</code> 结构体的结构都是一样的。</p>
+<p>golang 中采用后一种写法表示“继承”关系，规定当只使用类型名而不添加字段名的时候，自动使“子类”获得“父类”的属性。这就以一种很简单的方式解决了继承问题。Ken Thompson 在设计 golang 时确实保留了一些 c 的风格。<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Pet <span class="keyword">struct</span> &#123;</span><br><span class="line">    Name <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Dog <span class="keyword">struct</span> &#123;</span><br><span class="line">    Pet</span><br><span class="line">    Color <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	dog := Dog&#123;<span class="string">&quot;scooby&quot;</span>, <span class="string">&quot;brown&quot;</span>&#125;;</span><br><span class="line">    fmt.Println(dog.name);  <span class="comment">// 正确</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="五、多态的实现"><a href="#五、多态的实现" class="headerlink" title="五、多态的实现"></a>五、多态的实现</h2><p>除了属性之外，还有方法需要处理。为了实现多态，我们需要让方法也具有继承关系。具体来说，也应当有一个类似于属性的结构体，其中存储该类型所用到的所有函数，而当出现一个子类的时候，也应当有一个属于该子类的，继承父类函数结构体的结构体。该结构体称为虚表。</p>
+<p>我们举 <code>Pet</code>、<code>Dog</code> 和 <code>Cat</code> 作为例子。<code>Pet</code> 具有属性 <code>name</code> 和方法 <code>describe</code>；<code>Dog</code> 和 <code>Cat</code> 继承 <code>Pet</code>。<code>Dog</code> 有额外属性 <code>color</code> 和方法 <code>bark</code>，<code>Cat</code> 有方法 <code>meow</code>。</p>
+<p>那么三个类型各有其虚表<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">PetVTable</span> &#123;</span></span><br><span class="line">    <span class="type">char</span> *(*describe)(<span class="keyword">struct</span> Pet *, <span class="type">char</span> []);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">DogVTable</span> &#123;</span></span><br><span class="line">    <span class="type">char</span> *(*describe)(<span class="keyword">struct</span> Pet *, <span class="type">char</span> []);</span><br><span class="line">    <span class="type">void</span> (*bark)(<span class="keyword">struct</span> Dog *);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">CatVTable</span> &#123;</span></span><br><span class="line">    <span class="type">char</span> *(*describe)(<span class="keyword">struct</span> Pet *, <span class="type">char</span> []);</span><br><span class="line">    <span class="type">void</span> (*meow)(<span class="keyword">struct</span> Cat *);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><br>此时我们若想调用某一对象的方法，就不再直接通过函数的全局名称访问，而是通过虚表间接访问。由于虚表之间有着结构上的继承关系，所以子类必定拥有父类的方法；又由于虚表存储着函数的地址而非函数本身，因此对于有着不同虚表的对象，调用相同的方法也可能实际执行不同的函数。</p>
+<p>对于面向对象来说，每个类的对象有着相同的虚表，因此只需要一个类使用一个全局的虚表即可。我们可以在每个类的字段中添加一个指向虚表的指针。由于需要保证对于父类和子类，都能访问其虚表，因此该指针必须放在结构体的首部。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">PetVTable</span> *<span class="title">f</span>;</span></span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">DogVTable</span> *<span class="title">f</span>;</span></span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">    <span class="type">char</span> *color;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Cat</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">CatVTable</span> *<span class="title">f</span>;</span></span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>接下来需要将虚表与对象关联起来，也就是说，在初始化时，将类所对应的虚表的值赋给 <code>f</code>。这就需要引入构造函数了。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> Pet *<span class="title function_">create_Pet</span><span class="params">(<span class="keyword">struct</span> Pet *self, <span class="type">char</span> name[])</span> &#123;</span><br><span class="line">    <span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">PetVTable</span> <span class="title">v</span> =</span> &#123;<span class="literal">NULL</span>&#125;;</span><br><span class="line">    self-&gt;f = &amp;v;</span><br><span class="line">    self-&gt;name = name;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> Dog *<span class="title function_">create_Dog</span><span class="params">(<span class="keyword">struct</span> Dog *self, <span class="type">char</span> name[], <span class="type">char</span> color[])</span> &#123;</span><br><span class="line">    self = create_Pet(self, name);</span><br><span class="line">    <span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">DogVTable</span> <span class="title">v</span> =</span> &#123;dog_describe, dog_bark&#125;;</span><br><span class="line">    self-&gt;f = &amp;v;</span><br><span class="line">    self-&gt;color = color;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> Cat *<span class="title function_">create_Cat</span><span class="params">(<span class="keyword">struct</span> Cat *self, <span class="type">char</span> name[])</span> &#123;</span><br><span class="line">    self = create_Pet(self, name);</span><br><span class="line">    <span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">CatVTable</span> <span class="title">v</span> =</span> &#123;cat_describe, cat_meow&#125;;</span><br><span class="line">    self-&gt;f = &amp;v;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里分别定义了三个类型的构造函数，都传入了一个指针表示要初始化的对象的地址，为什么不在构造函数内部调用 <code>malloc</code> 呢？因为还存在栈上变量的可能。因此应该传入指针，把内存的申请留给用户。另外在 <code>Dog</code> 和 <code>Cat</code> 的构造函数中先调用了 <code>Pet</code> 的构造函数，这也是面向对象语言中的初始化流程。还有，我们将虚表定义为了函数内的 <code>static</code> 变量，这也保证了同一类只有同一虚表。</p>
+<p>最后还请注意 <code>create_Pet</code> 函数中的虚表，这里将其值设定为 NULL，说明 <code>Pet</code> 类不存在一个对应 <code>describe</code> 方法的实际函数。这意味着 <code>Pet</code> 类不应调用 <code>describe</code> 函数，或更进一步的，<code>Pet</code> 类不应存在实例。也就是说 <code>Pet</code> 类应该是一个抽象类。这一点实际上很像 c++ 中对于虚函数的定义。以 c++ 来描述 <code>Pet</code> 类的话应该就是这样的：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Pet</span> &#123;</span><br><span class="line">    <span class="type">char</span> *name;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">char</span> *<span class="title">describe</span><span class="params">(<span class="type">char</span> buf[])</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>将 <code>describe</code>“赋值”为 0 和将虚表中的 <code>describe</code> 项赋值为 NULL（也是0）完全是一样的。</p>
+<p>另外，是不是觉得 <code>create_Pet</code> 这样的函数名太奇怪了？这其实是为预处理宏来准备的。接下来上一点宏魔法 <code>:)</code><br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> NEW(cls, ...) create_##cls(malloc(sizeof(struct cls)), __VA_ARGS__)  <span class="comment">// alloc on heap</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> DECL(cls, name, ...) struct cls name; create_##cls(&amp;name, __VA_ARGS__)  <span class="comment">// alloc on stack</span></span></span><br></pre></td></tr></table></figure></p>
+<p>这样分别定义了两个宏用来在堆和栈上创建变量。使用起来就如下面这样：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> *<span class="title">pet</span> =</span> NEW(Cat, <span class="string">&quot;Kitty&quot;</span>);  <span class="comment">// Pet *pet = new Cat(&quot;Kitty&quot;);</span></span><br><span class="line">    DECL(Dog, dog, <span class="string">&quot;Beauty&quot;</span>, <span class="string">&quot;white&quot;</span>);  <span class="comment">// Dog dog(&quot;Beauty&quot;, &quot;white&quot;);</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>是不是有一点 c++ 的感觉了？</p>
+<p>最后，我们实现一下 <code>Dog</code> 和 <code>Cat</code> 类的函数，并用一个小程序测试一下。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">dog_describe</span><span class="params">(<span class="keyword">struct</span> Pet *self, <span class="type">char</span> buf[])</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> *<span class="title">dself</span> =</span> self;</span><br><span class="line">    <span class="built_in">sprintf</span>(buf, <span class="string">&quot;the %s dog is %s&quot;</span>, dself-&gt;color, dself-&gt;name);</span><br><span class="line">    <span class="keyword">return</span> buf;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">dog_bark</span><span class="params">(<span class="keyword">struct</span> Dog *self)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s said: \&quot;wooof!!!\&quot;\n&quot;</span>, self-&gt;name);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">char</span> *<span class="title function_">cat_describe</span><span class="params">(<span class="keyword">struct</span> Pet *self, <span class="type">char</span> buf[])</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Cat</span> *<span class="title">cself</span> =</span> self;</span><br><span class="line">    <span class="built_in">sprintf</span>(buf, <span class="string">&quot;this cat named %s&quot;</span>, cself-&gt;name);</span><br><span class="line">    <span class="keyword">return</span> buf;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">cat_meow</span><span class="params">(<span class="keyword">struct</span> Cat *self)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s said: \&quot;meow...\&quot;\n&quot;</span>, self-&gt;name);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> *<span class="title">pet1</span> =</span> NEW(Cat, <span class="string">&quot;Kitty&quot;</span>);</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Pet</span> *<span class="title">pet2</span> =</span> NEW(Dog, <span class="string">&quot;Scooby&quot;</span>, <span class="string">&quot;brown&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> desc_buf[<span class="number">30</span>];</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;desc cat: %s\n&quot;</span>, pet1-&gt;f-&gt;describe(pet1, desc_buf));</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;desc dog: %s\n&quot;</span>, pet2-&gt;f-&gt;describe(pet2, desc_buf));</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Cat</span> *<span class="title">cat</span> =</span> pet1;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Dog</span> *<span class="title">dog</span> =</span> pet2;</span><br><span class="line">    cat-&gt;f-&gt;meow(cat);</span><br><span class="line">    dog-&gt;f-&gt;bark(dog);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>输出结果如下，可以看出 <code>describe</code> 函数的多态性。<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">desc cat: this cat named Kitty</span><br><span class="line">desc dog: the brown dog is Scooby</span><br><span class="line">Kitty said: &quot;meow...&quot;</span><br><span class="line">Scooby said: &quot;wooof!!!&quot;</span><br><span class="line">desc dog: the white dog is Beauty</span><br></pre></td></tr></table></figure></p>
+<h2 id="六、函数重载？"><a href="#六、函数重载？" class="headerlink" title="六、函数重载？"></a>六、函数重载？</h2><p>最后还想讲一点关于函数重载的内容，函数重载也是面向对象的一部分。c 语言没有函数重载，这对于程序员来说十分不友好，因为众所周知，取名字是一项十分耗费时间精力的工作。可如果我说能够让 c 语言也有函数重载，你是否相信呢？</p>
+<p>当然这一点是夸大了，我们不可能改变 c 语言的语法，我的意思是，如何在没有函数重载的情况下以类似的方式解决函数重载所解决的问题。对于这一点，实际上我们可以完全参考 python 的解决方法。python 没有函数重载，实际上我在使用 python 很长时间之后还没有意识到这一点，当然这一定上源于用 python 进行的工作大部分不过是调用 api 而已。但是这还是能一定程度上说明 python 的解决方法是较为合理的。</p>
+<p>python 的实现方法实际上就是参数表。通过设定默认值使得调用者只需要设定自己需要的参数，从而实现了“伪重载”。举一个例子<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params"></span></span><br><span class="line"><span class="params">    a: <span class="built_in">int</span> = <span class="number">0</span>,</span></span><br><span class="line"><span class="params">    b: <span class="built_in">int</span> = <span class="number">0</span>,</span></span><br><span class="line"><span class="params">    arr: <span class="built_in">list</span>[<span class="built_in">int</span>] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="keyword">if</span> arr <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">return</span> a + b</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">sum</span>(arr)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(add(a=<span class="number">1</span>, b=<span class="number">2</span>))</span><br><span class="line"><span class="built_in">print</span>(add(arr=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>]))</span><br></pre></td></tr></table></figure><br>输出<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">3</span><br><span class="line">15</span><br></pre></td></tr></table></figure><br>当然 python 不需要重载还有部分鸭子类型的原因。c 语言虽然没有，但是依旧可以使用参数表模拟多态的方式更加灵活地调用函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">AddParam</span> &#123;</span></span><br><span class="line">    <span class="type">int</span> a;</span><br><span class="line">    <span class="type">int</span> b;</span><br><span class="line">    <span class="type">int</span> *arr;</span><br><span class="line">    <span class="type">int</span> size;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">add</span><span class="params">(<span class="keyword">struct</span> AddParam *param)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (param-&gt;arr == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> param-&gt;a + param-&gt;b;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="type">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; param-&gt;size; i++) &#123;</span><br><span class="line">            sum += param-&gt;arr[i];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> sum;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">AddParam</span> <span class="title">param1</span>;</span></span><br><span class="line">    param1.a = <span class="number">1</span>;</span><br><span class="line">    param1.b = <span class="number">2</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, add(&amp;param1));</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">AddParam</span> <span class="title">param2</span>;</span></span><br><span class="line">    <span class="type">int</span> arr[<span class="number">5</span>] = &#123;<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>&#125;;</span><br><span class="line">    param2.arr = arr;</span><br><span class="line">    param2.size = <span class="number">5</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, add(&amp;param2));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>wokron
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://wokron.github.io/posts/583d5770/" title="面向对象的c语言">https://wokron.github.io/posts/583d5770/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C#</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/C/" rel="tag"># C</a>
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/Golang/" rel="tag"># Golang</a>
+              <a href="/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/" rel="tag"># 面向对象</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/38f6cfcb/" rel="prev" title="CMake实用语法教程">
+      <i class="fa fa-chevron-left"></i> CMake实用语法教程
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80%E2%80%94%E2%80%94%E5%AF%B9%E8%B1%A1%E4%B8%8E%E8%BF%87%E7%A8%8Bd"><span class="nav-number">1.</span> <span class="nav-text">一、前言——对象与过程d</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81c%E8%AF%AD%E8%A8%80%E7%9A%84%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E4%BD%95%E4%BB%A5%E5%8F%AF%E8%83%BD"><span class="nav-number">2.</span> <span class="nav-text">二、c语言的面向对象何以可能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%B0%81%E8%A3%85%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">三、封装的实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%BB%A7%E6%89%BF%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">四、继承的实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%A4%9A%E6%80%81%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">五、多态的实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%87%BD%E6%95%B0%E9%87%8D%E8%BD%BD%EF%BC%9F"><span class="nav-number">6.</span> <span class="nav-text">六、函数重载？</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">62</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

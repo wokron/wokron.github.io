@@ -159,6 +159,113 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/af468c0b/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/af468c0b/" class="post-title-link" itemprop="url">机器学习之K均值聚类</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-23 08:53:53" itemprop="dateCreated datePublished" datetime="2022-10-23T08:53:53+08:00">2022-10-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言——非监督学习"><a href="#一、引言——非监督学习" class="headerlink" title="一、引言——非监督学习"></a>一、引言——非监督学习</h2><p>之前介绍的算法都是监督学习算法。需要样本中包含各特征信息以及结果标签来让模型学习特征与结果的对应关系。但是，如果我们此时只有特征信息，而不指明具体结果是什么，又需要什么样的算法和模型才能得知哪些样本会有同样的标签呢？</p>
+<p>这种从原始数据中探索样本间联系的学习方式称为非监督学习。其中非监督意指，模型不需要人来告知他 “什么是什么”，而能自己从数据中挖掘信息。</p>
+<h2 id="二、聚类算法"><a href="#二、聚类算法" class="headerlink" title="二、聚类算法"></a>二、聚类算法</h2><p>非监督学习中的一种算法为聚类算法。它的目的是将数据按照一定特征进行分组。</p>
+<p>最广泛使用的聚类算法称为 K 均值（K-means）算法。</p>
+<h2 id="三、K均值算法"><a href="#三、K均值算法" class="headerlink" title="三、K均值算法"></a>三、K均值算法</h2><p>假设我们要将所有数据分成 k 组，并称在一组中的数据为一个簇。那么对于每一簇内的数据，我们就希望他们之间的距离相对较小，而他们与其他簇中的数据的距离较大。直观上讲，就是同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙（这或许就是聚类的含义）。</p>
+<p>我们用簇内的数据的平均作为对簇的描述，相当于指示了簇在特征空间中的位置。这一平均后得到的点称为簇质心。假设我们现在已经得到了一种分组，那么这种分组现在是否有优化的可能呢？要回答这个问题就要查看每一数据点相对于各个簇质心的距离，如果某个数据点相对于其他簇质心的距离要小于其相对于当前所在的簇的质心的距离，就说明该点被错分类了。我们就要将其重新划分为与其距离最小的簇质心所对应的簇内。</p>
+<p>但是，这种重新划分又会使得簇质心的位置发生变化，这又导致一些之前是距离该质心位置最小的数据点不再是距离该质心位置最小，又需要再次调整分类。就这样，不断地调整，直到最终所有的点距离当前所在簇的质心距离都为最小，就代表了分类完成。</p>
+<p>经过了上面的分析，我们现在给出 K 均值算法的流程：</p>
+<ol>
+<li>初始化 k 个簇质心位置，分别对应 k 个簇</li>
+<li>对每个数据点，选择与其距离最近的簇质心对应的簇作为其当前分组</li>
+<li>对所有同一簇的数据点，计算其平均值，作为新的当前簇的簇质心</li>
+<li>不断重复 2、3，直到所有簇的簇质心不再发生变化，即代表分组完成</li>
+</ol>
+<p>可以看出，该算法具有很简单的流程，且没有复杂的数据结构。</p>
+<blockquote>
+<p>算法中还需要明确两个点：</p>
+<ul>
+<li>如何初始化簇质心：<br>一般是随机选取点作为质心，或者在样本数据中随机选取 k 个点</li>
+<li>怎么计算数据点到簇质心的距离<br>该算法使用二范数，或者说欧氏距离作为距离</li>
+</ul>
+</blockquote>
+<h2 id="四、K均值算法的损失函数"><a href="#四、K均值算法的损失函数" class="headerlink" title="四、K均值算法的损失函数"></a>四、K均值算法的损失函数</h2><p>这里我们要更理论化地解释为什么这样的算法可以将数据成功分类</p>
+<p>假设总共有 m 个样本数据 $x^{(1)}, x^{(2)}, …, x^{(m)}$，需要将其分为 k 类（k &lt; m）。我们用 $c^{(i)}$ 表示第 i 个数据点选择第几个簇。用 $\mu_{j}$ 表示第 j 个簇的簇质心。</p>
+<p>要衡量当前分组，按照之前所说的 “同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙”，很容易采用簇中数据点相对于质心的距离的平均作为标准。这里直接给出损失函数</p>
+<script type="math/tex; mode=display">
+    J(c^{(1)}, ..., c^{(m)}, \mu_{1}, ..., \mu_{k}) =
+    \frac{1}{m}\sum_{i=1}^m \Vert x^{(i)} - \mu_{c^{(i)}} \Vert^2</script><p>该损失函数在这里又叫做失真函数。很明显，失真函数是所有数据点到其对应的簇质心的距离的平方的平均。距离取平方是因为这样并不影响损失函数的衡量效果，而又方便计算。</p>
+<p>根据失真函数，我们可以证明上一节算法的正确性。</p>
+<ul>
+<li>步骤 2 时，对第 i 个样本，我们重新选择 $c^{(i)}$ 使得 $\min\Vert x^{(i)} - \mu_{c^{(i)}} \Vert$ 从而使得 $\min J$。</li>
+<li>步骤 3 时，我们使 $\mu<em>j$ 取所有簇内数据点的平均。可以数学证明，此时依旧使得 $\min \Vert x^{(i)} - \mu</em>{c^{(i)}} \Vert$。</li>
+<li>这样我们就对失真函数中的每一个参数进行了调整，相当于进行了一次梯度下降。通过不断重复这一过程，最终便可达到使失真函数最小的位置。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/55036469/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1337,131 +1444,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5371358e/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/5371358e/" class="post-title-link" itemprop="url">机器学习笔记之一元线性回归</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-25 10:22:13" itemprop="dateCreated datePublished" datetime="2022-09-25T10:22:13+08:00">2022-09-25</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、引言——房价预测问题"><a href="#一、引言——房价预测问题" class="headerlink" title="一、引言——房价预测问题"></a>一、引言——房价预测问题</h2><p><strong>问题：</strong><br>假设我们知道一些房价与距离的对应关系，通过这些已知的信息，能否预测在一定范围内任意距离对应的房价？</p>
-<p>首先考虑最为简单的情况，也就是只有两个房价信息的情况。<br><img src="/posts/5371358e/simpleScatterPrice.png" class="" title="scatter"></p>
-<p>如图所示，1km时对应房价为300，2km 时对应房价为500。很容易可以在这两点间连一条直线，这条直线就可以作为对房价的预测。这样用曲线对已知数据中的关系进行估计的方法称为拟合。</p>
-<blockquote>
-<p>（注意，本文只考虑以一元线性函数进行拟合）</p>
-</blockquote>
-<img src="/posts/5371358e/simplePredict.png" class="" title="predict">
-<p>类似的，增加房价信息为三个点，如果三点共线，则该直线依然可以作为对房价的拟合。<br><img src="/posts/5371358e/threePredict.png" class="" title="predict2"></p>
-<p>但更可能的情况是三点不共线，对于更多的数据的情况则更是如此。这样的话要如何找到一条直线来拟合房价信息呢？</p>
-<h2 id="二、损失函数"><a href="#二、损失函数" class="headerlink" title="二、损失函数"></a>二、损失函数</h2><p>我们需要找到一种标准来衡量直线对已有信息的拟合程度。</p>
-<p>假设当前直线为：</p>
-<script type="math/tex; mode=display">
-    y = wx+b</script><p>房子距离为 $x^{(1)},x^{(2)},x^{(3)}…,x^{(m)}$，对应的房价为 $y^{(1)},y^{(2)},y^{(3)}…,y^{(m)}$。<br>则对于每个距离 $x^{(i)}$，当前直线所预测的房价为:</p>
-<script type="math/tex; mode=display">
-    \hat{y}^{(i)} = wx^{(i)} + b</script><p>该房价与真正的房价的差距为</p>
-<script type="math/tex; mode=display">
-    d = |y^{(i)} - \hat{y}^{(i)}|</script><p>绝对值不可导，不妨用平方来代替</p>
-<script type="math/tex; mode=display">
-    d_2 = (y^{(i)} - \hat{y}^{(i)})^2</script><p>对于每个已知的房价信息，当前直线的预测都可能会有偏差，将这些偏差求和得到总的偏差</p>
-<script type="math/tex; mode=display">
-    \sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>为了排除样本数量不同对偏差的影响，将偏差总和除以样本数量</p>
-<script type="math/tex; mode=display">
-    \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>这也就是总体方差的计算式：</p>
-<script type="math/tex; mode=display">
-    \sigma^2 = \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2</script><p>对于机器学习，我们将$\hat{y}^{(i)}$展开，并将方差除以2，得到一元线性回归的损失函数（loss function），即</p>
-<script type="math/tex; mode=display">
-    J(w, b) = \frac{1}{2m}\sum_{i=1}^{m}(y^{(i)} - wx^{(i)} - b)^2</script><p>在 $x^{(i)}$，$y^{(i)}$ 确定的情况下，损失函数是关于 $w$ 和 $b$ 的连续可导的二元函数。该函数可以用来衡量 $w，b$ 所确定的直线与已知数据之间的偏差。</p>
-<h2 id="三、梯度下降"><a href="#三、梯度下降" class="headerlink" title="三、梯度下降"></a>三、梯度下降</h2><p>既然我们已经可以用 $J(w, b)$ 衡量直线对数据的拟合程度了，那么对于“如何找到最佳的拟合曲线”这一问题，就转化为了“如何找到使得 $J(w, b)$ 最小的 $w，b$ 值”。</p>
-<p>我们可以确定一个任意的点 $(w_0, b_0)$ 作为初始位置，那么要到达 $J(w, b)$ 最小的位置， 要如何移动呢？我们要向能使 $J(w, b)$ 减小，并减小得最快的方向移动。具体的，也就是向着梯度的反方向移动。</p>
-<script type="math/tex; mode=display">
-    (w_1, b_1) = (w_0, b_0) - \alpha\nabla{J(w, b)}</script><p>或</p>
-<script type="math/tex; mode=display">
-    \left\{
-        \begin{array}{lr}
-            w_1 = w_0 - \alpha\frac{\partial{J(w, b)}}{\partial{w}} & \\
-            & \\
-            b_1 = b_0 - \alpha\frac{\partial{J(w, b)}}{\partial{b}}
-        \end{array}
-    \right.</script><p>其中 $\alpha$ 称为步长，表示一次迭代时的移动程度。</p>
-<p>通过多次重复迭代这一过程，最终得到的 $(w_n, b_n)$ 将位于梯度为 0 的位置。即损失函数的一个极小值点。这时对应的直线将能较好地拟合原本的数据。</p>
-<blockquote>
-<p>当然，极小值点不意味着对应的值便是损失函数的最小值。在一些情况下，这一算法也可能会使拟合的直线处于局部最优而非全局最优的情况。但本文暂不处理这种情况。</p>
-</blockquote>
-<h2 id="四、代码实现"><a href="#四、代码实现" class="headerlink" title="四、代码实现"></a>四、代码实现</h2><p>我们先导入<code>numpy</code>和<code>Matplotlib</code><br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br></pre></td></tr></table></figure></p>
-<p>之后定义一些需要用到的函数。</p>
-<p>计算损失函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, x, y</span>):</span><br><span class="line">    m = x.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_cost = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        actual_y = w * x[i] + b</span><br><span class="line">        sum_cost += (actual_y - y[i]) ** <span class="number">2</span></span><br><span class="line">    total_cost = (<span class="number">1</span> / (<span class="number">2</span> * m)) * sum_cost</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure></p>
-<p>计算损失函数对应的梯度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, x, y</span>):</span><br><span class="line">    m = x.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_w = <span class="number">0</span></span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        sum_w += x[i] * (w * x[i] + b - y[i])</span><br><span class="line">        sum_b += (w * x[i] + b - y[i])</span><br><span class="line">    gradient_w = (<span class="number">1</span> / m) * sum_w</span><br><span class="line">    gradient_b = (<span class="number">1</span> / m) * sum_b</span><br><span class="line">    <span class="keyword">return</span> gradient_w, gradient_b</span><br></pre></td></tr></table></figure></p>
-<p>进行一次梯度下降迭代<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">gradient_descent</span>(<span class="params">w, b, x, y, alpha</span>):</span><br><span class="line">    d_w, d_b = get_gradient(w, b, x, y)</span><br><span class="line">    w -= alpha * d_w</span><br><span class="line">    b -= alpha * d_b</span><br><span class="line">    <span class="keyword">return</span> w, b</span><br></pre></td></tr></table></figure></p>
-<p>接下来是主体部分</p>
-<p>设置已知数据<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x_train = np.array([<span class="number">1.0</span>, <span class="number">1.7</span>, <span class="number">2.0</span>, <span class="number">2.5</span>, <span class="number">3.0</span>, <span class="number">3.2</span>])</span><br><span class="line">y_train = np.array([<span class="number">250</span>, <span class="number">300</span>, <span class="number">480</span>, <span class="number">430</span>, <span class="number">630</span>, <span class="number">730</span>,])</span><br></pre></td></tr></table></figure><br>初始化 $w$, $b$ 及步长 $\alpha$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">w = <span class="number">0</span></span><br><span class="line">b = <span class="number">0</span></span><br><span class="line">alpha = <span class="number">1e-2</span></span><br></pre></td></tr></table></figure></p>
-<p>使用梯度下降迭代 20000 次。每 1000 次打印当前的信息。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">20000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, x_train, y_train, alpha)</span><br><span class="line">    <span class="keyword">if</span> i % <span class="number">1000</span> == <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;w:<span class="subst">&#123;w&#125;</span>, b:<span class="subst">&#123;b&#125;</span>, cost:<span class="subst">&#123;get_cost(w, b, x_train, y_train)&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure><br><img src="/posts/5371358e/print.png" class="" title="print"></p>
-<p>最后输出拟合结果<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.xlabel(<span class="string">&quot;house location(km)&quot;</span>)</span><br><span class="line">plt.ylabel(<span class="string">&quot;price($)&quot;</span>)</span><br><span class="line">plt.scatter(x_train, y_train)</span><br><span class="line">plt.plot([<span class="number">0</span>, <span class="number">4</span>], [b, w*<span class="number">4</span>+b])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure><br>拟合效果如图：<br><img src="/posts/5371358e/actualPredict.png" class="" title="predict3"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1533,7 +1515,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">61</span>
+          <span class="site-state-item-count">62</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1546,7 +1528,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-count">61</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

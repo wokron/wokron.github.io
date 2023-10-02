@@ -159,6 +159,105 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/94547693/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/94547693/" class="post-title-link" itemprop="url">Spring依赖注入</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-09 17:42:35" itemprop="dateCreated datePublished" datetime="2023-01-09T17:42:35+08:00">2023-01-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、依赖注入"><a href="#一、依赖注入" class="headerlink" title="一、依赖注入"></a>一、依赖注入</h2><p>考虑这样一个例子，<code>CustomerDAO</code> 类使用了 <code>DBUtil</code> 类中的方法连接到 MySQL 数据库<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CustomerDAO</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">DBUtil</span> <span class="variable">databaseUtil</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">DBUtil</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Customer <span class="title function_">findCustomerByName</span><span class="params">(String name)</span></span><br><span class="line">    &#123;</span><br><span class="line">        databaseUtil.doSomething()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>假设现在想要改为使用 Oracle 数据库，需要怎么做？可以使用 <code>OracleDBUtil</code> 继承 <code>DBUtil</code>，并重写其相关方法。但是由于 <code>CustomerDAO</code> 中将 DBUtil 实例添加到其初始化过程中。因此想要修改的话还是需要对 <code>CustomerDAO</code> 本身进行修改。这违反了开-闭原则。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CustomerDAO</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">DBUtil</span> <span class="variable">databaseUtil</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">OracleDBUtil</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Customer <span class="title function_">findCustomerByName</span><span class="params">(String name)</span></span><br><span class="line">    &#123;</span><br><span class="line">        databaseUtil.doSomething()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>为了使对 <code>dbUtil</code> 的修改不影响 <code>CustomerDAO</code> 本身，我们可以将实例的创建移到 <code>CustomerDAO</code> 之外。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CustomerDAO</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> DBUtil databaseUtil;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">CustomerDAO</span><span class="params">(DBUtil databaseUtil)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">this</span>.databaseUtil = databaseUtil;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Customer <span class="title function_">findCustomerByName</span><span class="params">(String name)</span></span><br><span class="line">    &#123;</span><br><span class="line">        databaseUtil.doSomething()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>这样，我们就可以自主选择 DBUtil 的具体实现，同时不会造成对 CustomerDAO 的修改。保证了开闭原则，降低了代码的耦合程度，有助于更有效的代码复用。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">DBUtil</span> <span class="variable">databaseUtil</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">OracleDBUtil</span>();</span><br><span class="line"><span class="type">var</span> <span class="variable">customerDAO</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">CustomerDAO</span>(databaseUtil) </span><br></pre></td></tr></table></figure></p>
+<p>这样的方法称为依赖注入。也就是，一个类对其他类的依赖，并不存在于这个类中，而是通过构造函数或其他方法传入这个类中。这样就使得编程时只需要关注抽象的依赖，而不需要考虑具体的实现。</p>
+<h2 id="二、spring的依赖注入"><a href="#二、spring的依赖注入" class="headerlink" title="二、spring的依赖注入"></a>二、spring的依赖注入</h2><p>依赖注入是 spring 的核心之一。spring 提供了通过 java 注释或 xml 进行依赖注入配置的方法。这里只介绍通过 java 注释实现的手动装配和自动装配。</p>
+<p>接下来本文会举一个经典例子来比较手动装配和自动装配的不同。考虑我们需要一个 CDPlayer，其中包含 CD。CD 具有 <code>play()</code> 方法，需要 CDPlayer 调用才能播放。</p>
+<h2 id="三、自动化装配"><a href="#三、自动化装配" class="headerlink" title="三、自动化装配"></a>三、自动化装配</h2><p>不管自动或手动装配，都需要创建配置类，并为其添加注释 <code>@Configuration</code>。这一配置类将提供可供 spring 维护的用于装配的类。这些类称为 Bean（爪哇咖啡豆！！）。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span></span><br></pre></td></tr></table></figure></p>
+<p>自动化装配方式中，用于指示类与类的依赖关系的标志分散在各个类中。给类添加注释 <code>@Component</code> 表示该类为一个 Bean。或者可以认为这表示配置类中会自动生成一个创建该类型 Bean 的方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SgtPeppers</span> <span class="keyword">implements</span> <span class="title class_">CompactDisc</span></span><br></pre></td></tr></table></figure></p>
+<p>同时在需要被注入的位置，需要添加 <code>@Autowired</code> 方法。表示该属性是自动装配的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> CompactDisc cd;</span><br></pre></td></tr></table></figure></p>
+<p>最后，在配置类中再添加一条注释 <code>@ComponentScan</code>，表示该配置类会扫描对应路径下所有带 <code>@Component</code> 注释的类，为这些类创建生成 Bean 的方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ComponentScan</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span></span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p><code>@ComponentScan</code> 默认扫描与配置类在同一包或在子包下的所有 Component，可以通过 <code>@ComponentScan(&quot;包名&quot;)</code> 或 <code>@ComponentScan(&#123;&quot;包名1&quot;, &quot;包名2&quot;&#125;)</code> 来设置扫描路径。</p>
+</blockquote>
+<p>最终各文件代码如下（去除导入语句，各文件在同一包目录下）：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CompactDisc.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">CompactDisc</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">play</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// CDPlayerConfig.java</span></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ComponentScan</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// SgtPeppers.java</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SgtPeppers</span> <span class="keyword">implements</span> <span class="title class_">CompactDisc</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">title</span> <span class="operator">=</span> <span class="string">&quot;Sgt. Pepper&#x27;s Lonely Hearts Club Band&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">artist</span> <span class="operator">=</span> <span class="string">&quot;The Beatles&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">play</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Playing &quot;</span> + title + <span class="string">&quot; by &quot;</span> + artist);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// CDPlayer.java</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayer</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> CompactDisc cd;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCD</span><span class="params">()</span> &#123;</span><br><span class="line">        cd.play();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>注意此时若直接通过 <code>new</code> 创建 <code>CDPlayer</code> 实例，<code>cd</code> 属性不会被装配。正确的使用方法是让 spring 托管对象的创建。这将在第五节介绍。</p>
+<h2 id="四、注释手动装配"><a href="#四、注释手动装配" class="headerlink" title="四、注释手动装配"></a>四、注释手动装配</h2><p>手动装配 Bean 需要自行编写配置类。但是不需要在其他类中添加注释。</p>
+<p>配置类只需要添加注释 <code>@Configuration</code>，而不需要 <code>@ComponentScan</code>。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span></span><br></pre></td></tr></table></figure></p>
+<p>接着在配置类中编写方法，返回值为要创建 Bean 的类型。在例子中，也就是要 <code>SgtPeppers</code> 和 <code>CDPlayer</code>。同时要对方法添加 <code>@Bean</code> 注释。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> CompactDisc <span class="title function_">compactDisc</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SgtPeppers</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> CDPlayer <span class="title function_">cdPlayer</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CDPlayer</span>(sgtPeppers());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>注意在 <code>cdPlayer()</code> 方法中使用了 <code>CDPlayer</code> 的一个参数的构造函数。为了通过java 代码实现配置，实现对希望注入依赖的属性的访问（如构造函数，或 <code>setter</code>）是必要的。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">CDPlayer</span><span class="params">(CompactDisc cd)</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.cd = cd;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>通过 <code>new CDPlayer(sgtPeppers())</code>，我们就建立了 CDPlayer 和 SgtPeppers 的依赖关系。另外一种写法更加简洁，也更能体现组件之间的依赖关系。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> CompactDisc <span class="title function_">compactDisc</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SgtPeppers</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> CDPlayer <span class="title function_">cdPlayer</span><span class="params">(CompactDisc cd)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CDPlayer</span>(cd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<p>最终各文件代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CompactDisc.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">CompactDisc</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">play</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// CDPlayerConfig.java</span></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CompactDisc <span class="title function_">sgtPeppers</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SgtPeppers</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CDPlayer <span class="title function_">cdPlayer</span><span class="params">(CompactDisc cd)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CDPlayer</span>(cd);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// SgtPeppers.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SgtPeppers</span> <span class="keyword">implements</span> <span class="title class_">CompactDisc</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">title</span> <span class="operator">=</span> <span class="string">&quot;Sgt. Pepper&#x27;s Lonely Hearts Club Band&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">artist</span> <span class="operator">=</span> <span class="string">&quot;The Beatles&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">play</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Playing &quot;</span> + title + <span class="string">&quot; by &quot;</span> + artist);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// CDPlayer.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayer</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> CompactDisc cd;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">CDPlayer</span><span class="params">(CompactDisc cd)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.cd = cd;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCD</span><span class="params">()</span> &#123;</span><br><span class="line">        cd.play();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="五、Bean-的使用"><a href="#五、Bean-的使用" class="headerlink" title="五、Bean 的使用"></a>五、Bean 的使用</h2><p>终于到了 Bean 的使用部分。被 <code>@Bean</code> 或 <code>@Component</code> 注释，作为 Bean 的类，并不能直接通过 <code>new</code> 来创建实例，而只能通过被 Spring 托管的方式创建，这似乎类似于 jvm。</p>
+<p>具体来说，要使用 Bean，需要创建一个 Spring 应用上下文（Application Context）的实例，并设定需要用到的 Bean 所在的配置类或 xml。通过这个实例获取各 Bean 对象实例，才能进行操作。</p>
+<p>以 java 配置类为例，我们需要使用 CDPlayer 类，不能直接通过 <code>new</code> 创建实例。而是先创建上下文，并将配置类传入。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ApplicationContext</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AnnotationConfigApplicationContext</span>(CDPlayerConfig.class);</span><br></pre></td></tr></table></figure></p>
+<p>接着才能获取 CDPlayer 实例，并调用其方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">CDPlayer</span> <span class="variable">cdPlayer</span> <span class="operator">=</span> context.getBean(CDPlayer.class);</span><br><span class="line">cdPlayer.playCD();</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/c837c423/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1274,113 +1373,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/af468c0b/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/af468c0b/" class="post-title-link" itemprop="url">机器学习之K均值聚类</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-23 08:53:53" itemprop="dateCreated datePublished" datetime="2022-10-23T08:53:53+08:00">2022-10-23</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、引言——非监督学习"><a href="#一、引言——非监督学习" class="headerlink" title="一、引言——非监督学习"></a>一、引言——非监督学习</h2><p>之前介绍的算法都是监督学习算法。需要样本中包含各特征信息以及结果标签来让模型学习特征与结果的对应关系。但是，如果我们此时只有特征信息，而不指明具体结果是什么，又需要什么样的算法和模型才能得知哪些样本会有同样的标签呢？</p>
-<p>这种从原始数据中探索样本间联系的学习方式称为非监督学习。其中非监督意指，模型不需要人来告知他 “什么是什么”，而能自己从数据中挖掘信息。</p>
-<h2 id="二、聚类算法"><a href="#二、聚类算法" class="headerlink" title="二、聚类算法"></a>二、聚类算法</h2><p>非监督学习中的一种算法为聚类算法。它的目的是将数据按照一定特征进行分组。</p>
-<p>最广泛使用的聚类算法称为 K 均值（K-means）算法。</p>
-<h2 id="三、K均值算法"><a href="#三、K均值算法" class="headerlink" title="三、K均值算法"></a>三、K均值算法</h2><p>假设我们要将所有数据分成 k 组，并称在一组中的数据为一个簇。那么对于每一簇内的数据，我们就希望他们之间的距离相对较小，而他们与其他簇中的数据的距离较大。直观上讲，就是同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙（这或许就是聚类的含义）。</p>
-<p>我们用簇内的数据的平均作为对簇的描述，相当于指示了簇在特征空间中的位置。这一平均后得到的点称为簇质心。假设我们现在已经得到了一种分组，那么这种分组现在是否有优化的可能呢？要回答这个问题就要查看每一数据点相对于各个簇质心的距离，如果某个数据点相对于其他簇质心的距离要小于其相对于当前所在的簇的质心的距离，就说明该点被错分类了。我们就要将其重新划分为与其距离最小的簇质心所对应的簇内。</p>
-<p>但是，这种重新划分又会使得簇质心的位置发生变化，这又导致一些之前是距离该质心位置最小的数据点不再是距离该质心位置最小，又需要再次调整分类。就这样，不断地调整，直到最终所有的点距离当前所在簇的质心距离都为最小，就代表了分类完成。</p>
-<p>经过了上面的分析，我们现在给出 K 均值算法的流程：</p>
-<ol>
-<li>初始化 k 个簇质心位置，分别对应 k 个簇</li>
-<li>对每个数据点，选择与其距离最近的簇质心对应的簇作为其当前分组</li>
-<li>对所有同一簇的数据点，计算其平均值，作为新的当前簇的簇质心</li>
-<li>不断重复 2、3，直到所有簇的簇质心不再发生变化，即代表分组完成</li>
-</ol>
-<p>可以看出，该算法具有很简单的流程，且没有复杂的数据结构。</p>
-<blockquote>
-<p>算法中还需要明确两个点：</p>
-<ul>
-<li>如何初始化簇质心：<br>一般是随机选取点作为质心，或者在样本数据中随机选取 k 个点</li>
-<li>怎么计算数据点到簇质心的距离<br>该算法使用二范数，或者说欧氏距离作为距离</li>
-</ul>
-</blockquote>
-<h2 id="四、K均值算法的损失函数"><a href="#四、K均值算法的损失函数" class="headerlink" title="四、K均值算法的损失函数"></a>四、K均值算法的损失函数</h2><p>这里我们要更理论化地解释为什么这样的算法可以将数据成功分类</p>
-<p>假设总共有 m 个样本数据 $x^{(1)}, x^{(2)}, …, x^{(m)}$，需要将其分为 k 类（k &lt; m）。我们用 $c^{(i)}$ 表示第 i 个数据点选择第几个簇。用 $\mu_{j}$ 表示第 j 个簇的簇质心。</p>
-<p>要衡量当前分组，按照之前所说的 “同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙”，很容易采用簇中数据点相对于质心的距离的平均作为标准。这里直接给出损失函数</p>
-<script type="math/tex; mode=display">
-    J(c^{(1)}, ..., c^{(m)}, \mu_{1}, ..., \mu_{k}) =
-    \frac{1}{m}\sum_{i=1}^m \Vert x^{(i)} - \mu_{c^{(i)}} \Vert^2</script><p>该损失函数在这里又叫做失真函数。很明显，失真函数是所有数据点到其对应的簇质心的距离的平方的平均。距离取平方是因为这样并不影响损失函数的衡量效果，而又方便计算。</p>
-<p>根据失真函数，我们可以证明上一节算法的正确性。</p>
-<ul>
-<li>步骤 2 时，对第 i 个样本，我们重新选择 $c^{(i)}$ 使得 $\min\Vert x^{(i)} - \mu_{c^{(i)}} \Vert$ 从而使得 $\min J$。</li>
-<li>步骤 3 时，我们使 $\mu<em>j$ 取所有簇内数据点的平均。可以数学证明，此时依旧使得 $\min \Vert x^{(i)} - \mu</em>{c^{(i)}} \Vert$。</li>
-<li>这样我们就对失真函数中的每一个参数进行了调整，相当于进行了一次梯度下降。通过不断重复这一过程，最终便可达到使失真函数最小的位置。</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1452,7 +1444,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">61</span>
+          <span class="site-state-item-count">62</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1465,7 +1457,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">56</span>
+        <span class="site-state-item-count">61</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
