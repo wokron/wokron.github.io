@@ -143,4 +143,4 @@ search:
   path: search.xml
   field: post
   format: html
-  limit: 10
+  limit: 100
