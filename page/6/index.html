@@ -159,6 +159,198 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2cfef6f1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/2cfef6f1/" class="post-title-link" itemprop="url">机器学习笔记之多元线性回归</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-26 14:52:30" itemprop="dateCreated datePublished" datetime="2022-09-26T14:52:30+08:00">2022-09-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、引言——多特征的房价预测"><a href="#一、引言——多特征的房价预测" class="headerlink" title="一、引言——多特征的房价预测"></a>一、引言——多特征的房价预测</h2><p>现实中，某一变量并不一定只与单一变量有关。还以房价来举例，除了位置以外，房价还可能与房子面积、卧室数量、层数、房龄等因素有关。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center">面积</th>
+<th style="text-align:center">卧室数</th>
+<th style="text-align:center">层数</th>
+<th style="text-align:center">房龄</th>
+<th style="text-align:center">房价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">2104</td>
+<td style="text-align:center">5</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">45</td>
+<td style="text-align:center">460</td>
+</tr>
+<tr>
+<td style="text-align:center">1416</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">40</td>
+<td style="text-align:center">232</td>
+</tr>
+<tr>
+<td style="text-align:center">1534</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">30</td>
+<td style="text-align:center">315</td>
+</tr>
+<tr>
+<td style="text-align:center">852</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">36</td>
+<td style="text-align:center">178</td>
+</tr>
+<tr>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>对于多个特征的情况，我们需要对之前的一元线性回归进行推广。但在此之前，需要先约定一下使用的符号：</p>
+<p>和前面一样，这里将用 $x^{(i)}$ 表示第 i 组样本中的特征。 $y^{(i)}$ 表示第 i 组样本对应的目标结果。不同的是，对于第 j 个<strong>特征组</strong>，也就是第j个特征对应的数值的序列，采用 $x_{j}$ 表示。那么很自然的， $x^{(i)}_j$ 表示第 j 个特征中的第 i 个值，或者说表示第 i 组样本中的第 j 个特征。</p>
+<blockquote>
+<p>与上文中的列表相结合进行理解，相当于 $x^{(i)}$ 表示第 i 行中非房价的部分，$x_{j}$ 则表示第 j 列中的数值。</p>
+</blockquote>
+<p>要对多元特征进行拟合，也就是找到适当的 $w_1, w_2, …, w_n$ 使得对任意的 i，有</p>
+<script type="math/tex; mode=display">
+    y^{(i)} = w_1 * x^{(i)}_1 + w_2 * x^{(i)}_2 + ... + w_n * x^{(i)}_n + b</script><p>设</p>
+<script type="math/tex; mode=display">
+    \vec{w} = (w_1, w_2, ... w_n)</script><script type="math/tex; mode=display">
+    \vec{x}^{(i)} = (x^{(i)}_1, x^{(i)}_2, ..., x^{(i)}_n)</script><p>则原等式可以表示为</p>
+<script type="math/tex; mode=display">
+    y^{(i)} = \vec{w}\cdot\vec{x}^{(i)} + b</script><h2 id="二、损失函数"><a href="#二、损失函数" class="headerlink" title="二、损失函数"></a>二、损失函数</h2><p>假设给定 $\vec{w}, b$ 。对样本信息 $\vec{x}^{(i)}$ ，有对房价的预测</p>
+<script type="math/tex; mode=display">
+    \hat{y}^{(i)} = \vec{w}\cdot\vec{x}^{(i)} + b</script><p>与一元线性回归时同理，损失函数</p>
+<script type="math/tex; mode=display">
+    J(\vec{w}, b) = \frac{1}{2m}\sum_{i=1}^{m}(\hat{y}^{(i)} - y^{(i)})^2 = \frac{1}{2m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})^2</script><h2 id="三、梯度下降"><a href="#三、梯度下降" class="headerlink" title="三、梯度下降"></a>三、梯度下降</h2><p>对于损失函数，求对 $w_j$ 的偏导数：</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}} = \frac{1}{m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})x^{(i)}_j</script><p>对 $b$ 的偏导数：</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{b}} = \frac{1}{m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})</script><p>则每次迭代计算</p>
+<script type="math/tex; mode=display">
+    w_j = w_j -  \alpha \frac{\partial J(\mathbf{w},b)}{\partial w_j}</script><script type="math/tex; mode=display">
+    b = b -  \alpha \frac{\partial J(\mathbf{w},b)}{\partial b}</script><p>最终就可得到拟合样本数据的多元线性方程。</p>
+<h2 id="四、矩阵形式"><a href="#四、矩阵形式" class="headerlink" title="四、矩阵形式"></a>四、矩阵形式</h2><p>上述公式也可以表示为矩阵形式，设</p>
+<script type="math/tex; mode=display">
+    Y = \begin{bmatrix}
+        y^{(1)}&y^{(2)}&\cdots&y^{(m)}
+    \end{bmatrix}^T</script><script type="math/tex; mode=display">
+    W = \begin{bmatrix}
+        w_1&w_2&\cdots&w_n
+    \end{bmatrix}^T</script><script type="math/tex; mode=display">
+    X = \begin{bmatrix}
+        x^{(1)}_1 & x^{(1)}_2 & \cdots & x^{(1)}_n \\
+        x^{(2)}_1 & x^{(2)}_2 & \cdots & x^{(2)}_n \\
+        \vdots&\vdots& \ddots & \vdots \\
+        x^{(m)}_1 & x^{(m)}_2 & \cdots & x^{(m)}_n
+    \end{bmatrix}</script><script type="math/tex; mode=display">
+    B = \begin{bmatrix}
+        b&b&\cdots&b
+    \end{bmatrix}_{1\times{m}}^T</script><p>则原等式可以表示为</p>
+<script type="math/tex; mode=display">
+    Y = XW + B</script><p>对特定的 $W, B$ 对当前样本 $X$ 的预测为</p>
+<script type="math/tex; mode=display">
+    \hat{Y} = XW + B</script><p>则损失函数可以表示为</p>
+<script type="math/tex; mode=display">
+    J(W, B) = \frac{1}{2m}(Y - \hat{Y})^T(Y - \hat{Y})</script><p>设</p>
+<script type="math/tex; mode=display">
+    G = \begin{bmatrix}
+        \frac{\partial{J(W, B)}}{w_1}&\frac{\partial{J(W, B)}}{w_2}&\cdots&\frac{\partial{J(W, B)}}{w_n}
+    \end{bmatrix}^T</script><p>则有</p>
+<script type="math/tex; mode=display">
+    G = \frac{1}{m}X^T(\hat{Y} - Y)</script><p>另有</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(W, B)}}{b} = \frac{1}{m}sum(\hat{Y} - Y)</script><p>其中 $sum$ 表示对向量上各元素求和</p>
+<blockquote>
+<p>注意公式只经过个人推导，不保证正确性</p>
+</blockquote>
+<h2 id="五、代码实现"><a href="#五、代码实现" class="headerlink" title="五、代码实现"></a>五、代码实现</h2><h3 id="常规形式"><a href="#常规形式" class="headerlink" title="常规形式"></a>常规形式</h3><p>同样的，我们先导入<code>numpy</code>和<code>Matplotlib</code><br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br></pre></td></tr></table></figure></p>
+<p>之后定义一些需要用到的函数。</p>
+<p>计算损失函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m = X.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_cost = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        actual_y = np.dot(X[i], w) + b</span><br><span class="line">        sum_cost += (actual_y - y[i]) ** <span class="number">2</span></span><br><span class="line">    total_cost = sum_cost / (<span class="number">2</span> * m)</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure></p>
+<p>计算损失函数对应的梯度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m, n = X.shape</span><br><span class="line"></span><br><span class="line">    sum_w = np.zeros((n, ))</span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        err = (np.dot(w, X[i]) + b - y[i])</span><br><span class="line">        sum_b += err</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">            sum_w[j] += X[i,j] * err</span><br><span class="line"></span><br><span class="line">    gradients_w = sum_w / m</span><br><span class="line">    gradient_b = sum_b / m</span><br><span class="line">    <span class="keyword">return</span> gradients_w, gradient_b</span><br></pre></td></tr></table></figure></p>
+<p>进行一次梯度下降迭代<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">gradient_descent</span>(<span class="params">w, b, X, y, alpha</span>):</span><br><span class="line">    d_w, d_b = get_gradient(w, b, X, y)</span><br><span class="line">    w = w - alpha * d_w</span><br><span class="line">    b = b - alpha * d_b</span><br><span class="line">    <span class="keyword">return</span> w, b</span><br></pre></td></tr></table></figure></p>
+<p>接下来是主体部分</p>
+<p>设置已知数据<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.array(</span><br><span class="line">    [[<span class="number">2104</span>, <span class="number">5</span>, <span class="number">1</span>, <span class="number">45</span>],</span><br><span class="line">    [<span class="number">1416</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">40</span>],</span><br><span class="line">    [<span class="number">852</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">35</span>]])</span><br><span class="line">y_train = np.array([<span class="number">460</span>, <span class="number">232</span>, <span class="number">178</span>])</span><br></pre></td></tr></table></figure><br>初始化 $w$, $b$ 及步长 $\alpha$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">w = np.zeros((X_train.shape[<span class="number">1</span>], ))</span><br><span class="line">b = <span class="number">0</span></span><br><span class="line">alpha = <span class="number">1e-7</span></span><br></pre></td></tr></table></figure></p>
+<p>使用梯度下降迭代 1000 次。每 10 次打印当前的信息。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br><span class="line">    <span class="keyword">if</span> i % <span class="number">100</span> == <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;times:<span class="subst">&#123;i&#125;</span>, w:<span class="subst">&#123;np.around(w, <span class="number">3</span>)&#125;</span>, b:<span class="subst">&#123;b:<span class="number">0.2</span>f&#125;</span>, cost:<span class="subst">&#123;get_cost(w, b, X_train, y_train):<span class="number">.4</span>f&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure><br><img src="/posts/2cfef6f1/print.png" class="" title="print"></p>
+<p>代价随着迭代次数的增加而减少<br><img src="/posts/2cfef6f1/loss.png" class="" title="loss"></p>
+<h3 id="矩阵形式"><a href="#矩阵形式" class="headerlink" title="矩阵形式"></a>矩阵形式</h3><p>可以利用矩阵形式重写损失函数计算和梯度计算。<br>重写损失函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m= X.shape[<span class="number">0</span>]</span><br><span class="line">    B = np.ones((m, )) * b</span><br><span class="line">    actual_y = np.matmul(X, w.T) + B</span><br><span class="line">    err = actual_y - y.T</span><br><span class="line">    total_cost = np.matmul(err.T, err) / (<span class="number">2</span> * m)</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure><br>重写梯度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m, n = X.shape</span><br><span class="line">    </span><br><span class="line">    sum_w = np.zeros((n, ))</span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    B = np.ones((m, )) * b</span><br><span class="line">    y_hat = np.matmul(X, w.T) + B</span><br><span class="line">    sum_w = np.matmul(X.T, y_hat - y.T)</span><br><span class="line">    sum_b = np.<span class="built_in">sum</span>(y_hat - y.T)</span><br><span class="line"></span><br><span class="line">    gradients_w = sum_w / m</span><br><span class="line">    gradient_b = sum_b / m</span><br><span class="line">    <span class="keyword">return</span> gradients_w, gradient_b</span><br></pre></td></tr></table></figure><br>运行，与重写之前结果相同<br><img src="/posts/2cfef6f1/printMatrix.png" class="" title="printMatrix"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/5371358e/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1621,81 +1813,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/e01ea1fb/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/e01ea1fb/" class="post-title-link" itemprop="url">Hexo插入图片</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-10 15:32:12" itemprop="dateCreated datePublished" datetime="2022-09-10T15:32:12+08:00">2022-09-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%B5%8B%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">测试</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="插入图片"><a href="#插入图片" class="headerlink" title="插入图片"></a>插入图片</h2><p><img src="blackcat.jpg" alt=""><br>以上图片被保存在路径<code>./Hexo插入图片/</code>中。插入图片使用的代码为：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![](<span class="link">blackcat.jpg</span>)</span><br></pre></td></tr></table></figure><br>注意这样写在VScode中无法显示图片。Vscode中写法应为：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![](<span class="link">/Hexo插入图片/blackcat.jpg</span>)</span><br></pre></td></tr></table></figure></p>
-<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>需要使用插件hexo-renderer-marked。利用命令直接安装：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-renderer-marked</span><br></pre></td></tr></table></figure><br>之后在config.yaml中更改配置如下：<br><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- 用于在生成文章时生成对应的资源文件夹，请在配置文件中搜索并修改为true --&gt;</span><br><span class="line">post<span class="emphasis">_asset_</span>folder: true</span><br><span class="line"></span><br><span class="line">&lt;!-- 插件配置 --&gt;</span><br><span class="line">marked:</span><br><span class="line">  prependRoot: true</span><br><span class="line">  postAsset: true</span><br></pre></td></tr></table></figure></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1767,7 +1884,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">62</span>
+          <span class="site-state-item-count">63</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1780,7 +1897,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

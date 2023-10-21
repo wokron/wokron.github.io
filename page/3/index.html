@@ -159,6 +159,151 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3190f9b2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/3190f9b2/" class="post-title-link" itemprop="url">利用Colab训练神经网络</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-04 16:44:22" itemprop="dateCreated datePublished" datetime="2023-03-04T16:44:22+08:00">2023-03-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">踩坑记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、算力从哪里来？"><a href="#一、算力从哪里来？" class="headerlink" title="一、算力从哪里来？"></a>一、算力从哪里来？</h2><p>曾听到过这样一种说法，深度学习 “自学 + 没经费 = 天坑”。不幸的是我似乎正处于这种状态中。自学的方面还比较好克服，可没有 gpu 进行训练就 “难为无米之炊” 了。就算理论学得再好，自己构建的模型电脑带不动，没有实践的机会，也是难以学好这门学科的。</p>
+<p>最近我正开始学着实现更大的模型，我的笔记本此前的小模型还可以勉强撑住，可现在却完全带不动了。一方面，训练的时间太长，挤占了我使用笔记本做其他事的时间；另一方面，我的 gpu 显存太小，不能调大参数，可参数较小时又无法收敛。这就是我面临的双重两难问题。</p>
+<p>我希望找到一处租用算力的平台。它应该同时满足如下的条件</p>
+<ol>
+<li>算力丰富，能快速训练模型</li>
+<li>对用户友好，和本机环境差别不大，能够迅速上手训练模型</li>
+<li>费用便宜，最好有免费的算力</li>
+</ol>
+<p>综合以上各点，通过搜索，我找到了 Colab。Colab(oratory) 是一个 Google 研究项目，旨在帮助传播机器学习培训和研究成果。它是一个 Jupyter 笔记本环境，不需要进行任何设置就可以使用，并且完全在云端运行。Colab 笔记本存储在 Google 云端硬盘中，并且可以共享。利用Colaboratory ，可以方便的使用Keras, TensorFlow, PyTorch, OpenCV 等框架进行深度学习应用的开发。最重要的是，Colab 可免费使用。</p>
+<h2 id="二、Colab基本操作"><a href="#二、Colab基本操作" class="headerlink" title="二、Colab基本操作"></a>二、Colab基本操作</h2><h3 id="（1）创建笔记本"><a href="#（1）创建笔记本" class="headerlink" title="（1）创建笔记本"></a>（1）创建笔记本</h3><blockquote>
+<p>在正式介绍 Colab 之前需要说明一点，<strong>使用 Colab 需要科学上网</strong>。</p>
+</blockquote>
+<p>要新建 Colab 需要创建笔记，笔记是 Colab 编辑文本、代码和运行程序的地方。使用过 jupyter notebook 的人应该很了解。不同笔记之间内容互不相通，可以把每一个笔记看做一台独立运行的虚拟机。</p>
+<p>Colab 是谷歌的产品，因此需要实现注册好一个谷歌账号。</p>
+<h4 id="通过-Google-Drive-创建笔记本"><a href="#通过-Google-Drive-创建笔记本" class="headerlink" title="通过 Google Drive 创建笔记本"></a>通过 Google Drive 创建笔记本</h4><p><a target="_blank" rel="noopener" href="https://drive.google.com/drive/">Google Drive</a> 是 Google 的一款云端硬盘，操作与其他云盘，如百度网盘、阿里云盘，类似。</p>
+<p>通过 Google Drive 可以创建 Colab 笔记。方式是：点击左上角的“新建”按钮或右击背景 =&gt; 在弹出的窗口中选择“更多” =&gt; 选择 “Google Colaboratory” 选项。</p>
+<img src="/posts/3190f9b2/drive_disk_colab.jpg" class="" title="drive_disk_colab">
+<h4 id="通过-Colab-创建笔记本"><a href="#通过-Colab-创建笔记本" class="headerlink" title="通过 Colab 创建笔记本"></a>通过 Colab 创建笔记本</h4><p>还有另一种方式，直接访问 <a target="_blank" rel="noopener" href="https://colab.research.google.com/">Colab</a> 网页。</p>
+<p>在欢迎页处点击左上角，文件 =&gt; 新建笔记本即可创建。</p>
+<img src="/posts/3190f9b2/colab_colab.jpg" class="" title="colab_colab">
+<h3 id="（2）装载-Google-Drive"><a href="#（2）装载-Google-Drive" class="headerlink" title="（2）装载 Google Drive"></a>（2）装载 Google Drive</h3><p>讲解两种创建方法的原因，是指出 Colab 和 Google Drive 可以进行信息交互。Colab 笔记本身存储在 Google Drive 中，而 Google Drive 中的其他内容也可以被 Colab 笔记访问。另外，因为 Colab 虚拟机中的内容只在会话中保存，因此将数据集和训练过的模型存储在 Google Drive 也是必要的。</p>
+<p>我们要建立 Colab 到 Google Drive 的连接。方法是点击左侧边栏文件夹图标 =&gt; 点击如下图标</p>
+<img src="/posts/3190f9b2/load_disk.png" class="" title="load_disk">
+<p>随后会在笔记本中创建如下的代码段<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> google.colab <span class="keyword">import</span> drive</span><br><span class="line">drive.mount(<span class="string">&#x27;/content/drive&#x27;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>运行这段代码（点击左侧“播放”按钮），随后点击新出现的内容中的url，按指示进行授权即可。</p>
+<p>成功后，我们可以看到文件夹目录中多出了一个文件夹，其中即为 Google Drive 的内容。我们可以像对其他目录一样，直接用路径访问 Google Drive 中的文件。</p>
+<h3 id="（3）Jupyter-笔记本"><a href="#（3）Jupyter-笔记本" class="headerlink" title="（3）Jupyter 笔记本"></a>（3）Jupyter 笔记本</h3><p>Jupyter Notebook 是一款应用程序，以网页的形式打开，可以在网页页面中直接编写代码和运行代码，代码的运行结果也会直接在代码块下显示。Colab 也使用了 Jupyter Notebook 作为编写代码的途径。下面简单介绍一下（Colab的） Jupyter 笔记本的使用。</p>
+<p>Jupyter Notebook 中有两种单元格，其一是文本格、其二是代码格。文本格支持 markdown 语法，可以方便地进行排版。</p>
+<p>代码格中能够编写代码，除了 python 外也支持其他语言，但使用 python 的为多。值得强调的是 Jupyter Notebook 中代码的执行方式。在 Notebook 中，代码被划分在不同的单元格中，每个单元格中的代码都可以单独执行，不需要考虑顺序，每个单元格也可以多次重复执行。唯一的约束是跨越单元格使用的变量、方法、类等等，应该先执行其声明，再执行其引用。当然，这是十分合理的要求。</p>
+<p>可以看出，Jupyter Notebook 和 python 的命令行模式有相似之处。</p>
+<h3 id="（4）命令行"><a href="#（4）命令行" class="headerlink" title="（4）命令行"></a>（4）命令行</h3><p>有时我们不止需要编写文本和代码，还需要进行系统的操作，这就需要执行系统命令。Colab 中提供了执行命令的方法：可以在代码格中输入命令，只需要在命令之前加上叹号 <code>!</code> 即可。例如</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!ls -a</span><br></pre></td></tr></table></figure>
+<h3 id="（5）管理会话"><a href="#（5）管理会话" class="headerlink" title="（5）管理会话"></a>（5）管理会话</h3><h4 id="必要性"><a href="#必要性" class="headerlink" title="必要性"></a>必要性</h4><p>我们已经知道了如何使用 Colab 编写代码、执行命令并持久地保存数据。这对于操作一台虚拟机来说已经足够了。在这一小节中，要讨论的是另一个问题，如何节省算力资源？</p>
+<p>Colab 有免费的算力，但这是有限的。在资源不紧张的情况下，Colab 允许免费使用 gpu，但一旦资源紧张或者你占用了太多的资源，Colab 就可能在一段时间内禁止你使用 gpu。因此算力需要节省使用。</p>
+<p>Colab 中，“会话” 指 Colab 前端到算力平台的连接。每当某一个笔记运行程序时，都会创建会话。会话一般不会自行结束（除非超过了24小时未使用），如果忘记关闭的会话恰好连接了一个 gpu，那么造成的算力浪费将是惊人的。</p>
+<p>说道这里，恰好解释一下会话的不同类型。会话分为 cpu、gpu 和 tpu。cpu 的会话几乎不会消耗资源（消耗得很少）；gpu 和 tpu 的会话则会消耗资源，并且根据使用的 gpu 和 tpu 类型的不同，消耗资源的速度也不同。</p>
+<h4 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h4><p>因此，我们可以在平时编写代码时只连接 cpu，而到了训练时才连接 gpu 或 tpu。这需要进行会话的切换，具体方法如下：</p>
+<p>新建笔记，我们可以在笔记的右上角看到下图红色框所指示的按钮。点击该按钮，或者运行某一段代码，就会使笔记连接到服务器。会话的类型由设置决定，如果是第一次使用，则连接的便为 cpu。</p>
+<img src="/posts/3190f9b2/session1.png" class="" title="session1">
+<p>连接成功后，图标变为类似下图的样子。</p>
+<img src="/posts/3190f9b2/session2.png" class="" title="session2">
+<p>点击旁边的小箭头，会弹出更多选项。</p>
+<img src="/posts/3190f9b2/session3.jpg" class="" title="session3">
+<ul>
+<li>连接到托管运行时，为使用谷歌的资源</li>
+<li>连接到本地运行时，为使用本机的资源</li>
+<li>断开连接，将删除当前的会话，当然在会话中创建的文件等内容也会一并消除，需要事先移动到 Google Drive 中。</li>
+</ul>
+<p>更重要的是更下面的选项</p>
+<ul>
+<li><p>查看资源，点击后出现如下的窗口，点击 “更改运行时类型” 即可选择会话的类型。点击 “管理会话” 和选项 “管理会话” 的结果相同。</p>
+<blockquote>
+<p>在连接成功后点击图标，同样能显示此窗口，但这时再更改运行时类型，只会创建一个新的会话。因此应该在连接断开时更改。</p>
+  <img src="/posts/3190f9b2/session3.jpg" class="" title="session3">
+</blockquote>
+</li>
+<li><p>管理会话，点击后显示正在进行的会话。太多不使用的会话会占用更多的资源，可以点击右侧垃圾桶图标结束会话。</p>
+</li>
+</ul>
+<p>通过合理地创建会话和结束会话，可以做到资源利用的最大化。</p>
+<h2 id="三、Colab训练神经网络"><a href="#三、Colab训练神经网络" class="headerlink" title="三、Colab训练神经网络"></a>三、Colab训练神经网络</h2><p>虽然 Colab 笔记能编写代码，但是代码组织在同一个文件中，同时难以调试，很不方便。</p>
+<p>使用 Colab 训练神经网络比较好的方法是在本地把代码跑通；把代码和数据集打包上传到 Google Drive 中；随后 Colab 装载 Google Drive，并通过命令执行 python 代码文件。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!python <span class="string">&quot;/content/drive/train.py&quot;</span></span><br></pre></td></tr></table></figure>
+<p>训练神经网络时经常使用 tensorboard，在 Colab 中也可以使用。只需要在代码块中执行如下两条：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">%load_ext tensorboard</span><br><span class="line">%tensorboard --logdir=<span class="string">&quot;/content/drive/logs&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="四、购买算力和订阅"><a href="#四、购买算力和订阅" class="headerlink" title="四、购买算力和订阅"></a>四、购买算力和订阅</h2><p>有时，Colab 提供的免费算力依旧不够用，这时就需要购买额外的算力了。在资源窗口中点击 “升级到 <a target="_blank" rel="noopener" href="https://colab.research.google.com/signup/pricing">Colab Pro</a>” 或在设置中选择 “<a target="_blank" rel="noopener" href="https://colab.research.google.com/signup/pricing">Colab Pro</a>” 选项。即可跳转到购买界面。可以选择只购买计算单元或是每月订阅。</p>
+<p>需要注意的是，Colab 只支持信用卡支付。对一些学生来说，这可能不太方便。一种解决办法是使用虚拟信用卡。这一部分和本文关系不大，上网可以搜索到相关资料，因此不详细说明。</p>
+<h2 id="五、参考资料"><a href="#五、参考资料" class="headerlink" title="五、参考资料"></a>五、参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/386162610">Google Colab 快速上手</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/218133131">Google Colab 的正确使用姿势</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/111343423">使用colab进行深度学习训练</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3a041e16/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1474,118 +1619,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/fe377a4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/fe377a4/" class="post-title-link" itemprop="url">Spring高级装配</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-01-10 15:05:26" itemprop="dateCreated datePublished" datetime="2023-01-10T15:05:26+08:00">2023-01-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>上一篇文章已经讲解了 spring 依赖注入装配的方法。但是为了处理一些特殊的问题，或者为了更好地实现某些功能，spring 还提供了更多的装配设置。</p>
-<h2 id="一、条件化声明-Bean"><a href="#一、条件化声明-Bean" class="headerlink" title="一、条件化声明 Bean"></a>一、条件化声明 Bean</h2><p>让我们回到上一篇第一节的例子，假设这次我们需要在开发时使用 SQLite，而在生产环境使用 Oracle 要怎么办呢？</p>
-<p>或许可以这样，我们在生产环境注意将 <code>DBUtil</code> Bean 改成 Oracle，把原来的部分注释掉，就像是这样。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> DBUtil <span class="title function_">databaseUtil</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// return new SQLiteUtil(); // for dev</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">OracleUtil</span>(); <span class="comment">// for prod</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>但这样做很明显是不合适的。如果许多组件都需要进行调整的话，修改上就会十分复杂，且很容易出错。</p>
-<p>我们可以使用注释 <code>@Profile</code> 实现不同环境条件下选择不同的装配方式。这需要给带有 <code>@Bean</code> 或 <code>@Configuration</code> 注释的方法或类添加注释 <code>@Profile(&quot;某某环境&quot;)</code>。于是数据库的选择就可以改为如下形式：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="meta">@Profile(&quot;dev&quot;)</span></span><br><span class="line"><span class="keyword">public</span> DBUtil <span class="title function_">sqliteUtil</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SQLiteUtil</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="meta">@Profile(&quot;prod&quot;)</span></span><br><span class="line"><span class="keyword">public</span> DBUtil <span class="title function_">oracleUtil</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">OracleUtil</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>想要启用某个 Bean 需要设置环境。具体来说，这通过两个环境变量来实现，<code>spring.profiles.default</code> 和 <code>spring.profiles.active</code>。这两个值可以在许多地方定义。一种方式是在 properties 或 yaml 文件中定义，如<br><figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#application.properties</span></span><br><span class="line"><span class="attr">spring.profiles.default</span>=<span class="string">dev #默认环境为 dev</span></span><br><span class="line"><span class="attr">spring.profiles.active</span>=<span class="string">prod #当前环境为 prod</span></span><br></pre></td></tr></table></figure></p>
-<p>为了指明所使用的配置文件，还需在配置类添加注释 <code>@PropertySource</code>。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DBUtilConfig</span></span><br></pre></td></tr></table></figure></p>
-<p>最终配置类代码为<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DBUtilConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="meta">@Profile(&quot;dev&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> DBUtil <span class="title function_">sqliteUtil</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SQLiteUtil</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="meta">@Profile(&quot;prod&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> DBUtil <span class="title function_">oracleUtil</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">OracleUtil</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>更一般的，还可以自定义使 Bean 或配置生效的条件，这需要用到 <code>@Conditional</code> 注释。</p>
-<p>注释的使用形式如下<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@Conditional(SomethingIsTrueCondition.class)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ConditionalConfig</span></span><br></pre></td></tr></table></figure><br>我们把一个类作为 <code>@Conditional</code> 注释的参数，这个类要继承 <code>Condition</code> 类，实现 <code>boolen matches(ConditionContext context, AnnotatedTypeMetadata metadata)</code> 方法。只有 <code>matches</code> 方法的返回值为真，才会使由 <code>@Conditional</code> 修饰的部分生效。</p>
-<blockquote>
-<p>其实 <code>@Profile</code> 注释也是由 <code>@Conditional</code> 所实现的。查看源码，就会发现<code>@Profile</code> 也有一个 <code>@Conditional</code> 注释。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(&#123;ElementType.TYPE, ElementType.METHOD&#125;)</span></span><br><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Conditional(&#123;ProfileCondition.class&#125;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Profile &#123;</span><br><span class="line">    String[] value();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-</blockquote>
-<h2 id="二、消除自动装配的歧义"><a href="#二、消除自动装配的歧义" class="headerlink" title="二、消除自动装配的歧义"></a>二、消除自动装配的歧义</h2><p>在自动装配时，如果在 <code>@ComponentScan</code> 的扫描范围内有多个可以满足装配条件的组件（<code>@Component</code>），就会产生装配的歧义。自动装配无法决定应该装配哪一个。</p>
-<p>还举数据库作为例子，有 <code>OracleDBUtil</code> <code>MySQLDBUtil</code> <code>SQLiteDBUtil</code> 都可以作为自动装配的组件，那么就无法确定应该装配哪一个。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OracleDBUtil</span> <span class="keyword">extends</span> <span class="title class_">DBUtil</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MySQLDBUtil</span> <span class="keyword">extends</span> <span class="title class_">DBUtil</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SQLiteDBUtil</span> <span class="keyword">extends</span> <span class="title class_">DBUtil</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyDAO</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> DBUtil databaseUtil;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>这种情况可以选择一个组件添加 <code>@Primary</code> 注释，表示若出现歧义时，优先选择该组件作为装配对象。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Primary</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MySQLDBUtil</span> <span class="keyword">extends</span> <span class="title class_">DBUtil</span> &#123;&#125;</span><br></pre></td></tr></table></figure></p>
-<p>另外也可以在注释的地方增加 <code>@Qualifier</code> 并添加参数，这将在注入处指定依赖。<code>@Qualifier</code> 的参数是 Bean 的 id，默认是将对应的类名的首字母变为小写作为 id，当然也可以通过在 <code>@Bean</code> 注释添加参数指定一个 id。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyDAO</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="meta">@Qualifier(&quot;mySQLDBUtil&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> DBUtil databaseUtil;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>指定 bean id<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean(&quot;renameBean&quot;)</span></span><br><span class="line"><span class="keyword">public</span> DBUtil <span class="title function_">mySQLDBUtil</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">MySQLDBUtil</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-</blockquote>
-<h3 id="三、Bean-的作用域"><a href="#三、Bean-的作用域" class="headerlink" title="三、Bean 的作用域"></a>三、Bean 的作用域</h3><p>默认的情况下，经过 Spring 托管的对象都是以单例的形式存在的。但一些时候，只有单例无法实现想要的效果。我们还需要一些类来完成保存状态、存储信息等操作。在网络应用中，我们也需要为每个会话创建对应的实例。这都需要调整 Bean 的作用域，一部分 Bean 存在于全局，一部分 Bean 存在于每次创建，一部分 Bean 存在于每次请求，等等。</p>
-<p>Spring 定义了多种作用域，包括：</p>
-<ul>
-<li>单例（Singleton）：在整个应用中，只创建bean的一个实例。</li>
-<li>原型（Prototype）：每次注入或者通过Spring应用上下文获取的时候，都会创建一个新的bean实例。</li>
-<li>会话（Session）：在Web应用中，为每个会话创建一个bean实例。</li>
-<li>请求（Rquest）：在Web应用中，为每个请求创建一个bean实例。</li>
-</ul>
-<p>设定作用域的方法很简单，只要使用 <code>@Scope</code> 注释即可。这一注释可以用在 <code>@Component</code> 或 <code>@Bean</code> 所修饰的对象上。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)</span></span><br><span class="line"><span class="comment">// @Scope(&quot;prototype&quot;) // 另一种方式</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserInfo</span></span><br></pre></td></tr></table></figure>
-<h3 id="四、运行时值注入"><a href="#四、运行时值注入" class="headerlink" title="四、运行时值注入"></a>四、运行时值注入</h3><p>让我们重新审视一下 <code>SgtPeppers</code> 类。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SgtPeppers</span> <span class="keyword">implements</span> <span class="title class_">CompactDisc</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">title</span> <span class="operator">=</span> <span class="string">&quot;Sgt. Pepper&#x27;s Lonely Hearts Club Band&quot;</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">artist</span> <span class="operator">=</span> <span class="string">&quot;The Beatles&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">play</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Playing &quot;</span> + title + <span class="string">&quot; by &quot;</span> + artist);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>就能感觉到，<code>title</code> 和 <code>artist</code> 的值还是紧密的与 <code>SgtPeppers</code> 耦合在了一起，被硬编码到了类中。按照依赖注入的原则，我们利用构造函数将 title 和 artist 的值移到类的定义之外。当然，这样的话这个类就不能称为 <code>SgtPeppers</code> 了。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BlankDisc</span> <span class="keyword">implements</span> <span class="title class_">CompactDisc</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String title;</span><br><span class="line">    <span class="keyword">private</span> String artist;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">SgtPeppers</span><span class="params">(String title, String artist)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.title = title;</span><br><span class="line">        <span class="built_in">this</span>.artist = artist;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">play</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Playing &quot;</span> + title + <span class="string">&quot; by &quot;</span> + artist);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>那么自然地，字符串就转而出现在装配的过程中。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> CompactDisc <span class="title function_">sgtPeppers</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">SgtPeppers</span>(</span><br><span class="line">        <span class="string">&quot;Sgt. Pepper&#x27;s Lonely Hearts Club Band&quot;</span>,</span><br><span class="line">        <span class="string">&quot;The Beatles&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>但是这还不够，因为要修改字符串值的话还需要对配置类进行修改。我们希望这些值被保存在配置中，只在运行时才注入到程序中。</p>
-<p>方法有两种，<strong>第一种</strong>是通过 <code>Environment</code> 访问环境变量。与使用 <code>@Profile</code> 时类似，我们要引入配置位置，并通过自动注入获取环境变量类 <code>Environment</code>。调用其方法 <code>getProperty()</code> 获取对应名称的配置值。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CDPlayerConfig.java</span></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    Environment env;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CompactDisc <span class="title function_">blankDisc</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">BlankDisc</span>(</span><br><span class="line">                env.getProperty(<span class="string">&quot;disc.title&quot;</span>),</span><br><span class="line">                env.getProperty(<span class="string">&quot;disc.artist&quot;</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CDPlayer <span class="title function_">cdPlayer</span><span class="params">(CompactDisc cd)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CDPlayer</span>(cd);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>设置的配置如下：<br><figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#application.properties</span></span><br><span class="line"><span class="attr">disc.title</span>=<span class="string">Sgt. Pepper&#x27;s Lonely Hearts Club Band</span></span><br><span class="line"><span class="attr">disc.artist</span>=<span class="string">The Beatles</span></span><br></pre></td></tr></table></figure></p>
-<p><strong>第二种</strong>方法是使用 <code>@Value</code> 注释。<code>@Value</code> 与 <code>@Autowired</code> 类似，只不过 <code>@Value</code> 注入的是值，而 <code>@Autowired</code> 注入的是对象。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CompactDisc <span class="title function_">blankDisc</span><span class="params">(</span></span><br><span class="line"><span class="params">            <span class="meta">@Value(&quot;$&#123;disc.title&#125;&quot;)</span> String title,</span></span><br><span class="line"><span class="params">            <span class="meta">@Value(&quot;$&#123;disc.artist&#125;&quot;)</span> String artist)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">BlankDisc</span>(title, artist);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CDPlayer <span class="title function_">cdPlayer</span><span class="params">(CompactDisc cd)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CDPlayer</span>(cd);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><code>@Value</code> 使用时需要参数，<code>&quot;$&#123;disc.title&#125;&quot;</code> 是一个属性占位符，表示取 <code>disc.title</code> 的值，这个值将作为 <code>title</code> 的值。</p>
-<blockquote>
-<p>另外 <code>@Value</code> 中还可以使用以 <code>#&#123;...&#125;</code> 表示的 SpEL 表达式。可以以更灵活且强大的方式取值，在这里不赘述。</p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1657,7 +1690,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">62</span>
+          <span class="site-state-item-count">63</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1670,7 +1703,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

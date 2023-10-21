@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一、前言不知道为什么，这学期看到好几个人都用 zsh。最近恰好有时间，我也是时候换一个 shell 了。 不过嘛，shell 毕竟是用来工作的，不是一件艺术品，所以这里的配置也是以实用为主了。本文也没有用到 oh-my-zsh，用一个专门的框架来管理 shell 的配置在我看来还是太过沉重了。  本篇文章所用的环境当然是 linux。更加具体来说是 debian 系的发行版。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="不务正业：玩个zsh">
+<meta property="og:url" content="https://wokron.github.io/posts/93ea500a/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言不知道为什么，这学期看到好几个人都用 zsh。最近恰好有时间，我也是时候换一个 shell 了。 不过嘛，shell 毕竟是用来工作的，不是一件艺术品，所以这里的配置也是以实用为主了。本文也没有用到 oh-my-zsh，用一个专门的框架来管理 shell 的配置在我看来还是太过沉重了。  本篇文章所用的环境当然是 linux。更加具体来说是 debian 系的发行版。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-10-21T09:13:03.000Z">
+<meta property="article:modified_time" content="2023-10-21T15:06:16.348Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="shell">
+<meta property="article:tag" content="zsh">
+<meta property="article:tag" content="starship">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://wokron.github.io/posts/93ea500a/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>不务正业：玩个zsh | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/93ea500a/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          不务正业：玩个zsh
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-10-21 17:13:03 / 修改时间：23:06:16" itemprop="dateCreated datePublished" datetime="2023-10-21T17:13:03+08:00">2023-10-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">踩坑记录</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>不知道为什么，这学期看到好几个人都用 zsh。最近恰好有时间，我也是时候换一个 shell 了。</p>
+<p>不过嘛，shell 毕竟是用来工作的，不是一件艺术品，所以这里的配置也是以实用为主了。本文也没有用到 oh-my-zsh，用一个专门的框架来管理 shell 的配置在我看来还是太过沉重了。</p>
+<blockquote>
+<p>本篇文章所用的环境当然是 linux。更加具体来说是 debian 系的发行版。</p>
+</blockquote>
+<span id="more"></span>
+<h2 id="二、zsh-的安装"><a href="#二、zsh-的安装" class="headerlink" title="二、zsh 的安装"></a>二、zsh 的安装</h2><p>这里当然不会仔细介绍 zsh，将网上许多其他文章都重复过的内容再重复一遍。zsh 只是一个 shell，只不过这个 shell 有较强的可扩展性，同时具有一些比较有用的特性，仅此而已。</p>
+<p>安装 zsh，只需要一条命令<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install zsh</span><br></pre></td></tr></table></figure></p>
+<p>之后可以查看 /etc/shells 文件的内容，该文件记录了系统中已有的所有 shell，此时应当也有 zsh。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /etc/shells</span><br></pre></td></tr></table></figure></p>
+<p>本人的输出结果是这样的<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/shells: valid login shells</span></span><br><span class="line">/bin/sh</span><br><span class="line">/bin/bash</span><br><span class="line">/usr/bin/bash</span><br><span class="line">/bin/rbash</span><br><span class="line">/usr/bin/rbash</span><br><span class="line">/usr/bin/sh</span><br><span class="line">/bin/dash</span><br><span class="line">/usr/bin/dash</span><br><span class="line">/bin/zsh</span><br><span class="line">/usr/bin/zsh</span><br></pre></td></tr></table></figure></p>
+<p>之后首次运行 zsh<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zsh</span><br></pre></td></tr></table></figure></p>
+<p>应该会出现如下内容，因为此时我们并未创建 zsh 的配置文件。正如 bash 的 <code>.bashrc</code>。这里只需要选择 <code>0</code> 即可。之后会在用户目录创建一个空的 <code>.zshrc</code>，该文件将在下一小节中详细说明。选择后重新输入命令 <code>zsh</code> 进入 zsh，此时应该可以看到输入提示符等内容。<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">This is the Z Shell configuration function for new users,</span><br><span class="line">zsh-newuser-install.</span><br><span class="line">You are seeing this message because you have no zsh startup files</span><br><span class="line">(the files .zshenv, .zprofile, .zshrc, .zlogin in the directory</span><br><span class="line">~).  This function can help you with a few settings that should</span><br><span class="line">make your use of the shell easier.</span><br><span class="line"></span><br><span class="line">You can:</span><br><span class="line"></span><br><span class="line">(q)  Quit and do nothing.  The function will be run again next time.</span><br><span class="line"></span><br><span class="line">(0)  Exit, creating the file ~/.zshrc containing just a comment.</span><br><span class="line">     That will prevent this function being run again.</span><br><span class="line"></span><br><span class="line">(1)  Continue to the main menu.</span><br><span class="line"></span><br><span class="line">(2)  Populate your ~/.zshrc with the configuration recommended</span><br><span class="line">     by the system administrator and exit (you will need to edit</span><br><span class="line">     the file by hand, if so desired).</span><br><span class="line"></span><br><span class="line">--- Type one of the keys in parentheses --- </span><br></pre></td></tr></table></figure></p>
+<p>我们当然不希望每次新建终端都要在 bash 中输入一次 <code>zsh</code>。因此应当将当前用户的默认终端修改为 zsh。输入如下命令即可。此命令需要输入用户密码。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chsh -s /bin/zsh</span><br></pre></td></tr></table></figure>
+<p>之后可以查看一下 /etc/passwd 文件，搜索当前用户名，查看其 shell 是否修改为了 zsh。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/passwd</span><br></pre></td></tr></table></figure></p>
+<p>此时如果新建终端，会发现使用的依旧是 bash。因为应用修改需要重启系统。当然现在还是不要重启，接着使用 bash 吧，因为现在的 zsh 比 bash 还要简陋。</p>
+<h2 id="三、-zshrc-的配置"><a href="#三、-zshrc-的配置" class="headerlink" title="三、.zshrc 的配置"></a>三、<code>.zshrc</code> 的配置</h2><p>如果你修改过 bash 的配置，或者至少在 Linux 下安装过一些编程语言的环境，如 python 的 conda、golang 和 rust 的编译环境等等，应该知道用户目录下有一个 <code>.bashrc</code> 文件。这个文件用于对 bash 所使用的环境进行配置。在每次创建一个 bash 的时候，bash 会首先执行命令 <code>source ~/.bashrc</code>。<code>source</code> 命令将使用当前的终端依次执行文件中的每条内容，这样就完成了 bash 初始化。</p>
+<p><code>.zshrc</code> 也是类似的配置文件。只不过 bash 和 zsh 的一些操作可能并不兼容，导致我们并不能直接将 <code>.bashrc</code> 的内容复制到 <code>.zshrc</code> 中。当然我们的目的是快速配置一个可用且美观的终端，所以本文不会也不可能详述 zsh 具体有什么特性，有什么和其他 shell 的区别。所以接下来我就简单列举一些自己用到的，较为实用配置。</p>
+<h3 id="（1）基本命令的颜色"><a href="#（1）基本命令的颜色" class="headerlink" title="（1）基本命令的颜色"></a>（1）基本命令的颜色</h3><p>现在你使用毫无配置的 zsh，就连一个简单的 <code>ls</code> 命令都是没有颜色的，这怎么能忍？必须首先解决这个问题。</p>
+<p>很庆幸的是这里 zsh 完全和 bash 兼容，默认的 <code>.bashrc</code> 中应该有如下的内容，只要将如下内容复制到 <code>.zshrc</code> 中即可。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># enable color support of ls and also add handy aliases</span></span><br><span class="line"><span class="keyword">if</span> [ -x /usr/bin/dircolors ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">test</span> -r ~/.dircolors &amp;&amp; <span class="built_in">eval</span> <span class="string">&quot;<span class="subst">$(dircolors -b ~/.dircolors)</span>&quot;</span> || <span class="built_in">eval</span> <span class="string">&quot;<span class="subst">$(dircolors -b)</span>&quot;</span></span><br><span class="line">    <span class="built_in">alias</span> <span class="built_in">ls</span>=<span class="string">&#x27;ls --color=auto&#x27;</span></span><br><span class="line">    <span class="comment">#alias dir=&#x27;dir --color=auto&#x27;</span></span><br><span class="line">    <span class="comment">#alias vdir=&#x27;vdir --color=auto&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">alias</span> grep=<span class="string">&#x27;grep --color=auto&#x27;</span></span><br><span class="line">    <span class="built_in">alias</span> fgrep=<span class="string">&#x27;fgrep --color=auto&#x27;</span></span><br><span class="line">    <span class="built_in">alias</span> egrep=<span class="string">&#x27;egrep --color=auto&#x27;</span></span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）启用命令历史"><a href="#（2）启用命令历史" class="headerlink" title="（2）启用命令历史"></a>（2）启用命令历史</h3><p>zsh 竟然默认不启用命令历史，这导致每次新建一个终端，都没办法获取其他终端的命令历史。<code>.bashrc</code> 中可以找到和命令历史相关的配置，但可以这回直接复制并不会起作用<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># don&#x27;t put duplicate lines or lines starting with space in the history.</span></span><br><span class="line"><span class="comment"># See bash(1) for more options</span></span><br><span class="line">HISTCONTROL=ignoreboth</span><br><span class="line"></span><br><span class="line"><span class="comment"># for setting history length see HISTSIZE and HISTFILESIZE in bash(1)</span></span><br><span class="line">HISTSIZE=1000</span><br><span class="line">HISTFILESIZE=2000</span><br></pre></td></tr></table></figure></p>
+<p>在 zsh 中，还需要设置记录历史的文件 <code>HISTFILE</code> 以及保存的历史数量 <code>SAVEHIST</code>。这样之前的命令历史才会记录下来。注意这里具体的数值可以自己设置。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># config history</span></span><br><span class="line">HISTFILE=~/.zsh_history</span><br><span class="line">SAVEHIST=1000</span><br><span class="line">HISTSIZE=1000</span><br><span class="line">HISTFILESIZE=2000</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）删除单个单词"><a href="#（3）删除单个单词" class="headerlink" title="（3）删除单个单词"></a>（3）删除单个单词</h3><p>用过 vscode 应该会觉得其中的 shell 操作很舒服。比如说在默认设置下 <code>Ctrl + Backspace</code> 可以直接删除单个单词。其实 shell 中也已经内置了这一操作，只不过快捷键是 <code>Ctrl + W</code>，这就很不直观了。zsh 中可以将某一按键绑定到某一操作。这样就可以使用 <code>Ctrl + Backspace</code> 删除单个单词了。只需要如下一行指令即可。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># enable kill word using ctrl + backspace</span></span><br><span class="line"><span class="built_in">bindkey</span> <span class="string">&#x27;^H&#x27;</span> backward-kill-word</span><br></pre></td></tr></table></figure>
+<h3 id="（4）补全功能选择菜单"><a href="#（4）补全功能选择菜单" class="headerlink" title="（4）补全功能选择菜单"></a>（4）补全功能选择菜单</h3><p>稍微使用一下我们尚不完善的 zsh，你应该会发现补全操作似乎和 bash 中不一样。bash 中会在双击 tab 后补全或列出补全选项，而 zsh 则单击 tab 便会显示补全。这样做不只是为了禁止你在 zsh 中使用制表符（哈哈），而是因为双击 tab 还有另外的功能，只不过现在没有启用。</p>
+<p>在 <code>.zshrc</code> 中添加如下一行，就可以在补全时启用选择菜单。在双击 tab 后会将下方列出的补全选项变为菜单，可以通过方向键选择具体的补全选项，按回车补全选定的内容。当然也可以按 <code>Backspace</code> 退出选择。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># enable menu</span></span><br><span class="line"><span class="built_in">zstyle</span> <span class="string">&#x27;:completion:*&#x27;</span> menu select</span><br></pre></td></tr></table></figure></p>
+<h3 id="（5）不要忘记其他配置"><a href="#（5）不要忘记其他配置" class="headerlink" title="（5）不要忘记其他配置"></a>（5）不要忘记其他配置</h3><p>一些程序在安装时会在 <code>.bashrc</code> 中添加内容，在搬家到 zsh 时不要把它们落下。这些程序比如说 rust、golang 的编译环境、nvm（nodejs version manager）、conda 等等。conda 似乎是其中的特例。你应该（在 bash 中）调用 <code>conda init zsh</code> 而非将 <code>.bashrc</code> 中的内容复制到 <code>.zshrc</code> 中。</p>
+<h2 id="四、zsh-插件的安装"><a href="#四、zsh-插件的安装" class="headerlink" title="四、zsh 插件的安装"></a>四、zsh 插件的安装</h2><p>添加了这些内容后，zsh 开始像个回事了。zsh 已经完全具有了 bash 的基本内容，还拥有了一些特殊的功能，除了外观以外已经可以使用了。但是 zsh 还可以通过插件进一步提高其操作手感。这里和许多提及 zsh 的文章一样，推荐两个插件 <code>zsh-autosuggestions</code> 和 <code>zsh-syntax-highlighting</code>。</p>
+<p>第一个插件会在输入命令时根据你的历史输入在已输入的内容后使用浅灰色指出你可能想要的输入，如果其确实是你所需要的，只需要按右方向键即可补全。</p>
+<p>第二个插件会在输入命令的时候对命令自动染色，尤其对于不存在的指令会显示为红色，这对命令的检查很有帮助。</p>
+<p>很好的是 <code>apt</code> 中已经有了这两个插件的包，只需要直接下载即可。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">apt-get install zsh-autosuggestions</span><br><span class="line">apt-get install zsh-syntax-highlighting</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>你问我怎么知道的？这里提一下 apt 的搜索功能，似乎比较少有人提及。只需要执行如下命令即可搜索 zsh 相关的所有包<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-cache search zsh</span><br></pre></td></tr></table></figure><br>使用如下命令还能得知软件源中的具体包版本<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-cache madison zsh-syntax-highlighting</span><br></pre></td></tr></table></figure></p>
+</blockquote>
+<p>之后只需要将两个插件启用即可。只需要在 <code>.zshrc</code> 中添加如下两行。其中的路径是 <code>apt</code> 安装时的路径。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># enable autosuggestions and syntax highlighting</span></span><br><span class="line"><span class="built_in">source</span> /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh</span><br><span class="line"><span class="built_in">source</span> /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh</span><br></pre></td></tr></table></figure></p>
+<h2 id="五、Starship-定制外观"><a href="#五、Starship-定制外观" class="headerlink" title="五、Starship 定制外观"></a>五、Starship 定制外观</h2><p>如果你使用 zsh 是为一些炫酷的主题，那抱歉这一小节似乎无法提供给你，或许 oh-my-zsh 会更加适合。但是如果你只是想要一个实用且美观的 zsh 外观，那么这部分应该还是可以起到帮助的。</p>
+<p>这一小节会通过 <a target="_blank" rel="noopener" href="https://starship.rs/">Starship</a>，按官网所述，一个”轻量、迅速、可无限定制的高颜值终端“，来定制 zsh 的外观。值得注意的是 Starship 是跨 shell 的，这意味着你可以在自己系统的所有 shell 中都应用自己的配置。这是 oh-my-zsh 无法做到的。</p>
+<h3 id="（1）安装-Nerd-Font-字体（非必须）"><a href="#（1）安装-Nerd-Font-字体（非必须）" class="headerlink" title="（1）安装 Nerd Font 字体（非必须）"></a>（1）安装 Nerd Font 字体（非必须）</h3><p>Starship 会使用 <a target="_blank" rel="noopener" href="https://www.nerdfonts.com/">Nerd Font</a> 字体中的一些符号，因此需要下载一种 Nerd Font 类型的字体。可以从 Nerd Font 的官网上选择自己喜欢的字体。但之后并不一定需要直接在网站上下载压缩包。可以从 <code>apt</code> 或发行版本身的软件管理器上下载对应字体。如你想要使用 <code>fira</code> 字体，可以在 <code>apt</code> 上搜索相关内容，可以搜到相应的结果。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ apt-cache search fira</span><br><span class="line">fonts-firacode - Monospaced font with programming ligatures</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>当然，字体其实也并非必须的，你可以选择使用全 ascii 的配置，同样有很好的效果，这一点会在之后说明。</p>
+</blockquote>
+<h3 id="（2）安装-Starship"><a href="#（2）安装-Starship" class="headerlink" title="（2）安装 Starship"></a>（2）安装 Starship</h3><p>执行如下命令即可安装。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -sS https://starship.rs/install.sh | sh</span><br></pre></td></tr></table></figure></p>
+<p>之后在 <code>.zshrc</code> 中添加如下内容，以启用 Starship<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">eval</span> <span class="string">&quot;<span class="subst">$(starship init zsh)</span>&quot;</span></span><br></pre></td></tr></table></figure></p>
+<p>在当前 zsh 中执行 <code>source .zshrc</code> 或创建一个新的 shell，现在你的 zsh 外观应该已经大变样了！</p>
+<h3 id="（3）配置-Starship"><a href="#（3）配置-Starship" class="headerlink" title="（3）配置 Starship"></a>（3）配置 Starship</h3><p>Starship 使用一个配置文件 starship.toml 来配置 shell 外观。默认应该位于 ~/.config/starship.toml。Starship 官网上已经预设了一些<a target="_blank" rel="noopener" href="https://starship.rs/presets">外观主题</a>，可以直接按照官网指导进行主题切换。只需要一条指令就可完成配置，比如下面的指令。<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">starship preset pastel-powerline -o ~/.config/starship.toml</span><br></pre></td></tr></table></figure></p>
+<p>不过实际上我还是比较喜欢纯 ascii 的样子，这种主题也不需要使用 Nerd Font<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">starship preset plain-text-symbols -o ~/.config/starship.toml</span><br></pre></td></tr></table></figure></p>
+<p>Starship 也提供了极其繁多的配置，可以在<a target="_blank" rel="noopener" href="https://starship.rs/config/">文档</a>中查找自己感兴趣的内容自行配置。这里就不再赘述了。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>wokron
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://wokron.github.io/posts/93ea500a/" title="不务正业：玩个zsh">https://wokron.github.io/posts/93ea500a/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/shell/" rel="tag"># shell</a>
+              <a href="/tags/zsh/" rel="tag"># zsh</a>
+              <a href="/tags/starship/" rel="tag"># starship</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/583d5770/" rel="prev" title="面向对象的c语言">
+      <i class="fa fa-chevron-left"></i> 面向对象的c语言
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81zsh-%E7%9A%84%E5%AE%89%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">二、zsh 的安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81-zshrc-%E7%9A%84%E9%85%8D%E7%BD%AE"><span class="nav-number">3.</span> <span class="nav-text">三、.zshrc 的配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E5%9F%BA%E6%9C%AC%E5%91%BD%E4%BB%A4%E7%9A%84%E9%A2%9C%E8%89%B2"><span class="nav-number">3.1.</span> <span class="nav-text">（1）基本命令的颜色</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E5%90%AF%E7%94%A8%E5%91%BD%E4%BB%A4%E5%8E%86%E5%8F%B2"><span class="nav-number">3.2.</span> <span class="nav-text">（2）启用命令历史</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E5%88%A0%E9%99%A4%E5%8D%95%E4%B8%AA%E5%8D%95%E8%AF%8D"><span class="nav-number">3.3.</span> <span class="nav-text">（3）删除单个单词</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89%E8%A1%A5%E5%85%A8%E5%8A%9F%E8%83%BD%E9%80%89%E6%8B%A9%E8%8F%9C%E5%8D%95"><span class="nav-number">3.4.</span> <span class="nav-text">（4）补全功能选择菜单</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%885%EF%BC%89%E4%B8%8D%E8%A6%81%E5%BF%98%E8%AE%B0%E5%85%B6%E4%BB%96%E9%85%8D%E7%BD%AE"><span class="nav-number">3.5.</span> <span class="nav-text">（5）不要忘记其他配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81zsh-%E6%8F%92%E4%BB%B6%E7%9A%84%E5%AE%89%E8%A3%85"><span class="nav-number">4.</span> <span class="nav-text">四、zsh 插件的安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81Starship-%E5%AE%9A%E5%88%B6%E5%A4%96%E8%A7%82"><span class="nav-number">5.</span> <span class="nav-text">五、Starship 定制外观</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E5%AE%89%E8%A3%85-Nerd-Font-%E5%AD%97%E4%BD%93%EF%BC%88%E9%9D%9E%E5%BF%85%E9%A1%BB%EF%BC%89"><span class="nav-number">5.1.</span> <span class="nav-text">（1）安装 Nerd Font 字体（非必须）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E5%AE%89%E8%A3%85-Starship"><span class="nav-number">5.2.</span> <span class="nav-text">（2）安装 Starship</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E9%85%8D%E7%BD%AE-Starship"><span class="nav-number">5.3.</span> <span class="nav-text">（3）配置 Starship</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">63</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>
