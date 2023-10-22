@@ -5213,12 +5213,20 @@
 <blockquote>
 <p>当然，字体其实也并非必须的，你可以选择使用全 ascii 的配置，同样有很好的效果，这一点会在之后说明。</p>
 </blockquote>
+<p>之后还需要配置终端的字体。不同的模拟终端软件应该有着不同的配置方法，这里肯定不能一一列举，只提一下 GNOME Terminal（默认终端） 和 vscode 终端的配置。</p>
+<p>对于 GNOME Terminal，只需要右键终端，选择配置首选项，之后选择文本，使用自定义字体，选择新安装的字体即可。而对于 vscode，需要打开配置，搜索 <code>terminal.integrated.fontFamily</code> 将其值设置为新安装的字体名即可。</p>
 <h3 id="（2）安装-Starship"><a href="#（2）安装-Starship" class="headerlink" title="（2）安装 Starship"></a>（2）安装 Starship</h3><p>执行如下命令即可安装。<br><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">curl -sS https://starship.rs/install.sh | sh</span><br></pre></td></tr></table></figure></p>
 <p>之后在 <code>.zshrc</code> 中添加如下内容，以启用 Starship<br><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">eval</span> <span class="string">&quot;<span class="subst">$(starship init zsh)</span>&quot;</span></span><br></pre></td></tr></table></figure></p>
 <p>在当前 zsh 中执行 <code>source .zshrc</code> 或创建一个新的 shell，现在你的 zsh 外观应该已经大变样了！</p>
 <h3 id="（3）配置-Starship"><a href="#（3）配置-Starship" class="headerlink" title="（3）配置 Starship"></a>（3）配置 Starship</h3><p>Starship 使用一个配置文件 starship.toml 来配置 shell 外观。默认应该位于 ~/.config/starship.toml。Starship 官网上已经预设了一些<a href="https://starship.rs/presets">外观主题</a>，可以直接按照官网指导进行主题切换。只需要一条指令就可完成配置，比如下面的指令。<br><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">starship preset pastel-powerline -o ~/.config/starship.toml</span><br></pre></td></tr></table></figure></p>
 <p>不过实际上我还是比较喜欢纯 ascii 的样子，这种主题也不需要使用 Nerd Font<br><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">starship preset plain-text-symbols -o ~/.config/starship.toml</span><br></pre></td></tr></table></figure></p>
-<p>Starship 也提供了极其繁多的配置，可以在<a href="https://starship.rs/config/">文档</a>中查找自己感兴趣的内容自行配置。这里就不再赘述了。</p>
+<p>Starship 也提供了极其繁多的配置，可以在<a href="https://starship.rs/config/">文档</a>中查找自己感兴趣的内容自行配置。不过如果只是简单的配置一下的话，并不需要去把全部内容都看一遍。只需要了解如下几个内容即可。</p>
+<p>在配置最开始使用 format 定义你的提示符格式。默认的配置是这样的<br><figure class="highlight ini"><table><tr><td class="code"><pre><span class="line"><span class="attr">format</span> = <span class="string">&#x27;$all&#x27;</span></span><br></pre></td></tr></table></figure></p>
+<p>实际等价于<br><figure class="highlight ini"><table><tr><td class="code"><pre><span class="line"><span class="attr">format</span> = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">$username\</span></span><br><span class="line"><span class="string">$hostname\</span></span><br><span class="line"><span class="string">$localip\</span></span><br><span class="line"><span class="string">$git_branch\</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">omit...</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">$cmd_duration\</span></span><br><span class="line"><span class="string">$line_break\</span></span><br><span class="line"><span class="string">$jobs\</span></span><br><span class="line"><span class="string">$battery\</span></span><br><span class="line"><span class="string">$time\</span></span><br><span class="line"><span class="string">$status\</span></span><br><span class="line"><span class="string">$os\</span></span><br><span class="line"><span class="string">$container\</span></span><br><span class="line"><span class="string">$shell\</span></span><br><span class="line"><span class="string">$character&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure></p>
+<p>其中每一个 <code>$</code> 开头的变量都是用于表示对应内容在终端显示上的位置的占位符，当然其中很大部分都是不同语言的提示，也有很多都是未启用的功能。</p>
+<p>如果想要自定义配置，其实并不需要按照和如上的格式一样将所有可能都列举出来。而只需要将想要移动位置的字符从 <code>$all</code> 中提出来即可。比如如果想要把用户名放在输入提示符的前面位置，只需要使用如下的 format 即可<br><figure class="highlight ini"><table><tr><td class="code"><pre><span class="line"><span class="attr">format</span> = <span class="string">&#x27;$all $username $character&#x27;</span></span><br></pre></td></tr></table></figure></p>
+<p>Starship 默认启用的功能就已经能够满足日常使用了。除此之外还可以启用一些功能，如用户名、时间等等，这就有待各位的探索了。</p>
+<p>最后，展示一下我自己的 zsh 外观，各位也一定能配置出自己满意的外观。<br><img src="/posts/93ea500a/zsh.png" class="" title="my-zsh"></p>
 ]]></content>
       <categories>
         <category>踩坑记录</category>
