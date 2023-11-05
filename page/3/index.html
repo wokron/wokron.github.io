@@ -159,6 +159,156 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3c5d5cf3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/3c5d5cf3/" class="post-title-link" itemprop="url">ESIM网络的搭建和训练</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-05 10:30:20" itemprop="dateCreated datePublished" datetime="2023-03-05T10:30:20+08:00">2023-03-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><p>最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。</p>
+<p>因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的<a target="_blank" rel="noopener" href="https://github.com/FudanNLP/nlp-beginner">NLP入门练习</a>搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。</p>
+<p>因为使用了Colab，本次模型的构建和训练比较成功，因而做此记录。</p>
+<h2 id="二、任务"><a href="#二、任务" class="headerlink" title="二、任务"></a>二、任务</h2><p>本次任务是输入两个句子，判断它们之间的关系。具体来说，我们需要实现<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1609.06038v3.pdf">论文</a>中提出的 ESIM 网络，并通过 <a target="_blank" rel="noopener" href="https://nlp.stanford.edu/projects/snli/">SNLI数据集</a> 进行训练，以学习预测两个句子间的关系。</p>
+<h2 id="三、数据集"><a href="#三、数据集" class="headerlink" title="三、数据集"></a>三、数据集</h2><p>SNLI数据集包含57万行英文句子对，并被标注了句子间的关系，包括蕴含（Entailment），矛盾（Contradiction），中立/不冲突（Neutral），未知（-）。</p>
+<p>例如</p>
+<blockquote>
+<p>输入文本： A man inspects the uniform of a figure in some East Asian  country.<br>输入假设： The man is sleeping.<br>输出： 矛盾（C）</p>
+<p>输入文本： A smiling costumed woman is holding an umbrella.<br>输入假设：A happy woman in a fairy costume holds an umbrella.<br>输出： 中立（N）</p>
+<p>输入文本： A soccer game with multiple males playing.<br>输入假设： Some men are playing a sport.<br>输出： 蕴含（E）</p>
+</blockquote>
+<p>原始的数据集提供了 json 格式和制表符分割 txt 格式。在读取数据时，我们使用了制表符格式。</p>
+<p>对于每一个文件，第一行为表头，其他行为数据。我们只需要获取 sentence1 和 sentence2 列对应的句子和 gold_label 所对应的标注。</p>
+<p>我们创建获取SNLI数据集的 Dataset 类<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SNLIDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br></pre></td></tr></table></figure><br>首先指定 sentence1、sentence2 和 gold_label 对应的列数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, file_path, vocab=<span class="literal">None</span></span>):</span><br><span class="line">    s1 = <span class="number">5</span></span><br><span class="line">    s2 = <span class="number">6</span></span><br><span class="line">    l = <span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<p>训练时使用自建词汇表。我们在加载训练集时构建词汇表，在验证级和测试集中使用词汇表<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> vocab <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">    self.build_vocab = <span class="literal">True</span></span><br><span class="line">    self.vocab = &#123;<span class="string">&quot;&lt;pad&gt;&quot;</span>: <span class="number">0</span>&#125;</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    self.build_vocab = <span class="literal">False</span></span><br><span class="line">    self.vocab = vocab</span><br></pre></td></tr></table></figure></p>
+<p>我们打开文件，遍历其中每一行，注意这里我们使用了 tqdm 来显示进度条。同时使用了 enumerate 获取 index。当遇到第一行时 continue。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">self.s1 = []</span><br><span class="line">self.s2 = []</span><br><span class="line">self.labels = []</span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;UTF-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">with</span> tqdm(f) <span class="keyword">as</span> tqdm_file:</span><br><span class="line">        tqdm_file.set_description(<span class="string">&quot;Load Data&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> index, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(tqdm_file):</span><br><span class="line">            <span class="keyword">if</span> index == <span class="number">0</span>:</span><br><span class="line">                <span class="keyword">continue</span></span><br></pre></td></tr></table></figure>
+<p>按制表符分割一行，取出其中的 sentence1、sentence2 和 gold_label。分别将字符串转化为 tensor 存入对应的数组中。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">splited_line = line.split(<span class="string">&quot;\t&quot;</span>)</span><br><span class="line"></span><br><span class="line">sentence1 = splited_line[s1]</span><br><span class="line">sentence2 = splited_line[s2]</span><br><span class="line">label = splited_line[l]</span><br><span class="line"></span><br><span class="line">self.s1.append(self.__sentence2tensor(sentence1))</span><br><span class="line">self.s2.append(self.__sentence2tensor(sentence2))</span><br><span class="line">self.labels.append(torch.as_tensor(labels[label]))</span><br></pre></td></tr></table></figure>
+<p>其中 <code>__sentence2tensor</code> 方法如下。该方法通过正则表达式匹配单词，构建词汇表。<code>get_word_index</code> 将 char 字符转化为数字 token，如果字符不在词汇表中则返回值为 0。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__sentence2tensor</span>(<span class="params">self, s</span>):</span><br><span class="line">    rt = []</span><br><span class="line">    <span class="keyword">for</span> char <span class="keyword">in</span> re.findall(<span class="string">&quot;[a-zA-Z-]+&quot;</span>, s):</span><br><span class="line">        <span class="keyword">if</span> self.build_vocab <span class="keyword">and</span> char <span class="keyword">not</span> <span class="keyword">in</span> self.vocab:</span><br><span class="line">            self.vocab[char] = <span class="built_in">len</span>(self.vocab)</span><br><span class="line">        rt.append(get_word_index(self.vocab, char))</span><br><span class="line">    <span class="keyword">return</span> torch.as_tensor(rt)</span><br></pre></td></tr></table></figure>
+<p>接着我们实现 <code>__getitem__</code> 和 <code>__len__</code> 方法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    <span class="keyword">return</span> self.s1[item], self.s2[item], self.labels[item]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(self.s1)</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、神经网络"><a href="#四、神经网络" class="headerlink" title="四、神经网络"></a>四、神经网络</h2><p>在实现的过程中，我简化了一部分流程</p>
+<p>首先，我们定义输入的两个句子为 $a = (a<em>1, …, a</em>{seq<em>a})$ 和 $b = (b_1, …, b</em>{seq_b})$。其中 $a_i, b_j$ 为 $l$ 维的词向量。</p>
+<p>依照双向注意力的机制，我们首先定义 $f(x)$。即</p>
+<script type="math/tex; mode=display">
+    \bar{a}_i = BiLSTM(a, i)</script><script type="math/tex; mode=display">
+    \bar{b}_j = BiLSTM(b, j)</script><p>接着，我们定义注意力权重 $e_{ij} = f(a_i)^T f(b_j)$，即</p>
+<script type="math/tex; mode=display">
+    e_{ij} = \bar{a}_i^T \bar{b}_j</script><p>我们计算对某一句中的每一个词，被注意到的另一个句子中词汇的含义。</p>
+<script type="math/tex; mode=display">
+    \tilde{a}_i = \sum_{j} \frac{\exp(e_{ij})}{\sum_k \exp(e_{ik})} \bar{b}_j</script><script type="math/tex; mode=display">
+    \tilde{b}_j = \sum_{i} \frac{\exp(e_{ij})}{\sum_k \exp(e_{kj})} \bar{a}_i</script><p>为了获取更多的信息，ESIM 将结果组合成如下的形式</p>
+<script type="math/tex; mode=display">
+    m_a = [\bar{a}; \tilde{a}; \bar{a}-\tilde{a}; \bar{a} \odot \tilde{a}]</script><script type="math/tex; mode=display">
+    m_b = [\bar{b}; \tilde{b}; \bar{b}-\tilde{b}; \bar{b} \odot \tilde{b}]</script><p>接着，我们再使用 BiLSTM 对 $m_a, m_b$ 进行处理</p>
+<script type="math/tex; mode=display">
+    \bar{v}_{a, i} = BiLSTM(a, i)</script><script type="math/tex; mode=display">
+    \bar{v}_{b, j} = BiLSTM(b, j)</script><p>最后进行池化操作，并将结果再次连接在一起，通过多层感知机得到结果</p>
+<script type="math/tex; mode=display">
+    \bar{v}_{a, ave} = \sum_i \frac{\bar{v}_{a, i}}{l_a}, \bar{v}_{a, max} = \max_i \bar{v}_{a, i}</script><script type="math/tex; mode=display">
+    \bar{v}_{b, ave} = \sum_j \frac{\bar{v}_{b, j}}{l_b}, \bar{v}_{b, max} = \max_j \bar{v}_{b, j}</script><script type="math/tex; mode=display">
+    v = [\bar{v}_{a, ave}; \bar{v}_{a, max}; \bar{v}_{b, ave}; \bar{v}_{b, max}]</script><p>我们开始构建模型：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ESIM</span>(nn.Module):</span><br></pre></td></tr></table></figure></p>
+<p>首先将单词编码转化为词向量</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, s1, s2</span>):</span><br><span class="line">    a = self.embed(s1)  <span class="comment"># (batch_size,seq_size1,embed_size)</span></span><br><span class="line">    b = self.embed(s2)  <span class="comment"># (batch_size,seq_size2,embed_size)</span></span><br></pre></td></tr></table></figure>
+<p>通过 BiLSTM 层计算得出 $\bar{a}, \bar{b}$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a_, _ = self.lstm1(a)  <span class="comment"># (batch_size,seq_size1,2*hidden_size)</span></span><br><span class="line">b_, _ = self.lstm1(b)  <span class="comment"># (batch_size,seq_size2,2*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>接着计算出 $e$，注意这里直接使用了矩阵乘法。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e = torch.bmm(a_, b_.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>))  <span class="comment"># (batch_size,seq_size1,seq_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>计算 $\tilde{a}, \tilde{b}$。使用 softmax 时，设置 <code>dim=-1</code> 表示对最高维求 softmax。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">a_sim = torch.bmm(F.softmax(e, dim=-<span class="number">1</span>), b_)</span><br><span class="line"><span class="comment"># (batch_size,seq_size1,2*hidden_size)</span></span><br><span class="line">b_sim = torch.bmm(F.softmax(e.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>), dim=-<span class="number">1</span>), a_)</span><br><span class="line"><span class="comment"># (batch_size,seq_size2,2*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>得到 $m_a, m_b$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ma = torch.cat([a_, a_sim, a_ - a_sim, a_ * a_sim], dim=<span class="number">2</span>)</span><br><span class="line"><span class="comment"># (batch_size,seq_size1,8*hidden_size)</span></span><br><span class="line">mb = torch.cat([b_, b_sim, b_ - b_sim, b_ * b_sim], dim=<span class="number">2</span>)</span><br><span class="line"><span class="comment"># (batch_size,seq_size2,8*hidden_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>通过 BiLSTM 层计算得出 $v_a, v_b$<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">va, _ = self.lstm2(ma)  <span class="comment"># (batch_size,seq_size1,2*hidden_size2)</span></span><br><span class="line">vb, _ = self.lstm2(mb)  <span class="comment"># (batch_size,seq_size2,2*hidden_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>池化并连接<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">va_ave = torch.mean(va, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line">va_max, _ = torch.<span class="built_in">max</span>(va, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line"></span><br><span class="line">vb_ave = torch.mean(vb, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line">vb_max, _ = torch.<span class="built_in">max</span>(vb, dim=<span class="number">1</span>)  <span class="comment"># (batch_size,2*hidden_size2)</span></span><br><span class="line"></span><br><span class="line">v = torch.cat([va_ave, va_max, vb_ave, vb_max], dim=<span class="number">1</span>)</span><br><span class="line"><span class="comment"># (batch_size,8*hidden_size2)</span></span><br></pre></td></tr></table></figure></p>
+<p>经过双层线性感知机得到结果<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">predict = self.multi(v)  <span class="comment"># (batch_size,class_num)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> predict</span><br></pre></td></tr></table></figure></p>
+<h2 id="五、训练"><a href="#五、训练" class="headerlink" title="五、训练"></a>五、训练</h2><h3 id="部分代码"><a href="#部分代码" class="headerlink" title="部分代码"></a>部分代码</h3><p>定义训练函数，声明全局训练步数和全局轮次<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train</span>(<span class="params">dataloader, net, criterion, optimizer</span>):</span><br><span class="line">    <span class="keyword">global</span> global_train_step</span><br><span class="line">    <span class="keyword">global</span> global_epoch</span><br></pre></td></tr></table></figure></p>
+<p>设置进度条<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tqdm(dataloader) <span class="keyword">as</span> tqdm_loader:</span><br><span class="line">    tqdm_loader.set_description(<span class="string">f&quot;Epoch <span class="subst">&#123;global_epoch&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>开始训练<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">net.train()</span><br><span class="line"><span class="keyword">for</span> s1, s2, target <span class="keyword">in</span> tqdm_loader:</span><br><span class="line">    global_train_step += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    s1 = s1.to(args.device)</span><br><span class="line">    s2 = s2.to(args.device)</span><br><span class="line">    target = target.to(args.device)</span><br><span class="line"></span><br><span class="line">    predict = net(s1, s2)</span><br><span class="line"></span><br><span class="line">    loss = criterion(predict, target)</span><br><span class="line"></span><br><span class="line">    accuracy = get_accuracy(predict, target)</span><br><span class="line"></span><br><span class="line">    optimizer.zero_grad()</span><br><span class="line">    loss.backward()</span><br><span class="line">    optimizer.step()</span><br></pre></td></tr></table></figure></p>
+<p>为进度条和 tensorboard 更新信息<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tqdm_loader.set_postfix(loss=loss.item(), accuracy=accuracy)</span><br><span class="line"></span><br><span class="line">writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), global_train_step)</span><br><span class="line">writer.add_scalar(<span class="string">&quot;train accuracy&quot;</span>, accuracy, global_train_step)</span><br></pre></td></tr></table></figure></p>
+<p>定义评价函数，参数 tag 表示验证或者测试<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">evaluate</span>(<span class="params">tag, dataloader, net, criterion</span>):</span><br><span class="line">    <span class="keyword">global</span> global_epoch</span><br></pre></td></tr></table></figure></p>
+<p>开始评价<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">total_loss = <span class="number">0</span></span><br><span class="line">accuracy = <span class="number">0</span></span><br><span class="line">total_step = <span class="number">0</span></span><br><span class="line">net.<span class="built_in">eval</span>()</span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> s1, s2, target <span class="keyword">in</span> dataloader:</span><br><span class="line">        s1 = s1.to(args.device)</span><br><span class="line">        s2 = s2.to(args.device)</span><br><span class="line">        target = target.to(args.device)</span><br><span class="line"></span><br><span class="line">        predict = net(s1, s2)</span><br><span class="line"></span><br><span class="line">        loss = criterion(predict, target)</span><br><span class="line"></span><br><span class="line">        total_loss += loss</span><br><span class="line"></span><br><span class="line">        accuracy += get_accuracy(predict, target)</span><br><span class="line"></span><br><span class="line">        total_step += <span class="number">1</span></span><br></pre></td></tr></table></figure></p>
+<p>更新 tensorboard 信息<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">accuracy /= total_step</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;tag&#125;</span>: total loss=<span class="subst">&#123;total_loss&#125;</span>, accuracy=<span class="subst">&#123;accuracy&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">writer.add_scalar(tag + <span class="string">&quot; loss&quot;</span>, total_loss, global_epoch)</span><br><span class="line">writer.add_scalar(tag + <span class="string">&quot; accuracy&quot;</span>, accuracy, global_epoch)</span><br></pre></td></tr></table></figure></p>
+<p>设定参数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">args = Namespace(</span><br><span class="line">    batch_size=<span class="number">512</span>,</span><br><span class="line">    device=torch.device(<span class="string">&quot;cuda&quot;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&quot;cpu&quot;</span>),</span><br><span class="line">    embed_size=<span class="number">100</span>,</span><br><span class="line">    hidden_size1=<span class="number">200</span>,</span><br><span class="line">    hidden_size2=<span class="number">200</span>,</span><br><span class="line">    num_layers=<span class="number">2</span>,</span><br><span class="line">    epoch_size=<span class="number">15</span>,</span><br><span class="line">    learning_rate=<span class="number">0.01</span>,</span><br><span class="line"></span><br><span class="line">    train_path=<span class="string">&quot;./data/snli_1.0_train.txt&quot;</span>,</span><br><span class="line">    test_path=<span class="string">&quot;./data/snli_1.0_test.txt&quot;</span>,</span><br><span class="line">    dev_path=<span class="string">&quot;./data/snli_1.0_dev.txt&quot;</span>,</span><br><span class="line">    log_path=<span class="string">&quot;./logs&quot;</span>,</span><br><span class="line">    checkpoint_path=<span class="string">&quot;./checkpoints&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>设定损失函数和优化器<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">loss_fn = nn.CrossEntropyLoss().to(args.device)</span><br><span class="line"></span><br><span class="line">optim = torch.optim.SGD(net.parameters(), lr=args.learning_rate)</span><br></pre></td></tr></table></figure></p>
+<p>主循环<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(args.epoch_size):</span><br><span class="line">    global_epoch += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    train(train_loader, net, loss_fn, optim)</span><br><span class="line"></span><br><span class="line">    save_checkpoint(net, optim, global_epoch, global_train_step)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;dev&quot;</span>, dev_loader, net, loss_fn)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;test&quot;</span>, test_loader, net, loss_fn)</span><br></pre></td></tr></table></figure></p>
+<h3 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h3><img src="/posts/3c5d5cf3/train_loss.png" class="" title="train_loss">
+<img src="/posts/3c5d5cf3/train_acc.png" class="" title="train_acc">
+<img src="/posts/3c5d5cf3/test_loss.png" class="" title="test_loss">
+<img src="/posts/3c5d5cf3/test_acc.png" class="" title="test_acc">
+<p>模型在训练集和测试集上均取得了 72% 的准确率，和 ESTM 论文中的还有一定差距，可能的原因是</p>
+<ul>
+<li>词向量使用了随机初始化而非GloVe初始化</li>
+<li>优化器使用了 SGD 而非 Adam，导致训练过慢</li>
+<li>模型的参数设置不合理</li>
+</ul>
+<p>另外</p>
+<ul>
+<li>模型中没有使用 dropout，可能导致过拟合（虽然本模型并没有出现）</li>
+</ul>
+<h2 id="七、参考资料"><a href="#七、参考资料" class="headerlink" title="七、参考资料"></a>七、参考资料</h2><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_42365109/article/details/115704688">NLP-Beginner 任务三：基于注意力机制的文本匹配+pytorch</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3190f9b2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1438,187 +1588,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/b452423a/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/b452423a/" class="post-title-link" itemprop="url">Spring面向切面</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-01-10 16:47:00" itemprop="dateCreated datePublished" datetime="2023-01-10T16:47:00+08:00">2023-01-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、面向切面（AOP）"><a href="#一、面向切面（AOP）" class="headerlink" title="一、面向切面（AOP）"></a>一、面向切面（AOP）</h2><p>有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。</p>
-<p>面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。</p>
-<h2 id="二、面向切面的术语"><a href="#二、面向切面的术语" class="headerlink" title="二、面向切面的术语"></a>二、面向切面的术语</h2><p>正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。</p>
-<h3 id="通知（Advice）"><a href="#通知（Advice）" class="headerlink" title="通知（Advice）"></a>通知（Advice）</h3><p>通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。</p>
-<h3 id="连接点（Join-Point）"><a href="#连接点（Join-Point）" class="headerlink" title="连接点（Join Point）"></a>连接点（Join Point）</h3><p>连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。</p>
-<h3 id="切点（Poincut）"><a href="#切点（Poincut）" class="headerlink" title="切点（Poincut）"></a>切点（Poincut）</h3><p>切点是真正应用通知的地方，切点一定是连接点。</p>
-<h3 id="切面（Aspect）"><a href="#切面（Aspect）" class="headerlink" title="切面（Aspect）"></a>切面（Aspect）</h3><p>切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。</p>
-<h3 id="引入（Introduction）"><a href="#引入（Introduction）" class="headerlink" title="引入（Introduction）"></a>引入（Introduction）</h3><p>引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。</p>
-<h3 id="织入（Weaving）"><a href="#织入（Weaving）" class="headerlink" title="织入（Weaving）"></a>织入（Weaving）</h3><p>织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。</p>
-<h2 id="三、Spring的AOP：利用切点表达式选择切点"><a href="#三、Spring的AOP：利用切点表达式选择切点" class="headerlink" title="三、Spring的AOP：利用切点表达式选择切点"></a>三、Spring的AOP：利用切点表达式选择切点</h2><p>通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。</p>
-<p>Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>AspectJ指示器</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>arg()</td>
-<td>限制连接点匹配参数为指定类型的执行方法</td>
-</tr>
-<tr>
-<td>@args()</td>
-<td>限制连接点匹配参数由指定注解标注的执行方法</td>
-</tr>
-<tr>
-<td>execution()</td>
-<td>用于匹配是连接点的执行方法</td>
-</tr>
-<tr>
-<td>this()</td>
-<td>限制连接点匹配AOP代理的bean引用为指定类型的类</td>
-</tr>
-<tr>
-<td>target</td>
-<td>限制连接点匹配目标对象为指定类型的类</td>
-</tr>
-<tr>
-<td>@target()</td>
-<td>限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解</td>
-</tr>
-<tr>
-<td>within()</td>
-<td>限制连接点匹配指定的类型</td>
-</tr>
-<tr>
-<td>@within()</td>
-<td>限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里）</td>
-</tr>
-<tr>
-<td>@annotation</td>
-<td>限定匹配带有指定注解的连接点</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">execution(* concert.Performance.perform(..))</span><br></pre></td></tr></table></figure><br>表示匹配一个在方法执行时触发的连接点，这个方法是 <code>concert</code> 包下的 <code>Performance</code> 类中名为 <code>perform</code> 的方法，不考虑方法的返回值和参数（匹配所有同名的 <code>perform</code> 方法）。</p>
-<p>切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">execution(* concert.Performance.perform(..)) &amp;&amp; within(concert.*)</span><br></pre></td></tr></table></figure><br>表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。</p>
-<p>另外因为 Spring 具有依赖注入的功能，因此添加了一个新的切点指示器 <code>bean()</code> 用来通过 bean id 选择切点。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">execution(* concert.Performance.perform()) &amp;&amp; bean(<span class="string">&#x27;woodstock&#x27;</span>)</span><br></pre></td></tr></table></figure></p>
-<h2 id="四、Spring的AOP：基于注释的切面创建"><a href="#四、Spring的AOP：基于注释的切面创建" class="headerlink" title="四、Spring的AOP：基于注释的切面创建"></a>四、Spring的AOP：基于注释的切面创建</h2><h3 id="（1）创建第一个切面"><a href="#（1）创建第一个切面" class="headerlink" title="（1）创建第一个切面"></a>（1）创建第一个切面</h3><p>我们还以 CDPlayer 为例子，创建一个 Listener 作为切片。<br>我们首先要为切面类添加注释 <code>@Aspect</code>。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br></pre></td></tr></table></figure></p>
-<p>之后我们定义一些方法作为通知。并通过注释将其引入 <code>CDPlayer</code> 类。我们会在如下注释中选择：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>注解</th>
-<th>通知调用位置</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>@After</td>
-<td>通知方法会在目标方法返回或抛出异常后调用</td>
-</tr>
-<tr>
-<td>@AfterReturning</td>
-<td>通知方法会在目标方法返回后调用</td>
-</tr>
-<tr>
-<td>@AfterThrowing</td>
-<td>通知方法会在目标方法抛出异常后调用</td>
-</tr>
-<tr>
-<td>@Around</td>
-<td>通知方法会将目标方法封装起来</td>
-</tr>
-<tr>
-<td>@Before</td>
-<td>通知方法会在目标方法调用之前执行</td>
-</tr>
-</tbody>
-</table>
-</div>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Before(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">waitingForMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;waiting for listening...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterReturning(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">appreciateTheMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;this music is amazing!!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterThrowing(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleSomethingWrongWithTheCDPlayer</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;there is something wrong, I need to fix this player.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@After(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">leaveAfterPlayingMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;music finished, I will leave.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如上，我们确定了切点为 <code>CDPlayer</code> 的 <code>playCD</code> 方法，并对调用该方法之前，成功返回之后和抛出异常之后分别设置了通知。这样切面就创建完成了。接下来我们还需在配置类中将切面设置为 Bean，并添加注释 <code>@EnableAspectJAutoProxy</code> 以启用切片。这样所有的配置就完成了。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@EnableAspectJAutoProxy</span> <span class="comment">// here!!!</span></span><br><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CompactDisc <span class="title function_">blankDisc</span><span class="params">(</span></span><br><span class="line"><span class="params">            <span class="meta">@Value(&quot;$&#123;disc.title&#125;&quot;)</span> String title,</span></span><br><span class="line"><span class="params">            <span class="meta">@Value(&quot;$&#123;disc.artist&#125;&quot;)</span> String artist)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">BlankDisc</span>(title, artist);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CDPlayer <span class="title function_">cdPlayer</span><span class="params">(CompactDisc cd)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CDPlayer</span>(cd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// here!!!</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> Listener <span class="title function_">listener</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Listener</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h3 id="（2）切点的直接声明和使用"><a href="#（2）切点的直接声明和使用" class="headerlink" title="（2）切点的直接声明和使用"></a>（2）切点的直接声明和使用</h3><p>注意在定义切面的时候，切点表达式 <code>&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;</code> 出现了许多次，这无疑是代码的重复。我们可以利用注释 <code>@Pointcut</code> 声明该表达式，以便重用。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCDPointcut</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">waitingForMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;waiting for listening...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterReturning(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">appreciateTheMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;this music is amazing!!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterThrowing(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleSomethingWrongWithTheCDPlayer</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;there is something wrong, I need to fix this player.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@After(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">leaveAfterPlayingMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;music finished, I will leave.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure><br>注意 <code>playCDPointcut()</code> 函数的声明和其他方法注释中值的变化。</p>
-<h3 id="（3）环绕通知的使用"><a href="#（3）环绕通知的使用" class="headerlink" title="（3）环绕通知的使用"></a>（3）环绕通知的使用</h3><p>Spring AOP 中最强大的是环绕通知，由注释 <code>@Around</code> 声明。其他的通知调用位置注释不过是环绕通知的一部分。环绕通知的使用方法有些特殊，因此在这一节中单独讲解。</p>
-<p>首先需要明确的是，切面的本质不过是一个代理（proxy），代理类的方法调用委托类中的对应方法，并在调用的前后添加一些额外的代码，从而实现更多功能。AOP 的作用不过是去除了声明代理类的过程，减少了事务与切面间的耦合而已。</p>
-<p>环绕通知的使用也类似，如下就是通过环绕通知实现的与上一节等价的代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCDPointcut</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Around(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">listenCDPlayer</span><span class="params">(ProceedingJoinPoint pjp)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;waiting for listening...&quot;</span>);</span><br><span class="line">            pjp.proceed();</span><br><span class="line">            System.out.println(<span class="string">&quot;this music is amazing!!&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;there is something wrong, I need to fix this player.&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">finally</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;music finished, I will leave.&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h3 id="（4）处理参数"><a href="#（4）处理参数" class="headerlink" title="（4）处理参数"></a>（4）处理参数</h3><p>调用方法时，可能会传入参数，这些参数也可以被通知所处理。</p>
-<p>我们可以在 CDPlayer 中添加一个方法 <code>playCD(int)</code> 设定播放的次数。然后获取该参数。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCD</span><span class="params">(<span class="type">int</span> times)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; times; i++) &#123;</span><br><span class="line">        playCD();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>接着我们重写 <code>Listener</code> 切面。如下的代码我们将 times 传入了通知方法 <code>listenCDPlayer</code> 中。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* playCD(int)) &amp;&amp; bean(cdPlayer) &amp;&amp; args(times)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCDPointcut</span><span class="params">(<span class="type">int</span> times)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before(&quot;playCDPointcut(times)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">listenCDPlayer</span><span class="params">(<span class="type">int</span> times)</span> &#123;</span><br><span class="line">        System.out.printf(<span class="string">&quot;this music will play %d times.\n&quot;</span>, times);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>当使用多个参数时，函数中的类型名和 args() 中的参数名都用逗号隔开，如 <code>args(arg1, arg2)</code></p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1690,7 +1659,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">63</span>
+          <span class="site-state-item-count">64</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1703,7 +1672,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-count">66</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

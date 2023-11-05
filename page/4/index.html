@@ -159,6 +159,187 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/b452423a/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/b452423a/" class="post-title-link" itemprop="url">Spring面向切面</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-10 16:47:00" itemprop="dateCreated datePublished" datetime="2023-01-10T16:47:00+08:00">2023-01-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、面向切面（AOP）"><a href="#一、面向切面（AOP）" class="headerlink" title="一、面向切面（AOP）"></a>一、面向切面（AOP）</h2><p>有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。</p>
+<p>面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。</p>
+<h2 id="二、面向切面的术语"><a href="#二、面向切面的术语" class="headerlink" title="二、面向切面的术语"></a>二、面向切面的术语</h2><p>正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。</p>
+<h3 id="通知（Advice）"><a href="#通知（Advice）" class="headerlink" title="通知（Advice）"></a>通知（Advice）</h3><p>通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。</p>
+<h3 id="连接点（Join-Point）"><a href="#连接点（Join-Point）" class="headerlink" title="连接点（Join Point）"></a>连接点（Join Point）</h3><p>连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。</p>
+<h3 id="切点（Poincut）"><a href="#切点（Poincut）" class="headerlink" title="切点（Poincut）"></a>切点（Poincut）</h3><p>切点是真正应用通知的地方，切点一定是连接点。</p>
+<h3 id="切面（Aspect）"><a href="#切面（Aspect）" class="headerlink" title="切面（Aspect）"></a>切面（Aspect）</h3><p>切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。</p>
+<h3 id="引入（Introduction）"><a href="#引入（Introduction）" class="headerlink" title="引入（Introduction）"></a>引入（Introduction）</h3><p>引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。</p>
+<h3 id="织入（Weaving）"><a href="#织入（Weaving）" class="headerlink" title="织入（Weaving）"></a>织入（Weaving）</h3><p>织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。</p>
+<h2 id="三、Spring的AOP：利用切点表达式选择切点"><a href="#三、Spring的AOP：利用切点表达式选择切点" class="headerlink" title="三、Spring的AOP：利用切点表达式选择切点"></a>三、Spring的AOP：利用切点表达式选择切点</h2><p>通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。</p>
+<p>Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>AspectJ指示器</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>arg()</td>
+<td>限制连接点匹配参数为指定类型的执行方法</td>
+</tr>
+<tr>
+<td>@args()</td>
+<td>限制连接点匹配参数由指定注解标注的执行方法</td>
+</tr>
+<tr>
+<td>execution()</td>
+<td>用于匹配是连接点的执行方法</td>
+</tr>
+<tr>
+<td>this()</td>
+<td>限制连接点匹配AOP代理的bean引用为指定类型的类</td>
+</tr>
+<tr>
+<td>target</td>
+<td>限制连接点匹配目标对象为指定类型的类</td>
+</tr>
+<tr>
+<td>@target()</td>
+<td>限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解</td>
+</tr>
+<tr>
+<td>within()</td>
+<td>限制连接点匹配指定的类型</td>
+</tr>
+<tr>
+<td>@within()</td>
+<td>限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里）</td>
+</tr>
+<tr>
+<td>@annotation</td>
+<td>限定匹配带有指定注解的连接点</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">execution(* concert.Performance.perform(..))</span><br></pre></td></tr></table></figure><br>表示匹配一个在方法执行时触发的连接点，这个方法是 <code>concert</code> 包下的 <code>Performance</code> 类中名为 <code>perform</code> 的方法，不考虑方法的返回值和参数（匹配所有同名的 <code>perform</code> 方法）。</p>
+<p>切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">execution(* concert.Performance.perform(..)) &amp;&amp; within(concert.*)</span><br></pre></td></tr></table></figure><br>表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。</p>
+<p>另外因为 Spring 具有依赖注入的功能，因此添加了一个新的切点指示器 <code>bean()</code> 用来通过 bean id 选择切点。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">execution(* concert.Performance.perform()) &amp;&amp; bean(<span class="string">&#x27;woodstock&#x27;</span>)</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、Spring的AOP：基于注释的切面创建"><a href="#四、Spring的AOP：基于注释的切面创建" class="headerlink" title="四、Spring的AOP：基于注释的切面创建"></a>四、Spring的AOP：基于注释的切面创建</h2><h3 id="（1）创建第一个切面"><a href="#（1）创建第一个切面" class="headerlink" title="（1）创建第一个切面"></a>（1）创建第一个切面</h3><p>我们还以 CDPlayer 为例子，创建一个 Listener 作为切片。<br>我们首先要为切面类添加注释 <code>@Aspect</code>。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br></pre></td></tr></table></figure></p>
+<p>之后我们定义一些方法作为通知。并通过注释将其引入 <code>CDPlayer</code> 类。我们会在如下注释中选择：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>注解</th>
+<th>通知调用位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@After</td>
+<td>通知方法会在目标方法返回或抛出异常后调用</td>
+</tr>
+<tr>
+<td>@AfterReturning</td>
+<td>通知方法会在目标方法返回后调用</td>
+</tr>
+<tr>
+<td>@AfterThrowing</td>
+<td>通知方法会在目标方法抛出异常后调用</td>
+</tr>
+<tr>
+<td>@Around</td>
+<td>通知方法会将目标方法封装起来</td>
+</tr>
+<tr>
+<td>@Before</td>
+<td>通知方法会在目标方法调用之前执行</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Before(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">waitingForMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;waiting for listening...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterReturning(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">appreciateTheMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;this music is amazing!!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterThrowing(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleSomethingWrongWithTheCDPlayer</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;there is something wrong, I need to fix this player.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@After(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">leaveAfterPlayingMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;music finished, I will leave.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如上，我们确定了切点为 <code>CDPlayer</code> 的 <code>playCD</code> 方法，并对调用该方法之前，成功返回之后和抛出异常之后分别设置了通知。这样切面就创建完成了。接下来我们还需在配置类中将切面设置为 Bean，并添加注释 <code>@EnableAspectJAutoProxy</code> 以启用切片。这样所有的配置就完成了。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@EnableAspectJAutoProxy</span> <span class="comment">// here!!!</span></span><br><span class="line"><span class="meta">@PropertySource(&quot;classpath:application.properties&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CDPlayerConfig</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CompactDisc <span class="title function_">blankDisc</span><span class="params">(</span></span><br><span class="line"><span class="params">            <span class="meta">@Value(&quot;$&#123;disc.title&#125;&quot;)</span> String title,</span></span><br><span class="line"><span class="params">            <span class="meta">@Value(&quot;$&#123;disc.artist&#125;&quot;)</span> String artist)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">BlankDisc</span>(title, artist);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> CDPlayer <span class="title function_">cdPlayer</span><span class="params">(CompactDisc cd)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CDPlayer</span>(cd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// here!!!</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> Listener <span class="title function_">listener</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Listener</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）切点的直接声明和使用"><a href="#（2）切点的直接声明和使用" class="headerlink" title="（2）切点的直接声明和使用"></a>（2）切点的直接声明和使用</h3><p>注意在定义切面的时候，切点表达式 <code>&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;</code> 出现了许多次，这无疑是代码的重复。我们可以利用注释 <code>@Pointcut</code> 声明该表达式，以便重用。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCDPointcut</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">waitingForMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;waiting for listening...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterReturning(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">appreciateTheMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;this music is amazing!!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@AfterThrowing(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleSomethingWrongWithTheCDPlayer</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;there is something wrong, I need to fix this player.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@After(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">leaveAfterPlayingMusic</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;music finished, I will leave.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure><br>注意 <code>playCDPointcut()</code> 函数的声明和其他方法注释中值的变化。</p>
+<h3 id="（3）环绕通知的使用"><a href="#（3）环绕通知的使用" class="headerlink" title="（3）环绕通知的使用"></a>（3）环绕通知的使用</h3><p>Spring AOP 中最强大的是环绕通知，由注释 <code>@Around</code> 声明。其他的通知调用位置注释不过是环绕通知的一部分。环绕通知的使用方法有些特殊，因此在这一节中单独讲解。</p>
+<p>首先需要明确的是，切面的本质不过是一个代理（proxy），代理类的方法调用委托类中的对应方法，并在调用的前后添加一些额外的代码，从而实现更多功能。AOP 的作用不过是去除了声明代理类的过程，减少了事务与切面间的耦合而已。</p>
+<p>环绕通知的使用也类似，如下就是通过环绕通知实现的与上一节等价的代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCDPointcut</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Around(&quot;playCDPointcut()&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">listenCDPlayer</span><span class="params">(ProceedingJoinPoint pjp)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;waiting for listening...&quot;</span>);</span><br><span class="line">            pjp.proceed();</span><br><span class="line">            System.out.println(<span class="string">&quot;this music is amazing!!&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;there is something wrong, I need to fix this player.&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">finally</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;music finished, I will leave.&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="（4）处理参数"><a href="#（4）处理参数" class="headerlink" title="（4）处理参数"></a>（4）处理参数</h3><p>调用方法时，可能会传入参数，这些参数也可以被通知所处理。</p>
+<p>我们可以在 CDPlayer 中添加一个方法 <code>playCD(int)</code> 设定播放的次数。然后获取该参数。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCD</span><span class="params">(<span class="type">int</span> times)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; times; i++) &#123;</span><br><span class="line">        playCD();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着我们重写 <code>Listener</code> 切面。如下的代码我们将 times 传入了通知方法 <code>listenCDPlayer</code> 中。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Listener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* playCD(int)) &amp;&amp; bean(cdPlayer) &amp;&amp; args(times)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">playCDPointcut</span><span class="params">(<span class="type">int</span> times)</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before(&quot;playCDPointcut(times)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">listenCDPlayer</span><span class="params">(<span class="type">int</span> times)</span> &#123;</span><br><span class="line">        System.out.printf(<span class="string">&quot;this music will play %d times.\n&quot;</span>, times);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>当使用多个参数时，函数中的类型名和 args() 中的参数名都用逗号隔开，如 <code>args(arg1, arg2)</code></p>
+</blockquote>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/fe377a4/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1259,141 +1440,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/7ab376c3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/7ab376c3/" class="post-title-link" itemprop="url">系统编程之进程管理</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-31 22:08:16" itemprop="dateCreated datePublished" datetime="2022-10-31T22:08:16+08:00">2022-10-31</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、引言"><a href="#一、引言" class="headerlink" title="一、引言"></a>一、引言</h2><p>进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。</p>
-<h2 id="二、进程简介"><a href="#二、进程简介" class="headerlink" title="二、进程简介"></a>二、进程简介</h2><h3 id="1-程序执行原理"><a href="#1-程序执行原理" class="headerlink" title="1. 程序执行原理"></a>1. 程序执行原理</h3><p>程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如<code>cs:ip</code>）指向程序入口，再初始化一些进程相关内容就完成了。</p>
-<p>在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。<strong>总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。</strong></p>
-<h3 id="2-进程概念的用途"><a href="#2-进程概念的用途" class="headerlink" title="2. 进程概念的用途"></a>2. 进程概念的用途</h3><p>早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。</p>
-<p>这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了<strong>进程</strong>概念的诞生。</p>
-<p>进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。</p>
-<blockquote>
-<p>需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。</p>
-<p>当一个可执行文件被加载到内存时，这个程序就成为进程。</p>
-<p>两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。</p>
-</blockquote>
-<h2 id="三-进程管理"><a href="#三-进程管理" class="headerlink" title="三. 进程管理"></a>三. 进程管理</h2><p>接下来介绍使用操作系统 API 进行进程管理的方法。</p>
-<h3 id="1-使用-fork-创建新进程"><a href="#1-使用-fork-创建新进程" class="headerlink" title="1. 使用 fork 创建新进程"></a>1. 使用 fork 创建新进程</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="type">pid_t</span> <span class="title function_">fork</span><span class="params">()</span>;</span><br></pre></td></tr></table></figure>
-<p><code>fork</code> 无参数，返回一个用于指示子进程的 <code>pid</code>（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 <code>fork</code> 下面的代码继续执行。<code>fork</code>有以下两种用法：</p>
-<ul>
-<li>一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。</li>
-<li>一个进程要执行一个不同的程序。在这种情况下，子进程从<code>fork</code>返回后立即调用<code>exec</code>。</li>
-</ul>
-<p>如果在调用 <code>fork</code> 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 <code>wait</code> 或 <code>waitpid</code> 来使父进程等待子进程结束，并释放子进程的信息。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"><span class="type">pid_t</span> <span class="title function_">wait</span><span class="params">(<span class="type">int</span> *status)</span>;</span><br><span class="line"><span class="type">pid_t</span> <span class="title function_">waitpid</span><span class="params">(<span class="type">pid_t</span> pid,<span class="type">int</span> *status,<span class="type">int</span> options)</span>;</span><br></pre></td></tr></table></figure>
-<p>下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="type">pid_t</span> pid1 = fork();</span><br><span class="line">    <span class="keyword">if</span> (pid1 == <span class="number">0</span>) <span class="comment">// child1</span></span><br><span class="line">    &#123;</span><br><span class="line">    	<span class="built_in">printf</span>(<span class="string">&quot;A&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="comment">// parent</span></span><br><span class="line">    &#123;</span><br><span class="line">        wait(<span class="literal">NULL</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;B&quot;</span>);</span><br><span class="line">        fflush(<span class="built_in">stdout</span>);</span><br><span class="line">        <span class="type">pid_t</span> pid2 = fork();</span><br><span class="line">        <span class="keyword">if</span> (pid2 == <span class="number">0</span>) <span class="comment">// child2</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;C&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="comment">// parent</span></span><br><span class="line">        &#123;</span><br><span class="line">            wait(<span class="literal">NULL</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><strong>代码说明：</strong> 在该程序中，我们先调用 <code>fork</code> 创建了一个子进程，通过 pid 的数值来区分父子进程。对子进程来说，打印字符 A，对父进程来说，调用 <code>wait</code> 等待子进程结束，随后父进程打印字符 B。（注意这里使用 <code>fflush</code> 刷新了缓冲区，这是因为调用 <code>fork</code> 进行进程复制也会将缓冲区的内容进行复制，没有在此之前刷新缓冲区会导致字符 B 输出两次）接着，类似的，我们根据 pid 判断父子进程，并在子进程中打印字符 C。父进程调用 <code>wait</code> 等待子进程结束，最后退出程序。</p>
-<h3 id="2-exec族函数"><a href="#2-exec族函数" class="headerlink" title="2. exec族函数"></a>2. exec族函数</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">execl</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *pathname, <span class="type">const</span> <span class="type">char</span> *arg0, ... <span class="comment">/* (char *)0 */</span>)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *pathname, <span class="type">char</span> *<span class="type">const</span> argv[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execle</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *pathname, <span class="type">const</span> <span class="type">char</span> *arg0, ...<span class="comment">/* (char *)0, char *const envp[] */</span>)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execve</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *pathname, <span class="type">char</span> *<span class="type">const</span> argv[], <span class="type">char</span> *<span class="type">const</span> envp[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execlp</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *filename, <span class="type">const</span> <span class="type">char</span> *arg0, ... <span class="comment">/* (char *)0 */</span>)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execvp</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *filename, <span class="type">char</span> *<span class="type">const</span> argv[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">fexecve</span><span class="params">(<span class="type">int</span> fd, <span class="type">char</span> *<span class="type">const</span> argv[], <span class="type">char</span> *<span class="type">const</span> envp[])</span>;</span><br><span class="line"><span class="comment">// 第一个参数使用的是打开的文件描述符，而非文件路径名</span></span><br></pre></td></tr></table></figure>
-<p>exec 函数族的作用是根据指定的文件名找到可执行文件，并用它来取代调用进程的内容换句话说，就是在调用进程内部执行一个可执行文件。这里的可执行文件既可以是二进制文件，也可以是任何 Linux 下可执行的脚本文件。与一般情况不同，exec 函数族的函数执行成功后不会返回，因为调用进程的实体，包括代码段，数据段和堆栈等都已经被新的内容取代，只留下进程 ID 等一些表面上的信息仍保持原样。只有调用失败了，它们才会返回一个 -1，从原程序的调用点接着往下执行。</p>
-<p>这几个函数的用法大体上是一致的，只是参数格式有所不同。</p>
-<ul>
-<li>“ l “ 代表 list 即列表，对应可变参数<code>argv</code> 以列表的形式出现</li>
-<li>“ v “ 代表 vector 即矢量数组，对应可变参数<code>argv</code>以数组的形式出现</li>
-<li>“ e “ 代表 environment ，对应 <code>envp</code>数组，是指给可执行文件指定环境变量。在全部 7 个函数中，只有<code>execle</code>、<code>execve</code>和<code>fexecve</code>使用了<code>char *envp[]</code>传递环境变量，其它的 4 个函数都没有这个参数，这并不意味着它们不传递环境变量，这 4 个函数将把默认的环境变量不做任何修改地传给被执行的应用程序。而它们用指定的环境变量去替代默认的那些。</li>
-<li>“ p “ 代表 环境变量 PATH ,字母 p 是指在环境变量 PATH 的目录里去查找要执行的可执行文件。2 个以 p 结尾的函数<code>execlp</code>和<code>execvp</code>，看起来，和<code>execl</code>与<code>execv</code>的差别很小，事实也如此，它们的区别从第一个参数名可以看出：除 <code>execlp</code>和<code>execvp</code>之外的 4 个函数都要求，它们的第 1 个参数 path 必须是一个完整的路径，如”/bin/ls”；而<code>execlp</code>和<code>execvp</code> 的第 1 个参数 file 可以仅仅只是一个文件名，如”ls”，这两个函数可以自动到环境变量 PATH 指定的目录里去查找。</li>
-</ul>
-<blockquote>
-<p><strong>注意：</strong></p>
-<ul>
-<li>当进程调用一种<code>exec</code>函数时，该进程执行的程序完全替换为新程序，而新程序从其<code>main</code>函数开始执行。</li>
-<li>调用<code>exec</code>并不创建新进程，前后的进程 ID 并未改变，<code>exec</code>只是用磁盘上的一个新程 序替换了当前进程的正文段、数据段、堆段和栈段。</li>
-<li>在很多 UNIX 实现中，<strong>这<code>7</code>个函数只有<code>execve</code>是内核的系统调用</strong>，另外<code>6</code>个只 是库函数，它们最终都要调用该系统调用。</li>
-</ul>
-</blockquote>
-<p>如下的实例程序会对当前目录使用<code>ls -l</code>。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    execlp(<span class="string">&quot;ls&quot;</span>, <span class="string">&quot;ls&quot;</span>, <span class="string">&quot;-l&quot;</span>, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>请注意，使用 <code>execlp</code> 及类似函数时，arg0 应为调用的程序名。在可变参数的末尾要加上 NULL</p>
-</blockquote>
-<h3 id="3-dup重定向"><a href="#3-dup重定向" class="headerlink" title="3. dup重定向"></a>3. dup重定向</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">dup</span><span class="params">(<span class="type">int</span> oldfd)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">dup2</span><span class="params">(<span class="type">int</span> oldfd, <span class="type">int</span> newfd)</span>;</span><br></pre></td></tr></table></figure>
-<p>使用 <code>dup</code> 和 <code>dup2</code> 函数可以复制一个现存的文件描述符。从而实现输入输出的重定向。</p>
-<ul>
-<li><code>dup</code> 用来复制参数oldfd所指的文件描述符。当复制成功是，返回最小的尚未被使用过的文件描述符。</li>
-<li><code>dup2</code> 与 <code>dup</code> 区别是 <code>dup2</code> 可以用参数 <code>newfd</code> 指定新文件描述符的数值。若参数 <code>newfd</code> 已经被程序使用，则系统就会将 <code>newfd</code> 所指的文件关闭，若 <code>newfd</code> 等于 <code>oldfd</code>，则返回 <code>newfd</code>，而不关闭 <code>newfd</code> 所指的文件。</li>
-</ul>
-<p>如下程序将 <code>printf</code> 的输出内容重定向到 redirect.txt。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> filefd = open(<span class="string">&quot;redirect.txt&quot;</span>, O_CREAT|O_RDWR, <span class="number">777</span>);</span><br><span class="line">    <span class="type">int</span> redirectfd = dup2(filefd, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;hahaha~~&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h3 id="4-管道"><a href="#4-管道" class="headerlink" title="4. 管道"></a>4. 管道</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">pipe</span><span class="params">(<span class="type">int</span> pipefd[<span class="number">2</span>])</span>;</span><br></pre></td></tr></table></figure>
-<p>管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。</p>
-<p>管道分为匿名管道和命名管道，这里只介绍匿名管的。匿名管道创建后本质上是 2 个文件描述符，父子进程分别持有就能够使用管道，需要注意的是不能够共用匿名管道，也就是除了使用的进程，其他进程需要关闭文件描述符，保证管道 的 2 个描述符分别同时只有 1 个进程持有。</p>
-<p>下面是在父子进程间使用管道的例子（父进程写，子进程读）：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> fd[<span class="number">2</span>];</span><br><span class="line">    pipe(fd);</span><br><span class="line">    <span class="type">pid_t</span> pid = fork();</span><br><span class="line">    <span class="keyword">if</span> (pid == <span class="number">0</span>) <span class="comment">// child</span></span><br><span class="line">    &#123;</span><br><span class="line">        close(fd[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// do something to read with fd[0]</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        close(fd[<span class="number">0</span>]);</span><br><span class="line">        <span class="comment">// do something to write with fd[1]</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>需要注意的是，调用 <code>pipe</code> 应该在 <code>fork</code> 之前。</p>
-</blockquote>
-<p>接下来是一个利用进程实现素数筛的程序<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> numRead[<span class="number">1000</span>];</span><br><span class="line">    <span class="type">int</span> readCnt = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> numWrite[<span class="number">1000</span>];</span><br><span class="line">    <span class="keyword">if</span> (argc &gt; <span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">    	<span class="type">int</span> input;</span><br><span class="line">    	<span class="built_in">sscanf</span>(argv[<span class="number">1</span>], <span class="string">&quot;%d&quot;</span>, &amp;input);</span><br><span class="line">    	readCnt = input<span class="number">-1</span>;</span><br><span class="line">    	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">2</span>; i &lt;= input; i++)</span><br><span class="line">    		numRead[i<span class="number">-2</span>] = i;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">pid_t</span> pid;</span><br><span class="line">    <span class="type">int</span> fds[<span class="number">2</span>];</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">    	pipe(fds);</span><br><span class="line">    	pid = fork();</span><br><span class="line">    	<span class="keyword">if</span> (pid == <span class="number">0</span>) <span class="comment">// child</span></span><br><span class="line">    	&#123;</span><br><span class="line">    		close(fds[<span class="number">1</span>]);</span><br><span class="line">    		<span class="type">int</span> fdRead = fds[<span class="number">0</span>];</span><br><span class="line">    		readCnt = read(fdRead, numRead, <span class="keyword">sizeof</span>(numRead)) / <span class="number">4</span>;</span><br><span class="line">    		<span class="keyword">if</span> (readCnt == <span class="number">1</span> &amp;&amp; numRead[<span class="number">0</span>] == <span class="number">-1</span>)</span><br><span class="line">    			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    	&#125;</span><br><span class="line">    &#125;<span class="keyword">while</span>(pid == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    close(fds[<span class="number">0</span>]);</span><br><span class="line">    <span class="type">int</span> fdWrite = fds[<span class="number">1</span>];</span><br><span class="line">    <span class="type">int</span> prime = numRead[<span class="number">0</span>];</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, prime);</span><br><span class="line">    fflush(<span class="built_in">stdout</span>);</span><br><span class="line">    <span class="type">int</span> writeCnt = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">1</span>; i &lt; readCnt; i++)</span><br><span class="line">    &#123;</span><br><span class="line">    	<span class="keyword">if</span> (numRead[i] % prime != <span class="number">0</span>)</span><br><span class="line">    		numWrite[writeCnt++] = numRead[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (writeCnt == <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">    	fflush(<span class="built_in">stdout</span>);</span><br><span class="line">    	numWrite[<span class="number">0</span>] = <span class="number">-1</span>;</span><br><span class="line">    	write(fdWrite, numWrite, <span class="number">4</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    	write(fdWrite, numWrite, <span class="number">4</span> * writeCnt);</span><br><span class="line"></span><br><span class="line">    wait(<span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><strong>原理如下：</strong></p>
-<blockquote>
-<p>Eratosthenes的筛选法可以通过执行以下伪代码来模拟：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">p = get a number from left neighbor</span><br><span class="line">print p</span><br><span class="line">loop:</span><br><span class="line">    n = get a number from left neighbor</span><br><span class="line">    if (p does not divide n)</span><br><span class="line">        send n to right neighbor</span><br><span class="line">p = 从左邻居中获取一个数</span><br><span class="line">print p</span><br><span class="line">loop:</span><br><span class="line">    n = 从左邻居中获取一个数</span><br><span class="line">    if (n不能被p整除)</span><br><span class="line">        将n发送给右邻居</span><br></pre></td></tr></table></figure>
-<p>生成进程可以将数字2、3、4、…、1000输入管道的左端：行中的第一个进程消除2的倍数，第二个进程消除3的倍数，第三个进程消除5的倍数，依此类推。</p>
-</blockquote>
-<img src="/posts/7ab376c3/p1.png" class="" title="Eratosthenes">
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1465,7 +1511,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">63</span>
+          <span class="site-state-item-count">64</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1478,7 +1524,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-count">66</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
