@@ -159,6 +159,149 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/6afa4e5d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/6afa4e5d/" class="post-title-link" itemprop="url">使用transformer进行机器翻译</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-12 13:25:50" itemprop="dateCreated datePublished" datetime="2023-03-12T13:25:50+08:00">2023-03-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、transformer-简介"><a href="#一、transformer-简介" class="headerlink" title="一、transformer 简介"></a>一、transformer 简介</h2><p>transformer 是 Google 在 2017 年发表的文章 <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a> 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。</p>
+<p>对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗忘；使用 CNN，我们必须通过增加层数来扩大获取信息的范围。这两种方法都有很大的局限。</p>
+<p>注意力方法则可以直接获得全局信息。方法是对一条序列，求其对于本身的注意力，这被称为自注意力。</p>
+<blockquote>
+<p>transformer 的原理和模型较为复杂，在这里只是简单说明。</p>
+</blockquote>
+<h2 id="二、数据集"><a href="#二、数据集" class="headerlink" title="二、数据集"></a>二、数据集</h2><p>此为训练模型所用的<a target="_blank" rel="noopener" href="https://www.kaggle.com/datasets/concyclics/machine-translation-chinese-and-english">数据集</a>。设定英文为源语言，中文为要翻译成的语言。</p>
+<h3 id="（1）Dataset-类编写"><a href="#（1）Dataset-类编写" class="headerlink" title="（1）Dataset 类编写"></a>（1）Dataset 类编写</h3><p>我们根据路径打开文件，获取中英文序列和单词表。并将序列直接转化为 tensor，方便读取。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslateDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, en_path, zh_path</span>):</span><br><span class="line">        en_seqs, self.en_vocab = get_seq_and_vocab(en_path, get_tokenizer(<span class="string">&quot;basic_english&quot;</span>))</span><br><span class="line"></span><br><span class="line">        zh_seqs, self.zh_vocab = get_seq_and_vocab(zh_path, zh_simple_tokenizer)</span><br><span class="line"></span><br><span class="line">        self.items = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(en_seqs)):</span><br><span class="line">            en_seq = en_seqs[i]</span><br><span class="line">            zh_seq = zh_seqs[i]</span><br><span class="line"></span><br><span class="line">            src = en_seq</span><br><span class="line">            tgt = zh_seq[:-<span class="number">1</span>]</span><br><span class="line">            pdt = zh_seq[<span class="number">1</span>:]</span><br><span class="line"></span><br><span class="line">            self.items.append((</span><br><span class="line">                torch.as_tensor(src),</span><br><span class="line">                torch.as_tensor(tgt),</span><br><span class="line">                torch.as_tensor(pdt),</span><br><span class="line">            ))</span><br></pre></td></tr></table></figure></p>
+<p>其中 <code>get_seq_and_vocab</code> 方法用于根据路径打开文件，根据第二个参数选择的 tokenizer 进行分词。构建序列和单词表。</p>
+<p>我们首先定义了存储序列的列表和记录词频的字典。<code>Counter</code> 类可以直接根据列表统计列表中元素频率。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_seq_and_vocab</span>(<span class="params">file_path, tokenizer</span>):</span><br><span class="line">    token_freq = Counter()</span><br><span class="line">    seqs = []</span><br></pre></td></tr></table></figure></p>
+<p>打开文件，依次读取文件中每一行，通过 <code>tokenizer</code> 进行分词。序列保存到 <code>seqs</code> 中。更新词频。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;UTF-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">with</span> tqdm(f) <span class="keyword">as</span> tqdm_file:</span><br><span class="line">        tqdm_file.set_description(<span class="string">f&quot;Load <span class="subst">&#123;file_path&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> idx, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(tqdm_file):</span><br><span class="line">            <span class="keyword">if</span> args.debug <span class="keyword">and</span> idx &gt; <span class="number">10000</span>:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">            tokens_in_line = tokenizer(line)</span><br><span class="line">            tokens_in_line.insert(<span class="number">0</span>, <span class="string">&#x27;&lt;sos&gt;&#x27;</span>)</span><br><span class="line">            tokens_in_line.append(<span class="string">&#x27;&lt;eos&gt;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">            seqs.append(tokens_in_line)</span><br><span class="line"></span><br><span class="line">            token_freq += Counter(tokens_in_line)</span><br></pre></td></tr></table></figure></p>
+<p>根据词频生成单词表，把单词序列转化为数值序列。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">v = vocab(token_freq, <span class="number">5</span>, [<span class="string">&#x27;&lt;pad&gt;&#x27;</span>, <span class="string">&#x27;&lt;unk&gt;&#x27;</span>, <span class="string">&#x27;&lt;sos&gt;&#x27;</span>, <span class="string">&#x27;&lt;eos&gt;&#x27;</span>])</span><br><span class="line">v.set_default_index(v[<span class="string">&#x27;&lt;unk&gt;&#x27;</span>])</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> idx <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(seqs)):</span><br><span class="line">    seqs[idx] = [v[token] <span class="keyword">for</span> token <span class="keyword">in</span> seqs[idx]]</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> seqs, v</span><br></pre></td></tr></table></figure></p>
+<p>英文分词可以使用 pytorch 自带的 <code>get_tokenizer(&quot;basic_english&quot;)</code>。中文分词可以采用如下方式。此方法考虑了中文中掺杂英文的情况。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">zh_simple_tokenizer</span>(<span class="params">line</span>):</span><br><span class="line">    <span class="keyword">return</span> re.findall(<span class="string">&quot;[a-zA-Z]+|[^\s]&quot;</span>, line)</span><br></pre></td></tr></table></figure></p>
+<p>最后在 <code>TranslateDataset</code> 中，简单实现 <code>__getitem__</code> 和 <code>__len__</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    <span class="keyword">return</span> self.items[item]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(self.items)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）保存和加载处理后的数据"><a href="#（2）保存和加载处理后的数据" class="headerlink" title="（2）保存和加载处理后的数据"></a>（2）保存和加载处理后的数据</h3><p>本数据集规模较大，如果每次都要重新进行分词处理的话需要耗费不少时间。因此可以只处理一次，以后只需调用之前处理后的结果即可。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> os.path.exists(args.processed_dataset_path):</span><br><span class="line">    dataset = torch.load(args.processed_dataset_path)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    dataset = TranslateDataset(args.en_path, args.zh_path)</span><br><span class="line">    torch.save(dataset, args.processed_dataset_path)</span><br></pre></td></tr></table></figure>
+<h3 id="（3）划分数据集"><a href="#（3）划分数据集" class="headerlink" title="（3）划分数据集"></a>（3）划分数据集</h3><p>因为本数据集只有完整的文件，没有进行划分，所以还需要对加载后的 <code>dataset</code> 进行划分。我们需要使用 <code>random_split</code> 方法实现。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">train_set, dev_set, test_set = random_split(</span><br><span class="line">    dataset,</span><br><span class="line">    [train_size, dev_size, test_size],</span><br><span class="line">    generator=torch.Generator().manual_seed(<span class="number">42</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>需要注意的是，<code>random_split</code> 会进行随机划分。随机划分有助于避免过拟合，但是如果每次运行程序划分的方式都不同，就会导致信息泄露。为了使每次运行时的随机划分结果一致，需要指定随机划分的种子，即代码中的 <code>generator=torch.Generator().manual_seed(42)</code>。</p>
+<h2 id="三、模型"><a href="#三、模型" class="headerlink" title="三、模型"></a>三、模型</h2><h3 id="（1）整体结构"><a href="#（1）整体结构" class="headerlink" title="（1）整体结构"></a>（1）整体结构</h3><p>我们要实现一个机器翻译模型。它的输入是源语句 src，和经过右移的目标语句 tgt，输出是包含结束词的目标语句 predict。</p>
+<p>首先，我们将输入的序列扩展为词向量<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslationModel</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, <span class="built_in">input</span></span>):</span><br><span class="line">        src, tgt = <span class="built_in">input</span>  <span class="comment"># (seq1_len, batch_size) (seq2_len, batch_size)</span></span><br><span class="line">        src_embed = self.embed(src)  <span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">        tgt_embed = self.embed(tgt)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>随后，我们为词向量添加位置编码。采取此操作的原因是注意力模型中整个序列被同时输入，模型无法得知位置信息，因此需要添加位置编码。具体的添加位置编码的方式会在后面说明。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">src_embed_encoded = self.positional_encoding(src_embed)</span><br><span class="line"><span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">tgt_embed_encoded = self.positional_encoding(tgt_embed)</span><br><span class="line"><span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>我们根据输入 <code>src</code> 和 <code>tgt</code> 确定各类掩码，并将掩码与 <code>src_embed_encoded</code>、<code>tgt_embed_encoded</code> 一同输入到 transformer 中。</p>
+<p><code>tgt_mask</code> 用于处理预测时的时序问题。因为如果将 tgt_embed_encoded 直接输入到 transformer，则 transformer 就会在同一时刻得知序列的全部信息，无法实现逐词生成。</p>
+<p><code>src_pad_mask</code> 和 <code>src_pad_mask</code> 用于将 <code>&#39;&lt;pad&gt;&#39;</code> 忽略。避免填充词影响模型的权重。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tgt_mask = get_tgt_mask(tgt.shape[<span class="number">0</span>])  <span class="comment"># (seq2_len, seq2_len)</span></span><br><span class="line">src_pad_mask = get_pad_mask(src)  <span class="comment"># (seq1_len, batch_size, embed_size)</span></span><br><span class="line">tgt_pad_mask = get_pad_mask(tgt)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br><span class="line"></span><br><span class="line">out = self.transformer(</span><br><span class="line">    src_embed_encoded,</span><br><span class="line">    tgt_embed_encoded,</span><br><span class="line">    tgt_mask=tgt_mask,</span><br><span class="line">    src_key_padding_mask=src_pad_mask,</span><br><span class="line">    tgt_key_padding_mask=tgt_pad_mask,</span><br><span class="line">)  <span class="comment"># (seq2_len, batch_size, embed_size)</span></span><br></pre></td></tr></table></figure></p>
+<p>最后将 transformer 的输出经过多层感知机调整为适当的形状，输出预测结果。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">predict = self.multi(out)  <span class="comment"># (seq2_len, batch_size, class_num)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> predict</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）词向量"><a href="#（2）词向量" class="headerlink" title="（2）词向量"></a>（2）词向量</h3><p>我们定义嵌入层为 <code>TokenEmbedding</code>，而不是直接使用 <code>nn.Embedding</code>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TranslationModel</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size, class_num, dropout</span>):</span><br><span class="line">        <span class="built_in">super</span>(TranslationModel, self).__init__()</span><br><span class="line">        self.embed = TokenEmbedding(vocab_size, embed_size)</span><br></pre></td></tr></table></figure></p>
+<p><code>TokenEmbedding</code> 定义如下。很容易看出，我们只是将 <code>Embedding</code> 输出的词向量乘以了 $\sqrt{\text{emb size}}$。这样做更便于训练。具体原因可见<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/442509602">Transformer 3. word embedding 输入为什么要乘以 embedding size的开方</a>。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TokenEmbedding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size</span>):</span><br><span class="line">        <span class="built_in">super</span>(TokenEmbedding, self).__init__()</span><br><span class="line"></span><br><span class="line">        self.embedding = nn.Embedding(vocab_size, embed_size)</span><br><span class="line">        self.embed_size = embed_size</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, seq</span>):</span><br><span class="line">        <span class="keyword">return</span> self.embedding(seq) * math.sqrt(self.embed_size)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）位置编码"><a href="#（3）位置编码" class="headerlink" title="（3）位置编码"></a>（3）位置编码</h3><p>在模型中，我们随后定义了位置编码层<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.positional_encoding = PositionalEncoding(embed_size, dropout)</span><br></pre></td></tr></table></figure></p>
+<p><code>PositionalEncoding</code> 定义如下。位置编码得到的结果是一个形状为 <code>(max_len, 1, embed_size)</code> 的张量 $pos<em>embedding$。其中 $p</em>{i1}$ 表示第 $i$ 个位置的编码。将该编码与原来的 <code>seq_embed</code> 相加，就得到了经过位置编码后的词向量序列。</p>
+<p>关于位置编码的原理，可以参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/338592312">一文教你彻底理解Transformer中Positional Encoding</a>。该编码使用正余弦函数生成，可以保证不同位置的编码唯一。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, embed_size, dropout, max_len=<span class="number">5000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line"></span><br><span class="line">        den = torch.exp(- torch.arange(<span class="number">0</span>, embed_size, <span class="number">2</span>) * math.log(<span class="number">10000</span>) / embed_size)</span><br><span class="line">        pos = torch.arange(<span class="number">0</span>, max_len).reshape(max_len, <span class="number">1</span>)</span><br><span class="line">        pos_embedding = torch.zeros((max_len, embed_size))</span><br><span class="line">        pos_embedding[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(pos * den)</span><br><span class="line">        pos_embedding[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(pos * den)</span><br><span class="line">        pos_embedding = pos_embedding.unsqueeze(-<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        self.dropout = nn.Dropout(dropout)</span><br><span class="line">        self.register_buffer(<span class="string">&#x27;pos_embedding&#x27;</span>, pos_embedding)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, seq_embed</span>):</span><br><span class="line">        seq_embed_encoded = seq_embed + self.pos_embedding[:seq_embed.size(<span class="number">0</span>), :]</span><br><span class="line">        <span class="comment"># (seq_len, batch_size, embed_size) + (seq_len, 1, embed_size)</span></span><br><span class="line">        <span class="keyword">return</span> self.dropout(seq_embed_encoded)</span><br></pre></td></tr></table></figure>
+<h3 id="（4）掩码"><a href="#（4）掩码" class="headerlink" title="（4）掩码"></a>（4）掩码</h3><p>填充掩码用来屏蔽 <code>&#39;&lt;pad&gt;&#39;</code> 索引，是一个和输入同大小的张量，其中每一个值表示对应的位置是否需要被屏蔽。计算方式如下，进行了转置是因为 pytorch 的 transformer 要求第一维为 batch。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_pad_mask</span>(<span class="params">seq, pad_idx=<span class="number">0</span></span>):</span><br><span class="line">    <span class="keyword">return</span> (seq == pad_idx).permute(<span class="number">1</span>, <span class="number">0</span>)</span><br></pre></td></tr></table></figure></p>
+<p>后继掩码用来模拟时间步，防止模型在进行预测时查看未来的单词。我们需要用一个三角形矩阵来模拟此过程。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_tgt_mask</span>(<span class="params">size</span>):</span><br><span class="line">    mask = torch.tril(torch.ones(size, size) == <span class="number">1</span>).<span class="built_in">float</span>()</span><br><span class="line">    mask = mask.masked_fill(mask == <span class="number">0</span>, <span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>))</span><br><span class="line">    mask = mask.masked_fill(mask == <span class="number">1</span>, <span class="built_in">float</span>(<span class="number">0.0</span>))</span><br><span class="line">    mask = mask.to(args.device)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> mask</span><br></pre></td></tr></table></figure></p>
+<h2 id="四、训练"><a href="#四、训练" class="headerlink" title="四、训练"></a>四、训练</h2><p>训练时的通用步骤不再详述。只说明一些值得注意的地方。</p>
+<h3 id="（1）自定义-collate-fn"><a href="#（1）自定义-collate-fn" class="headerlink" title="（1）自定义 collate_fn"></a>（1）自定义 collate_fn</h3><p>因为序列长度不定，所以需要自行对其，需要自定义 <code>dataloader</code> 的 <code>collate_fn</code>。在其中，使用了 <code>pad_sequence</code> 对一批序列进行对齐。<code>pad_sequence</code> 的默认填充值为 0。如果 <code>&#39;&lt;pad&gt;&#39;</code> 的对应值不是 0，还需要自行设定。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">collate_fn</span>(<span class="params">data</span>):</span><br><span class="line">    src, tgt, pdt = <span class="built_in">zip</span>(*data)</span><br><span class="line">    src = pad_sequence(src)</span><br><span class="line">    tgt = pad_sequence(tgt)</span><br><span class="line">    pdt = pad_sequence(pdt)</span><br><span class="line">    <span class="keyword">return</span> [src, tgt], pdt</span><br></pre></td></tr></table></figure></p>
+<h3 id="（2）交叉熵损失函数-ignore-index-的设置"><a href="#（2）交叉熵损失函数-ignore-index-的设置" class="headerlink" title="（2）交叉熵损失函数 ignore_index 的设置"></a>（2）交叉熵损失函数 ignore_index 的设置</h3><p>虽然我们使用 <code>&#39;&lt;pad&gt;&#39;</code> 进行了对齐，但是 <code>&#39;&lt;pad&gt;&#39;</code> 还没有被认为是特殊的符号。此时在损失函数中，<code>&#39;&lt;pad&gt;&#39;</code> 与其他字符的预测差距还是会被计算到损失之中。又因为 <code>&#39;&lt;pad&gt;&#39;</code>会在序列中经常出现，所以如果不特殊处理 <code>&#39;&lt;pad&gt;&#39;</code>，则训练后预测的结果便一定总是 <code>&lt;pad&gt;</code>。</p>
+<p>因此我们希望损失函数忽略 <code>&#39;&lt;pad&gt;&#39;</code>。只需要设定 <code>ignore_index</code> 参数。如下所示将 <code>ignore_index</code> 设定为 <code>&#39;&lt;pad&gt;&#39;</code> 对应的数值。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">loss_fn = nn.CrossEntropyLoss(ignore_index=dataset.zh_vocab[<span class="string">&#x27;&lt;pad&gt;&#x27;</span>]).to(args.device)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）计算损失函数时对输入进行处理"><a href="#（3）计算损失函数时对输入进行处理" class="headerlink" title="（3）计算损失函数时对输入进行处理"></a>（3）计算损失函数时对输入进行处理</h3><p>阅读一下 pytorch 文档中关于交叉熵损失函数的说明，就可以得知我们的模型默认的输出不能直接传入损失函数进行计算，必须重新设定维度。</p>
+<p>模型的预测形状为 <code>(seq_len, batch_size, class_num)</code>， 需要的输入为 <code>(batch_size, class_num, seq_len)</code>；目标的形状为 <code>(seq_len, batch_size)</code>，需要的输入为 <code>(batch_size, seq_len)</code>。因此重新定义了 <code>criterion</code> 方法作为损失函数，使用 <code>permute</code> 方法调整维度。将 <code>criterion</code> 传入 <code>train</code>、<code>eval</code> 方法中作为损失函数。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">criterion</span>(<span class="params">predict, target</span>):</span><br><span class="line">    <span class="keyword">return</span> loss_fn(predict.permute(<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>), target.permute(<span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(args.max_epoch):</span><br><span class="line">    global_epoch += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    train(train_loader, net, criterion, optim)</span><br><span class="line"></span><br><span class="line">    save_checkpoint(net, optim, global_epoch, global_train_step)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;dev&quot;</span>, dev_loader, net, criterion)</span><br><span class="line"></span><br><span class="line">    evaluate(<span class="string">&quot;test&quot;</span>, test_loader, net, criterion)</span><br></pre></td></tr></table></figure></p>
+<h3 id="（4）训练结果"><a href="#（4）训练结果" class="headerlink" title="（4）训练结果"></a>（4）训练结果</h3><img src="/posts/6afa4e5d/train_loss.png" class="" title="train_loss">
+<img src="/posts/6afa4e5d/train_acc.png" class="" title="train_acc">
+<img src="/posts/6afa4e5d/test_loss.png" class="" title="test_loss">
+<img src="/posts/6afa4e5d/test_acc.png" class="" title="test_acc">
+<blockquote>
+<p>本来应该用机器翻译的评价指标，如 BLEU 的，但是一开始没有考虑到</p>
+<p>从图中可以看到，模型的翻译能力并不算强，并且还有继续训练下去的空间。为什么不继续训练了呢？因为 Colab 时间用完了<code>:(</code><br><img src="/posts/6afa4e5d/example.png" class="" title="example"></p>
+</blockquote>
+<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><p>本次实践了 transformer 模型的构建和训练。在训练过程中学到了一些知识，主要有</p>
+<ul>
+<li>transformer 模型的结构</li>
+<li>注意力的掩码机制</li>
+<li>位置编码</li>
+<li>损失函数 ignore_index 的使用</li>
+<li>数据集处理后的存储和加载</li>
+<li>通过scheduler动态调整学习率的方法（本次未使用，之后应该会应用）</li>
+<li>深度学习上层架构，如 ignite、lightning（本次未使用，之后应该会应用）</li>
+</ul>
+<p>也出现了一些问题</p>
+<ul>
+<li>未考虑张量形状，导致出现了“位置编码时为不同 batch 赋予了不同的编码“的bug</li>
+<li>因为上一条内容浪费了大量的训练时间</li>
+<li>未能设置适当的学习率，导致训练缓慢</li>
+<li>没有使用 BLEU 等指标进行评价</li>
+<li>没有对中文进行分词，一字多义可能增加了训练难度</li>
+</ul>
+<p>希望下一次避免犯下类似的错误。</p>
+<h2 id="六、参考资料"><a href="#六、参考资料" class="headerlink" title="六、参考资料"></a>六、参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/264468193">【通俗易懂】大白话讲解 Transformer</a></li>
+<li><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/beginner/translation_transformer.html">Language Translation with nn.Transformer and torchtext</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/3c5d5cf3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1448,146 +1591,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/b2ab0f69/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/b2ab0f69/" class="post-title-link" itemprop="url">机器学习nlp基本知识</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-01-17 21:01:27" itemprop="dateCreated datePublished" datetime="2023-01-17T21:01:27+08:00">2023-01-17</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、自然语言处理（nlp）简介"><a href="#一、自然语言处理（nlp）简介" class="headerlink" title="一、自然语言处理（nlp）简介"></a>一、自然语言处理（nlp）简介</h2><p><strong>一份思绪奔驰的前言：</strong><br>语言的边界就是思想的边界。如果从人类所具有的一切中挑出一个事物，让它来显示出人与其他生物的不同之处，那一定是语言。语言是我们用来思考和交流的方式，我们的一切文明都构筑在这简单的一维序列中，可我们却几乎不曾深入了解过它。</p>
-<p>有人说，我们不曾真正的理解语言，我们所有对语言的运用和理解，不过建立在婴儿及此后对他人的声音与书本上符号的猜测上。或许正是如此，但是我们依旧要做出猜测，向着语言的神秘进发，这是我们的信念，是我们认识我们的认识的开始。</p>
-<h3 id="（1）作为语言学的-nlp"><a href="#（1）作为语言学的-nlp" class="headerlink" title="（1）作为语言学的 nlp"></a>（1）作为语言学的 nlp</h3><p>早在计算机的上古时代，深度学习还未诞生的时候，自然语言处理作为语言学的一个领域就已诞生了，这个领域也被语言学家们称为计算机语言学。两个名称在一起，才表达出 nlp 的真正含义——通过机器处理语言。nlp 最早的研究方向是机器翻译，那时人们人为地总结语言的规律，对词汇进行标注，对语句进行句法分析。结果是人为的规则覆盖面不足，所设计的系统无法扩展。</p>
-<h3 id="（2）作为机器学习研究领域的-nlp"><a href="#（2）作为机器学习研究领域的-nlp" class="headerlink" title="（2）作为机器学习研究领域的 nlp"></a>（2）作为机器学习研究领域的 nlp</h3><p>随着计算机的发展，出现了基于传统统计学习模型的自然语言处理方式。这些原始的模型较之之前有所进步，但受限于计算机性能，统计方法也遭遇了瓶颈。</p>
-<p>直到近年来算力的发展，使得深度神经网络成为可能。深度神经网络结构中潜在的学习能力，在 nlp 领域发挥了作用。通过多维数据表示语言和含义，深度学习以高效且与人类认知过程相似的方式发挥了巨大的效果。</p>
-<h2 id="二、词向量"><a href="#二、词向量" class="headerlink" title="二、词向量"></a>二、词向量</h2><p>词汇作为符号，其形象是离散的；但词汇的所指作为定义，其含义却是丰富而连续的。比如说“母亲”这个词汇，既表示了这个概念所对应的事物是在一种血缘关系中的一方（她是孩子的母亲）；又表示了这个事物是能繁殖者（母鸡）；在一定程度上，同样表示了非血缘关系，但具有类似血缘关系的行为的个体（大地是母亲）。</p>
-<blockquote>
-<p>偏个题，《来自深渊》中有对生骸语的类似的描述.</p>
-</blockquote>
-<p>因此，我们就不能再将词汇只作为离散的符号看待了，不能认为词汇之间是相互排斥的关系了。我们需要将词汇看做某些元含义在不同程度下的集合，或者从机器学习的角度，把这些元含义称作特征。那么也就是说，我们将每个词汇都看成一定维度的向量。</p>
-<p>但是我们要如何确定特征呢？特征的数量又有多少？如果人工地确定特征为“存在、含义、物质、精神”等等，这一过程将耗费精力且永无止境。实际上按照机器学习的一般策略，我们只需要通过统计文本，自发的构建词汇向量即可。</p>
-<p>这一方面有许多算法，如 N-gram 算法，GloVe 算法等等。另外也可以在深度学习的过程中利用反向传播自发的调整词向量，在 pytorch 中这通过 Embedding 层来实现。</p>
-<h2 id="三、循环神经网络（RNN）及其变体"><a href="#三、循环神经网络（RNN）及其变体" class="headerlink" title="三、循环神经网络（RNN）及其变体"></a>三、循环神经网络（RNN）及其变体</h2><h3 id="（1）朴素-RNN"><a href="#（1）朴素-RNN" class="headerlink" title="（1）朴素 RNN"></a>（1）朴素 RNN</h3><p>考虑我们说话或写作时的基本逻辑。对于一段语言序列，在之后的词汇总是和之前的词汇有关，未表达的部分总是已表达部分的补全或补充。循环神经网络的机制类似，我们需要用一个或多个隐藏变量作为对之前语句含义的表示，在输出下一个词汇时，会让隐藏变量参与决策；同时每多说完一个词汇，这个词汇也会更新隐藏变量，以实现表达含义的更新。</p>
-<p>具体来说，我们用 $t$ 表示时间序列，对某一时间 $t$，$x_t$ 表示输入，$y_t$ 表示输出，$h_t$ 表示隐含状态。那么朴素的 RNN 网络即：</p>
-<script type="math/tex; mode=display">
-    h_t = tanh(W^{(hx)} x_t + W^{(hh)} h_{t-1})</script><script type="math/tex; mode=display">
-    y_t = W^{(S)} h_t</script><blockquote>
-<p>容易看出 RNN 和 Moore 自动机有相似之处。</p>
-</blockquote>
-<p>其中 $W^{(hx)}, W^{(hh)}, W^{(S)} h_t$ 分别为三个不同的矩阵。RNN 的激活函数也可以选择 <code>ReLU</code>。同时可以为激活函数中的部分添加偏置（bias）$b^{(hx)}, b^{(hh)}$ 等。</p>
-<h3 id="（2）GRU"><a href="#（2）GRU" class="headerlink" title="（2）GRU"></a>（2）GRU</h3><p>但是简单的 RNN 也存在着问题，那就是其结构不能很好地控制对不同词汇的关注程度以及当前内容和上文的关系。我们希望设计一种机制，在 RNN 的基础上做到对上下文关系的更好掌握。其中一种机制就是 GRU（Gate Recurrent Unit，门循环单元），它是对 RNN 的推广。</p>
-<p>首先我们定义运算符 $\circ$，$k \circ M$，其中 $k$ 为数字 $M$ 为矩阵，表示对 $M$ 中每个元素均乘以 $k$。</p>
-<p>那么对某一时间 $t$，$x_t$ 表示输入，$h_t$ 表示隐含状态，我们定义更新门 $z_t$ 和重置门 $r_t$</p>
-<script type="math/tex; mode=display">
-    z_t = \sigma (W^{(z)} x_t + U^{(z)} h_{t-1})</script><script type="math/tex; mode=display">
-    r_t = \sigma (W^{(r)} x_t + U^{(r)} h_{t-1})</script><p>再令</p>
-<script type="math/tex; mode=display">
-    \tilde{h}_t = tanh (W x_t + r_t \circ U h_{t-1})</script><script type="math/tex; mode=display">
-    h_t = z_t \circ h_{t-1} + (1 - z_t) \circ \tilde{h}_t</script><p>我们就定义了隐含状态的更新方式，求输出的方式与 RNN 相同。</p>
-<p>所以 GRU 到底做了什么呢？GRU 实际上等同于在 RNN 上增加了两个连续的开关 $z<em>t$ 和 $r_t$。注意这两个变量由 Sigmoid 函数得到，他们的范围是 0~1。我们可以令 $z_t = 0, r_t = 1$，此时就有 $h_t = tanh (W x_t + U h</em>{t-1})$，这与 RNN 中相同。</p>
-<p>与 RNN 相比，我们在学习过程中多训练了两个开关。它们的取值暗示了语句中的某些结构。直观上讲，重置门 $r_t$ 反映了当前词汇与上文含义之间的关系和相互作用，当 $r_t = 0$ 时，当前词汇的含义不会受到上文意思的影响。而更新门 $z_t$ 则反映了当前词汇对整体语义的影响，当 $z_t = 0$ 时，更新后的语义将只与当前词汇的意思有关。</p>
-<p>更简单来说：</p>
-<ul>
-<li>$r_t$ 反映了上文对当前词汇的作用程度（如 “你妈” 的意思受到语境的影响）</li>
-<li>$z_t$ 反映了当前词汇对整体语义的影响程度（如词汇 “但是” 之后的部分更能反映整体语义）</li>
-</ul>
-<h3 id="（3）LSTM"><a href="#（3）LSTM" class="headerlink" title="（3）LSTM"></a>（3）LSTM</h3><p>我们还可以对 RNN 模型做相似但不同的改动，形成 LSTM （Long Short-Term Memory，长<strong>短期</strong>记忆）模型，这将使模型更加复杂，但同时也使得对前文语义的记忆得以更加长久的保存。</p>
-<p>与 GRU 类似，首先我们定义三个门，分别是输入门 $i_t$，遗忘门 $f_t$ 和输出门 $o_t$。</p>
-<script type="math/tex; mode=display">
-    i_t = \sigma (W^{(i)} x_t + U^{(i)} h_{t-1})</script><script type="math/tex; mode=display">
-    f_t = \sigma (W^{(f)} x_t + U^{(f)} h_{t-1})</script><script type="math/tex; mode=display">
-    o_t = \sigma (W^{(o)} x_t + U^{(o)} h_{t-1})</script><p>再定义记忆格（memory cell，或记忆细胞？）$c_t$，计算方式为</p>
-<script type="math/tex; mode=display">
-    \tilde{c}_t = tanh(W^{(c)}  x_t + U^{(c)} h_{t-1})</script><script type="math/tex; mode=display">
-    c_t = f_t \circ c_{t-1} + i_t \circ \tilde{c}_t</script><p>最后定义隐藏状态</p>
-<script type="math/tex; mode=display">
-    h_t = o_t \circ tanh(c_t)</script><p>LSTM 的特点是采用了两个隐藏状态 $c_t$ 和 $h_t$。从直觉上、或哲学上讲，这反映了两种不同的意义。一是作为表层的，被表达出来的语句的语义；另一是作为深层的，作为记忆的整体的意味。当我们在诉说或理解时，我们首先所接触到的是作为连续序列的语义，这一浅表的概念为了被更深入的理解，它就进入到记忆的层次，并再次从其中返回，在记忆上留下痕迹的同时带来新的表达并言说或写作下来。因此，我们可以将各个门理解为：</p>
-<ul>
-<li>输入门反映了新的词汇对记忆的影响</li>
-<li>遗忘门反映了旧的记忆在语言环境的更新下被抛弃的程度</li>
-<li>输出门反映了由记忆到能言说的语言的转变的过程。</li>
-</ul>
-<p>从这一模型中似乎也能体会出流利但没有内涵的口才与深思熟虑的话语间的差别。</p>
-<h3 id="（4）注意力机制"><a href="#（4）注意力机制" class="headerlink" title="（4）注意力机制"></a>（4）注意力机制</h3><p>我们试图让模型拥有更长的记忆，但是不管什么模型，应用什么样的隐藏状态，能存储的信息终归是有限的。只要时间序列足够长，总归会忘记最开始的内容。</p>
-<p>注意力机制能够解决这一问题。它的想法是，既然当下的隐藏状态中不包含对很久之前内容的记忆，那我只要选择包含之前内容的隐藏状态不就可以了吗？但是为了保持模型的可微性，我们不能仅仅离散的选择一些包含需要的内容的前面的隐藏状态，而是按照一定方法依据权重，选择在此之前的所有的隐藏状态。</p>
-<blockquote>
-<p>这实际上形成了一种类似于内存访问的机制。只不过内存是离散的地址和数据，而注意力机制却是连续的“地址”和“数据”。也有依照这一对应关系进一步推广的研究，如神经图灵机，但在此不做赘述。</p>
-</blockquote>
-<p>注意力机制本身的实现如下。首先我们要以前一个隐藏状态 $h_{t-1}$ 作为评价其他更早的隐藏状态 $\overline{h}_s$ 的基准。对每一个 $\overline{h}_s$ 实施评价函数</p>
-<script type="math/tex; mode=display">
-    score(h_{t-1}, \overline{h}_s)</script><p>接着运用 softmax 函数获取百分比权重</p>
-<script type="math/tex; mode=display">
-    a_t(s) = \frac{e^{score(s)}}{\sum_{s'}score(s')}</script><p>然后按照权重对隐藏状态进行合成即可。</p>
-<script type="math/tex; mode=display">
-    c_t = \sum_s a_t(s) \overline{h}_s</script><p>对于评价函数，可以有多种选择，其中比较好的一种为</p>
-<script type="math/tex; mode=display">
-    score(h_{t-1}, \overline{h}_s) = h_t^T W_a \overline{h}_s</script><p>$W_a$ 也可以在训练的过程中不断学习优化。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1659,14 +1662,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-count">65</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -1710,7 +1713,7 @@
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2023</span>
+  <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

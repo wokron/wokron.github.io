@@ -159,6 +159,166 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/903497ec/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/903497ec/" class="post-title-link" itemprop="url">系统编程之信号及信号处理</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-13 15:30:11" itemprop="dateCreated datePublished" datetime="2022-11-13T15:30:11+08:00">2022-11-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、信号简介"><a href="#一、信号简介" class="headerlink" title="一、信号简介"></a>一、信号简介</h2><h3 id="（1）信号含义"><a href="#（1）信号含义" class="headerlink" title="（1）信号含义"></a>（1）信号含义</h3><p>软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。</p>
+<h3 id="（2）信号分类"><a href="#（2）信号分类" class="headerlink" title="（2）信号分类"></a>（2）信号分类</h3><p>可以使用<code>kill -l</code>命令查看当前系统支持的所有信号：</p>
+<img src="/posts/903497ec/signal.png" class="" title="signal">
+<p>信号值小于 SIGRTMIN（&lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。</p>
+<h3 id="（3）信号的产生"><a href="#（3）信号的产生" class="headerlink" title="（3）信号的产生"></a>（3）信号的产生</h3><p>信号可以由一下几种方式产生：</p>
+<ul>
+<li>键盘事件：ctrl+c ctrl+\ ctrl+Z 等</li>
+<li>非法内存：如果内存管理出错，系统就会发送一个信号进行处理</li>
+<li>硬件检测到异常：如段错误，除 0，总线错误等</li>
+<li>环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统</li>
+<li>系统调用：如调用<code>kill</code>，<code>raise</code>，<code>sigsend</code> ，<code>sigqueue</code>函数等</li>
+</ul>
+<h3 id="（4）信号处理"><a href="#（4）信号处理" class="headerlink" title="（4）信号处理"></a>（4）信号处理</h3><p>进程可以通过三种方式响应信号：</p>
+<ul>
+<li>接受默认处理</li>
+<li>忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP）</li>
+<li>捕捉信号并执行信号处理程序</li>
+</ul>
+<h2 id="二、信号操作"><a href="#二、信号操作" class="headerlink" title="二、信号操作"></a>二、信号操作</h2><h3 id="（1）信号发送"><a href="#（1）信号发送" class="headerlink" title="（1）信号发送"></a>（1）信号发送</h3><p>系统调用中用于发送信号的函数有 <code>kill()</code> <code>raise()</code> <code>abort()</code> 等。</p>
+<h4 id="kill-函数"><a href="#kill-函数" class="headerlink" title="kill() 函数"></a><code>kill()</code> 函数</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">kill</span><span class="params">(<span class="type">pid_t</span> pid, <span class="type">int</span> sig)</span>;</span><br><span class="line"><span class="comment">//第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号</span></span><br></pre></td></tr></table></figure>
+<p>参数 pid 会影响 kill()函数的作用，取值分为以下四种情况</p>
+<ol>
+<li>若 pid&gt;0，则发送信号 sig 给进程号为 pid 的进程。</li>
+<li>若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。</li>
+<li>若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。</li>
+<li>若 pid&lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。</li>
+</ol>
+<h4 id="segqueue-函数"><a href="#segqueue-函数" class="headerlink" title="segqueue() 函数"></a><code>segqueue()</code> 函数</h4><p>sigqueue()函数支持发送信号的同时传递参数，需要配合 <code>sigaction()</code> 函数一起使用。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">sigqueue</span><span class="params">(<span class="type">pid_t</span> pid, <span class="type">int</span> sig, <span class="type">const</span> <span class="keyword">union</span> sigval value)</span>;</span><br><span class="line"><span class="comment">//第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号，第三个参数于指定传递的数据</span></span><br></pre></td></tr></table></figure><br>参数 value 用于指定伴随信号传递的数据，为 sigval 联合体，该联合体的定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">union</span> <span class="title">sigval</span> &#123;</span></span><br><span class="line"><span class="type">int</span>   sival_int;</span><br><span class="line"><span class="type">void</span> *sival_ptr;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如下的代码使用 <code>segqueue</code> 函数实现了数据的进程间传输</p>
+</blockquote>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./B &amp; <span class="comment"># 此时，输出进程 B 的 PID 号。</span></span><br><span class="line">./A processB_PID 123456 <span class="comment"># 第一个参数表示进程 B 的 PID，第二个参数为要传输的（数字）</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//code of A</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">pid_t</span> pid = atoi(argv[<span class="number">1</span>]);</span><br><span class="line">	<span class="type">int</span> stuID = atoi(argv[<span class="number">2</span>]);</span><br><span class="line">    <span class="class"><span class="keyword">union</span> <span class="title">sigval</span> <span class="title">v</span>;</span></span><br><span class="line">    v.sival_int = stuID;</span><br><span class="line">    sigqueue(pid, SIGINT, v);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//code of B</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="type">void</span> <span class="title function_">handler</span><span class="params">(<span class="type">int</span>, <span class="type">siginfo_t</span> *, <span class="type">void</span>*)</span>;</span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">act</span>;</span></span><br><span class="line">    act.sa_sigaction = handler;</span><br><span class="line">    sigemptyset(&amp;act.sa_mask);</span><br><span class="line">    act.sa_flags = SA_SIGINFO;</span><br><span class="line">    </span><br><span class="line">    sigaction(SIGINT, &amp;act, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">for</span>(; ;)</span><br><span class="line">      pause();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="type">void</span> <span class="title function_">handler</span><span class="params">(<span class="type">int</span> sig, <span class="type">siginfo_t</span> *info, <span class="type">void</span> *ctx)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;num received:%d\n&quot;</span>, info-&gt;si_value.sival_int);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="（2）信号捕捉"><a href="#（2）信号捕捉" class="headerlink" title="（2）信号捕捉"></a>（2）信号捕捉</h3><p>若进程捕捉某信号后，想要让其执行非默认的处理函数，则需要为该信号注册信号处理函数。进程的信号是在内核态下处理的，内核为每个进程准备了一个信号向量表，其中记录了每个信号所对应的信号处理函数。Linux 系统为用户提供了两个捕捉信号的函数，即 <code>signal()</code> 和 <code>sigaction()</code> 两个函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="title function_">void</span> <span class="params">(*<span class="type">sighandler_t</span>)</span><span class="params">(<span class="type">int</span>)</span>;</span><br><span class="line"><span class="type">sighandler_t</span> <span class="title function_">signal</span><span class="params">(<span class="type">int</span> signum,<span class="type">sighandler_t</span> handler)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//第一个参数表示信号编号，第二个参数一般表示信号处理函数的函数指针，除此之外还可以为SIG_IGN和SIG_DEL</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">sigaction</span><span class="params">(<span class="type">int</span> signum,<span class="type">const</span> <span class="keyword">struct</span> sigaction* act,<span class="type">const</span> <span class="keyword">struct</span> sigaction* oldact)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//第一个参数表示信号编号，第二个为传入参数，包含自定义处理函数和其他信息，第三个参数为传出参数，包含旧处理函数等信息</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如下的代码通过信号实现了异步回收子进程。避免了 <code>wait()</code> 函数回收子进程时对父进程的阻塞。</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="type">void</span> <span class="title function_">collect</span><span class="params">(<span class="type">int</span> sig)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    signal(SIGCHLD, collect);</span><br><span class="line">    <span class="type">pid_t</span> pid;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">5</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        pid = fork();</span><br><span class="line">        <span class="keyword">if</span> (pid == <span class="number">0</span>) <span class="comment">// child</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;child pid:%d\n&quot;</span>, getpid());</span><br><span class="line">            fflush(<span class="built_in">stdout</span>);</span><br><span class="line">            <span class="built_in">exit</span>(i);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 模拟父进程继续执行</span></span><br><span class="line">    <span class="type">int</span> time = <span class="number">10</span>;</span><br><span class="line">    <span class="keyword">while</span> ((time = sleep(time)) != <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">collect</span><span class="params">(<span class="type">int</span> sig)</span></span><br><span class="line">&#123;</span><br><span class="line">   signal(SIGCHLD, collect);</span><br><span class="line">   <span class="type">int</span> status;</span><br><span class="line">   <span class="type">pid_t</span> pid;</span><br><span class="line">   <span class="keyword">while</span> ((pid = waitpid(<span class="number">-1</span>, &amp;status, WNOHANG)) &gt; <span class="number">0</span>)</span><br><span class="line">   &#123;</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">&quot;child collected, pid:%d, status:%d\n&quot;</span>,</span><br><span class="line">         pid, WEXITSTATUS(status));</span><br><span class="line">      fflush(<span class="built_in">stdout</span>);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="（3）信号屏蔽"><a href="#（3）信号屏蔽" class="headerlink" title="（3）信号屏蔽"></a>（3）信号屏蔽</h3><p>信号屏蔽机制是用于解决常规信号不可靠这一问题。在进程的 PCB 中存在两个信号集，分别为信号掩码和未决信号集。两个信号集实质上都是位图，其中每一位对应一个信号，若信号掩码某一位为 1，则其对应的信号会被屏蔽，进入阻塞状态，此时内核会修改未决信号集中该信号对应的位为 1，表示信号处于未决状态，之后除非信号被解除屏蔽，否则内核不会再向该进程发送该信号。</p>
+<p>信号集设定函数：</p>
+<ul>
+<li><p><code>sigemptyset()</code>——将指定信号集清 0</p>
+</li>
+<li><p><code>sigfillset()</code>——将指定信号集置 1</p>
+</li>
+<li><p><code>sigaddset()</code>——将某信号加入指定信号集</p>
+</li>
+<li><p><code>sigdelset()</code>——将某信号从信号集中删除</p>
+</li>
+<li><p><code>sigismember()</code>——判断某信号是否已被加入指定信号集</p>
+</li>
+</ul>
+<p>信号集函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">sigprocmask</span><span class="params">(<span class="type">int</span> how,<span class="type">const</span> <span class="type">sigset_t</span>* <span class="built_in">set</span>,<span class="type">sigset_t</span>* oldset)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//第一个参数用于设置位操作方式，第二个参数一般为用户指定信号集，第三个参数用于保存原信号集</span></span><br><span class="line"><span class="comment">//how=SIG_BLOCK：mask=mask|set</span></span><br><span class="line"><span class="comment">//how=SIG_UNBLOCK：mask=mask&amp;~set</span></span><br><span class="line"><span class="comment">//how=SIG_SETMASK：mask=set</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如下的代码展示了信号遮蔽的使用方式。通过阻塞所有信号，避免了 printf() 函数因使用全局缓冲区而产生的异步信号不安全问题。</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">print_safe</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">sigset_t</span> <span class="built_in">set</span>;</span><br><span class="line">    <span class="comment">// 1~64 为所有信号的编号</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">64</span>; i++)</span><br><span class="line">        sigaddset(&amp;<span class="built_in">set</span>, i);</span><br><span class="line">    <span class="comment">// 阻塞所有信号</span></span><br><span class="line">    sigprocmask(SIG_BLOCK, &amp;<span class="built_in">set</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;safe print!\n&quot;</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 恢复所有信号</span></span><br><span class="line">    sigprocmask(SIG_UNBLOCK, &amp;<span class="built_in">set</span>, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="（4）定时信号"><a href="#（4）定时信号" class="headerlink" title="（4）定时信号"></a>（4）定时信号</h3><p>Linux 下的 <code>alarm()</code> 函数可以用来设置闹钟，该函数的原型为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="type">unsigned</span> <span class="type">int</span> <span class="title function_">alarm</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span> seconds)</span>;</span><br><span class="line"><span class="comment">//第一个参数seconds用来指明时间，经过seconds秒后发送SIGALRM信号给当前进程，当参数为0则取消之前的闹钟</span></span><br></pre></td></tr></table></figure>
+<p>返回值：</p>
+<ul>
+<li>如果本次调用前已有正在运行的闹钟，alarm()函数返回前一个闹钟的剩余秒数</li>
+<li>如果本次调用前无正在运行的闹钟，alarm()函数返回 0</li>
+</ul>
+<p>Linux 系统中 sleep()函数内部使用 nanosleep()函数实现，该函数与信号无关；而其他系统中可能使用 alarm()和 pause()函数实现，此时不应该混用 alarm()和 sleep()。</p>
+<blockquote>
+<p>如下的代码实现了这样的功能：程序每间隔 1 秒输出信息，当按下 ctrl+c 后，程序询问是否退出程序（此时停止输出学号），输入 Y 或 5 秒未进行任何输入则退出程序，输入 N 程序恢复运行，继续输出信息</p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">chooseIfExit</span><span class="params">(<span class="type">int</span> signal)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">doExit</span><span class="params">(<span class="type">int</span> signal)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	signal(SIGINT, chooseIfExit);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;21371326\n&quot;</span>);</span><br><span class="line">		sleep(<span class="number">1</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">chooseIfExit</span><span class="params">(<span class="type">int</span> sig)</span></span><br><span class="line">&#123;</span><br><span class="line">	signal(SIGINT, chooseIfExit);</span><br><span class="line">	signal(SIGALRM, doExit);</span><br><span class="line">	alarm(<span class="number">5</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;want to exit? (Y/N)\n&quot;</span>);</span><br><span class="line">	<span class="type">char</span> choose;</span><br><span class="line">	<span class="built_in">scanf</span>(<span class="string">&quot; %c&quot;</span>, &amp;choose);</span><br><span class="line">	<span class="keyword">if</span> (choose == <span class="string">&#x27;N&#x27;</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		alarm(<span class="number">0</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		doExit(SIGINT);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">doExit</span><span class="params">(<span class="type">int</span> signal)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;exit...\n&quot;</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="（5）计时器"><a href="#（5）计时器" class="headerlink" title="（5）计时器"></a>（5）计时器</h3><p>Linux 下的 <code>setitimer()</code> 和 <code>getitimer()</code> 系统调用可以用于访问和设置计时器，计时器在初次经过设定的时间后发出信号，也可以设置为每间隔相同的时间发出信号，该函数的原型为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">getitimer</span><span class="params">(<span class="type">int</span> which, <span class="keyword">struct</span> itimerval *curr_value)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">setitimer</span><span class="params">(<span class="type">int</span> which, <span class="type">const</span> <span class="keyword">struct</span> itimerval *<span class="keyword">restrict</span> new_value,</span></span><br><span class="line"><span class="params">                     <span class="keyword">struct</span> itimerval *<span class="keyword">restrict</span> old_value)</span>;</span><br></pre></td></tr></table></figure>
+<p>通过指定 which 参数，可以设置不同的计时器，不同的计时器触发后也会发出不同的信号，一个进程同时只能有一种计时器：</p>
+<ul>
+<li>ITIMER_REAL：真实计时器，计算程序运行的真实时间（墙钟时间），产生 SIGALRM 信号</li>
+<li>ITIMER_VIRTUAL：虚拟计时器，计算当前进程处于用户态的 cpu 时间，产生 SIGVTALRM 信号</li>
+<li>ITIMER_PROF：使用计时器，计算当前进程处于用户态和内核态的 cpu 时间，产生 SIGPROF 信号</li>
+</ul>
+<p>计时器的值有以下结构体定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">itimerval</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">it_interval</span>;</span> <span class="comment">//定期触发的间隔</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">it_value</span>;</span> <span class="comment">//初次触发时间</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> &#123;</span></span><br><span class="line">  <span class="type">time_t</span> tv_sec; <span class="comment">//秒</span></span><br><span class="line">  <span class="type">suseconds_t</span> tv_usec; <span class="comment">//微秒</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>若 new_value.it_value 的两个字段不全为 0，则定时器初次将会在设定的时间后触发；若 new_value.it_value 的两个字段全为 0，则计时器不工作。</p>
+<p>若 new_value.it_interval 的两个字段不全为 0，则定时器将会在初次触发后按设定的时间间隔触发；若 new_value.it_interval 的两个字段全为 0，则计时器仅初次触发一次。</p>
+<p>setitimer()函数和 alarm()函数共享同一个计时器，因此不应同时使用。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/7ab376c3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1277,100 +1437,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/dfc6ce5/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/dfc6ce5/" class="post-title-link" itemprop="url">机器学习笔记之多项式回归</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-10-01 21:52:38" itemprop="dateCreated datePublished" datetime="2022-10-01T21:52:38+08:00">2022-10-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、引言——拟合多项式"><a href="#一、引言——拟合多项式" class="headerlink" title="一、引言——拟合多项式"></a>一、引言——拟合多项式</h2><p>考虑如图所示的样本数据：<br><img src="/posts/dfc6ce5/poly.png" class="" title="poly"></p>
-<p>如果我们用一元线性回归去拟合该数据，会发现直线与数据点拟合效果很差。<br><img src="/posts/dfc6ce5/linearTry.png" class="" title="linearTry"></p>
-<p>通过观察，我们很容易得知数据点满足二次函数，具体地，函数是 $\frac{1}{2}x^2 + 5$。既然用直线 $y = wx + b$ 不能拟合，那么换用二次函数 $y = w_1x^2 + w_2x + b$ 拟合的话效果会如何？</p>
-<h2 id="二、多项式回归的步骤"><a href="#二、多项式回归的步骤" class="headerlink" title="二、多项式回归的步骤"></a>二、多项式回归的步骤</h2><p>对于一元多项式函数</p>
-<script type="math/tex; mode=display">
-    y = w_1x + w_2x^2 + \cdots + w_nx^n + b</script><p>令 $x^i = y_i$，则原函数变为</p>
-<script type="math/tex; mode=display">
-    y = w_1y_1 + w_2y_2 + \cdots + w_ny_n + b</script><p>对于自变量 $x$，只需将 $x^2, x^3, \cdots, x^n$ 看成与 $x$ 不同的特征。此时一个一元多项式函数的拟合问题就转变成了我们已知的多元线性拟合问题。同理，对于多元多项式函数，也可以将其转化为多元线性函数进行拟合。</p>
-<h2 id="三、代码实现"><a href="#三、代码实现" class="headerlink" title="三、代码实现"></a>三、代码实现</h2><p>对于如下样本：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = np.array(<span class="built_in">range</span>(-<span class="number">1</span>, <span class="number">10</span>))</span><br><span class="line">y = (x ** <span class="number">2</span>) / <span class="number">2</span> + <span class="number">5</span></span><br></pre></td></tr></table></figure></p>
-<p>将 $x^2$ 也作为一个特征<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.c_[x.T, (x ** <span class="number">2</span>).T] <span class="comment"># np.c_ 用于进行列的扩展</span></span><br><span class="line">y_train = y</span><br></pre></td></tr></table></figure></p>
-<p>剩下的与多元线性回归同理<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">1e-3</span></span><br><span class="line">w = np.zeros(X_train.shape[<span class="number">1</span>])</span><br><span class="line">b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br></pre></td></tr></table></figure></p>
-<p>迭代信息：<br><img src="/posts/dfc6ce5/print.png" class="" title="print"></p>
-<p>拟合效果：<br><img src="/posts/dfc6ce5/result.png" class="" title="result"></p>
-<p>损失函数：<br><img src="/posts/dfc6ce5/cost.png" class="" title="cost"></p>
-<hr>
-<p><strong>扩展：</strong></p>
-<p>对于较为复杂的表达式，如 $y = sinx$<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = np.array(<span class="built_in">range</span>(-<span class="number">1</span>, <span class="number">10</span>))</span><br><span class="line">y = np.sin(x)</span><br></pre></td></tr></table></figure></p>
-<p>只要增加多项式次数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_train = np.c_[x.T, (x**<span class="number">2</span>).T, (x**<span class="number">3</span>).T, (x**<span class="number">4</span>).T, (x**<span class="number">5</span>).T, (x**<span class="number">6</span>).T, (x**<span class="number">7</span>).T, (x**<span class="number">8</span>).T, (x**<span class="number">9</span>).T, (x**<span class="number">10</span>).T, (x**<span class="number">11</span>).T]</span><br></pre></td></tr></table></figure></p>
-<p>再加上特征缩放<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X_train, _, _ = featureScaling(X_train)</span><br></pre></td></tr></table></figure></p>
-<p>在一定的步长和迭代次数下<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">0.2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">50000</span>):</span><br><span class="line">    w, b = gradient_descent(w, b, X_train, y_train, alpha)</span><br></pre></td></tr></table></figure></p>
-<p>同样可以取得一定的拟合效果<br><img src="/posts/dfc6ce5/complex.png" class="" title="complex"></p>
-<img src="/posts/dfc6ce5/complex_cost.png" class="" title="complex_cost">
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1442,14 +1508,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-count">65</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -1493,7 +1559,7 @@
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2023</span>
+  <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

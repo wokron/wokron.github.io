@@ -159,6 +159,116 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/fe7db33d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/fe7db33d/" class="post-title-link" itemprop="url">FunctionSketch说明文档</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-10 18:33:26" itemprop="dateCreated datePublished" datetime="2022-09-10T18:33:26+08:00">2022-09-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">软件开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、简述"><a href="#一、简述" class="headerlink" title="一、简述"></a>一、简述</h2><p>本文档将介绍程序<strong>函数画板</strong>的主要功能和基本操作。<strong>函数画板</strong>是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。</p>
+<h2 id="二、函数绘制"><a href="#二、函数绘制" class="headerlink" title="二、函数绘制"></a>二、函数绘制</h2><h3 id="1、添加函数"><a href="#1、添加函数" class="headerlink" title="1、添加函数"></a>1、添加函数</h3><p>运行exe文件后，将进入程序的主界面。如下图所示。<br><img src="/posts/fe7db33d/%E5%87%BD%E6%95%B0%E4%B8%BB%E7%95%8C%E9%9D%A2.png" class="" title="函数主界面"></p>
+<p>点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。<br><img src="/posts/fe7db33d/%E8%BE%93%E5%85%A5%E5%87%BD%E6%95%B0.png" class="" title="输入函数"></p>
+<p>输入函数表达式后按回车键（或采取使输入框不再被选中的操作），若表达式<strong>正确</strong>，则会将该表达式所对应的函数绘制到主界面左侧的窗口上。</p>
+<p>其中<strong>正确的表达式</strong>包括如下几种情况：</p>
+<ol>
+<li>表示单变量函数<br>此时表达式请以x为自变量，不忽略运算符（特别注意，对数如logm(n)请写作mlogn）。表达式前可忽略“y=”。例如“y=x+x^2”或“x*(elogx)”</li>
+<li>表示参数方程<br>此时请同时输入两个单变量函数表达式，以x或t为自变量，两表达式间以逗号间隔。注意请不要在两个表达式前添加“x=”或“y=”。例如“t^2,t”或“sinx,cosx”</li>
+<li>表示隐函数（或一般的方程）<br>此时请以x，y表示横纵两坐标轴对应的变量。表达式中必须包含等号。例如“x^2+y^2=1”。当等式左侧为“y=”时自动转换为单变量函数计算。</li>
+</ol>
+<p>另外，一次输入可以绘制多个图像。若要输入多个表达式，请将各表达式以分号间隔。</p>
+<h3 id="2、函数属性设置"><a href="#2、函数属性设置" class="headerlink" title="2、函数属性设置"></a>2、函数属性设置</h3><p>添加函数后，函数图像将在左侧窗口内显示，同时右侧函数列表栏内也会出现记录该函数信息的卡片（超出范围的卡片可以滑动滚轮以查看）。<br><img src="/posts/fe7db33d/%E7%BB%98%E5%88%B6%E5%9B%BE%E5%83%8F.png" class="" title="绘制图像"></p>
+<p>每一个函数信息卡右侧有两个按钮。上面标有“x”字的按钮点击后可关闭该函数卡并删除左侧窗口内对应的函数图像。下面显示“···”符号的按钮，点击后可以设置该函数相关的属性。主要包括如下内容。<br><img src="/posts/fe7db33d/%E5%87%BD%E6%95%B0%E8%AE%BE%E7%BD%AE.png" class="" title="绘制图像"></p>
+<ol>
+<li>坐标形式<br>单变量函数和参数方程共有。设置图像以直角坐标或极坐标形式呈现。</li>
+<li>线性变换<br>单变量函数和参数方程共有。表示一个2*2矩阵。在绘制过程中，图像的每一个坐标点会与该矩阵相乘。</li>
+<li>位移<br>单变量函数和参数方程共有。表示一个二维矢量。在绘制过程中，图像的每一个坐标点会与该矢量相加。</li>
+<li>积分<br>单变量函数特有。表示一个积分区间。默认不计算积分（积分范围NaN-&gt;NaN）。若输入正确的积分范围，则会在左侧窗口内将求积分的面积涂色。并在信息卡上显示积分结果。</li>
+<li>求导<br>单变量函数特有。点击求导按钮后会求一阶导数，并将得到的新函数添加到函数列表栏的末尾。图像也会在左侧窗口内显示。</li>
+<li>参数范围<br>参数方程特有。用以表示参数的范围。左侧窗口内只会绘制参数范围内的图像。</li>
+</ol>
+<h2 id="三、保存文件"><a href="#三、保存文件" class="headerlink" title="三、保存文件"></a>三、保存文件</h2><h3 id="1、保存当前函数图像"><a href="#1、保存当前函数图像" class="headerlink" title="1、保存当前函数图像"></a>1、保存当前函数图像</h3><p>点击主窗口上侧菜单栏“文件”选项。其中第一项“保存”可以将当前绘制的图像保存为图片格式（当前暂时只支持jpg格式）。</p>
+<h3 id="2、查看默认保存位置"><a href="#2、查看默认保存位置" class="headerlink" title="2、查看默认保存位置"></a>2、查看默认保存位置</h3><p>第二项“打开默认保存路径”会打开exe所在路径之下的SaveImage文件夹。可用于作为保存文件的位置。</p>
+<h2 id="四、设置"><a href="#四、设置" class="headerlink" title="四、设置"></a>四、设置</h2><h3 id="1、绘制设置"><a href="#1、绘制设置" class="headerlink" title="1、绘制设置"></a>1、绘制设置</h3><p>点击菜单栏“设置”选项，会打开一个设置窗口。<br><img src="/posts/fe7db33d/%E8%AE%BE%E7%BD%AE%E7%AA%97%E5%8F%A3.png" class="" title="设置窗口"><br>其中前三项用于绘制设置。</p>
+<ol>
+<li>显示范围<br>相对位置用于设置当前显示位置与默认位置的偏移量。可以理解该值为一个表示当前窗口显示的位置相对于原点的坐标。<br>显示宽度用于设置当前窗口宽度下，横坐标数值的变化范围。<br>（该项设置也可以在主界面显示窗口用鼠标拖动和滚轮实现。）</li>
+<li>线条颜色<br>设置图像曲线、坐标轴、积分区域的颜色。</li>
+<li>线条宽度<br>设置图像曲线、坐标轴线条的粗细。注意该粗细不会随着窗口的缩放而发生变化。</li>
+</ol>
+<h3 id="2、算法设置"><a href="#2、算法设置" class="headerlink" title="2、算法设置"></a>2、算法设置</h3><p>设置窗口第四项用于设置算法相关参数。算法原理详见设计文档。<br><img src="/posts/fe7db33d/%E7%AE%97%E6%B3%95%E8%AE%BE%E7%BD%AE.png" class="" title="算法设置"></p>
+<ol>
+<li>基本<br>最小绘制间隔即生成基本绘制点时自变量的间隔。</li>
+<li>平滑算法<br>平滑算法用于处理曲率较大的情况。平滑率表示连点绘制的曲线的“尖锐度”的阈值，过于“尖锐”的部分将被试图平滑。最大递归层数用于避免过深的递归，减少绘制时间。</li>
+<li>Marching Square算法<br>Marching Square算法用于处理一般方程，能较有效地绘制隐函数图像。但计算量较大，以dx为单位长度绘制速度较慢。因此以dx乘以某一常数得到的长度作为新的单位长度，该常数即方块比例。</li>
+</ol>
+<h2 id="五、帮助"><a href="#五、帮助" class="headerlink" title="五、帮助"></a>五、帮助</h2><h3 id="1、查看源代码"><a href="#1、查看源代码" class="headerlink" title="1、查看源代码"></a>1、查看源代码</h3><p>点击菜单栏“帮助”选项，第一项“源代码”点击后会转到保存该程序源代码的github仓库。</p>
+<h3 id="2、操作说明"><a href="#2、操作说明" class="headerlink" title="2、操作说明"></a>2、操作说明</h3><p>第二项“操作说明”可以打开一个新的帮助窗口，其中记录了一些较为常见的操作的提示。可在使用时随时查看。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/9a443429/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -567,14 +677,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-count">65</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -618,7 +728,7 @@
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2023</span>
+  <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
