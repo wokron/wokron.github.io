@@ -159,6 +159,144 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/e7ad966d/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/e7ad966d/" class="post-title-link" itemprop="url">用pytorch实现简单循环神经网络</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-17 21:02:34" itemprop="dateCreated datePublished" datetime="2023-01-17T21:02:34+08:00">2023-01-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、歌词生成项目"><a href="#一、歌词生成项目" class="headerlink" title="一、歌词生成项目"></a>一、歌词生成项目</h2><p>想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1oq4y1E7Vd">最浅显易懂的 PyTorch 深度学习入门</a> 的启发，并利用 up 主提供的 <a target="_blank" rel="noopener" href="https://github.com/rossning92/ai-lyrics-writing">源码</a> 中的数据集。</p>
+<p>相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。</p>
+<h2 id="二、数据的获取"><a href="#二、数据的获取" class="headerlink" title="二、数据的获取"></a>二、数据的获取</h2><h3 id="（1）编写数据集"><a href="#（1）编写数据集" class="headerlink" title="（1）编写数据集"></a>（1）编写数据集</h3><p>原作者用爬虫获取的歌词数据被保存在 lyrics.txt 文件中。我们要将数据按可供训练的模型加载。具体来说</p>
+<ul>
+<li>我们希望每一次获取数据，都能得到输入和目标输出（对本项目来说就是两段有一个文字偏差的序列）</li>
+<li>并且将文字数字化，即 nlp 的 tokenize</li>
+<li>为了实现批量训练，需要每次获取定长的序列</li>
+</ul>
+<p>为了实现第一点，我们要继承 dataset；实现第二点，需要根据数据建立字符表；实现第三点，需要定长截取歌词句子的一部分。</p>
+<blockquote>
+<p>另外，为了减少每次加载数据所用的时间，还需要将数据集的信息持久化。</p>
+</blockquote>
+<p>我们的 LyricsDataset 具体实现如下。首先，我们在构造函数中通过传入的路径加载数据，判断是否已经存在处理过后的数据，如存在则加载；如不存在则读入原始数据并处理</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LyricsDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, root_path, seq_size</span>):</span><br><span class="line">        self.seq_size = seq_size</span><br><span class="line"></span><br><span class="line">        processed_name = <span class="string">&quot;/processed/lyrics.pth&quot;</span></span><br><span class="line">        raw_name = <span class="string">&quot;/raw/lyrics.txt&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> os.path.exists(root_path + processed_name):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;find processed data&quot;</span>)</span><br><span class="line">            self.__load_processed_data(root_path + processed_name)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;processed data not found, will process raw data&quot;</span>)</span><br><span class="line">            self.__load_raw_data(root_path + raw_name)</span><br><span class="line">            self.__save_processed_data(root_path + processed_name)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__load_raw_data</span>(<span class="params">self, file_path</span>):</span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(file_path, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            sentences = f.readlines()</span><br><span class="line"></span><br><span class="line">        self.vocab = &#123;<span class="string">&quot;&lt;sos&gt;&quot;</span>: <span class="number">0</span>, <span class="string">&quot;&lt;eos&gt;&quot;</span>: <span class="number">1</span>&#125;</span><br><span class="line">        self.data = []</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> sentence <span class="keyword">in</span> sentences:</span><br><span class="line">            sentence = sentence.strip()</span><br><span class="line">            self.data.append(self.vocab[<span class="string">&quot;&lt;sos&gt;&quot;</span>])</span><br><span class="line">            <span class="keyword">for</span> char <span class="keyword">in</span> sentence:</span><br><span class="line">                <span class="keyword">if</span> char <span class="keyword">not</span> <span class="keyword">in</span> self.vocab:</span><br><span class="line">                    self.vocab[char] = <span class="built_in">len</span>(self.vocab)</span><br><span class="line">                self.data.append(self.vocab[char])</span><br><span class="line">            self.data.append(self.vocab[<span class="string">&quot;&lt;eos&gt;&quot;</span>])</span><br><span class="line"></span><br><span class="line">        self.index2word = &#123;u: v <span class="keyword">for</span> v, u <span class="keyword">in</span> self.vocab.items()&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__save_processed_data</span>(<span class="params">self, file_path</span>):</span><br><span class="line">        torch.save(&#123;<span class="string">&quot;data&quot;</span>: self.data, <span class="string">&quot;vocab&quot;</span>: self.vocab&#125;, file_path)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__load_processed_data</span>(<span class="params">self, file_path</span>):</span><br><span class="line">        data_dict = torch.load(file_path)</span><br><span class="line">        self.data = data_dict[<span class="string">&quot;data&quot;</span>]</span><br><span class="line">        self.vocab = data_dict[<span class="string">&quot;vocab&quot;</span>]</span><br><span class="line">        self.index2word = &#123;u: v <span class="keyword">for</span> v, u <span class="keyword">in</span> self.vocab.items()&#125;</span><br></pre></td></tr></table></figure>
+<p>我们将所有的字转化为数值并按顺序添加到 <code>data</code> 属性中，这将有助于后续操作。另外我们还提供了由数值转化回字的字典，这是翻转（nlp 意义下的）字典的键值得到的。</p>
+<p>在保存和加载数据的时候，我们使用了 <code>torch</code> 的 <code>save()</code> 和 <code>load()</code> 方法，这些方法提供了简单的序列化和反序列化功能，并非只能保存模型的参数。另外在保存模型的时候，也可以通过字典同时保存一些附加信息。这将在之后有所体现。</p>
+<blockquote>
+<p>这里还可以补充两个 python 中的知识。</p>
+<ol>
+<li>python 中也有类方法的访问修饰，在方法名前有两个下划线的是 <code>private</code>，一个下划线的是 <code>protected</code>，没有下划线的是 <code>public</code></li>
+<li>for 可用于容器中，如 <code>arr2 = [i+1 for i in arr]</code>，可用于对容器中所有元素做某种处理并保存在新容器中。代码中有使用 <code>index2word = &#123;u: v for v, u in self.vocab.items()&#125;</code>。注意对于字典需要调用 <code>items()</code> 以表示对键值对的操作，否则默认为对键集合操作。</li>
+</ol>
+</blockquote>
+<p>接着一如往常，我们要实现 <code>__getitem__</code> 和 <code>__len__</code>。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, item</span>):</span><br><span class="line">    start = item * self.seq_size + <span class="number">1</span></span><br><span class="line">    end = start + self.seq_size</span><br><span class="line"></span><br><span class="line">    input_seq = self.data[start:end]</span><br><span class="line">    output_seq = self.data[start + <span class="number">1</span>:end + <span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> torch.tensor(input_seq), torch.tensor(output_seq)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">int</span>((<span class="built_in">len</span>(self.data) - <span class="number">1</span>) / self.seq_size)</span><br></pre></td></tr></table></figure>
+<p>在初始化的时候，我们传入了 <code>seq_size</code> 参数用于指定一条文字转化而成的序列的长度。在通过下标读取数据的过程中，我们也以序列作为基本的数据单元。另外请注意，我们为了方便后续操作，将序列转化为了一维的张量（<code>[seq_size]</code>）。</p>
+<p>在编写获取长度的函数时，原作者的实现似乎除了些问题。这里指示的长度应该是总共能获取的序列的个数，肯定不能仅仅 <code>len(self.data)</code> 就可以了。应该是字符的总数除以序列的长度向下取整。<code>len(self.data) - 1</code> 考虑了输入和目标一个字符的偏差。</p>
+<h3 id="（2）划分数据集"><a href="#（2）划分数据集" class="headerlink" title="（2）划分数据集"></a>（2）划分数据集</h3><p>我们现在能获取数据集了，可是这个数据集包含了所有数据，我们还希望划分出训练集和测试集。<code>torch</code> 提供一个随机划分的方法 <code>random_split</code>，但这无法在程序多次执行时保持不变。不过我们可以选择将划分后的数据集保存。这里我们定义一个函数</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_or_split_dataset</span>(<span class="params">dataset_root, dataset, lengths: <span class="built_in">list</span></span>):</span><br><span class="line">    processed_path = dataset_root + <span class="string">&quot;/processed&quot;</span></span><br><span class="line">    train_set_path = processed_path + <span class="string">&quot;/train.pth&quot;</span></span><br><span class="line">    test_set_path = processed_path + <span class="string">&quot;/test.pth&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(train_set_path) <span class="keyword">or</span> <span class="keyword">not</span> os.path.exists(test_set_path):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;train and test datasets not found, start random split&quot;</span>)</span><br><span class="line">        train_set, test_set = random_split(dataset, lengths)</span><br><span class="line">        torch.save(train_set, train_set_path)</span><br><span class="line">        torch.save(test_set, test_set_path)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;find train and test datasets&quot;</span>)</span><br><span class="line">        train_set = torch.load(train_set_path)</span><br><span class="line">        test_set = torch.load(test_set_path)</span><br><span class="line">    <span class="keyword">return</span> train_set, test_set</span><br></pre></td></tr></table></figure>
+<p>就可以同时实现划分或加载了<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">train_set, test_set = load_or_split_dataset(</span><br><span class="line">    dataset_root</span><br><span class="line">    lyrics_dataset,</span><br><span class="line">    [train_set_size, test_set_size])</span><br></pre></td></tr></table></figure></p>
+<h3 id="（3）加载数据"><a href="#（3）加载数据" class="headerlink" title="（3）加载数据"></a>（3）加载数据</h3><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">train_loader = DataLoader(train_set, batch_size, drop_last=<span class="literal">True</span>)</span><br><span class="line">test_loader = DataLoader(test_set, batch_size, drop_last=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>按照常规创建 <code>DataLoader</code>。注意需要加上 <code>drop_last=True</code>，否则 RNN 网络可能会因为无法批处理而报错，类似<br><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RuntimeError: Expected hidden[0] size (2, 20, 256), got (2, 50, 256)</span><br></pre></td></tr></table></figure></p>
+<p>此时每次从 DataLoader 中获取的数据为两个二维张量（<code>[batch_size, seq_size]</code>）</p>
+<h2 id="三、网络的搭建"><a href="#三、网络的搭建" class="headerlink" title="三、网络的搭建"></a>三、网络的搭建</h2><p>先给出总体的模型结构，这个模型只使用了 LSTM 循环神经网络加上线性层作为输出，结构较为简单，与原作者的模型相比变化不大。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LyricsModule</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, embed_size, hidden_size, num_rnn_layers</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        self.embed = nn.Embedding(vocab_size, embed_size)</span><br><span class="line">        self.rnn = nn.LSTM(embed_size, hidden_size, num_rnn_layers, batch_first=<span class="literal">True</span>)</span><br><span class="line">        self.linear = nn.Sequential(</span><br><span class="line">            nn.Linear(hidden_size, hidden_size),</span><br><span class="line">            nn.Linear(hidden_size, vocab_size)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, <span class="built_in">input</span>, hidden=<span class="literal">None</span></span>):</span><br><span class="line">        word_vec = self.embed(<span class="built_in">input</span>)</span><br><span class="line">        x, hidden_next = self.rnn(word_vec, hidden)</span><br><span class="line">        predict = self.linear(x)</span><br><span class="line">        <span class="keyword">return</span> predict, hidden_next</span><br></pre></td></tr></table></figure></p>
+<p>接下来要分层对该模型进行介绍。</p>
+<h3 id="（1）Embedding-层的使用"><a href="#（1）Embedding-层的使用" class="headerlink" title="（1）Embedding 层的使用"></a>（1）Embedding 层的使用</h3><p>在输入的一开始，我们使用了一层 <code>Embedding</code> 层。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.embed = nn.Embedding(vocab_size, embed_size)</span><br></pre></td></tr></table></figure><br>创建 <code>Embedding</code> 层需要两个必须的参数，<code>num_embeddings</code> 和 <code>embedding_dim</code>。这一层的作用，本质上是创建一个数值到向量的映射，<code>num_embeddings</code> 即为映射最多的数量；效果上，一是给传入的张量升高一个维度，维度的大小为 <code>embedding_dim</code>，二是给每个词指定一个词向量，这个词向量还可以在反向传播的过程中不断调整。</p>
+<p>对于传入模型的二维张量，经过 <code>Embedding</code> 层后变为三维张量（<code>[batch_size, seq_size, embedding_dim]</code>）</p>
+<h3 id="（2）LSTM-层的使用"><a href="#（2）LSTM-层的使用" class="headerlink" title="（2）LSTM 层的使用"></a>（2）LSTM 层的使用</h3><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">self.rnn = nn.LSTM(embed_size, hidden_size, num_rnn_layers, batch_first=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>LSTM 的数学表示在上一篇文章中就有说明，这里只看 pytorch 中 LSTM 的使用。<code>LSTM</code> 层输入一个三维张量，输出一个同等大小的三维张量，以及隐藏层。<code>LSTM</code> 有两个必须的参数 <code>input_size</code> 和 <code>hidden_size</code> ，分别指输入的特征数（第三维大小）和隐藏层的维度大小。在本模型使用时还使用了一个可选参数 <code>num_layers</code> 表示 <code>LSTM</code> 的层数。</p>
+<p>有几点需要注意的地方。</p>
+<ul>
+<li>如果不添加 <code>batch_first=True</code>，则 <code>LSTM</code> 层默认第一位为 seq_size，第二维才是 batch_size。添加后才为 <code>[batch_size, seq_size, embedding_dim]</code>。</li>
+<li><code>LSTM</code> 层以一个序列为一个输入单元，输出时就已经进行过 seq_size 次循环了。因此在训练的时候，不需要保存每一步后的隐藏状态并传递给下一步。</li>
+<li>每个隐藏状态是一个三维张量（<code>[batch_size, seq_size, hidden_size]</code>）表示对这一批中的不同序列，在经过第几次循环之后的隐藏状态。另外因为 LSTM 有两个隐藏状态 h_t 和 c_t，返回的隐藏状态实际上是一个二元组 <code>(h_t, c_t)</code>。</li>
+</ul>
+<h3 id="（3）模型的输出"><a href="#（3）模型的输出" class="headerlink" title="（3）模型的输出"></a>（3）模型的输出</h3><p>我们的目标是歌词的生成，也就是根据前一个字符判断下一个字符应该生成哪一个。那么这就需要对每一个字符的输入，对应一个字典字符数目维数的输出，选择最大的数值所对应的字符。也正是因为训练之前我们就需要确定确定的维数，所以要事先确定字典。</p>
+<p>对于张量来说，我们就是需要一个三维张量，其中第三维的维数为字典的字符总数。即 <code>[batch_size, seq_size, vocab_size]</code></p>
+<p>我们增加的线性层就将输出如此规范：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">self.linear = nn.Sequential(</span><br><span class="line">    nn.Linear(hidden_size, hidden_size),</span><br><span class="line">    nn.Linear(hidden_size, vocab_size)</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p><code>LSTM</code> 层的输出为二元组，因此不能用 <code>Sequential</code> 直接包含</p>
+</blockquote>
+<h2 id="四、更完善的训练结构"><a href="#四、更完善的训练结构" class="headerlink" title="四、更完善的训练结构"></a>四、更完善的训练结构</h2><p>在这一部分，我们希望优化代码，尽量减少每次训练时所需要的对代码的修改。首先，这需要及时对训练模型进行保存；其次我们还需要设置全局的 epoch。</p>
+<h3 id="（1）设置检查点"><a href="#（1）设置检查点" class="headerlink" title="（1）设置检查点"></a>（1）设置检查点</h3><p>我们要用 <code>torch.save()</code> 保存模型和优化器的参数，这些保存的信息称为检查点（checkpoint）。为了方便确定检查点保存模型的先后顺序，我们可以将日期加到文件的命名中。</p>
+<p>我们定义如下函数用来保存检查点<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">save_checkpoint</span>(<span class="params">root_path, module: Module, optimizer: Optimizer</span>):</span><br><span class="line">    checkpoint_name = <span class="string">&quot;checkpoint-&#123;&#125;.pth&quot;</span>.<span class="built_in">format</span>(datetime.now().strftime(<span class="string">&quot;%y%m%d-%H%M%S&quot;</span>))</span><br><span class="line">    torch.save(</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;module_state_dict&quot;</span>: module.state_dict(),</span><br><span class="line">            <span class="string">&quot;optim_state_dict&quot;</span>: optimizer.state_dict()</span><br><span class="line">        &#125;,</span><br><span class="line">        root_path + <span class="string">&quot;/&quot;</span> + checkpoint_name</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;save checkpoint file \&quot;<span class="subst">&#123;checkpoint_name&#125;</span>\&quot; success&quot;</span>)</span><br></pre></td></tr></table></figure><br>注意我们在确定检查点名字时获取了当前时间 <code>datetime.now().strftime(&quot;%y%m%d-%H%M%S&quot;)</code></p>
+<blockquote>
+<p>这里 <code>torch.save()</code> 保存的是一个字典</p>
+</blockquote>
+<p>接着我们定义函数以加载检查点数据<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_checkpoint</span>(<span class="params">checkpoint_path</span>):</span><br><span class="line">    checkpoint_info = torch.load(checkpoint_path)</span><br><span class="line">    <span class="keyword">return</span> checkpoint_info</span><br></pre></td></tr></table></figure></p>
+<p>通过检查点名称，我们可以找到最近一次训练后的数据，定义加载最近的检查点函数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_latest_checkpoint</span>(<span class="params">root_path</span>):</span><br><span class="line">    checkpoints = glob.glob(root_path + <span class="string">&quot;/checkpoint-*.pth&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> load_checkpoint(checkpoints[-<span class="number">1</span>])</span><br></pre></td></tr></table></figure></p>
+<p>这样我们每次训练时就可以加载之前最近一次训练的数据，继续训练了。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">lyrics_module = LyricsModule(vocab_size, embed_size, hidden_size, num_layers).to(device)</span><br><span class="line"></span><br><span class="line">optimizer = torch.optim.Adam(lyrics_module.parameters(), learning_rate)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> checkpoint_exist(checkpoint_root):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;find exist checkpoint, load checkpoint information&quot;</span>)</span><br><span class="line">    checkpoint_info = load_latest_checkpoint(checkpoint_root)</span><br><span class="line">    lyrics_module.load_state_dict(checkpoint_info[<span class="string">&quot;module_state_dict&quot;</span>])</span><br><span class="line">    optimizer.load_state_dict(checkpoint_info[<span class="string">&quot;optim_state_dict&quot;</span>])</span><br></pre></td></tr></table></figure>
+<h3 id="（2）连续的训练过程"><a href="#（2）连续的训练过程" class="headerlink" title="（2）连续的训练过程"></a>（2）连续的训练过程</h3><p>我们通常使用 tensorboard 查看损失函数和准确度等参数的变化趋势。但是如果每次训练时的步数都从头开始，tensorboard 的图像就会交织在一起，无法分辨。因此我们需要确定全局的步数。</p>
+<p>我们在检查点中添加 <code>total_epoch</code>  参数，表示该检查点所保存的是几轮训练后的数据。在加载检查点是，<code>total_epoch</code> 也会一并加载。<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">torch.save(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;total_epoch&quot;</span>: total_epoch, <span class="comment"># here!</span></span><br><span class="line">        <span class="string">&quot;module_state_dict&quot;</span>: module.state_dict(),</span><br><span class="line">        <span class="string">&quot;optim_state_dict&quot;</span>: optimizer.state_dict()</span><br><span class="line">    &#125;,</span><br><span class="line">    root_path + <span class="string">&quot;/&quot;</span> + checkpoint_name</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>这样我们就能在训练中确定当前的全局轮数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(epoch_size):</span><br><span class="line">    epoch = i + <span class="number">1</span></span><br><span class="line">    now_total_epoch = total_epoch + epoch</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;--- start epoch <span class="subst">&#123;epoch&#125;</span>, total epoch <span class="subst">&#123;now_total_epoch&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure><br>在训练中确定全局的训练步数<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">global_train_step = (now_total_epoch - <span class="number">1</span>) * total_train_step + train_step</span><br><span class="line">writer.add_scalar(<span class="string">&quot;train loss&quot;</span>, loss.item(), global_train_step)</span><br><span class="line">writer.add_scalar(<span class="string">&quot;train accuracy&quot;</span>, accuracy, global_train_step)</span><br></pre></td></tr></table></figure></p>
+<p>同样的在测试中<br><figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">writer.add_scalar(<span class="string">&quot;test loss&quot;</span>, avg_loss, now_total_epoch)</span><br><span class="line">writer.add_scalar(<span class="string">&quot;test accuracy&quot;</span>, avg_accuracy, now_total_epoch)</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/b2ab0f69/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1299,127 +1437,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/f44f8530/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/f44f8530/" class="post-title-link" itemprop="url">对不重复随机数的数学分析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-11-13 21:03:39" itemprop="dateCreated datePublished" datetime="2022-11-13T21:03:39+08:00">2022-11-13</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、引子——双色球"><a href="#一、引子——双色球" class="headerlink" title="一、引子——双色球"></a>一、引子——双色球</h2><p>我们知道，双色球每注投注号码由 6 个红色球号码和 1 个蓝色球号码组成。红色球号码从 1—33 中选择；蓝色球号码从 1—16 中选择。现在要求写出一个程序，模拟双色球的抽奖过程。</p>
-<p>我们很容易想到使用某种方法生成一定范围内的随机数。蓝色球很好解决，但对于红色球，需要的是随机生成 6 个号码不同的数，可一定范围内的随机数总可能出现相同的情况，这样要如何解决？</p>
-<p>也就是说：对于 $1, 2, …, m$ 这 m 个数字，随机抽取其中 $n(n \lt m)$ 个数。要采取怎样的算法？</p>
-<h2 id="二、两种思路"><a href="#二、两种思路" class="headerlink" title="二、两种思路"></a>二、两种思路</h2><h3 id="其一-暴力方法"><a href="#其一-暴力方法" class="headerlink" title="其一 : 暴力方法"></a>其一 : 暴力方法</h3><p>的确，随机数总有可能出现相同的情况，但是我们知道，同一个数多次出现的概率很小，以至于我们可以将其忽略。因此，我们只需要不断地取范围内的随机数，遇到重复的舍弃，直到取得的数字数目达到 n 即可。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">rand1</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span>* hasSelect = <span class="built_in">calloc</span>(m+<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="type">char</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> r = randomInt(<span class="number">1</span>, m);</span><br><span class="line">        <span class="keyword">if</span> (!hasSelect[r])</span><br><span class="line">        &#123;</span><br><span class="line">            rands[i++] = r;</span><br><span class="line">            hasSelect[r] = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">free</span>(hasSelect);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>但这种算法是有缺陷的。问题在于，概率达到多小才算作可以忽略？<br>考虑 $m=100, n=99$ 的情况。首先，取得第一个球，一定只需要选取 1 次；但是，我们再计算一下取得最后一个球的选取次数。为了取得第 99 个数，选中的概率为 $p_{99} = \frac{1}{50}$。我们设离散型随机变量 $X$ 表示为了取得第 99 个数所需的选取次数，则 $P{X = k} = (1-p)^{k-1}p$ 服从几何分布。因此 $E(X) = \frac{1}{p} = 50$。从期望上看，需要整整 50 次才能取到第 99 个数！！这中间的差距说明了，在 m 一定时，随着 n 的增大，随机的效率明显降低。</p>
-<h3 id="其二-洗牌算法"><a href="#其二-洗牌算法" class="headerlink" title="其二 : 洗牌算法"></a>其二 : 洗牌算法</h3><p>还从双色球这一实际问题来看，我们要从 33 个球中取得 6 个球，实际上是从球的一个随机排列中取得前 6 个球。这样，我们的问题就等价于找到一种将序列打乱顺序，使每一个数在每一个位置的概率相等的算法。</p>
-<p>这里介绍 Knuth 的洗牌算法，如下：</p>
-<blockquote>
-<p>在整个数组 [0, n-1] 中（包括最后一个元素）随机选出一个元素，将它和最后那个元素 [n-1] 交换，然后再在数组 [0, n-2] 中随机选出一个元素，将它与倒数第二个元素 [n-2] 交换…一直到最后一个元素。</p>
-</blockquote>
-<p>洗牌之后，我们再取前 n 个数，就求得了 n 个不重复随机数。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">rand2</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span>* nums = <span class="built_in">calloc</span>(m, <span class="keyword">sizeof</span>(<span class="type">int</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">        nums[i] = i+<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = m<span class="number">-1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> j = randomInt(<span class="number">0</span>, i);</span><br><span class="line">        <span class="type">int</span> tmp = nums[i];</span><br><span class="line">        nums[i] = nums[j];</span><br><span class="line">        nums[j] = tmp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        rands[i] = nums[i];</span><br><span class="line">    <span class="built_in">free</span>(nums);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>从直觉上看，这种算法的用时是与 n 无关的。在 n 足够小时，暴力方法的用时会小于该算法。我们需要对着两种方法进一步分析，以做权衡。</p>
-<h2 id="三、数学上的分析"><a href="#三、数学上的分析" class="headerlink" title="三、数学上的分析"></a>三、数学上的分析</h2><p>我们首先需要解决的问题是，对于序列 $1, 2, …, m$ 我们随机放回抽取，求当取得 n 个不同的数时所用次数的数学期望。</p>
-<p>我们设随机变量 $X<em>i$ 表示已经取到了 $i-1$ 个不同的数后，还需要多少次才能取到第 $i$ 个不同的数。并设随机变量 $T_n$ 表示取得 n 个不同的数所需要的总次数，即 $T_n = \sum</em>{i=1}^n X_i$。</p>
-<p>在已经取得 $i-1$ 个不同的数的条件下，取一次，不属于已经取到过的数的概率为</p>
-<script type="math/tex; mode=display">
-    p_i = \frac{m-i+1}{m}</script><p>因 $X<em>i$ 服从几何分布, $P{X_i = k} = (1-p_i)^{k-1}p</em>{i}$ 则有</p>
-<script type="math/tex; mode=display">
-    EX_i = \sum_{k=1}^{\infty} k (1-p_{i})^{k-1}p_{i}
-    = -p_{i}[\sum_{k=1}^{\infty} (1-p_{i})^{k}]^{'}
-    = \frac{1}{p_i} = \frac{m}{m-i+1}</script><p>又因随机变量序列 ${X_n}$ 相互独立，则</p>
-<script type="math/tex; mode=display">
-    ET_n = E(\sum_{i=1}^n X_i) = \sum_{i=1}^nEX_i
-    = m \sum_{i=1}^n \frac{1}{m-i+1}
-    = m(\sum_{i=1}^m \frac{1}{i} - \sum_{i=1}^{m-n} \frac{1}{i})</script><p>即</p>
-<script type="math/tex; mode=display">
-    ET_n = m(\sum_{i=1}^m \frac{1}{i} - \sum_{i=1}^{m-n} \frac{1}{i})
-    = m(H_m - H_{m-n})</script><p>其中 $H<em>m, H</em>{m-n}$ 分别表示第 m，m-n 个调和数（Harmonic number）。</p>
-<p>又因 </p>
-<script type="math/tex; mode=display">
-    H_n = \ln(n) + \gamma + \frac{1}{2} + O(\frac{1}{n}) \\
-    \gamma \approx 0.57721 56649</script><p>则</p>
-<script type="math/tex; mode=display">
-    ET_n = -m \ln({1-\frac{n}{m}}) + O(\frac{1}{m})</script><blockquote>
-<p>由上式可知，$n \ll m$ 时，$ET_n \approx 0$。这是符合直觉的。但 $m =n$ 的情况却并不满足上式子，因为并不存在 $H_0$。 $m=n$ 时的公式应为</p>
-<script type="math/tex; mode=display">
-    ET_n = mH_m = m\ln(m) + \gamma + \frac{1}{2} + O(\frac{1}{m})</script></blockquote>
-<p>此暴力算法的时间复杂度为 $O(-m\log(1-\frac{n}{m}))$ （认为 n 会小于 m）。</p>
-<p>而对于洗牌算法，其时间复杂度为 $O(m)$。</p>
-<p>要使第一种算法用时少于第二种，则需要</p>
-<script type="math/tex; mode=display">
-    -m\log(1-\frac{n}{m}) \lt m</script><p>得</p>
-<script type="math/tex; mode=display">
-    n \lt (1-\frac{1}{e})m \approx 0.632m</script><p>可见在一些情况下，暴力算法能取得很好的效果。但在 $n \ge 0.632m$ 的时候，或许采用洗牌算法效率更高。</p>
-<blockquote>
-<p>当然，由于第二种算法的系数更高，所以实践中的情况会更为复杂。</p>
-</blockquote>
-<h2 id="四、代码"><a href="#四、代码" class="headerlink" title="四、代码"></a>四、代码</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">randomInt</span><span class="params">(<span class="type">int</span> from, <span class="type">int</span> to)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> rand() % (to - from + <span class="number">1</span>) + from;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">rand1</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">rand2</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    srand(time(<span class="number">0</span>));</span><br><span class="line">    <span class="type">int</span> n = <span class="number">5</span>;</span><br><span class="line">    <span class="type">int</span> rands[<span class="number">10</span>];</span><br><span class="line">    rand1(<span class="number">10</span>, n, rands);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>, rands[i]);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    rand1(<span class="number">10</span>, n, rands);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>, rands[i]);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">rand1</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span>* hasSelect = <span class="built_in">calloc</span>(m+<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="type">char</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> r = randomInt(<span class="number">1</span>, m);</span><br><span class="line">        <span class="keyword">if</span> (!hasSelect[r])</span><br><span class="line">        &#123;</span><br><span class="line">            rands[i++] = r;</span><br><span class="line">            hasSelect[r] = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">free</span>(hasSelect);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">rand2</span><span class="params">(<span class="type">int</span> m, <span class="type">int</span> n, <span class="type">int</span> rands[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span>* nums = <span class="built_in">calloc</span>(m, <span class="keyword">sizeof</span>(<span class="type">int</span>));</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">        nums[i] = i+<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = m<span class="number">-1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">int</span> j = randomInt(<span class="number">0</span>, i);</span><br><span class="line">        <span class="type">int</span> tmp = nums[i];</span><br><span class="line">        nums[i] = nums[j];</span><br><span class="line">        nums[j] = tmp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        rands[i] = nums[i];</span><br><span class="line">    <span class="built_in">free</span>(nums);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1491,7 +1508,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-count">66</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1504,7 +1521,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-count">68</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

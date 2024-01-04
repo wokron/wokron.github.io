@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wokron.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":"default","style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一、前言 一个人进行推理时…… 这种过程如果是用语词进行的，他便是在心中把各部分的名词序列连成一个整体的名词或从整体及一个部分的名词求得另一个部分的名词。 —— 托马斯•霍布斯《利维坦》第一部分 论人类 第五章 论推理与学术  当霍布斯将他的机械唯物主义运用于人的思想时，语言便成为了人脑的齿轮。人的精神当然并非机械，可这种认识却也敏锐地察觉到了语言的一些本质，那就是语言是一些规则，通过这些规则的拼">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从零开始的编译原理1:文法理论">
+<meta property="og:url" content="https://wokron.github.io/posts/d76cf051/index.html">
+<meta property="og:site_name" content="StringCat的博客">
+<meta property="og:description" content="一、前言 一个人进行推理时…… 这种过程如果是用语词进行的，他便是在心中把各部分的名词序列连成一个整体的名词或从整体及一个部分的名词求得另一个部分的名词。 —— 托马斯•霍布斯《利维坦》第一部分 论人类 第五章 论推理与学术  当霍布斯将他的机械唯物主义运用于人的思想时，语言便成为了人脑的齿轮。人的精神当然并非机械，可这种认识却也敏锐地察觉到了语言的一些本质，那就是语言是一些规则，通过这些规则的拼">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wokron.github.io/posts/d76cf051/SyntaxTree.png">
+<meta property="article:published_time" content="2024-01-04T02:23:22.000Z">
+<meta property="article:modified_time" content="2024-01-04T12:58:47.200Z">
+<meta property="article:author" content="wokron">
+<meta property="article:tag" content="编译">
+<meta property="article:tag" content="文法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wokron.github.io/posts/d76cf051/SyntaxTree.png">
+
+<link rel="canonical" href="https://wokron.github.io/posts/d76cf051/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>从零开始的编译原理1:文法理论 | StringCat的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">StringCat的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">学生党踩坑记录</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/d76cf051/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从零开始的编译原理1:文法理论
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-01-04 10:23:22 / 修改时间：20:58:47" itemprop="dateCreated datePublished" datetime="2024-01-04T10:23:22+08:00">2024-01-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%99%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">教程</span></a>
+                </span>
+            </span>
+
+          
+          <span class="post-meta-divider">|</span>
+          <span class="post-meta-item-icon">
+              <i class="fa fa-fa fa-eye"></i>
+          </span>
+          <span class="post-meta-item-text">阅读次数：</span>
+          <span id="busuanzi_value_page_pv"></span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><blockquote>
+<p>一个人进行推理时…… 这种过程如果是用语词进行的，他便是在心中把各部分的名词序列连成一个整体的名词或从整体及一个部分的名词求得另一个部分的名词。</p>
+<p>—— 托马斯•霍布斯《利维坦》第一部分 论人类 第五章 论推理与学术</p>
+</blockquote>
+<p>当霍布斯将他的机械唯物主义运用于人的思想时，语言便成为了人脑的齿轮。人的精神当然并非机械，可这种认识却也敏锐地察觉到了语言的一些本质，那就是语言是一些规则，通过这些规则的拼凑，我们得以表述我们的思想。如今，这种规则我们称之为<strong>文法</strong>。</p>
+<p>语言学家的一部分工作是从现有的自然语言中总结文法，<strong>让语言成为机械</strong>。但是这并不是我们的重点，我们所要探索的是一个更加年轻的领域，这个领域的研究从机械出发，却要去创造千变万化的语言，<strong>让机械成为语言</strong>。</p>
+<h2 id="二、自然语言的文法：一个例子"><a href="#二、自然语言的文法：一个例子" class="headerlink" title="二、自然语言的文法：一个例子"></a>二、自然语言的文法：一个例子</h2><p>但是要开始我们的旅程，还需要从自然语言开始。当我们听别人说话，或者阅读一段句子的时候，我们究竟在理解什么？比如说，现在有这样一句话，<code>你知道我的叉子被放在哪里吗</code>。让我们尝试理解这个句子。</p>
+<blockquote>
+<p>这部分默认各位已有了对词性的基本认识，至少知道名词、形容词、动词、副词等等的大致含义。否则的话，这部分内容实难描述。</p>
+<p>另外注意对于自然语言的相关表述可能并不完全符合人的认知的真实情况，这一部分只是为了方便理解。</p>
+</blockquote>
+<p>首先需要明确一点，抛开我们所有的经验来看，语言就是符号的序列。也就是说语言是在时间上存在先后顺序的许多符号。这意味着我们的理解过程必定是从前到后的。对于上述句子来说，我们先读到 <code>你</code>，之后才能读到 <code>知</code>，再之后 <code>道</code>、<code>我</code> 等等。</p>
+<p>另外，在这样不断读到一个个符号的时候，我们也并非单纯的按照字母或音节分别认识，而是首先明确哪些音节或符号共同组成相同含义，并将其作为一个单词来识别。在自然语言处理领域，这称为“分词”；而对于编译来说，这称为“词法分析”。</p>
+<p>我们理解这个句子的过程可能是这样的：</p>
+<ol>
+<li>读到 <code>你</code>，这指代一个事物，为名词</li>
+<li>读到 <code>知道</code>，这指代一个行为，为动词</li>
+<li>读到 <code>我的</code>，这描述了事物的属性，为形容词</li>
+<li>读到 <code>叉子</code>，这指代了另一个事物，为名词</li>
+<li>形容词 <code>我的</code> 和名词 <code>叉子</code> 组成 <code>我的叉子</code>，也是个名词</li>
+<li>读到 <code>被放</code>，这是动词。</li>
+<li>读到 <code>在</code>，这表达了一个关系，为介词</li>
+<li>读到 <code>哪里</code>，这是名词</li>
+<li>介词 <code>在</code> 和 名词 <code>哪里</code> 组成 <code>在哪里</code>，用于描述行为，为副词</li>
+<li>动词 <code>被放</code> 和副词 <code>在哪里</code> 组成 <code>被放在哪里</code>，也是个动词。</li>
+<li>名词 <code>我的叉子</code> 和动词 <code>被放在哪里</code> 组成 <code>我的叉子被放在哪里</code>，用于陈述一个事实，称为陈述句</li>
+<li>名词 <code>你</code>、动词 <code>知道</code> 和句子 <code>我的叉子被放在哪里</code> 组成了 <code>你知道我的叉子被放在哪里</code>，是另一个陈述句。</li>
+<li>读到 <code>吗</code>，这是一个疑问语气词，用于表达疑问。</li>
+<li>句子 <code>你知道我的叉子被放在哪里</code> 和疑问语气词 <code>吗</code> 组成 <code>你知道我的叉子被放在哪里吗</code>，表达对被陈述的事情真实性的询问，是疑问句。</li>
+<li>读完了所有的单词，最后得到的疑问句就是整个句子。</li>
+</ol>
+<p>在上述过程中，我们不断将小的句子成分归纳为大的句子成分，在这样归纳的过程中，我们将句子中的每个单词相互关联起来，最终理解句子表达的含义。从中我们可以知道这是一个疑问，想要得到的回答是“你”与“我的叉子被放”两个事物间是否存在“知道”的关系等等。（这样说话好别扭。）</p>
+<p>自我们出生，我们就在特定的语言环境下学习人与人的交流方式。耳濡目染，我们的大脑就形成了对语言结构的识别能力。这使我们知道一些单词表示事物，一些单词表示行为、一些单词用于形容、一些单词用于表示关系…… 我们也明白了名词加上形容词的修饰变成了新的名词，名词加动词加上另一个名词或者句子会构成新的句子。我们在平时交流时或许并不在意，但是这样的匹配能力却天生存在于我们大脑的特定脑区中。匹配所使用的规则，我们则称其为<strong>文法</strong>。</p>
+<h2 id="三、从自然语言转变"><a href="#三、从自然语言转变" class="headerlink" title="三、从自然语言转变"></a>三、从自然语言转变</h2><h3 id="（1）规约的视角"><a href="#（1）规约的视角" class="headerlink" title="（1）规约的视角"></a>（1）规约的视角</h3><p>在上一节中我们使用一个自然语言的例句描述了理解句子的过程，并从中引出了文法的概念。现在我们可以整理一下在理解这个句子的过程中用到的文法：</p>
+<ul>
+<li>形容词加名词还是名词</li>
+<li>介词加名词组成副词</li>
+<li>动词加副词还是动词</li>
+<li>名词加动词组成陈述句</li>
+<li>名词加动词加名词也组成陈述句</li>
+<li>陈述句加疑问语气词组成疑问句</li>
+<li>陈述句和疑问句都是句子</li>
+<li>“你”、“叉子”、“哪里” 是名词</li>
+<li>“知道”、“被放” 是动词</li>
+<li>“我的” 是形容词</li>
+<li>“在” 是介词</li>
+<li>“吗” 是疑问语气词</li>
+</ul>
+<p>我们可以发现，我们所有的文法描述都分为两个部分，前一部分是后一部分的组成。前一部分可以有多个成分，后一部分只能有一个。如 “名词加动词组成陈述句”，前一部分包括 “名词” 和 “动词”，而后一部分只包括 “陈述句”。</p>
+<p>存在着这样的关系，意味着我们能够<strong>将文法组织成树的形式</strong>。对于一条文法规则，以整体作为父节点，以各组成成分为子节点。这样我们就得到了一个根为 “句子”、叶节点为各单词的树。我们称这样的树为文法树或语法树。对于我们的例句，其文法树如下所示：</p>
+<img src="/posts/d76cf051/SyntaxTree.png" class="" title="SyntaxTree">
+<p>如此一来，我们对句子的理解过程就抽象为从叶节点开始的文法树构建过程：在最开始，我们将每个单词都作为一棵只有一个节点的树；之后在每一步中，我们都选择一些相邻的树，用一个新的父节点作为这些树新的根；不断重复这一过程，最终我们就得到了一棵文法树。这一过程称为<strong>规约</strong>（Reduction）。</p>
+<h3 id="（2）推导的视角"><a href="#（2）推导的视角" class="headerlink" title="（2）推导的视角"></a>（2）推导的视角</h3><p>上面的叙述中我们都采用了规约的视角，这是我们理解自然语言的过程。但是如果我们选择从语言生成的过程出发，这就带来了推导的视角。</p>
+<p>假定现在我们想要言说某些概念，表达的依旧是 “你知道我的叉子被放在哪里吗” 的含义。那么我们会如何去做呢？我们的思维过程可能是这样的：首先，我想要询问，因此需要一个疑问句，疑问句由陈述句加上疑问语气词组成；其中陈述句希望表达 “你知道我的叉子被放在哪里” 的含义…… </p>
+<p>这样，我们就从说一个句子出发，慢慢构建起了我们所希望说的具体内容。以这个视角，我们会发现文法树并没有发生变化，变化的是我们产生语法树的过程。这一次，我们从只有一个句子作为根节点开始，慢慢通过规则创造了叶节点，直到所有的叶节点变为我们实际可以言说的单词。这一过程就称为<strong>推导</strong>（Derivation）。</p>
+<h2 id="四、语言的形式化"><a href="#四、语言的形式化" class="headerlink" title="四、语言的形式化"></a>四、语言的形式化</h2><h3 id="（1）文法的定义"><a href="#（1）文法的定义" class="headerlink" title="（1）文法的定义"></a>（1）文法的定义</h3><p>我们终于从自然语言中抽象出文法树的概念。现在是时候抛弃我们此前使用的不准确的表述，以形式化的方式定义文法了。</p>
+<blockquote>
+<p>但在此之前需要补充一些表示方法：</p>
+<ul>
+<li>我们将<strong>符号</strong>定义为句子的基本单位，这里所谓的符号是抽象的符号，可以是 a、abandon 或 “阿”，并未只能是单个字母。不同的符号互不相等，这些符号组成的非空有限集称为字母表，记作 $\sum$。</li>
+<li><strong>符号串</strong>是符号所组成的有穷序列。特别的对于长度为零的符号串，记为 $\epsilon$。</li>
+<li>符号串和符号串间可以进行<strong>拼接</strong>操作，若将符号看作长度为 1 的符号串，则符号也可以进行拼接操作。假设有符号或符号串 $x$ 和 $y$，则拼接操作记为 $xy$。</li>
+<li>假设现在有符号串集 $A$ 和 $B$，定义符号串集合的<strong>乘积</strong>操作 $AB = {xy| x \in A, y \in B}$，其中 $xy$ 表示符号串拼接。</li>
+<li>对符号串集合 $A$，定义<strong>幂运算</strong> $A^n = A^{n-1}A, A^0 = {\epsilon}$。</li>
+<li>对字符串集合 $A$，定义<strong>正闭包</strong> $A^+ = \bigcup_{i = 1}^{\infty}A^i$；以及<strong>闭包</strong> $A^* = A^0 \cup A^+$。</li>
+</ul>
+</blockquote>
+<p>文法（Grammar）可以表示为这样一个四元组（可以简记为 $G[Z]$）</p>
+<script type="math/tex; mode=display">
+  G = (V_n, V_t, P, Z)</script><ul>
+<li>$V_n$ 表示<strong>非终结符号</strong>（Non-terminal Symbol）集。即在分析句子的过程中出现的中间符号，如前一节的“名词”、“动词”。</li>
+<li>$V_t$ 表示<strong>终结符号</strong>（Terminal Symbol）集。即实际组成句子的符号，如前一节的“你”、“知道”。</li>
+<li>$P$ 表示<strong>推导规则</strong>（Production Rules）集合，同样也是文法树中父子节点间的约束条件。一条规则可以表示为有序对 $(U, x)$，其中 <script type="math/tex; mode=display">
+U \in V_n, x \in V^*, |U| = 1, |x| \ge 0</script></li>
+<li>$Z$ 表示<strong>开始符号</strong>（推导视角），或称<strong>识别符号</strong>（规约视角）。即文法树的根节点。$Z \in V_n$。</li>
+</ul>
+<p>对于规则，为了表示有序对中两方角色的不同，常使用下面的两种表示方法</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+  U ::= x \\
+  U \rightarrow x
+\end{align*}</script><h3 id="（2）推导与规约"><a href="#（2）推导与规约" class="headerlink" title="（2）推导与规约"></a>（2）推导与规约</h3><h4 id="推导与规约的形式化"><a href="#推导与规约的形式化" class="headerlink" title="推导与规约的形式化"></a>推导与规约的形式化</h4><p>推导的过程，简单来说，就是从开始符号开始，不断使用推导规则，将规则左侧的非终结符替换为右侧的符号串。当然我们也可以形式化地定义推导：</p>
+<p>若对于文法 $G$，定义</p>
+<script type="math/tex; mode=display">
+  v = xUy, w = xuy</script><p>其中 </p>
+<script type="math/tex; mode=display">
+  x, y \in V^*; U \in V_n; u \in V^*</script><p>若 $\exists U::=u \in P$，则 $v$ 可<strong>推导</strong>出 $w$，记为 $v \Rightarrow w$。</p>
+<p>那么对于规约呢？规约是推导的逆运算，所以若有 $v \Rightarrow w$，则 $w$ 可<strong>规约</strong>为 $v$，记为 $w \Leftarrow v$。</p>
+<!-- 语言是满足文法的所有可能句子的集合。通过推导，我们可以定义一个文法所能表达的语言。在此之前我们定义，若 $v$ 经过一步或多步推导可以推出 $w$，则记为 $v \stackrel{+}\Rightarrow w$；同时定义若 $v = w$ 或 $v \stackrel{+}\Rightarrow w$ 记为 $v \stackrel{*}\Rightarrow w$。
+
+于是，满足文法 $G[Z]$ 的**语言**即 
+$$
+  \{x| x \in V_t^*, Z \stackrel{+}\Rightarrow x\}
+$$
+
+记为 $L(G[Z])$。$L(G[Z])$ 中的符号串我们称为**句子**。
+
+另外对于推导/规约过程中出现的包含非终结符的中间形态，我们称其为句型。因此 $x$ 是句型当且仅当 $Z \stackrel{*}\Rightarrow x \land x \in V^*$。 -->
+<h4 id="规范规约与最左推导"><a href="#规范规约与最左推导" class="headerlink" title="规范规约与最左推导"></a>规范规约与最左推导</h4><p>当我们</p>
+<h2 id="五、"><a href="#五、" class="headerlink" title="五、"></a>五、</h2>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>wokron
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://wokron.github.io/posts/d76cf051/" title="从零开始的编译原理1:文法理论">https://wokron.github.io/posts/d76cf051/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BC%96%E8%AF%91/" rel="tag"># 编译</a>
+              <a href="/tags/%E6%96%87%E6%B3%95/" rel="tag"># 文法</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/e7b1cb62/" rel="prev" title="KeepAlive">
+      <i class="fa fa-chevron-left"></i> KeepAlive
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">一、前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E7%9A%84%E6%96%87%E6%B3%95%EF%BC%9A%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">2.</span> <span class="nav-text">二、自然语言的文法：一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E4%BB%8E%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E8%BD%AC%E5%8F%98"><span class="nav-number">3.</span> <span class="nav-text">三、从自然语言转变</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E8%A7%84%E7%BA%A6%E7%9A%84%E8%A7%86%E8%A7%92"><span class="nav-number">3.1.</span> <span class="nav-text">（1）规约的视角</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E6%8E%A8%E5%AF%BC%E7%9A%84%E8%A7%86%E8%A7%92"><span class="nav-number">3.2.</span> <span class="nav-text">（2）推导的视角</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%AF%AD%E8%A8%80%E7%9A%84%E5%BD%A2%E5%BC%8F%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">四、语言的形式化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E6%96%87%E6%B3%95%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">4.1.</span> <span class="nav-text">（1）文法的定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89%E6%8E%A8%E5%AF%BC%E4%B8%8E%E8%A7%84%E7%BA%A6"><span class="nav-number">4.2.</span> <span class="nav-text">（2）推导与规约</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8E%A8%E5%AF%BC%E4%B8%8E%E8%A7%84%E7%BA%A6%E7%9A%84%E5%BD%A2%E5%BC%8F%E5%8C%96"><span class="nav-number">4.2.1.</span> <span class="nav-text">推导与规约的形式化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%84%E8%8C%83%E8%A7%84%E7%BA%A6%E4%B8%8E%E6%9C%80%E5%B7%A6%E6%8E%A8%E5%AF%BC"><span class="nav-number">4.2.2.</span> <span class="nav-text">规范规约与最左推导</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81"><span class="nav-number">5.</span> <span class="nav-text">五、</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="wokron"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">wokron</p>
+  <div class="site-description" itemprop="description">StringCat的个人博客。记录学习、分享经验</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">66</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">68</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wokron" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wokron" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/stringcatwok@gmail.com" title="E-Mail → stringcatwok@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wokron</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      总访问人数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      总阅读次数：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</div>
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

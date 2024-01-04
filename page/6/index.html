@@ -159,6 +159,127 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/ba0d6023/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="wokron">
+      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="StringCat的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/posts/ba0d6023/" class="post-title-link" itemprop="url">机器学习笔记之逻辑回归</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-05 16:06:34" itemprop="dateCreated datePublished" datetime="2022-10-05T16:06:34+08:00">2022-10-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" itemprop="url" rel="index"><span itemprop="name">学习笔记</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、前言——逻辑分类"><a href="#一、前言——逻辑分类" class="headerlink" title="一、前言——逻辑分类"></a>一、前言——逻辑分类</h2><p>机器学习研究的另一种问题为分类问题。给出一些信息，判断是或不是某种物体、属性。比如说给出病人的各项检测指标，判断其是否患病。</p>
+<p>对于是、否的判断，这里用 1、0 表示。则训练样本就与之前的线性与多项式回归样本类似。</p>
+<p>我们可以试着用一元线性回归来拟合分类问题的样本。</p>
+<p>比如对于如下的样本数据<br><img src="/posts/ba0d6023/scatter1.png" class="" title="scatter1"></p>
+<p>进行一元线性回归后得到<br><img src="/posts/ba0d6023/linear1.png" class="" title="linear1"></p>
+<p>我们将数值大于 0.5 的部分看做预测为真，小于 0.5 的部分看做预测为假。可以看到，此时一元线性回归就已经可以使所有样本点符合判断结果了。</p>
+<p>但如果我们在 x 值更大的区域增加更多的样本点，再进行回归<br><img src="/posts/ba0d6023/linear2.png" class="" title="linear2"></p>
+<p>可以看到，有一部分应为 1 的点被分在了 y &lt; 0.5 的部分，被预测为 0。这说明只凭线性回归无法解决分类问题。我们需要另一种回归方法。</p>
+<h2 id="二、逻辑回归"><a href="#二、逻辑回归" class="headerlink" title="二、逻辑回归"></a>二、逻辑回归</h2><p>线性回归失效的原因在于，拟合的目标是对所有点的方差最小，在分类边界上的样本可能因为其他样本的影响而被分到另一类。而为什么会受到其他样本的影响呢？因为线性回归得到的表达式值域趋向于无穷；而样本的结果却只有 0、1。所以对于一个样本，只要它的特征数值足够大或足够小，就足以产生极大的损失。（为什么可能出现足够远的样本？因为分类问题需要划分出一个边界，在边界两侧可能存在足够大的范围。）</p>
+<p>我们要对线性回归进行修改，需要将回归得到的表达式的值域缩小到 0 至 1 的范围。</p>
+<p>这里引入 Sigmoid 函数</p>
+<script type="math/tex; mode=display">
+    S(z) = \frac{1}{1 + e^{-z}}</script><p>它的图像如下<br><img src="/posts/ba0d6023/sigmoid.png" class="" title="sigmoid"></p>
+<p>该函数定义域为 $(-\infty, +\infty)$，值域为 $(0, 1)$</p>
+<p>假设原本线性回归的函数为</p>
+<script type="math/tex; mode=display">
+    f_{\vec{w}, b}(\vec{x}) = \vec{w} \cdot \vec{x} + b</script><p>则现在令</p>
+<script type="math/tex; mode=display">
+    f_{\vec{w}, b}(\vec{x}) = S(\vec{w} \cdot \vec{x} + b)</script><p>即</p>
+<script type="math/tex; mode=display">
+    f_{\vec{w}, b}(\vec{x}) = \frac{1}{1 + e^{\vec{w} \cdot \vec{x} + b}}</script><p>为新的函数。其中 $S(z)$ 即为 Sigmoid 函数。这样，表达式的值域就缩小为了 $(0, 1)$，从而消除了值域对损失的影响。</p>
+<h2 id="三、损失函数"><a href="#三、损失函数" class="headerlink" title="三、损失函数"></a>三、损失函数</h2><p>如果我们依旧采用线性回归时的损失函数计算方式，就会发现函数非凸，那么梯度下降法将不能得到很好的结果。因此我们重新定义损失函数。</p>
+<p>设单样本损失函数</p>
+<script type="math/tex; mode=display">
+    loss(f_{\vec{w},b}(\vec{x}^{(i)}), y^{(i)}) = \begin{cases}
+        -log(f_{\vec{w},b}(\vec{x}^{(i)}))  &  \text{if } y^{(i)} = 1 \\
+        -log(1 - f_{\vec{w},b}(\vec{x}^{(i)})) & \text{if } y^{(i)} = 0
+    \end{cases}</script><p>这个损失函数保证了在样本真实结果为真或为假的条件下都能以同样的标准衡量预测的误差。</p>
+<p>另外，因为 $y^{(i)}$ 的取值只有 0、1。所以可以将上式化简为单个公式的形式</p>
+<script type="math/tex; mode=display">
+    loss(f_{\vec{w},b}(\vec{x}^{(i)}), y^{(i)}) = 
+    -y^{(i)}log(f_{\vec{w},b}(\vec{x}^{(i)})) - (1 - y^{(i)})log(1 - f_{\vec{w},b}(\vec{x}^{(i)}))</script><p>则全样本代价函数</p>
+<script type="math/tex; mode=display">
+    J(\vec{w}, b) = \frac{1}{m} \sum_{i = 1}^m loss(f_{\vec{w},b}(\vec{x}^{(i)}), y^{(i)})</script><h2 id="四、梯度下降"><a href="#四、梯度下降" class="headerlink" title="四、梯度下降"></a>四、梯度下降</h2><p>我们对损失函数求导，得</p>
+<script type="math/tex; mode=display">
+    \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}}
+    = \frac{1}{m}\sum_{i=1}^m (f_{\vec{w},b}(\vec{x}^{(i)}) - y^{(i)}) x^{(i)}_j \\
+    \frac{\partial{J(\vec{w}, b)}}{\partial{b}}
+    = \frac{1}{m}\sum_{i=1}^m (f_{\vec{w},b}(\vec{x}^{(i)}) - y^{(i)})</script><p>可以发现求导后的公式形式与线性回归时的相同，这是有意为之的。但是要注意的是， $f_{\vec{w},b}(\vec{x}^{(i)})$ 在线性回归与逻辑回归时并不相同。逻辑回归时的表达式是线性回归时的加上 Sigmoid 函数。</p>
+<p>按照与线性回归相同的方法，以确定的步长 $\alpha$ 进行梯度下降，不断迭代</p>
+<script type="math/tex; mode=display">
+    w_j = w_j - \alpha \frac{\partial{J(\vec{w}, b)}}{\partial{w_j}} \\
+    b = b - \alpha \frac{\partial{J(\vec{w}, b)}}{\partial{b}}</script><p>最终便可找到使损失函数最小的 $\vec{w}, b$。</p>
+<h2 id="五、代码实现"><a href="#五、代码实现" class="headerlink" title="五、代码实现"></a>五、代码实现</h2><p>在线性回归的基础上，修改损失函数的计算<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">sigmoid</span>(<span class="params">x</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> / (<span class="number">1</span> + np.exp(-x))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_loss</span>(<span class="params">actual_y, y</span>):</span><br><span class="line">    <span class="keyword">return</span> -y * math.log(actual_y) - (<span class="number">1</span> - y) * math.log(<span class="number">1</span> - actual_y)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_cost</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m = X.shape[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    sum_cost = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        z = np.dot(X[i], w) + b</span><br><span class="line">        actual_y = sigmoid(z)</span><br><span class="line">        sum_cost += get_loss(actual_y, y[i])</span><br><span class="line">    total_cost = sum_cost / m</span><br><span class="line">    <span class="keyword">return</span> total_cost</span><br></pre></td></tr></table></figure></p>
+<p>修改梯度的计算<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_gradient</span>(<span class="params">w, b, X, y</span>):</span><br><span class="line">    m, n = X.shape</span><br><span class="line"></span><br><span class="line">    sum_w = np.zeros((n, ))</span><br><span class="line">    sum_b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">        err = sigmoid(np.dot(w, X[i]) + b) - y[i]</span><br><span class="line">        sum_b += err</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">            sum_w[j] += X[i,j] * err</span><br><span class="line"></span><br><span class="line">    gradients_w = sum_w / m</span><br><span class="line">    gradient_b = sum_b / m</span><br><span class="line">    <span class="keyword">return</span> gradients_w, gradient_b</span><br></pre></td></tr></table></figure></p>
+<p>拟合结果<br><img src="/posts/ba0d6023/logical.png" class="" title="logical"></p>
+<p>损失函数<br><img src="/posts/ba0d6023/cost.png" class="" title="cost"></p>
+<p>对样本的预测<br><img src="/posts/ba0d6023/predict.png" class="" title="predict"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/dfc6ce5/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1715,89 +1836,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://wokron.github.io/posts/2c835ddc/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.jpg">
-      <meta itemprop="name" content="wokron">
-      <meta itemprop="description" content="StringCat的个人博客。记录学习、分享经验">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="StringCat的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/posts/2c835ddc/" class="post-title-link" itemprop="url">只出现一次的数字</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-10 22:00:43" itemprop="dateCreated datePublished" datetime="2022-09-10T22:00:43+08:00">2022-09-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-26 10:38:38" itemprop="dateModified" datetime="2023-06-26T10:38:38+08:00">2023-06-26</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="136-只出现一次的数字"><a href="#136-只出现一次的数字" class="headerlink" title="136. 只出现一次的数字"></a>136. 只出现一次的数字</h2><blockquote>
-<p>给定一个非空整数数组，除了某个元素只出现一次以外，其余每个元素均出现两次。找出&gt;那个只出现了一次的元素。</p>
-<p>说明：<br>你的算法应该具有线性时间复杂度。 你可以不使用额外空间来实现吗？</p>
-</blockquote>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>题目本身很简单，但是要做到O(1)的空间复杂度还是需要思考的。正确的做法是使用位运算，</p>
-<p>具体来说，是利用异或的运算性质。即两个相同的数异或为0，任何数与0异或得其本身。异或的这一性质用于偶数次出现的元素很有用处。</p>
-<p>对于本道题，就是需要将所有数一同进行异或运算。因为异或满足交换律，所以所有出现偶数次（两次）的数结合都得0，而所有出现奇数次（一次）的数则保持其本身不变。又因数组中只有一个元素出现一次，因此全部异或的结果就是只出现一次的数本身。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">singleNumber</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> ans = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">auto</span> num : nums)</span><br><span class="line">            ans ^= num;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>或许以后会总结一篇位运算的用法</p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1869,7 +1907,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-count">66</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1882,7 +1920,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-count">68</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
