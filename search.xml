@@ -5955,4 +5955,107 @@ U \in V_n, x \in V^*, |U| = 1, |x| \ge 0</script></li>
         <tag>文法</tag>
       </tags>
   </entry>
+  <entry>
+    <title>从零开始的编译原理（2）：词法分析与有穷自动机</title>
+    <url>/posts/24c6e53e/</url>
+    <content><![CDATA[<h2 id="一、前言"><a href="#一、前言" class="headerlink" title="一、前言"></a>一、前言</h2><blockquote>
+<p>因而，每一生物的有机形体都是一个神圣的机器，或一台无限地优越于任何人造的自动机器的自然的自动机器（automata）。因为人的技艺所制造的机器的每一部分并非机器。……而自然的机器，即有机体，在其无限小的部分仍是机器。</p>
+<p>—— 戈特弗里德·威廉·莱布尼茨《单子论》第 64 节</p>
+</blockquote>
+<span id="more"></span>
+<p>本章将从词法分析所用的 3 型文法入手，引入自动机的概念，并详细介绍有穷自动机的原理及实现。最终实现编译程序的词法分析模块。</p>
+<h2 id="二、正则文法的解析过程"><a href="#二、正则文法的解析过程" class="headerlink" title="二、正则文法的解析过程"></a>二、正则文法的解析过程</h2><p>在第 1 章的最后我们介绍了 3 型文法。3 型文法也称正则文法，特征是对于文法中的每一条规则，其右侧要么是一个终结符，要么是一个终结符加上一个非终结符，且非终结符只位于终结符的一侧。根据非终结符位置的不同分为左线性和右线性。</p>
+<blockquote>
+<p>或许有些人会这样讲：“左线性是终结符在右侧；右线性是终结符在左侧”。但是这样实在太别扭了。应该说 “左线性是非终结符在左侧；右线性是非终结符在右侧”。</p>
+</blockquote>
+<p>为什么通过这一约束，3 型文法就能区别于 2 型文法了呢？我们可以通过正则文法的解析过程来理解。</p>
+<p>现在有一左线性正则文法 $G_1[Z]$：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+  Z & \rightarrow A1 \\
+  A & \rightarrow B1 | 1 \\
+  B & \rightarrow A0
+\end{align*}</script><p>现在可能不太能看得出来，但是 $G_1[Z]$ 能够接受符号串 $101011$。我们可以画出此符号串对应的文法树。</p>
+<img src="/posts/24c6e53e/regex-tree1.png" class="" title="regex-tree1">
+<p>通过文法树我们可以看出，对于<strong>左线性</strong>正则文法 $G_1[Z]$，其文法树只向<strong>左</strong>增长。当然这一点从规则中也可以看出，只不过不那么直观罢了。</p>
+<p>可为什么具有这样特性的文法就特殊了呢？接下来我们根据文法树，以归约的视角看待符号串 $101011$ 的解析过程：</p>
+<ol>
+<li>读入 <code>1</code>，<code>1</code> 归约得到 <code>A</code>；</li>
+<li>读入 <code>0</code>，<code>A0</code> 归约得到 <code>B</code>；</li>
+<li>读入 <code>1</code>，<code>B1</code> 归约得到 <code>A</code>；</li>
+<li>……</li>
+</ol>
+<p>以此类推，我们就可以发现其中的规律。对于这样的文法，<strong>读入一次即归约一次</strong>。因为文法中最多只有两个符号，所以一旦读入了一个新的符号，则必定进行一次归约。</p>
+<p>同理的，我们考虑右线性正则文法 $G_2[S]$：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+  S & \rightarrow 1A \\
+  A & \rightarrow 0B | 1 \\
+  B & \rightarrow 1A
+\end{align*}</script><p>$101011$ 也能被 $G_2[S]$ 接受。其文法树如下，对于<strong>右线性</strong>正则文法 $G_2[Z]$，其文法树只向<strong>右</strong>增长</p>
+<img src="/posts/24c6e53e/regex-tree2.png" class="" title="regex-tree2">
+<p>而这一次我们以推导的视角来看。文法树的生成过程应该是这样的：</p>
+<ol>
+<li><code>S</code> 推导得到 <code>1A</code>，输出 <code>1</code>；</li>
+<li><code>A</code> 推导得到 <code>0B</code>，输出 <code>0</code>；</li>
+<li><code>B</code> 推导得到 <code>1A</code>，输出 <code>1</code>；</li>
+<li>……</li>
+</ol>
+<p>其中规律是<strong>推导一次即输出一次</strong>。因为非终结符总是出现在左侧，所以每进行一步推导，当前句型左侧就多出一个非终结符。</p>
+<p>由此我们可以看出，不管是左线性还是右线性，对于正则文法，符号串解析的每一步都只与目前唯一的非终结符和正在被解析的终结符有关。</p>
+<p>正因为此，我们可以对正则文法做进一步的抽象。可将当前句型中唯一的非终结符视为当前的<strong>状态</strong>，由于解析了新的终结符而产生了<strong>状态的转移</strong>。</p>
+<h2 id="三、有穷自动机"><a href="#三、有穷自动机" class="headerlink" title="三、有穷自动机"></a>三、有穷自动机</h2><p>这就引入了<strong>有限状态机</strong>的概念。有限状态机又称<strong>有穷自动机</strong>（Finite Automata），之后我们将使用有穷自动机这个名词。</p>
+<p>有穷自动机是表示有限个状态以及在这些状态之间的转移和动作等行为的模型，可以使用图形表示。我们用圆圈表示<strong>状态</strong>，用圆圈间的箭头表示<strong>状态的转移</strong>，其中箭头上的字符表示进行这一状态转移所需要读入的字符。在有穷自动机还未读入任何字符时所处的状态称为<strong>开始状态</strong>，用一个小箭头指向该状态表示。另外还有<strong>接受状态</strong>，当有穷自动机处于该状态时，说明此前读入的符号串可被<strong>识别/接受</strong>，用两个同心圆表示。</p>
+<blockquote>
+<p>“接受” 的概念来自文法，因为有穷自动机实际上就是用于判断正则文法是否接受符号串的机器。</p>
+</blockquote>
+<p>下面一个有穷自动机的例子可以说明上述概念。</p>
+<img src="/posts/24c6e53e/automata1.png" class="" title="automata1">
+<blockquote>
+<p>图是在<a href="https://ivanzuzak.info/noam/webapps/fsm_simulator/">这个网站</a>画的。</p>
+</blockquote>
+<p>图中 S、A、Z 均是状态。状态 S 有一个小箭头指向，因此是开始状态。状态 Z 有两个同心圆，因此是接受状态。状态 S 与状态 A 之间有一箭头从 S 指向 A，同时箭头上有字符 0，说明处于状态 S 时读入字符 0 可以转移到状态 A。其他箭头的含义同理。</p>
+<p>判断某一符号串是否可被有穷自动机接受十分简单。只需要让有穷自动机按顺序读入符号串的每一个符号，并根据箭头做状态转移，等到读入符号串的全部符号后，查看此时是否处于接受状态即可。如果处于接受状态，则证明该符号串可以被有穷自动机识别。</p>
+<p>还以上图中的有穷自动机为例，对于符号串 $0100$，会经过 $S \rightarrow A \rightarrow Z \rightarrow Z$ 的状态转移。最终状态为终止状态。因此 $0100$ 可以被上图的有穷自动机接受。</p>
+<p>根据上一章，我们得知对正则文法的推导或归约等同于状态的转移，因此正则文法实际上和有穷自动机等价。正则文法的推导或归约过程可以用有穷自动机实现。下面分别给出左线性和右线性文法构造有穷自动机的方法：</p>
+<ul>
+<li><strong>左线性</strong>：<ol>
+<li>对于左线性文法 $G_{L}[Z]$。将该文法中的每一个非终结符都视为状态，其中将开始符号 $Z$ 作为<strong>接受状态</strong>。并添加一个<strong>开始状态</strong> $S$。</li>
+<li>对于文法 $G_L$ 中形如 $Q \rightarrow Rt$ 其中 $Q,R \in V_n; t \in V_t$ 的规则，为有穷自动机添加由状态 $R$ 指向状态 $Q$ 的箭头，箭头上的符号为 $t$。</li>
+<li>对于文法 $G_L$ 中形如 $Q \rightarrow t$ 其中 $Q \in V_n; t \in V_t$ 的规则，为有穷自动机添加由状态 $S$ 指向状态 $Q$ 的箭头，箭头上的符号为 $t$。</li>
+</ol>
+</li>
+<li><strong>右线性</strong>：<ol>
+<li>对于左线性文法 $G_{R}[S]$。将该文法中的每一个非终结符都视为状态，其中将开始符号 $S$ 作为<strong>开始状态</strong>。并添加一个<strong>接受状态</strong> $Z$。</li>
+<li>对于文法 $G_R$ 中形如 $Q \rightarrow tR$ 其中 $Q,R \in V_n; t \in V_t$ 的规则，为有穷自动机添加由状态 $Q$ 指向状态 $R$ 的箭头，箭头上的符号为 $t$。</li>
+<li>对于文法 $G_R$ 中形如 $Q \rightarrow t$ 其中 $Q \in V_n; t \in V_t$ 的规则，为有穷自动机添加由状态 $Q$ 指向状态 $Z$ 的箭头，箭头上的符号为 $t$。</li>
+</ol>
+</li>
+</ul>
+<blockquote>
+<p>由正则文法转换为有穷自动机的过程也反映了左线性进行归约、右线性进行推导的这一区别：对于左线性，状态转移箭头所指向的是规则左侧的非终结符对应的状态；而对于右线性，状态转移箭头所指向的是规则右侧的非终结符对于的状态。</p>
+</blockquote>
+<p>据此我们就可以根据上一节中定义的两个正则文法构造有穷自动机。实际上这两个文法所对应的有穷自动机相同。</p>
+<img src="/posts/24c6e53e/automata2.png" class="" title="automata2">
+<p>对于符号串 $101011$，经过 $S \rightarrow A \rightarrow B \rightarrow A \rightarrow B \rightarrow A \rightarrow Z$ 的状态转移过程，被此有穷自动机接受。</p>
+<blockquote>
+<p>左线性文法的文法树中非终结符自底向上、或右线性文法的文法树中非终结符自顶向下，所组成的序列与在有穷自动机中状态转移过程得到的状态序列相同，都是 $SABABAZ$。除了开始状态或接受状态可能不存在。</p>
+</blockquote>
+<p>目前为止，有穷自动机看似十分简单，其实是因为我们只考虑了最简单的情况。让我们再考虑下面的正则文法 $G[S]$：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+  S & \rightarrow 0A | 1B | 1 \\
+  A & \rightarrow \epsilon \\
+  B & \rightarrow 0S
+\end{align*}</script><img src="/posts/24c6e53e/automata3.png" class="" title="automata3">
+<h2 id="四、有穷自动机的形式化"><a href="#四、有穷自动机的形式化" class="headerlink" title="四、有穷自动机的形式化"></a>四、有穷自动机的形式化</h2><h1 id=""><a href="#" class="headerlink" title="#"></a>#</h1><h2 id="五、词法分析子程序"><a href="#五、词法分析子程序" class="headerlink" title="五、词法分析子程序"></a>五、词法分析子程序</h2>]]></content>
+      <categories>
+        <category>教程</category>
+      </categories>
+      <tags>
+        <tag>编译</tag>
+        <tag>文法</tag>
+        <tag>有穷自动机</tag>
+      </tags>
+  </entry>
 </search>
