@@ -30,7 +30,7 @@
 <meta property="og:image" content="https://wokron.github.io/posts/4192c4b7/gcc-stages.png">
 <meta property="og:image" content="https://wokron.github.io/posts/4192c4b7/compiler-stages.jpeg">
 <meta property="article:published_time" content="2024-01-06T08:33:50.000Z">
-<meta property="article:modified_time" content="2024-01-10T08:37:32.074Z">
+<meta property="article:modified_time" content="2024-02-01T07:18:39.111Z">
 <meta property="article:author" content="wokron">
 <meta property="article:tag" content="编译">
 <meta property="article:tag" content="架构">
@@ -197,7 +197,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-01-10 16:37:32" itemprop="dateModified" datetime="2024-01-10T16:37:32+08:00">2024-01-10</time>
+                <time title="修改时间：2024-02-01 15:18:39" itemprop="dateModified" datetime="2024-02-01T15:18:39+08:00">2024-02-01</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -274,14 +274,14 @@
 <blockquote>
 <p>这一点对于表音文字系统来说毫无问题，但是对表意文字系统来说却不那么明显，因为在表意文字系统中，一字即一意。或许也是这个原因，表意文字系统在书写时就使用空格或其他方法进行了分词，而表意文字系统却不然。</p>
 </blockquote>
-<p>我们所要做的是识别字符序列中组合在一起共同表达含义的字符串，将其作为 ”最小的含义单元“。这一单元称之为<strong>词</strong>（Token）。因此在 NLP 领域，这一过程称为<strong>分词</strong>（Tokenization）；在编译领域，这一过程称为<strong>词法分析</strong>（Lexical Analysis）。其中 “Lexical” 指 “词法”。其名词形式 “Lexeme” 可翻译为 “<strong>词素</strong>”。词素和词的不同在于词素意指构成词的字符串本身，而词则指词素所表达的具体含义。（“Token” 也可翻译为 “标记”，这更能体现词的抽象意味。）</p>
-<p>词和词素的不同也可以体现出词法分析阶段所作的工作，那就是识别能够构成词素的字符串，将其转化为具有特定含义的词。</p>
+<p>我们所要做的是识别字符序列中组合在一起共同表达含义的符号串，将其作为 ”最小的含义单元“。这一单元称之为<strong>词</strong>（Token）。因此在 NLP 领域，这一过程称为<strong>分词</strong>（Tokenization）；在编译领域，这一过程称为<strong>词法分析</strong>（Lexical Analysis）。其中 “Lexical” 指 “词法”。其名词形式 “Lexeme” 可翻译为 “<strong>词素</strong>”。词素和词的不同在于词素意指构成词的符号串本身，而词则指词素所表达的具体含义。（“Token” 也可翻译为 “标记”，这更能体现词的抽象意味。）</p>
+<p>词和词素的不同也可以体现出词法分析阶段所作的工作，那就是识别能够构成词素的符号串，将其转化为具有特定含义的词。</p>
 <blockquote>
 <p>突然想到一点。如果某些 “中文编程” 的 “爱好者” 有心的话，完全可以利用汉字的特性做一个不需要词法分析的编译器。这样至少有些技术含量。</p>
 </blockquote>
 <p>词法分析的实现依赖于我们的文法理论。在这里我们要定义两个概念。如果对于一个文法 $G[Z]$，句子 $s \in V_t^*$，有 $s \in L(G[Z])$，那么称句子 $s$ 可被文法 $G$ 接受。否则称句子 $s$ 被文法 $G$ 拒绝。</p>
 <p>为了将字符序列识别为特定的词，我们所需要做的就是为每个词 $t$ 定义对应的文法 $G_t$。其中文法的终结符集 $V_t^{(G_t)} = {\text{字符序列中可能出现的所有字符}}$。这样，对于任意的字符序列 $s$，我们只需要一种算法判断 $s$ 是否可被文法 $G_t$ 接受，就能识别 $s$ 所对应的词的类型了。</p>
-<p>实现词法分析功能的子程序称为<strong>词法分析器</strong>（Lexer）。在实现时，词法分析器会按顺序不断读入字符，并判断已经读入的字符串是否被某一文法所接受，如果被接受，则此时的字符串为一词素，接受该字符串的文法对应的类型即词的类型。</p>
+<p>实现词法分析功能的子程序称为<strong>词法分析器</strong>（Lexer）。在实现时，词法分析器会按顺序不断读入字符，并判断已经读入的符号串是否被某一文法所接受，如果被接受，则此时的符号串为一词素，接受该符号串的文法对应的类型即词的类型。</p>
 <p>在词法分析阶段，我们通常使用的文法是 3 型文法，即正则文法。实现判断符号序列是否可被文法接受则需要用到自动机理论，对于 3 型文法，我们需要使用有穷自动机。对于有穷自动机的相关理论和实现将在之后的章节讲解。</p>
 <h3 id="（2）语法分析"><a href="#（2）语法分析" class="headerlink" title="（2）语法分析"></a>（2）语法分析</h3><p>字符序列经过词法分析后变为词序列或词流，之后进入<strong>语法分析</strong>（Syntax Analysis）阶段，按照定义的文法将词序列解析为文法树的形式。</p>
 <p>实现语法分析功能的子程序称为<strong>语法分析器</strong>（Parser）。语法分析的方法主要有两大类。第一类是从句子的生成角度思考，从开始符号推导出与输入序列相同的句子，推导过程产生的文法树即语法分析的结果。这一类方法主要包括 $LL(n)$ 分析法。</p>

@@ -5651,14 +5651,14 @@
 <blockquote>
 <p>这一点对于表音文字系统来说毫无问题，但是对表意文字系统来说却不那么明显，因为在表意文字系统中，一字即一意。或许也是这个原因，表意文字系统在书写时就使用空格或其他方法进行了分词，而表意文字系统却不然。</p>
 </blockquote>
-<p>我们所要做的是识别字符序列中组合在一起共同表达含义的字符串，将其作为 ”最小的含义单元“。这一单元称之为<strong>词</strong>（Token）。因此在 NLP 领域，这一过程称为<strong>分词</strong>（Tokenization）；在编译领域，这一过程称为<strong>词法分析</strong>（Lexical Analysis）。其中 “Lexical” 指 “词法”。其名词形式 “Lexeme” 可翻译为 “<strong>词素</strong>”。词素和词的不同在于词素意指构成词的字符串本身，而词则指词素所表达的具体含义。（“Token” 也可翻译为 “标记”，这更能体现词的抽象意味。）</p>
-<p>词和词素的不同也可以体现出词法分析阶段所作的工作，那就是识别能够构成词素的字符串，将其转化为具有特定含义的词。</p>
+<p>我们所要做的是识别字符序列中组合在一起共同表达含义的符号串，将其作为 ”最小的含义单元“。这一单元称之为<strong>词</strong>（Token）。因此在 NLP 领域，这一过程称为<strong>分词</strong>（Tokenization）；在编译领域，这一过程称为<strong>词法分析</strong>（Lexical Analysis）。其中 “Lexical” 指 “词法”。其名词形式 “Lexeme” 可翻译为 “<strong>词素</strong>”。词素和词的不同在于词素意指构成词的符号串本身，而词则指词素所表达的具体含义。（“Token” 也可翻译为 “标记”，这更能体现词的抽象意味。）</p>
+<p>词和词素的不同也可以体现出词法分析阶段所作的工作，那就是识别能够构成词素的符号串，将其转化为具有特定含义的词。</p>
 <blockquote>
 <p>突然想到一点。如果某些 “中文编程” 的 “爱好者” 有心的话，完全可以利用汉字的特性做一个不需要词法分析的编译器。这样至少有些技术含量。</p>
 </blockquote>
 <p>词法分析的实现依赖于我们的文法理论。在这里我们要定义两个概念。如果对于一个文法 $G[Z]$，句子 $s \in V_t^*$，有 $s \in L(G[Z])$，那么称句子 $s$ 可被文法 $G$ 接受。否则称句子 $s$ 被文法 $G$ 拒绝。</p>
 <p>为了将字符序列识别为特定的词，我们所需要做的就是为每个词 $t$ 定义对应的文法 $G_t$。其中文法的终结符集 $V_t^{(G_t)} = {\text{字符序列中可能出现的所有字符}}$。这样，对于任意的字符序列 $s$，我们只需要一种算法判断 $s$ 是否可被文法 $G_t$ 接受，就能识别 $s$ 所对应的词的类型了。</p>
-<p>实现词法分析功能的子程序称为<strong>词法分析器</strong>（Lexer）。在实现时，词法分析器会按顺序不断读入字符，并判断已经读入的字符串是否被某一文法所接受，如果被接受，则此时的字符串为一词素，接受该字符串的文法对应的类型即词的类型。</p>
+<p>实现词法分析功能的子程序称为<strong>词法分析器</strong>（Lexer）。在实现时，词法分析器会按顺序不断读入字符，并判断已经读入的符号串是否被某一文法所接受，如果被接受，则此时的符号串为一词素，接受该符号串的文法对应的类型即词的类型。</p>
 <p>在词法分析阶段，我们通常使用的文法是 3 型文法，即正则文法。实现判断符号序列是否可被文法接受则需要用到自动机理论，对于 3 型文法，我们需要使用有穷自动机。对于有穷自动机的相关理论和实现将在之后的章节讲解。</p>
 <h3 id="（2）语法分析"><a href="#（2）语法分析" class="headerlink" title="（2）语法分析"></a>（2）语法分析</h3><p>字符序列经过词法分析后变为词序列或词流，之后进入<strong>语法分析</strong>（Syntax Analysis）阶段，按照定义的文法将词序列解析为文法树的形式。</p>
 <p>实现语法分析功能的子程序称为<strong>语法分析器</strong>（Parser）。语法分析的方法主要有两大类。第一类是从句子的生成角度思考，从开始符号推导出与输入序列相同的句子，推导过程产生的文法树即语法分析的结果。这一类方法主要包括 $LL(n)$ 分析法。</p>
@@ -5770,7 +5770,7 @@
 <li>符号串和符号串间可以进行<strong>拼接</strong>操作，若将符号看作长度为 1 的符号串，则符号也可以进行拼接操作。假设有符号或符号串 $x$ 和 $y$，则拼接操作记为 $xy$。</li>
 <li>假设现在有符号串集 $A$ 和 $B$，定义符号串集合的<strong>乘积</strong>操作 $AB = {xy| x \in A, y \in B}$，其中 $xy$ 表示符号串拼接。</li>
 <li>对符号串集合 $A$，定义<strong>幂运算</strong> $A^n = A^{n-1}A, A^0 = {\epsilon}$。</li>
-<li>对字符串集合 $A$，定义<strong>正闭包</strong> $A^+ = \bigcup_{i = 1}^{\infty}A^i$；以及<strong>闭包</strong> $A^* = A^0 \cup A^+$。</li>
+<li>对符号串集合 $A$，定义<strong>正闭包</strong> $A^+ = \bigcup_{i = 1}^{\infty}A^i$；以及<strong>闭包</strong> $A^* = A^0 \cup A^+$。</li>
 </ul>
 </blockquote>
 <p>文法（Grammar）可以表示为这样一个四元组（可以简记为 $G[Z]$）</p>
@@ -6014,9 +6014,9 @@ U \in V_n, x \in V^*, |U| = 1, |x| \ge 0</script></li>
 <blockquote>
 <p>图是在<a href="https://ivanzuzak.info/noam/webapps/fsm_simulator/">这个网站</a>画的。</p>
 </blockquote>
-<p>图中 S、A、Z 均是状态。状态 S 有一个小箭头指向，因此是开始状态。状态 Z 有两个同心圆，因此是接受状态。状态 S 与状态 A 之间有一箭头从 S 指向 A，同时箭头上有字符 0，说明处于状态 S 时读入字符 0 可以转移到状态 A。其他箭头的含义同理。</p>
+<p>图中 $S、A、Z$ 均是状态。状态 $S$ 有一个小箭头指向，因此是开始状态。状态 Z 有两个同心圆，因此是接受状态。状态 $S$ 与状态 $A$ 之间有一箭头从 $S$ 指向 $A$，同时箭头上有字符 $0$，说明处于状态 $S$ 时读入字符 $0$ 可以转移到状态 $A$。其他箭头的含义同理。</p>
 <p>判断某一符号串是否可被有穷自动机接受十分简单。只需要让有穷自动机按顺序读入符号串的每一个符号，并根据箭头做状态转移，等到读入符号串的全部符号后，查看此时是否处于接受状态即可。如果处于接受状态，则证明该符号串可以被有穷自动机识别。</p>
-<p>还以上图中的有穷自动机为例，对于符号串 $0100$，会经过 $S \rightarrow A \rightarrow Z \rightarrow Z$ 的状态转移。最终状态为终止状态。因此 $0100$ 可以被上图的有穷自动机接受。</p>
+<p>还以上图中的有穷自动机为例，对于符号串 $0100$，会经过 $S \rightarrow A \rightarrow Z \rightarrow Z$ 的状态转移。最终状态为接受状态。因此 $0100$ 可以被上图的有穷自动机接受。</p>
 <p>根据上一章，我们得知对正则文法的推导或归约等同于状态的转移，因此正则文法实际上和有穷自动机等价。正则文法的推导或归约过程可以用有穷自动机实现。下面分别给出左线性和右线性文法构造有穷自动机的方法：</p>
 <ul>
 <li><strong>左线性</strong>：<ol>
@@ -6047,8 +6047,232 @@ U \in V_n, x \in V^*, |U| = 1, |x| \ge 0</script></li>
   S & \rightarrow 0A | 1B | 1 \\
   A & \rightarrow \epsilon \\
   B & \rightarrow 0S
-\end{align*}</script><img src="/posts/24c6e53e/automata3.png" class="" title="automata3">
-<h2 id="四、有穷自动机的形式化"><a href="#四、有穷自动机的形式化" class="headerlink" title="四、有穷自动机的形式化"></a>四、有穷自动机的形式化</h2><h1 id=""><a href="#" class="headerlink" title="#"></a>#</h1><h2 id="五、词法分析子程序"><a href="#五、词法分析子程序" class="headerlink" title="五、词法分析子程序"></a>五、词法分析子程序</h2>]]></content>
+\end{align*}</script><p>这是一个右线性文法，我们可以按照上面提到的方法将其构造成有穷自动机。如下图所示，图中的 <code>$</code> 指空符号串 $\epsilon$。</p>
+<img src="/posts/24c6e53e/automata3.png" class="" title="automata3">
+<p>看似没有什么特别的。但是如果现在我问一些问题，就会发现这个有穷自动机有着很多奇怪的地方。</p>
+<p>比如说，$1$ 能够被这一有穷自动机接受吗？因为文法中存在规则 $S \rightarrow 1$，所以肯定可以被接受。但是从有穷自动机图中看来，初始状态为 $S$，读入 $1$ 之后却可以从两个不同的箭头转移到不同的状态。既可以是接受状态 $Z$，也可以是普通状态 $B$。这样又要如何判断哪个状态是正确的呢？</p>
+<p>又比如说，$0$ 能够被这一有穷自动机接受吗？从有穷自动机图中看来，初始状态为 $S$，读入 $0$ 之后转移到状态 $A$。但是状态 $A$ 到状态 $Z$ 之间存在一个箭头，其上的符号为 $\epsilon$，这意味着不读入符号也可以进行状态转移。那么读入 $0$ 之后的状态究竟应该是 $A$ 还是 $Z$ 呢？</p>
+<p>要回答这样的问题，我们不能再使用不严谨的语言了。下面我们需要将有穷自动机以数学的语言加以形式化。</p>
+<h2 id="四、有穷自动机的形式化"><a href="#四、有穷自动机的形式化" class="headerlink" title="四、有穷自动机的形式化"></a>四、有穷自动机的形式化</h2><h3 id="（1）有穷自动机的定义"><a href="#（1）有穷自动机的定义" class="headerlink" title="（1）有穷自动机的定义"></a>（1）有穷自动机的定义</h3><p>在形式上，有穷自动机分为两类，分别是<strong>确定的有穷自动机</strong>（DFA, Deterministic Finite Automata）和 <strong>不确定的有穷自动机</strong>（NFA, Nondeterministic Finite Automata）。</p>
+<p>本文第一和第二个图所展示的有穷自动机为 DFA。DFA $M$ 可以由一个五元组表示：</p>
+<script type="math/tex; mode=display">
+  M = (S, \Sigma, \sigma, s_0, Z)</script><p>其中</p>
+<ul>
+<li>$S$ 表示<strong>有穷状态集</strong>。</li>
+<li>$\Sigma$ 表示输入字符的集合，也即<strong>字母表</strong>，注意 $\epsilon \notin \Sigma$</li>
+<li>$\sigma$ 为<strong>状态转移函数</strong>，其中 $\sigma: S \times \Sigma \rightarrow S$。</li>
+<li>$s_0$ 表示<strong>初始状态</strong>，其中 $s_0 \in S$。</li>
+<li>$Z$ 表示<strong>接受状态集</strong>，其中 $Z \subseteq S$。</li>
+</ul>
+<blockquote>
+<p>由于状态转移函数 $\sigma$ 的两个自变量的取值范围均有穷且离散，所以我们可以用一个二维表格表示状态转移函数，这一表格称为有穷自动机的<strong>状态转移矩阵</strong>。表格的第一行和第一列表示两个自变量，其余部分表示状态转移后的取值。还举如下的有穷自动机为例，我们给出其状态转移矩阵。</p>
+<img src="/posts/24c6e53e/automata1.png" class="" title="automata1">
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$0$</th>
+<th>$1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$S$</td>
+<td>$A$</td>
+<td>$\phi$</td>
+</tr>
+<tr>
+<td>$A$</td>
+<td>$\phi$</td>
+<td>$Z$</td>
+</tr>
+<tr>
+<td>$Z$</td>
+<td>$Z$</td>
+<td>$\phi$</td>
+</tr>
+<tr>
+<td>$\phi$</td>
+<td>$\phi$</td>
+<td>$\phi$</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>注意这里增加了一个自动机中不存在的新状态 $\phi$。这是为了填补状态转移矩阵中无法接受的符号造成的空缺，代表一个<strong>永远不被接受</strong>的状态。当然为了方便，我们也可以直接将 $\phi$ 处留空。</p>
+</blockquote>
+<p>通过 DFA 的形式化定义，我们可以定义 DFA 所接受的符号串：对于 DFA $M$，令 $a = a_1a_2… a_n, a \in \Sigma^*$，若存在 $\sigma(…\sigma(\sigma(s_0, a_1), a_2)…, a_n) = s_n$ 且 $s_n \in Z$，则称 $a$ 可被 $M$ 接受。</p>
+<p>如果我们记 $\sigma(…\sigma(\sigma(s_0, a_1), a_2)…, a_n) = s_n$ 为 $\sigma(s_0, a) = s_n$。则 DFA $M$ 所接受的语言可以表示为 $L(M) = {a | \sigma(s_0, a) = s_n, s_n \in Z, a \in \Sigma^* }$</p>
+<p>而如果在 DFA 的基础上放宽一些限制条件，我们就得到了 NFA。本文第三个图所展示的有穷自动机为 NFA，这也是该有穷自动机和之前的性质有所不同的原因。NFA $M’$ 同样可由一个五元组表示：</p>
+<script type="math/tex; mode=display">
+  M' = (S, \Sigma \cup \{\epsilon\}, \sigma', s_0, Z)</script><p>其中</p>
+<ul>
+<li>$S$ 表示<strong>有穷状态集</strong>，与 DFA 相同。</li>
+<li>$\Sigma$ 表示<strong>字母表</strong>加上 $\epsilon$，这意味着 NFA 所接受的符号包括空字符。</li>
+<li>$\sigma$ 为<strong>状态转移函数</strong>，其中 $\sigma: S \times \Sigma \cup {\epsilon} \rightarrow 2^S$。（$2^S$ 是 $S$ 的幂集，即 $S$ 的所有可能子集的集合。这意味着 NFA 的 $\sigma$ 的取值为集合 $S’ \subseteq S$ 而非 $s \in S$。）</li>
+<li>$s_0$ 表示<strong>初始状态</strong>，其中 $s_0 \in S$，与 DFA 相同。</li>
+<li>$Z$ 表示<strong>接受状态集</strong>，其中 $Z \subseteq S$，与 DFA 相同。</li>
+</ul>
+<p>由此我们可以看出，NFA 相较于 DFA 放宽的条件有两处：</p>
+<ol>
+<li>将 $\epsilon$ 加入到接受符号中，由于对任意 $a = a<em>1 a_2 … a_n, a \in \Sigma^*$ ，对任意的 $i \in [0, n]$，有 $a_1 … a_i \epsilon a</em>{i+1}…a<em>n = a_1…a_i a</em>{i+1} … a_n = a$。这意味着在任意时刻 NFA 都<strong>可以无条件的读入 $\epsilon$ 进行状态转移</strong>。</li>
+<li>$\sigma$ 的值域为 $2^S$，这意味着一次状态转移<strong>有多个不同的状态可以选择</strong>，而非只能转移到单一状态。</li>
+</ol>
+<p>NFA 放宽了条件，也为理解和使用带来了困难。可以无条件读入 $\epsilon$，那么什么时候读入是合理的呢？允许状态转移后有多个状态，那么哪一个状态才是当前状态？终止条件又要如何确定？</p>
+<p>为了解答这些问题，我们要形式化地定义 NFA 所接受的符号串。对于 NFA $M’$，我们定义 $\sigma’: 2^S \times \Sigma \cup {\epsilon} \rightarrow 2^S$，其中对于 $\sigma’(S’<em>{i-1}, a’_i) = S’_i$，有 $S’_i = \bigcup</em>{s’<em>{i-1} \in S’</em>{i-1}} \sigma(s’_{i-1}, a’_i)$。</p>
+<p>则对于符号串 $a \in \Sigma^<em>$，若存在 $a’ \in (\Sigma \cup {\epsilon})^</em>$ 且 $a = a’$。存在 $\sigma’(…\sigma’(\sigma’({s_0}, a’_1), a’_2)…, a’_n) = S’_n$ 且 $S’_n \cap Z \ne \emptyset$，则称 $a$ 可被 $M’$ 接受。</p>
+<blockquote>
+<p>也可以这样理解 NFA 所接受的符号串：在每次尝试读取符号并进行状态转移时，可以<strong>选择</strong>读入 $\epsilon$ 或下一个符号；在状态转移过后，也可以<strong>选择</strong>状态集中某个状态作为当前状态。在这样不同选择所组成的不同路径中，如果<strong>存在</strong>这样一条路径，在读完符号串所有符号后转移到了某个接受状态，则判定 NFA 接受了该符号串。</p>
+</blockquote>
+<p>与 DFA 类似，如果我们记 $\sigma’(…\sigma’(\sigma’({s_0}, a’_1), a’_2)…, a’_n) = S’_n$ 为 $\sigma({s_0}, a) = S’_n$。则 NFA $M’$ 所接受的语言可以表示为 $L(M’) = {a | \sigma({s_0}, a) = S’_n, S’_n \cap Z \ne \emptyset, a \in \Sigma^* }$。</p>
+<blockquote>
+<p>NFA 同样可以使用状态转移矩阵，只不过这一次表格中的取值变为了状态集而非单一状态。</p>
+</blockquote>
+<h3 id="（2）NFA-的确定化"><a href="#（2）NFA-的确定化" class="headerlink" title="（2）NFA 的确定化"></a>（2）NFA 的确定化</h3><p>DFA 的状态转移实现起来较为简单，只需要维护唯一的当前状态，每一步读入符号都根据规则更改当前状态即可。而 NFA 的实现就稍显复杂了。首先，每一次状态转移都有许多可能的目标状态，当然我们可以选择保留每一次状态转移得到的所有状态，只不过这一状态集可能会十分庞大。其次，NFA 在任何时刻都可能读入 $\epsilon$，这种不确定性又要如何解决？</p>
+<p>我们要消除 $\epsilon$ 带来的不确定性。可以再次审视 NFA 中每一步状态转移得到的状态集合：该集合实际上表示的是<strong>当前所有可能的状态</strong>。此时如果我们选择读入 $\epsilon$，那么状态集合会发生变化，但是实际上我们并没有读入符号串中的符号。因此<strong>读入下一个符号串中的符号之前所有可能的状态</strong>和<strong>当前所有可能的状态</strong>并不相同，前者包括了后者以及在后者基础上不断读入 $\epsilon$ 所得到的所有新的状态。如果我们能找到前者的计算方法，那么我们就能从 NFA 中消除不确定位置的 $\epsilon$。</p>
+<p>这里要引入 <strong>ε-闭包</strong>（ε-closure）的概念。对于 NFA $M’$，令 $I \subseteq S$，则其 ε-闭包为 $\text{ε-closure}(I) = I \cup \text{ε-closure}(\sigma’(I, \epsilon))$ 其中 $\text{ε-closure}(\emptyset) = \emptyset$。</p>
+<p>对第 $i$ 步使用 $\sigma’$ 进行状态转移得到状态集合 $S<em>i$，我们只要对其求 ε-闭包得到 $S’_i = \text{ε-closure}(S_i)$，之后再用 $S’_i$ 执行状态转移，读入下一个非 $\epsilon$ 符号得到 $S</em>{i+1}$。这样就消除了 NFA 中 $\epsilon$ 带来的不确定性。</p>
+<p>如此一来，我们就得到了 NFA $M’$ 的状态转移的实现方法：</p>
+<ol>
+<li>维护一个当前状态集合，并设置初始状态集合为 $S’_0 = \text{ε-closure}({s_0})$；</li>
+<li>读入下一个符号串中的符号 $a’<em>i$，得到第 $i$ 步的状态集合 $S’_i = \text{ε-closure}(\sigma’(S’</em>{i-1}, a’_i))$；</li>
+<li>不断重复第 2 步，直到读入了所有符号串中的符号，此时得到状态集合 $S’_n$；</li>
+<li>若 $S’_n \cap Z \ne \emptyset$，则此 NFA 接受该符号串，否则不接受。</li>
+</ol>
+<p>根据上面的方法，如果我们将其中<strong>所有可能出现的状态集合</strong>分别视作不同的状态（$s’’<em>i := S’_i$），则我们可以<strong>构造一个新的有穷自动机</strong> $M’’$。并且由于该有穷自动机中不存在 $\epsilon$；同时状态转移函数 $\sigma’’(s’’</em>{i-1}, a’<em>i) := \text{ε-closure}(\sigma’(S’</em>{i-1}, a’_i))$ 的取值唯一，所以 $M’’$ 还是 DFA。</p>
+<p>也就是说对于给定的 NFA，我们总能通过一种方法将其构造成一个 DFA。这意味着 NFA 与 DFA 从功能上来说是<strong>等价的</strong>。将一个 NFA 转化为 DFA 的过程称为 <strong>NFA 的确定化</strong>。</p>
+<p>下面给出 NFA 确定化的算法：</p>
+<p>想要将 NFA $M = (S, \Sigma \cup {\epsilon}, \sigma, s_0, Z)$ 确定化为 DFA $M’ = (S’, \Sigma, \sigma’, s’_0, Z’)$。</p>
+<ol>
+<li>初始化 $s’<em>0 := \text{ε-closure}({s_0})$，$S’ = {s’_0}$，$S’</em>{\text{new}} := S’$，$\sigma’ = \emptyset$，$Z’ = \emptyset$；</li>
+<li>对任意 $s’<em>{\text{new}} \in S’</em>{\text{new}}$，令 $S’<em>{\text{new}} := S’</em>{\text{new}} - {s’<em>{\text{new}}}$，对任意 $a \in \Sigma$，令 $s’</em>\sigma := \text{ε-closure}(\sigma(s’<em>{\text{new}}, a))$，$\sigma’ := \sigma’ \cup {(s’</em>{\text{new}}, a) \rightarrow s’_\sigma }$；</li>
+<li>若 $s’<em>\sigma \notin S’$，则令 $S’</em>{\text{new}} := S’<em>{\text{new}} \cup {s’</em>\sigma}$，$S’ := S’ \cup {s’<em>\sigma}$。若 $Z \cap s’</em>\sigma \ne \emptyset$，则令 $Z’ := Z’ \cup {s’_\sigma}$；</li>
+<li>重复 2、3 步，直到 $S’_{\text{new}} = \emptyset$。</li>
+</ol>
+<p>这样说似乎有些太过抽象。让我们以上文中我们构造的 NFA 为例。</p>
+<img src="/posts/24c6e53e/automata3.png" class="" title="automata3">
+<p>算法的目标是构建一个 DFA，其中最主要的就是构建 DFA 的状态转移函数 $\sigma’$。所以我们可以使用状态转移矩阵表示算法过程。</p>
+<p>最开始，我们的 $S’_{\text{new}} := $，这时我们在表格 $T$  中添加 ${S}$ 状态所对应的行。由于还未对 ${S}$ 进行处理，所以其状态转移后的目标状态暂时为空。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$0$</th>
+<th>$1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>${S}$</td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>之后我们求 ${S}$ 转移后的目标状态集。有 $\text{ε-closure}(\sigma({S}\, 0)) = {A,Z}$（注意计算 ε-闭包）。因此我们在 $T[{S},0]$ 的位置填入 ${A,Z}$，并添加 ${A,Z} 对应的行。同理我们对符号 $1$ 也进行操作。最终表格状态如下。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$0$</th>
+<th>$1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>${S}$</td>
+<td>${A,Z}$</td>
+<td>${B,Z}$</td>
+</tr>
+<tr>
+<td>${A,Z}$</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>${B,Z}$</td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>此时 $S’_{\text{new}} := { {A,Z}, {B,Z} }$。我们同样依次对 ${A,Z}$ 和 ${B,Z}$ 求转移后的状态集。</p>
+<p>对于 ${A,Z}$，我们得到了两个空集<br>||$0$|$1$|<br>|—-|—-|—-|<br>|${S}$| ${A,Z}$ | ${B,Z}$ |<br>|${A,Z}$| $\emptyset$ | $\emptyset$ |<br>|${B,Z}$| - | - |</p>
+<p>对于 ${B,Z}$，有 $T[{B,Z},0] = {S}$。但由于 ${S}$ 已经在表格中了，所以不需要添加额外的行。此时表格中所有位置都填写完成，相当于 $S’_{\text{new}} = \emptyset$。算法停止。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$0$</th>
+<th>$1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>${S}$</td>
+<td>${A,Z}$</td>
+<td>${B,Z}$</td>
+</tr>
+<tr>
+<td>${A,Z}$</td>
+<td>$\emptyset$</td>
+<td>$\emptyset$</td>
+</tr>
+<tr>
+<td>${B,Z}$</td>
+<td>${S}$</td>
+<td>$\emptyset$</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>除了表格之外，我们还可得到初始状态 $s’_0 = {S}$。并且由于 $Z \in {A,Z}, Z \in {B,Z}$，所以 $Z’ = { {A,Z}, {B,Z} }$。</p>
+<p>我们可以将上述表格中的各状态替换成方便阅读的形式。令 ${S} \rightarrow S, {A,Z} \rightarrow A, {B,Z} \rightarrow B, \emptyset \rightarrow \phi$。得到：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$0$</th>
+<th>$1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$S$</td>
+<td>$A$</td>
+<td>$B$</td>
+</tr>
+<tr>
+<td>$A$</td>
+<td>$\phi$</td>
+<td>$\phi$</td>
+</tr>
+<tr>
+<td>$B$</td>
+<td>$S$</td>
+<td>$\phi$</td>
+</tr>
+<tr>
+<td>$\phi$</td>
+<td>$\phi$</td>
+<td>$\phi$</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>其中初始状态为 $S$，接受状态集为 ${A,B}$</p>
+<h3 id="（3）DFA-的确定化"><a href="#（3）DFA-的确定化" class="headerlink" title="（3）DFA 的确定化"></a>（3）DFA 的确定化</h3><p>在上一小节中，我们描述了 NFA 确定化为 DFA 的方法。但是也并非所有的 DFA 都是其最简的等价形式。我们可以考虑如下的 DFA：</p>
+<img src="/posts/24c6e53e/automata4.png" class="" title="automata4">
+<p>很明显，该 DFA 可接受 0 个或多个 $a$ 组成的符号串。但是该 DFA 并不是接受这一类符号串的最简 DFA，因为下面的 DFA 同样能够接受：</p>
+<img src="/posts/24c6e53e/automata5.png" class="" title="automata5">
+<h2 id="五、词法分析子程序"><a href="#五、词法分析子程序" class="headerlink" title="五、词法分析子程序"></a>五、词法分析子程序</h2>]]></content>
       <categories>
         <category>教程</category>
       </categories>
