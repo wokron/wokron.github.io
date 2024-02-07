@@ -31,6 +31,8 @@ ShowWordCount = true
 ShowRssButtonInSectionTermList = true
 showtoc = true
 
+math = true
+
 [params.assets]
 favicon = "/img/favicon/96x96.png"
 favicon16x16 = "/img/favicon/16x16.png"
@@ -99,3 +101,10 @@ home = ['HTML', 'RSS', 'JSON']
 
 [markup.highlight]
 noClasses = false
+
+[markup.goldmark.extensions.passthrough]
+enable = true
+
+[markup.goldmark.extensions.passthrough.delimiters]
+block = [['\[', '\]'], ['$$', '$$']]
+inline = [['\(', '\)'], ['$', '$']]
