@@ -1,0 +1,5 @@
+baseURL = 'https://wokron.github.io/'
+languageCode = 'en-us'
+title = "Wokron's Blog"
+
+theme = "PaperMod"
