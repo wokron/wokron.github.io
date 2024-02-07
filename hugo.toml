@@ -1,5 +1,5 @@
 baseURL = "https://wokron.github.io/"
-title = "Wokron 的博客"
+title = "Wokron's Blog"
 
 theme = "PaperMod"
 
@@ -17,10 +17,10 @@ category = "categories"
 series = "series"
 
 [params]
-description = "Example description" # TODO
+env = "production"
+description = "Wokron 的个人博客。记录学习、分享经验"
 author = "Wokron"
-keywords = ["Key1", "Key2", "Key3"] # TODO
-images = []                         # TODO
+keywords = ["blog", "code", "tutorial"]
 
 ShowShareButtons = true
 ShowReadingTime = true
@@ -46,10 +46,8 @@ appendFilePath = true
 [params.profileMode]
 enabled = true
 title = "Wokron 的博客"
-subtitle = "This is subtitle"  # TODO
+subtitle = "学生党踩坑记录"
 imageUrl = "/img/profile.jpeg"
-imageWidth = 120
-imageHeight = 120
 imageTitle = "This is me"
 
 [[params.profileMode.buttons]]
@@ -62,14 +60,17 @@ url = "/series/"
 
 [[params.socialIcons]]
 name = "github"
+title = "My Github Account"
 url = "https://github.com/wokron"
 
 [[params.socialIcons]]
 name = "email"
+title = "Send Me Email"
 url = "mailto:stringcatwok@gmail.com"
 
 [[params.socialIcons]]
 name = "qq"
+title = "My QQ Account"
 url = "mailto:3160114036@qq.com"
 
 [[menu.main]]
@@ -95,6 +96,12 @@ identifier = "search"
 name = "搜索"
 url = "/search/"
 weight = 20
+
+[[menu.main]]
+identifier = "github"
+name = "Github Repo"
+url = "https://github.com/wokron/wokron.github.io"
+weight = 25
 
 [outputs]
 home = ['HTML', 'RSS', 'JSON']

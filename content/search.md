@@ -1,6 +1,6 @@
 +++
 title = "搜索"
 layout = "search"
-description = "Description for Search"
-placeholder = "placeholder text in search input box"
+description = "*Did you expect a needle?*"
+placeholder = "输入关键字"
 +++
