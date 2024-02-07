@@ -1,5 +1,4 @@
 baseURL = "https://wokron.github.io/"
-languageCode = "en-us"
 title = "Wokron 的博客"
 
 theme = "PaperMod"
@@ -7,8 +6,6 @@ theme = "PaperMod"
 copyright = "©2022-2024 Yitang Yang. All rights reserved."
 
 defaultContentLanguage = "zh"
-
-enableGitInfo = true
 
 enableRobotsTXT = true
 
@@ -20,17 +17,34 @@ category = "categories"
 series = "series"
 
 [params]
+description = "Example description" # TODO
+author = "Wokron"
+keywords = ["Key1", "Key2", "Key3"] # TODO
+images = []                         # TODO
+
 ShowShareButtons = true
+ShowReadingTime = true
+ShowPostNavLinks = true
+ShowBreadCrumbs = true
+ShowCodeCopyButtons = true
+ShowWordCount = true
+ShowRssButtonInSectionTermList = true
+showtoc = true
 
 [params.assets]
 favicon = "/img/favicon/96x96.png"
 favicon16x16 = "/img/favicon/16x16.png"
 favicon32x32 = "/img/favicon/32x32.png"
 
+[params.editPost]
+URL = "https://github.com/wokron/wokron.github.io/content"
+Text = "阅读原文"
+appendFilePath = true
+
 [params.profileMode]
 enabled = true
 title = "Wokron 的博客"
-subtitle = "This is subtitle"
+subtitle = "This is subtitle"  # TODO
 imageUrl = "/img/profile.jpeg"
 imageWidth = 120
 imageHeight = 120
@@ -45,16 +59,16 @@ name = "系列文章"
 url = "/series/"
 
 [[params.socialIcons]]
+name = "github"
+url = "https://github.com/wokron"
+
+[[params.socialIcons]]
 name = "email"
 url = "mailto:stringcatwok@gmail.com"
 
 [[params.socialIcons]]
 name = "qq"
-url = "3160114036"
-
-[[params.socialIcons]]
-name = "github"
-url = "https://github.com/wokron"
+url = "mailto:3160114036@qq.com"
 
 [[menu.main]]
 identifier = "categories"
@@ -82,3 +96,6 @@ weight = 20
 
 [outputs]
 home = ['HTML', 'RSS', 'JSON']
+
+[markup.highlight]
+noClasses = false
