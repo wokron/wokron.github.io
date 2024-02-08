@@ -41,7 +41,7 @@ favicon16x16 = "/img/favicon/16x16.png"
 favicon32x32 = "/img/favicon/32x32.png"
 
 [params.editPost]
-URL = "https://github.com/wokron/wokron.github.io/content"
+URL = "https://github.com/wokron/wokron.github.io/blob/master/content"
 Text = "阅读原文"
 appendFilePath = true
 
