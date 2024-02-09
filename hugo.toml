@@ -34,6 +34,7 @@ ShowRssButtonInSectionTermList = true
 showtoc = true
 
 math = true
+comments = true
 
 [params.assets]
 favicon = "/img/favicon/96x96.png"
