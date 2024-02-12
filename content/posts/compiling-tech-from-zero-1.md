@@ -115,26 +115,26 @@ $$
 $$
 
 > 第二种方式称为文法的 BNF 表示（Backus-Naur Form）。对于有相同左部的规则，可以用 `|` 分隔。如下是一个例子
-> $$
-> \begin{align*}
->   Z & \rightarrow A | Ac \\
->   A & \rightarrow Aa | a
-> \end{align*}
-> $$
+$$
+\begin{align*}
+  Z & \rightarrow A | Ac \\
+  A & \rightarrow Aa | a
+\end{align*}
+$$
 > 另外还有扩展的 BNF 表示，使用 `{}` 表示零或多次重复，`[]` 表示出现或不出现。当然这种表示得到的文法树和原始表示的结果并不相同。上面的 BNF 表示由 EBNF 表示如下所示
-> $$
-> \begin{align*}
->   Z & \rightarrow A [c] \\
->   A & \rightarrow a \{a\}
-> \end{align*}
-> $$
+$$
+\begin{align*}
+  Z & \rightarrow A [c] \\
+  A & \rightarrow a \{a\}
+\end{align*}
+$$
 
 
 ### （2）推导与归约
 #### 推导与归约的形式化
 推导的过程，简单来说，就是从开始符号开始，不断使用推导规则，将规则左侧的非终结符替换为右侧的符号串。当然我们也可以形式化地定义推导：
 
-对于文法 $G$，若存在 $v \in V^{+}, w \in V^{\*}$，且 $v = xUy, w = xuy$，其中 $x, y \in V^{\*}; U \in V_n; u \in V^{\*}$，若存在 $U ::= u \in P$，则 $v$ 可**推导**出 $w$，记为 $v \Rightarrow w$。
+对于文法 $G$，若存在 $v \in V^+, w \in V^*$，且 $v = xUy, w = xuy$，其中 $x, y \in V^*; U \in V_n; u \in V^*$，若存在 $U ::= u \in P$，则 $v$ 可**推导**出 $w$，记为 $v \Rightarrow w$。
 
 > 那么对于归约呢？归约是推导的逆运算，所以若有 $v \Rightarrow w$，则 $w$ 可**归约**为 $v$，记为 $w \Leftarrow v$。
 
@@ -143,9 +143,9 @@ $$
 
 在此之前我们定义，若 $v$ 经过一步或多步推导可以推出 $w$，则记为 $v \stackrel{+}\Rightarrow w$；同时定义若 $v = w$ 或 $v \stackrel{+}\Rightarrow w$ 记为 $v \stackrel{*}\Rightarrow w$。
 
-我们将从开始符号经过一系列推导得到的中间过程称为**句型**。因此 $x$ 是句型当且仅当 $Z \stackrel{\*}\Rightarrow x \land x \in V^\*$。
+我们将从开始符号经过一系列推导得到的中间过程称为**句型**。因此 $x$ 是句型当且仅当 $Z \stackrel{*}\Rightarrow x \land x \in V^*$。
 
-如果从开始符号开始，经过一系列推导得到的句型的所有符号都为终结符，则称其为**句子**。句子是推导的最终结果、是归约的初始状态。因此 $x$ 是句子当且仅当 $Z \stackrel{+}\Rightarrow x \land x \in V^{\*}_t$。
+如果从开始符号开始，经过一系列推导得到的句型的所有符号都为终结符，则称其为**句子**。句子是推导的最终结果、是归约的初始状态。因此 $x$ 是句子当且仅当 $Z \stackrel{+}\Rightarrow x \land x \in V^{*}_t$。
 
 而语言就是所有从开始符号经由规则进行推导所产生的所有可能句子的集合。对于文法 $G[Z]$，记语言为 $L(G[Z])$，则有
 $$
@@ -159,9 +159,9 @@ $$
 #### 规范归约与最左推导
 在形式化定义推导与归约之后，我们重新分析一下在第二节中所描述的句子的理解过程。我们拥有一个句型，即由终结符和非终结符构成的序列。我们要进行归约，所做的就是识别句型中**符合规则的那其中一部分**，将这一部分替换成规则左侧的非终结符，直到句型只剩一个开始符号。其中对于可以经过一系列规则归约成单一非终结符的句型中的一部分，我们称其为**短语**。
 
-形式化地说，对文法 $G[Z], w = xuy \in V^+$ 为句型，若 $Z \stackrel{\*}\Rightarrow xUy$ 且 $U \stackrel{+}\Rightarrow u$，则 $u$ 是句型 $w$ 相对于 $U$ 的**短语**。
+形式化地说，对文法 $G[Z], w = xuy \in V^+$ 为句型，若 $Z \stackrel{*}\Rightarrow xUy$ 且 $U \stackrel{+}\Rightarrow u$，则 $u$ 是句型 $w$ 相对于 $U$ 的**短语**。
 
-特别的，对于句型中可以经过一条规则归约的部分，我们称其为简单短语。形式化表示为若 $Z \stackrel{\*}\Rightarrow xUy$ 且 $U \Rightarrow u$，则 $u$ 是句型 $w$ 相对于 $U$ 的**简单短语**。
+特别的，对于句型中可以经过一条规则归约的部分，我们称其为简单短语。形式化表示为若 $Z \stackrel{*}\Rightarrow xUy$ 且 $U \Rightarrow u$，则 $u$ 是句型 $w$ 相对于 $U$ 的**简单短语**。
 
 从文法树的视角来看，当前句型的短语集即文法树的所有可能子树的叶节点序列所组成的集合；简单短语集即文法树的所有高度为 2 的子树的叶节点序列所组合的集合。
 
