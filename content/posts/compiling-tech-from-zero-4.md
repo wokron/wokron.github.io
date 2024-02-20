@@ -407,6 +407,7 @@ $$
 > 你可能会想，第二种方法不能构建分析表，那又有什么用？其实，虽然我们无法据此构建 “标准的” LL(1) 语法分析器，但却可以在一种更加实用的 LL(1) 分析方法中使用。即就是**递归子程序法**。
 
 ## 六、递归子程序法
+### （1）递归子程序的基本结构
 递归子程序法不是另一种自顶向下分析法，而**就是** LL(1) 分析法。其和 LL(1) 分析法的唯一区别就是递归子程序法**使用程序的函数调用栈作为符号栈**。因此递归子程序法相较于标准的 LL(1) 分析法，更适合编程实现。
 
 递归子程序法不会显式地构造分析表结构，而是将分析表蕴含在程序中。具体来说，递归子程序法需要对文法的每一个非终结符都编写一个**分析子程序**（即函数），当根据所处的子程序和当前的输入符号预测到要使用某个非终结符去匹配输入串时，就**调用**该非终结符的分析程序。（而一次调用过程，实际上就相当于非终结符入栈的过程。）
@@ -430,7 +431,7 @@ def error():
     raise an error
     """
 
-def assert_match(actual: str, expect: str):
+def match(expect: str，actual: str):
     """
     if the value of `actual` is not equal to `expect`, raise an error
     """
@@ -439,29 +440,68 @@ def assert_match(actual: str, expect: str):
 - `FOLLOW`：即非终结符的 FOLLOW 集；
 - `getsym`：用于读入下一个符号；
 - `error`：用于报告解析错误；
-- `assert_match`：当两符号不相同时报告解析错误。
+- `match`：当两符号不相同时报告解析错误。
 
-在此上下文中，在不考虑其他功能（如构建文法树），只考虑推导过程的情况下，任意非终结符 $X$ 的分析子程序 `x` 应当为如下形式：
+在此上下文中，在不考虑其他功能（如构建文法树），只考虑推导过程的情况下，任意非终结符 $X$ 的分析子程序 `X` 应当为如下形式：
 ```py
-def x(curr_sym: str) -> str:
+def X(sym: str) -> str:
     """
     function to analyze non-terminal symbol `X`
     """
 ```
 
-此时函数 `x` 传入的参数 `curr_sym` 是将要进行解析的，属于非终结符 $X$ 的第一个符号（应有 $\text{curr\_sym} \in \text{FIRST}(X)$）。而函数的返回值则是解析完 $X$ 之后，第一个不属于 $X$ 的符号（应有 $\text{ret\_val} \in \text{FOLLOW}(X)$）。
+此时函数 `x` 传入的参数 `sym` 是将要进行解析的，属于非终结符 $X$ 的第一个符号（应有 $\text{sym} \in \text{FIRST}(X)$）。而函数的返回值则是解析完 $X$ 之后，第一个不属于 $X$ 的符号（应有 $\text{ret\_val} \in \text{FOLLOW}(X)$）。这是在编写分析子程序时必须遵守的前置和后置约束。
 
-而对于相同非终结符 $X$ 的所有规则 $X \rightarrow x_1 | x_2 |...| x_n$，我们使用 FIRST 和 FOLLOW 集判断当前符号应当适用于那条规则，从而划分到不同的条件分支中。
+而对于相同非终结符 $X$ 的所有规则 $X \rightarrow x_1 | x_2 |...| x_n$，我们使用 FIRST 集判断当前符号应当适用于那条规则，从而划分到不同的条件分支中。
 ```py
-def x(curr_sym: str) -> str:
-    if curr_sym in FIRST["x1"]:
+def X(sym: str) -> str:
+    if sym in FIRST["x1"]:
         pass
-    elif curr_sym in FIRST["x2"]:
+    elif sym in FIRST["x2"]:
         pass
     # omit...
-    elif curr_sym in FIRST["xn"]:
+    elif sym in FIRST["xn"]:
         pass
     else:
         error()
-
 ```
+
+特别的，如果有 $\epsilon \in \text{FIRST}(x_i)$，则应当使用非终结符 $X$ 的 FOLLOW 集作为分支的条件：
+```py
+    if sym in FOLLOW["X"]:
+        pass
+```
+
+在条件分支中，我们实现对规则的解析。对于终结符，我们使用 `match` 函数判断是否匹配；对于非终结符，则使用其对应的解析函数进行解析。举个例子，假设存在规则 $X \rightarrow abYcZ$，其中 $a,b,c \in V_t$ 而 $Y,Z \in V_n$。那么对该规则进行解析的代码如下所示：
+```py
+def X(sym: str) -> str:
+    # omit...
+    elif sym in FIRST["abYcZ"]:
+        match("a", sym); sym = getsym() # parse 'a'
+        match("b", sym); sym = getsym() # parse 'b'
+        sym = Y(sym)                    # parse 'Y'
+        match("c", sym); sym = getsym() # parse 'c'
+        sym = Z(sym)                    # parse 'Z'
+        return sym
+    # omit...
+```
+上述代码中，不管是匹配终结符还是解析非终结符，我们都遵循了关于当前符号的前置和后置约束。这使得代码中的每一步都具有规律性。因此在完成解析后，我们也需要返回解析 $X$ 之后第一个不属于 $X$ 的符号。即 `Z(sym)` 的返回值。
+
+而若规则为 $X \rightarrow \epsilon$，则直接返回即可：
+```py
+def X(sym: str) -> str:
+    # omit...
+    elif sym in FOLLOW["X"]:
+        return sym
+    # omit...
+```
+
+在最后，我们需要判断是否接受该符号串。对于文法 $G[Z]$，我们可以在解析的入口函数处使用如下代码判断：
+```py
+if Z(getsym()) != "#":
+    error()
+```
+
+通过上面所描述的方法，对于任意 LL(1) 文法，我们都可以写出其语法分析程序。
+
+### （2）递归子程序法的扩展
