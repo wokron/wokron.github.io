@@ -1,6 +1,6 @@
 +++
 title = "从零开始的编译原理（3）：词法分析与有穷自动机"
-tags = ["有穷自动机", "数学", "文法理论", "Regex"]
+tags = ["自动机", "数学", "文法理论", "Regex"]
 categories = ["编译"]
 series = ["从零开始的编译原理"]
 aliases = ["/posts/24c6e53e"]
