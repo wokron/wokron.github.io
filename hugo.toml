@@ -11,7 +11,7 @@ defaultContentLanguage = "zh"
 
 enableRobotsTXT = true
 
-# buildDrafts = true
+buildDrafts = true
 
 [taxonomies]
 tag = "tags"
