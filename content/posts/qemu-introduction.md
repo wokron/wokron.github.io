@@ -16,12 +16,12 @@ date = 2024-01-21T14:33:21+08:00
 本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
 
 ## 什么是 QEMU
-QEMU（**Q**uick **Emu**lator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+QEMU（**Q**uick **Emu**lator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
 
 ![qemu-logo](qemu-logo.png)
 
 
-> [布里斯·贝拉](https://bellard.org/) 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard's formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+> [法布里斯·贝拉](https://bellard.org/) 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard's formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
 > 
 > ![qemu-bellard](qemu-bellard.png)
 
