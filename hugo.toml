@@ -101,10 +101,16 @@ url = "/search/"
 weight = 20
 
 [[menu.main]]
+identifier = "links"
+name = "友链"
+url = "/links/"
+weight = 25
+
+[[menu.main]]
 identifier = "github"
 name = "Github Repo"
 url = "https://github.com/wokron/wokron.github.io"
-weight = 25
+weight = 30
 
 [outputs]
 home = ['HTML', 'RSS', 'JSON']
