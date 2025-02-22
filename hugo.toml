@@ -50,7 +50,7 @@ appendFilePath = true
 enabled = true
 title = "Wokron 的博客"
 subtitle = "学生党踩坑记录"
-imageUrl = "/img/profile.jpeg"
+imageUrl = "/img/profile-lain.png"
 imageTitle = "This is me"
 
 [[params.profileMode.buttons]]
