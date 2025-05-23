@@ -46,20 +46,25 @@ URL = "https://github.com/wokron/wokron.github.io/blob/master/content"
 Text = "阅读原文"
 appendFilePath = true
 
-[params.profileMode]
+# [params.profileMode]
+# enabled = true
+# title = "Wokron 的博客"
+# subtitle = "学生党踩坑记录"
+# imageUrl = "/img/profile-lain.png"
+# imageTitle = "This is me"
+
+# [[params.profileMode.buttons]]
+# name = "我的帖子"
+# url = "/posts/"
+
+# [[params.profileMode.buttons]]
+# name = "系列文章"
+# url = "/series/"
+
+[params.homeInfoParams]
 enabled = true
-title = "Wokron 的博客"
-subtitle = "学生党踩坑记录"
-imageUrl = "/img/profile-lain.png"
-imageTitle = "This is me"
-
-[[params.profileMode.buttons]]
-name = "我的帖子"
-url = "/posts/"
-
-[[params.profileMode.buttons]]
-name = "系列文章"
-url = "/series/"
+title = "Welcome to My Blog"
+content = "欢迎光临！文章不定期更新，希望能对您有帮助 :)"
 
 [[params.socialIcons]]
 name = "github"
@@ -69,12 +74,18 @@ url = "https://github.com/wokron"
 [[params.socialIcons]]
 name = "email"
 title = "Send Me Email"
-url = "mailto:stringcatwok@gmail.com"
+url = "mailto:yi1tang.yang@gmail.com"
 
 [[params.socialIcons]]
 name = "qq"
 title = "My QQ Account"
 url = "mailto:3160114036@qq.com"
+
+[[menu.main]]
+identifier = "series"
+name = "系列文章"
+url = "/series/"
+weight = 1
 
 [[menu.main]]
 identifier = "categories"
