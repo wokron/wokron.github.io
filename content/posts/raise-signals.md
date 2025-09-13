@@ -3,7 +3,6 @@ title = "试试触发（几乎）所有信号"
 tags = ["C", "Signal", "Linux"]
 categories = ["操作系统"]
 date = 2025-05-23T17:22:16+08:00
-draft = true
 +++
 
 输入 `kill -L`，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
