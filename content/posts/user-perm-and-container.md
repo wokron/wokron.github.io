@@ -173,7 +173,7 @@ wokron@host$ ls -l ./test_dir
 前面的没有用户名的问题（`I have no name!`）很好解决。需要在构建镜像的时候预先创建 uid 为 1000 的用户。Dockerfile 中甚至还提供了一个 `USER` 指令，可以设置后续指令以及容器中使用的用户。
 
 ```dockerfile
-FROM ubuntu:latest
+FROM ubuntu:jammy
 
 RUN useradd -u 1000 -m wokron
 # USER wokron
@@ -181,9 +181,9 @@ RUN useradd -u 1000 -m wokron
 
 ```console
 wokron@host$ docker build -t test:v1 .
-wokron@host$ docker run -it --user $(id -u):$(id -g) -v ./test_dir:/test_dir test:v1 bash
+wokron@host$ docker run -it --user wokron -v ./test_dir:/test_dir test:v1 bash
 wokron@container$ whoami
 wokron
 ```
 
-最后，其实还有一种方法，能够让容器中的 root 用户的行为在容器外表现为普通用户的行为。那就是使用 User Namespace。这种方法可以使得访问容器外文件系统时更加安全。有关 Namespace 的内容将在另外的文章中进行介绍。（挖坑ing）
+最后，其实还有一种方法，能够让容器中的 root 用户的行为在容器外表现为普通用户的行为。那就是使用 User Namespace。这种方法可以使得访问容器外文件系统时更加安全。有关 Namespace 的内容将在另外的文章（[Here!](/posts/simple-container/#隔离用户)）中进行介绍。
