@@ -321,7 +321,7 @@ RUN useradd -u 1000 -m wokron
 ```console
 wokron@host$ mkdir -m 777 test_dir
 wokron@host$ docker build -t test:v1 .
-wokron@host$ docker run -it --user wokron -v ./test_dir:/test_dir test:v1 bash
+wokron@host$ docker run -it --rm --user wokron -v ./test_dir:/test_dir test:v1 bash
 wokron@container$ id
 uid=1000(wokron) gid=1000(wokron) groups=1000(wokron)
 ```

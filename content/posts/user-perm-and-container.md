@@ -128,7 +128,7 @@ srw-rw---- 1 root docker 0 2月 30 12:34 /run/docker.sock=
 
 ```console
 wokron@host$ mkdir test_dir
-wokron@host$ docker run -it -v ./test_dir:/test_dir ubuntu:latest bash
+wokron@host$ docker run -it --rm -v ./test_dir:/test_dir ubuntu:jammy bash
 root@container$ whoami
 root
 root@container$ echo 1234 > /test_dir/a.txt
@@ -149,7 +149,7 @@ wokron@host$ ls -l ./test_dir
 如果你不想以 root 身份运行，在运行容器时可以使用 `--user` 选项。这个选项可以指定运行命令所使用的 uid 和 gid。然后你就会发现容器中的用户名变成了惊人的 `I have no name!`。但是 uid 和 gid 依然被正常地设置了。这里就可以得出一个结论：**用户和用户组并不重要，uid 和 gid 才重要**。作为拥有 root 权限的进程，你可以设置任何的 uid 和 gid，即使其对应的用户并不存在。
 
 ```console
-wokron@host$ docker run -it --user $(id -u):$(id -g) -v ./test_dir:/test_dir ubuntu:latest bash
+wokron@host$ docker run -it --rm --user $(id -u):$(id -g) -v ./test_dir:/test_dir ubuntu:jammy bash
 I have no name!@container$ id
 uid=1000 gid=1000 groups=1000
 ```
@@ -181,7 +181,7 @@ RUN useradd -u 1000 -m wokron
 
 ```console
 wokron@host$ docker build -t test:v1 .
-wokron@host$ docker run -it --user wokron -v ./test_dir:/test_dir test:v1 bash
+wokron@host$ docker run -it --rm --user wokron -v ./test_dir:/test_dir test:v1 bash
 wokron@container$ whoami
 wokron
 ```
