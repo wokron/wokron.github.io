@@ -62,6 +62,7 @@ Monoio 和 Compio 在所有队列深度下吞吐量均低于 libaio 和 Condy（
 我们对比了 Condy、Asio、Monoio 和 Compio Channel 的性能，分别改变消息数量和 Channel 数量，测量总耗时。（Monoio 和 Compio 使用 `futures::channel::mpsc`。）
 
 ![](channel_number_of_messages.png)
+![](channel_task_pairs.png)
 
 如图所示，随着消息数和并发任务数增加，各框架总耗时线性增长。Condy 执行时间比 Asio 提升 20x，比 Monoio 和 Compio 提升 **1.6x**。
 
