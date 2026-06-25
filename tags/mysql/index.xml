@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>MySQL on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/mysql/</link>
+    <description>Recent content in MySQL on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Tue, 25 Apr 2023 18:10:33 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>后端开发入门笔记之脚本</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-4/</link>
+      <pubDate>Tue, 25 Apr 2023 18:10:33 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-4/</guid>
+      <description>一、前言 这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。
+二、shell 的异常处理 有时我们希望在 shell 脚本命令执行出现异常时进行处理，比如说输出异常情况或退出等等。我们知道发生异常时返回值不为 0，如果是在 c 语言中我们可以这样处理
+if (!do_something()) { // handle exception } 类似的在 shell 中
+dosomething arg1 arg2 if [ $? -ne 0 ] then # handle exception if 但是这样编写起来太过麻烦了，我们可以采用另一种方法，那就是使用短路逻辑运算符。
+我们还先以 c 语言为例，假设现在我们有两个函数，对他们取逻辑或
+int r = func1() &amp;amp;&amp;amp; func2() 那么在 func1 的返回值为 0 时，就会发生短路，不执行 func2。而在返回值为；而当 func1 的返回值不为 0 时，则会继续执行 func2。我们可以让 func2 完成 func1 的异常处理。
+当然，在 c 语言中这种方法很是牵强，因为不同函数的栈帧并不一样，很难跨函数进行处理。可是 shell 中就不同了，所有的变量都是全局变量。
+但还需要注意一点，shell 中 0 表示真，1 表示假。（因为 0 表示程序正常结束，所以为真。）所以在 shell 中就需要使用 || 而非 &amp;amp;&amp;amp;。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之准备工作</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-1/</link>
+      <pubDate>Sat, 22 Apr 2023 22:22:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-1/</guid>
+      <description>一、前言 当我第一次看到那份作业的时候，我绝想不到，这作业将牵扯出多少我还未曾学习过的知识；我更想不到，自己要以多久的时间涉猎完所有这些内容。当然现在这些都已经结束了，感慨不应该抒发太多，还是趁着自己没有忘记，做一下总结吧。
+这一系列应该会有几篇文章。主要内容是回顾总结我的第一次较为系统的后端开发经历。在学习的过程中我参考了许多文章，其中一些我也会在文章中给出链接。这些文章或许在一些方面比本篇文章讲的更加深入，但是本篇文章综合了许多文章的不同信息，给出了系统的安装配置流程和自己的一些见解，因此我认为还是有一些价值的。
+二、WSL，一切的起点 （1）WSL 简介 windows 系统虽然在个人电脑上常用，但是开发起后端来还是不方便，最好还是使用 linux。但是只有一台电脑的话，装双系统极其麻烦、虚拟机又太过笨重。那么有没有一种更加方便的方法呢？有的，那就是使用 WSL（Windows Subsystem for Linux），即 Windows 的 Linux 子系统。WSL 分为 WSL1 和 WSL2，此二者的实现原理并不相同。虽然有些跑题，但是还是介绍一下，毕竟是自己费力去查的结果。
+WSL1 不是虚拟机，Hyper-V 或 VMware 等虚拟机会用软件模拟硬件的行为，其中装入的操作系统是和模拟的硬件进行交互；而 WSL1 则是通过 Windows 操作系统库模拟了一个 Linux 内核，用 Windows 的系统调用来处理 Linux 的系统调用。并且由于 WSL1 不需要模拟硬件这一中间过程，因此效率会比虚拟机高。而 WSL2 则可以看做虚拟机，但是与其他虚拟机相比更加轻量，Linux 系统运行在此虚拟机上资源占用更少、运行更快。问题是 WSL2 使用了虚拟化技术，可能与其他虚拟机冲突，不能同时使用。
+在这里我们使用 WSL2。主要原因是 WSL2 运行了真正的 Linux 内核，和各种 Linux 程序的兼容性更好。
+（2）WSL 安装 安装 WSL 很简单。这里的安装流程参考 使用 WSL 在 Windows 上安装 Linux。插一句，微软的技术文档真的很有用，如果对搜索得到的关于微软的技术问题的解决方案有不确定的地方，参考微软的技术文档有时会有很大帮助。就比如 WSL 的安装，搜到的经常已经是过时的教程了。
+安装 WSL，只需要在 PowerShell 中以管理员模式运行如下命令即可。
+wsl --install 注意网上的教程中，需要使用 dism.</description>
+    </item>
+    <item>
+      <title>MySQL 的中文插入问题</title>
+      <link>https://wokron.github.io/posts/using-chinese-in-mysql/</link>
+      <pubDate>Sat, 31 Dec 2022 15:24:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/using-chinese-in-mysql/</guid>
+      <description>一、问题描述 在执行一个sql脚本的时候出现了这样的问题：
+ERROR 1366 (HY000): Incorrect string value: &amp;#39;\xA3\x8E\xE6\x9C\x89\xE5...&amp;#39; for column &amp;#39;name_zh&amp;#39; at row 1 问题很明显是由于中文引起的。查看报错的语句：
+INSERT INTO `admin_menu` VALUES (&amp;#39;1&amp;#39;, &amp;#39;/admin&amp;#39;, &amp;#39;AdminIndex&amp;#39;, &amp;#39;首页&amp;#39;, &amp;#39;el-icon-s-home&amp;#39;, &amp;#39;AdminIndex&amp;#39;, &amp;#39;0&amp;#39;); 是 “首页” 无法被识别。考虑是字符集的问题。
+二、问题处理 情况一：数据库字符集与脚本所用字符集不一致 第一种可能是数据库所用的字符集和脚本字符集不一致，比如说建表时使用的字符集为 latin1，而脚本使用的却是 utf-8，这样就会导致错误。
+输入命令，查看建库语句
+SHOW CREATE DATABASE wj; +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ | Database | Create Database | +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ | white_jotter | CREATE DATABASE `wj` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION=&amp;#39;N&amp;#39; */ | +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ 显示所用字符集为 utf8mb4，说明数据库字符集与脚本所用字符集一致。</description>
+    </item>
+  </channel>
+</rss>

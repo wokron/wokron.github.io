@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Mint on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/mint/</link>
+    <description>Recent content in Mint on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sat, 24 Jun 2023 21:50:32 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/mint/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Linux-Mint双系统的安装及美化</title>
+      <link>https://wokron.github.io/posts/linuxmint-install-and-beautify/</link>
+      <pubDate>Sat, 24 Jun 2023 21:50:32 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/linuxmint-install-and-beautify/</guid>
+      <description>一、前言 我的笔记本现在用起来很慢了。每次听到它嗡嗡的风扇声却又看不到它跑不出来结果的时候，就感觉它好似一头老驴，使劲却又力不从心，腿打着颤却也拉不动身后的货。所以我谋划着新买一台，就让之前的那台好好休息吧。
+一想到买台新的笔记本，我的思绪就沿着这条道一直走下去：“要买什么样的配置呢？买了新的电脑要做些什么项目呢？要玩什么游戏呢？” 诸如此类。装一个 linux 系统也是这时产生的想法。有人可能会想，“这有什么用呢？难道 windows 就不能用吗？如果不得不用 linux，wsl 也是很好地办法，或者用虚拟机，甚至直接用 docker，都可以解决。” 确实，如果就满足当下的使用而言，将 linux 作为一个个人使用的真正的系统，相对于 windows 似乎并没有什么优点。
+不过呢，我选择折腾这么一阵也并没有什么经过考量的理由，而仅仅是因为自己在主观上更加喜欢 linux 罢了。在我不算太长的接触并学习 linux 的时间里，我从这个系统中感受到了设计的一致性，这是我在更长时间的对 windows 的接触和学习中所没有体会到的。当然，或许在之后看来，我现在的理解也不过是浅薄的认识罢了。但是现在，我还是决定安装一个 linux 系统。
+如果有读者的话，希望不要嫌弃我太过啰嗦（笑）。
+二、为什么是薄荷 众所周知，linux 是内核，许多不同的组织在 linux 内核的基础上增加了其他必要的软件和应用，开发了不同的发行版。发行版的江湖中帮派林立，主要有三大派系，debian 系、redhat 系和 suse 系。各个派系中又有无数相互关联却又相互区分的发行版。如 debian 的 ubuntu、deepin；redhat 的 fedora、suse 的 opensuse。只需要把这些发行版的大名亮出来，就足以让人眼花缭乱了。
+本人也在这些发行版中漂移不定了一段时间，但最终选择了 debian 系的 mint（薄荷）。主要有一下几个原因
+debian 系有着 apt 的超级牛力加持，.deb 格式的软件包使用作为广泛 mint 基于 ubuntu，ubuntu 是使用最为广泛的 linux 发行版 mint 精简了 ubuntu 下的一些功能，如 snap；并对初学者较为友好 三、安装操作系统 我新买的电脑是联想拯救者 R9000P，配置如下
+设备 配置 处理器 AMD Ryzen 9 7945HX 内存 16G 硬盘 1T 显卡 Nvidia 4060 要安装的操作系统配置</description>
+    </item>
+  </channel>
+</rss>

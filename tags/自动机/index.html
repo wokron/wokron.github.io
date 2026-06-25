@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>自动机 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/index.xml">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="自动机" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="自动机"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/tags/">Tags</a></div>
+  <h1>
+    自动机
+    <a href="/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/index.xml" title="RSS" aria-label="RSS">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" height="23">
+        <path d="M4 11a9 9 0 0 1 9 9" />
+        <path d="M4 4a16 16 0 0 1 16 16" />
+        <circle cx="5" cy="19" r="1" />
+      </svg>
+    </a>
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（4）：语法分析与下推自动机
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 从这个精神王国的圣餐杯里，
+他的无限性给他翻涌起泡沫。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识
+二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。
+然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。
+举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \rightarrow (S)S | \epsilon $$ 其中规则 $S \rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。
+而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。
+不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：
+可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。
+三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-02-15 14:14:06 +0800 CST'>二月 15, 2024</span>&nbsp;·&nbsp;18 分钟&nbsp;·&nbsp;3631 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（4）：语法分析与下推自动机" href="https://wokron.github.io/posts/compiling-tech-from-zero-4/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（3）：词法分析与有穷自动机
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 因而，每一生物的有机形体都是一个神圣的机器，或一台无限地优越于任何人造的自动机器的自然的自动机器（automata）。因为人的技艺所制造的机器的每一部分并非机器。……而自然的机器，即有机体，在其无限小的部分仍是机器。
+—— 戈特弗里德·威廉·莱布尼茨《单子论》第 64 节
+本章将从词法分析所用的 3 型文法入手，引入自动机的概念，并详细介绍有穷自动机的原理及实现。最终实现编译程序的词法分析模块。
+二、正则文法的解析过程 在第 1 章的最后我们介绍了 3 型文法。3 型文法也称正则文法，特征是对于文法中的每一条规则，其右侧要么是一个终结符，要么是一个终结符加上一个非终结符，且非终结符只位于终结符的一侧。根据非终结符位置的不同分为左线性和右线性。
+或许有些人会这样讲：“左线性是终结符在右侧；右线性是终结符在左侧”。但是这样实在太别扭了。应该说 “左线性是非终结符在左侧；右线性是非终结符在右侧”。
+为什么通过这一约束，3 型文法就能区别于 2 型文法了呢？我们可以通过正则文法的解析过程来理解。
+现在有一左线性正则文法 $G_1[Z]$： $$ \begin{align*} Z &amp; \rightarrow A1 \\ A &amp; \rightarrow B1 | 1 \\ B &amp; \rightarrow A0 \end{align*} $$ 现在可能不太能看得出来，但是 $G_1[Z]$ 能够接受符号串 $101011$。我们可以画出此符号串对应的文法树。
+通过文法树我们可以看出，对于左线性正则文法 $G_1[Z]$，其文法树只向左增长。当然这一点从规则中也可以看出，只不过不那么直观罢了。
+可为什么具有这样特性的文法就特殊了呢？接下来我们根据文法树，以归约的视角看待符号串 $101011$ 的解析过程：
+读入 1，1 归约得到 A； 读入 0，A0 归约得到 B； 读入 1，B1 归约得到 A； …… 以此类推，我们就可以发现其中的规律。对于这样的文法，读入一次即归约一次。因为文法中最多只有两个符号，所以一旦读入了一个新的符号，则必定进行一次归约。
+同理的，我们考虑右线性正则文法 $G_2[S]$： $$ \begin{align*} S &amp; \rightarrow 1A \\ A &amp; \rightarrow 0B | 1 \\ B &amp; \rightarrow 1A \end{align*} $$ $101011$ 也能被 $G_2[S]$ 接受。其文法树如下，对于右线性正则文法 $G_2[Z]$，其文法树只向右增长...</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-01-10 19:04:00 +0800 CST'>一月 10, 2024</span>&nbsp;·&nbsp;9 分钟&nbsp;·&nbsp;1724 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（3）：词法分析与有穷自动机" href="https://wokron.github.io/posts/compiling-tech-from-zero-3/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

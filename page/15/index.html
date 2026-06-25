@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head>
+	<meta name="generator" content="Hugo 0.123.7"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Wokron&#39;s Blog</title>
+<meta name="keywords" content="blog, code, tutorial">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/index.xml">
+<link rel="alternate" type="application/json" href="https://wokron.github.io/index.json">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Wokron&#39;s Blog" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Wokron&#39;s Blog"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Wokron's Blog",
+  "url": "https://wokron.github.io/",
+  "description": "Wokron 的个人博客。记录学习、分享经验",
+  "thumbnailUrl": "https://wokron.github.io/img/favicon/96x96.png",
+  "sameAs": [
+      "https://github.com/wokron", "mailto:yi1tang.yang@gmail.com", "mailto:3160114036@qq.com"
+  ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">机器学习笔记之一元线性回归
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、引言——房价预测问题 问题： 假设我们知道一些房价与距离的对应关系，通过这些已知的信息，能否预测在一定范围内任意距离对应的房价？
+首先考虑最为简单的情况，也就是只有两个房价信息的情况。 如图所示，1km时对应房价为300，2km 时对应房价为500。很容易可以在这两点间连一条直线，这条直线就可以作为对房价的预测。这样用曲线对已知数据中的关系进行估计的方法称为拟合。
+（注意，本文只考虑以一元线性函数进行拟合）
+类似的，增加房价信息为三个点，如果三点共线，则该直线依然可以作为对房价的拟合。 但更可能的情况是三点不共线，对于更多的数据的情况则更是如此。这样的话要如何找到一条直线来拟合房价信息呢？
+二、损失函数 我们需要找到一种标准来衡量直线对已有信息的拟合程度。
+假设当前直线为： $$ y = wx&#43;b $$ 房子距离为 $x^{(1)},x^{(2)},x^{(3)}...,x^{(m)}$，对应的房价为 $y^{(1)},y^{(2)},y^{(3)}...,y^{(m)}$。 则对于每个距离 $x^{(i)}$，当前直线所预测的房价为: $$ \hat{y}^{(i)} = wx^{(i)} &#43; b $$ 该房价与真正的房价的差距为 $$ d = |y^{(i)} - \hat{y}^{(i)}| $$ 绝对值不可导，不妨用平方来代替 $$ d_2 = (y^{(i)} - \hat{y}^{(i)})^2 $$ 对于每个已知的房价信息，当前直线的预测都可能会有偏差，将这些偏差求和得到总的偏差 $$ \sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2 $$ 为了排除样本数量不同对偏差的影响，将偏差总和除以样本数量 $$ \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2 $$ 这也就是总体方差的计算式： $$ \sigma^2 = \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2 $$ 对于机器学习，我们将$\hat{y}^{(i)}$展开，并将方差除以2，得到一元线性回归的损失函数（loss function），即 $$ J(w, b) = \frac{1}{2m}\sum_{i=1}^{m}(y^{(i)} - wx^{(i)} - b)^2 $$ 在 $x^{(i)}$，$y^{(i)}$ 确定的情况下，损失函数是关于 $w$ 和 $b$ 的连续可导的二元函数。该函数可以用来衡量 $w，b$ 所确定的直线与已知数据之间的偏差。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-09-25 10:22:13 +0800 CST'>九月 25, 2022</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;361 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 机器学习笔记之一元线性回归" href="https://wokron.github.io/posts/machine-learning-note-1/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">基本正则表达式总结
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>简介 正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。
+正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。
+基本语法 这里将介绍正则表达式的基本语法。另外这里推荐网站 regex101，可以用于验证正则表达式。
+字符与字符集 正则表达式中一般的字符用于匹配字符串中对应的相同字符。例如正则表达式 “a” 可以匹配字符串中的字符 ‘a’ 。 “abc” 可以匹配字符串中的子串 “abc” 。
+对于在正则表达式中具有特殊含义的字符，需要进行转义，在原字符前加上反斜杠 “\”
+用方括号将一个或多个字符括起来表示一个字符集，一个字符集匹配在该字符集中出现的字符。例如 [abc]，可以匹配 ‘a’ ‘b’ 或 ‘c’。
+还可以在字符集中指定要匹配的字符的范围，例如 [a-z]，用来匹配所有的小写英文字母。在同一字符集内可以有多个范围，例如 [a-zA-Z0-9]。
+在字符集括号内的所有字符之前添加 “^” 表示对该字符集取反，即匹配所有不在字符集内的元素。例如 [^a-b] 匹配所有不是小写英文字母的元素。
+字符 “.” 可用于匹配换行符为所有字符。
+限定符 限定符用来指定其前面的部分将要匹配几次。例如a{2,5}匹配2到5个a，即&#34;aa&#34;、“aaa”、“aaaa&#34;和&#34;aaaaa”。具体的限定符含义如下表所示：
+限定符 解释 {n} 匹配内容n次 {n,} 匹配内容次数大于等于n次 {n,m} 匹配内容次数为n到m次 * 匹配零次或多次，同{0,} &#43; 匹配一次或多次，同{1,} ? 匹配零次或一次，同{0,1} 注意，限定符匹配默认遵循贪婪原则，即在同样能够完成匹配的情况下，会匹配尽可能多的字符。例如要匹配&lt;html&gt;&lt;dir&gt;hello,world&lt;/dir&gt;&lt;/html&gt;中的标签，若使用正则表达式 “&lt;.&#43;&gt;&#34;，则只会匹配整个字符串。 解决方法是在限定符后加上一个问号 “?” 。这样限定符的匹配模式便会切换为懒惰匹配，即在同样能够完成匹配的情况下，会匹配尽可能少的字符。
+组 用括号将一部分表达式括起，可以将这部分表达式作为一个整体。
+比如说，需要匹配 “aacacaaac”，可以归纳出字符串中重复的部分 “a&#43;c”，将该部分作为一个整体，则该部分重复了三次。最终得到可以匹配该字符串的正则表达式为 “(a&#43;c){3}&#34;。
+另外，组分为捕获组与非捕获组，捕获组即单纯的括号，非捕获组包括 “(?:exp)” “(?=exp)” “(?!exp)” “(?&lt;=exp)” “(?&lt;!exp)&#34;。这里先说明 “(exp)” 和 “(?...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-09-21 14:26:22 +0800 CST'>九月 21, 2022</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;241 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 基本正则表达式总结" href="https://wokron.github.io/posts/regex-basics/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">系统编程之命令行编译
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。
+二、GCC 基本操作 编译选项 无选项编译链接 用法：gcc test.c 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。 选项 -o 用法：gcc test.c -o test 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。 选项 -E 用法：gcc -E test.c -o test.i 作用：将 test.c 预处理输出 test.i 文件。 选项 -S 用法：gcc -S test.i 作用：将预处理输出文件 test.i 编译成 test.s 文件。 选项 -c 用法：gcc -c test.s 作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。 无选项链接 用法：gcc test.o -o test 作用：将目标代码文件 test.o 链接成最终可执行文件 test。 选项 -O 用法：gcc -O1 test.c -o test 作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。 官方文档：GCC, the GNU Compiler Collection...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-09-12 21:18:59 +0800 CST'>九月 12, 2022</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;589 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 系统编程之命令行编译" href="https://wokron.github.io/posts/system-programming-note-1/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Hexo 个人博客搭建及主题配置教程
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。
+二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。
+（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。
+windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。
+linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码
+sudo apt-get install git 安装好后，用git --version来查看一下版本。
+安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。
+windows：nodejs选择LTS版本就行了。
+linux：
+sudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行
+node -v npm -v 检查一下有没有安装成功
+安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。
+输入命令
+npm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。
+接下来初始化一下hexo
+hexo init myblog 这个myblog可以自己取什么名字都行，然后
+cd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：
+node_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务
+hexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-09-11 18:28:06 +0800 CST'>九月 11, 2022</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;640 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Hexo 个人博客搭建及主题配置教程" href="https://wokron.github.io/posts/hexo-personal-blog-tutorial/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">FunctionSketch 说明文档
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、简述 本文档将介绍程序函数画板的主要功能和基本操作。函数画板是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。
+二、函数绘制 1、添加函数 运行exe文件后，将进入程序的主界面。如下图所示。 点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。 输入函数表达式后按回车键（或采取使输入框不再被选中的操作），若表达式正确，则会将该表达式所对应的函数绘制到主界面左侧的窗口上。
+其中正确的表达式包括如下几种情况：
+表示单变量函数 此时表达式请以x为自变量，不忽略运算符（特别注意，对数如logm(n)请写作mlogn）。表达式前可忽略“y=”。例如“y=x&#43;x^2”或“x*(elogx)” 表示参数方程 此时请同时输入两个单变量函数表达式，以x或t为自变量，两表达式间以逗号间隔。注意请不要在两个表达式前添加“x=”或“y=”。例如“t^2,t”或“sinx,cosx” 表示隐函数（或一般的方程） 此时请以x，y表示横纵两坐标轴对应的变量。表达式中必须包含等号。例如“x^2&#43;y^2=1”。当等式左侧为“y=”时自动转换为单变量函数计算。 另外，一次输入可以绘制多个图像。若要输入多个表达式，请将各表达式以分号间隔。
+2、函数属性设置 添加函数后，函数图像将在左侧窗口内显示，同时右侧函数列表栏内也会出现记录该函数信息的卡片（超出范围的卡片可以滑动滚轮以查看）。 每一个函数信息卡右侧有两个按钮。上面标有“x&#34;字的按钮点击后可关闭该函数卡并删除左侧窗口内对应的函数图像。下面显示“···”符号的按钮，点击后可以设置该函数相关的属性。主要包括如下内容。 坐标形式 单变量函数和参数方程共有。设置图像以直角坐标或极坐标形式呈现。 线性变换 单变量函数和参数方程共有。表示一个2*2矩阵。在绘制过程中，图像的每一个坐标点会与该矩阵相乘。 位移 单变量函数和参数方程共有。表示一个二维矢量。在绘制过程中，图像的每一个坐标点会与该矢量相加。 积分 单变量函数特有。表示一个积分区间。默认不计算积分（积分范围NaN-&gt;NaN）。若输入正确的积分范围，则会在左侧窗口内将求积分的面积涂色。并在信息卡上显示积分结果。 求导 单变量函数特有。点击求导按钮后会求一阶导数，并将得到的新函数添加到函数列表栏的末尾。图像也会在左侧窗口内显示。 参数范围 参数方程特有。用以表示参数的范围。左侧窗口内只会绘制参数范围内的图像。 三、保存文件 1、保存当前函数图像 点击主窗口上侧菜单栏“文件”选项。其中第一项“保存”可以将当前绘制的图像保存为图片格式（当前暂时只支持jpg格式）。
+2、查看默认保存位置 第二项“打开默认保存路径”会打开exe所在路径之下的SaveImage文件夹。可用于作为保存文件的位置。
+四、设置 1、绘制设置 点击菜单栏“设置”选项，会打开一个设置窗口。 其中前三项用于绘制设置。
+显示范围 相对位置用于设置当前显示位置与默认位置的偏移量。可以理解该值为一个表示当前窗口显示的位置相对于原点的坐标。 显示宽度用于设置当前窗口宽度下，横坐标数值的变化范围。 （该项设置也可以在主界面显示窗口用鼠标拖动和滚轮实现。） 线条颜色 设置图像曲线、坐标轴、积分区域的颜色。 线条宽度 设置图像曲线、坐标轴线条的粗细。注意该粗细不会随着窗口的缩放而发生变化。 2、算法设置 设置窗口第四项用于设置算法相关参数。算法原理详见设计文档。 基本 最小绘制间隔即生成基本绘制点时自变量的间隔。 平滑算法 平滑算法用于处理曲率较大的情况。平滑率表示连点绘制的曲线的“尖锐度”的阈值，过于“尖锐”的部分将被试图平滑。最大递归层数用于避免过深的递归，减少绘制时间。 Marching Square算法 Marching Square算法用于处理一般方程，能较有效地绘制隐函数图像。但计算量较大，以dx为单位长度绘制速度较慢。因此以dx乘以某一常数得到的长度作为新的单位长度，该常数即方块比例。 五、帮助 1、查看源代码 点击菜单栏“帮助”选项，第一项“源代码”点击后会转到保存该程序源代码的github仓库。
+2、操作说明 第二项“操作说明”可以打开一个新的帮助窗口，其中记录了一些较为常见的操作的提示。可在使用时随时查看。</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-09-10 18:33:26 +0800 CST'>九月 10, 2022</span>&nbsp;·&nbsp;1 分钟&nbsp;·&nbsp;62 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to FunctionSketch 说明文档" href="https://wokron.github.io/posts/function-sketch-doc/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">FunctionSketch 设计文档
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、程序简述 本软件是一个轻量级的图像绘制软件。在实现较为丰富的函数绘制功能的同时，避免了庞大的体量。与Matlab、Mathematica等专业软件的二维图像绘制功能相比，更方便上手，便于使用。可用于满足学习和简单研究的二维绘图需要。
+二、实现思路 1、表达式字符串解析 （1）解析目标 本程序的主要输入内容为表达式字符串，用以表示单变量函数、参数方程或是隐函数。为了进行计算，我们需要将其转化为可使用计算机计算的函数。我们可以将三种方程分别看成单参数、单返回值的函数；单参数、双返回值的函数；双参数，单返回值的函数（即f(x,y)=0）。这可以利用C#的delegate实现。C#中预先定义了Func&lt;&gt;委托。利用泛型可分别存储三种类型的方法。
+因此现在的问题便是，如何依据不同的字符串，构造出对应的可反映该表达式计算过程的方法。这里采取表达式树的结构。
+（2）FunctionParser类——字符串转表达式树 字符串转表达式树的基本算法已经在大一的数据结构课上讲过了。这里不赘述。
+不同的地方在于面向对象可以方便的利用多态代替判断。因此对于表达式树，不再需要节点内储存数据表示不同的节点类型。只需要所有的节点继承共同的抽象父类ExpressionElement，同时ExpressionElement具有函数Calculate,子类，包括Value、ArgumentX、ArgumentY、Operator等等，各自实现不同的Calculate操作。 最后，将Calculate方法赋给Func&lt;&gt;类型的变量，就可以实现表达式的存储了。
+（3）FunctionFactory类——字符串转函数封装信息 但是，不同类型的函数有着不同的信息，比如单变量函数可以方便地求导、积分；参数方程需要指定参数的范围。因此在绘制图像之前，还需要对函数的信息做一次封装。
+FunctionFactory读入字符串，判断其类型，将其封装为不同的类（SingleVarFuncStorage 、DoubleVarFuncStorage和ParamVarFuncStorage。其中各自具有对应函数的属性和方法），并以FunctionStorage[]父类数组的形式返回。
+2、FunctionDrawing类——图像绘制 （1）基础算法 FunctionStorage类的成员将传入FunctionDrawing类中，成员被存储在一个List&lt;FunctionStorage&gt;内。每次调用Refresh函数重绘，都将对列表内的每一个元素调用绘制。
+不同的函数类型将采取不同的绘制策略。绘制时先用里氏转换将函数转换会真正的子类。随后调用多态方法DrawFunction。
+虽然绘制算法并不相同，但本质上都采取了取点描线的方式。绘制利用了WPF的绘图API，主要是运用了DrawingGroup、DrawingContext类。并将绘制结果以DrawingImage的形式作为位于主界面左侧窗口的Image的Source。
+（2）平滑算法 单变量函数和参数方程的基本绘制，就是简单的以某一小间隔dx为单位，从自变量初值递增到终值，对每一个自变量，计算对应的坐标。最后将所有在绘制范围内的坐标点连接起来。
+而平滑算法是用于改善一些极端情况，如y=sin(1/x)，的绘制效果的算法。用于平滑过于“尖锐”的图像。这是一个递归算法，具体操作如下
+输入参数为三个点，构成两条线段 如果这两条线段较为“平滑”（本程序采用斜率之差的绝对值小于某一值），则退出 否则，分别对于两条线段，各自取端点参数的中值，算出坐标，将原线段的端点和中值的坐标作为参数，重复1。 （3）Marching Square算法 对于图像一般形式f(x,y)=0，就算遍历全部绘制范围也较难恰好取到等于0的情况。另外如果以某一确定的eps作为误差范围，也会因为不同的梯度导致绘制的曲线误差较大。因此需要采用新的算法。
+Marching Square算法一定程度上解决了这一问题。该算法通过将绘制区域划分成等大的方块，并取样方块顶点上的函数值，根据函数值的正负估计曲线的走向。最后利用线性插值估计f(x,y)=0在方块边上的位置，连线得出图像。 3、UI设计 （1）图像尺寸自适应 软件需要能实现尺寸的自由变化，而如果只绘制某一特定尺寸的图像，那么就无法实现较好的变化效果。
+采取的解决方式是在FunctionDrawing类内添加属性AspectRatio用于表示长宽比。同时监听窗口的尺寸变化事件。在尺寸变化后，获取新的长宽比，更新AspectRatio并调用Refresh方法重绘界面。
+（2）UserControl自定义控件 在添加函数后，主界面右侧函数列表会出现记录该函数的信息卡片。并具有删除和设置函数的按钮。该卡片集成了该函数所能做的所有操作，是FunctionStorage在UI的反映。
+如果每创建一个新的函数，都要执行一大段生成包括Button、Label、TextBlock PopUp等控件的代码，很显然是不明智的。因此采用用户控件UserControl在新的窗口设计信息卡片需要的功能。主页面则只需要在添加函数时创建关于该函数的卡片实例即可。类似的，表达式输入框等内容也是如此。 （3）Frame——Page实现单窗口多页面 点击菜单栏的设置选项，会出现一个用于设置的新窗口。选择左侧边栏的不同设置选项，右侧会显示不同的页面。这个单窗口多页面的功能，由Frame加Page控件实现。
+主设置页添加一个Frame控件，在打开该窗口时，Frame加载显示不同设置的Page。在点击左侧边栏按钮的时候，调用Frame的Navigate方法导航到对应的设置页。 三、运行环境 编写时使用Visual Studio版本为VS2019 16.11.17 .NET版本为netcoreapp3.1 c#版本为C#8.0
+四、收获 学习了面向对象编程的思想，实践了简单的代码重构。 获得了开发近4000行代码的项目的经验。 学习了一些图形学算法。 对C#的理解更加深入，并获得了简单的WPF经验。 </p>
+  </div>
+  <footer class="entry-footer"><span title='2022-09-10 18:28:04 +0800 CST'>九月 10, 2022</span>&nbsp;·&nbsp;1 分钟&nbsp;·&nbsp;53 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to FunctionSketch 设计文档" href="https://wokron.github.io/posts/function-sketch-design-doc/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="https://wokron.github.io/page/14/">
+      «&nbsp;上一页&nbsp;
+    </a>
+    <a class="next" href="https://wokron.github.io/page/16/">下一页&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

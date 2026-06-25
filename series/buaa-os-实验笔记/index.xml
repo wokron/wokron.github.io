@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>BUAA-OS 实验笔记 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/series/buaa-os-%E5%AE%9E%E9%AA%8C%E7%AC%94%E8%AE%B0/</link>
+    <description>Recent content in BUAA-OS 实验笔记 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Fri, 19 May 2023 15:59:29 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/series/buaa-os-%E5%AE%9E%E9%AA%8C%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab6</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab6/</link>
+      <pubDate>Fri, 19 May 2023 15:59:29 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab6/</guid>
+      <description>一、Lab6 前言 操作系统实验的最后一篇笔记，不说什么了。本文主要讲了 Shell 的实现机制，管道通信略有说明。
+二、Shell 程序的启动 这次我们还要回到 Init/init.c 文件。我们的 MOS 的所有实验都结束之后，mips_init 函数应该是这样的
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); // lab3: env_init(); // lab6: ENV_CREATE(user_icode); // This must be the first env! // lab5: ENV_CREATE(fs_serv); // This must be the second env! // lab3: kclock_init(); enable_irq(); while (1) { } } 其中我们使用 ENV_CREATE 创建了两个用户进程。这两个进程的代码在编译时便写入了内核 ELF 文件中。其中第二个进程 fs_serv 就是 Lab5 中用到的文件系统服务进程；而第一个进程 user_icode 则是整个操作系统中除文件系统服务进程外所有进程的共同祖先进程，该进程便用于启动 Shell 进程。user_icode 或为 “user init code” 之意。</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab5</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab5/</link>
+      <pubDate>Tue, 02 May 2023 08:34:31 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab5/</guid>
+      <description>一、Lab5 前言 这是最长的一篇文章，可就算这么长，文中出现的代码也不过本次 Lab 中新增加的代码的一小部分。幸好完成本次实验不需要熟悉所有代码，一部分练习甚至不需要熟悉要填写的代码的前后文，只需要根据注释就可以填出很多。可是我感觉本篇文章还是有帮助的，毕竟谁也不知道 Exam 会出什么题。
+Lab5 主要分为四部分，分别是镜像制作工具、关于设备的系统调用、文件系统服务进程、文件操作库函数。本文对这四个方面都有所涉及，第二章主要讲镜像制作工具，第三章主要讲文件系统服务进程和文件操作库函数，最后一章讲关于设备的系统调用。
+二、磁盘镜像 （1）镜像制作工具 在本次实验中我们要实现一个文件系统。广义来说，一切字节序列都可以称为文件，但本次实验中我们还是主要关注在磁盘中存储的数据，将这些数据按一定的结构组织起来，就是本次实验的主要目标。
+本文依旧不按照指导书中的顺序。我们先查看位于 tools 文件夹下的磁盘镜像制作工具 fsformat 的源代码，以便我们理解磁盘以及文件系统的组织结构。
+（2）磁盘数据初始化 我们查看 tools/fsformat.c 文件。找到其中的 main 函数。main 函数首先调用了 init_disk 用于初始化磁盘。
+int main(int argc, char **argv) { static_assert(sizeof(struct File) == BY2FILE); init_disk(); 该函数中我们要用到一个数据结构 disk。因此我们先考察 disk。disk 是一个数组，大小为 NBLOCK，每个元素是一个结构体，其中有字段 data，是一个 BY2BLK 字节大小的空间，用于存储一个磁盘块的数据。很容易得知，NBLOCK * BY2BLK = 磁盘空间大小。这样就可以理解 disk 起到的作用了，也就是在构筑磁盘镜像时暂时存储磁盘数据，等到构筑完成后再将 disk 中 data 的内容拼接并输出为二进制镜像文件。
+struct Block { uint8_t data[BY2BLK]; uint32_t type; } disk[NBLOCK]; 磁盘块是对磁盘空间的逻辑划分；扇区是对磁盘空间的物理划分
+另外 Block 结构体还有一个字段 type，该字段的值为如下枚举的值
+enum { BLOCK_FREE = 0, BLOCK_BOOT = 1, BLOCK_BMAP = 2, BLOCK_SUPER = 3, BLOCK_DATA = 4, BLOCK_FILE = 5, BLOCK_INDEX = 6, }; 让我们回到 init_disk。该函数中首先将第一个磁盘块类型设为 BLOCK_BOOT，表示主引导扇区。之后我们要从第三个磁盘块开始（为什么不是第二个？因为第二个磁盘块为 “超级块”，将在后面介绍），设置磁盘块的位图分配机制。在函数中我们计算了在磁盘中存储位图需要的磁盘块数量。NBLOCK 是磁盘块的总数，那么我们同样需要 NBLOCK bit 大小的位图，又因为一个磁盘块有 BIT2BLK bit，那么总共需要 NBLOCK / BIT2BLK 个磁盘块。向上取整，总共需要 (NBLOCK + BIT2BLK - 1) / BIT2BLK 个磁盘块来存储位图。现在我们已经将 0 到 nbitblock-1 的位图分配了用途，那么下一个空闲的磁盘块就是 nextbno = 2 + nbitblock 了。</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab4</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab4/</link>
+      <pubDate>Thu, 13 Apr 2023 22:30:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab4/</guid>
+      <description>一、Lab4 前言 Lab4 主要实现了系统调用，并通过系统调用实现了进程的创建和通信等操作。按照提示编写代码的难度应该不大（除非你的 Lab3 schedule 函数有 bug，很可惜我就是这样 :(），所以本次的笔记更多的讨论了一些和实验无关的代码。希望不会显得太啰嗦。
+二、系统调用 （1）从一个用户程序引入 在之前的几篇文章中，我们大致循着内核初始化的过程进行分析。可是在这 Lab4 中这一思路就不适用了。因为在本次实验中我们所要实现的，不过是一些由内核提供的，可供用户程序调用的接口而已。这种调用被称为系统调用。
+但是为了保持文章行文的一致性，我们还是希望确定一个入口开始讲解。正好在 mips_init 中有这样的语句，那我们就从被创建的这个用户程序开始。
+// lab4: // ENV_CREATE(user_tltest); 这里需要插一嘴，在 Lab3 中我们就已经使用 ENV_CREATE 完成了一些程序的加载，可你有没有仔细看过被加载的程序的源代码是什么样的？代码在 user/bare 路径下。我们查看其中的 put_a.c 程序
+void _start() { for (unsigned i = 0;; ++i) { if ((i &amp;amp; ((1 &amp;lt;&amp;lt; 16) - 1)) == 0) { // Requires `e-&amp;gt;env_tf.cp0_status &amp;amp;= ~STATUS_KUp;` in kernel to work *(volatile char *)0xb0000000 = &amp;#39;a&amp;#39;; *(volatile char *)0xb0000000 = &amp;#39; &amp;#39;; } } } 你会发现这些所谓的程序并没有 main 函数，而是 _start。实际上和内核一样，我们同样在用于用户程序编译的链接器脚本中将程序入口设定为 _start。该脚本为 user/user.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab3</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab3/</link>
+      <pubDate>Thu, 30 Mar 2023 14:36:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab3/</guid>
+      <description>一、Lab3 前言 不知道为什么，虽然写 Lab3 所用的时间比 Lab2 少，但这次的笔记居然比 Lab2 长。我认为可能是因为自己在本篇文章中讲了更多和实验本身无关的东西。不过既然讲了，应该也会对进一步认识操作系统起到一些作用吧。希望本篇文章不会显得太啰嗦。
+二、内核初始化（再续） Lab2 中，我们在内核初始化阶段初始化了虚拟内存的相关信息，Lab3 中我们要继续这一过程。本次实验中我们会完成进程控制的初始化。
+（1）再度 mips_init 我们查看 Lab3 中 init/init.c 的 mips_init 函数的内容变化。与 Lab2 相比，其中多调用了如下的方法 env_init、ENV_CREATE_PRIORITY、kclock_init 和 enable_irq。
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); // lab3: env_init(); // lab3: ENV_CREATE_PRIORITY(user_bare_loop, 1); ENV_CREATE_PRIORITY(user_bare_loop, 2); // lab3: kclock_init(); enable_irq(); while (1) { } } 其中 env_init 用于进程控制的初始化，ENV_CREATE_PRIORITY 手工创建了两个进程，kclock_init 和 enable_irq 设置了时钟中断并启用了中断。后两者将分别在第三和四节介绍。本届只介绍前者。
+（2）进程管理的数据结构 让我们深入在 kern/env.c 中的 env_init，在该函数中，首先初始化了两个列表
+void env_init(void) { int i; /* Step 1: Initialize &amp;#39;env_free_list&amp;#39; with &amp;#39;LIST_INIT&amp;#39; and &amp;#39;env_sched_list&amp;#39; with * &amp;#39;TAILQ_INIT&amp;#39;.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab2</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab2/</link>
+      <pubDate>Mon, 20 Mar 2023 21:38:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab2/</guid>
+      <description>一、Lab2 前言 这篇文章应该是我目前写过的文章中长度排行前几的了。Lab2 的内容着实繁多，不仅是分页内存管理本身的理论和实现细节颇多；操作系统的基本知识和注意事项也占据了很大的篇幅。后者在不理解的情况下实在会对本次实验产生许多困惑。本人也是在逐步地探索之后才得以有了较多的认识——当然，这一认识或许也只是片面的。
+本文逐函数、逐代码地讲解了 Lab2 中新增的内容。主要在于内核初始化中关于内存的部分以及分页内存管理的实现。在本文中，关于链表宏和虚拟/物理内存的辨析也占据了比较多的内容。
+二、内核初始化（续） 在 Lab1 中，我们的内核初始化过程只进行了一部分。因为 Lab1 中 mips_init 函数几乎没有任何功能。在 Lab2 中，我们会继续推进这一过程。
+在 Lab2 中，我们会建立操作系统的内存管理机制。具体来说，我们会在 mips_init 中调用三个函数 mips_detect_memory、mips_vm_init 和 page_init。这三个函数会分别完成探测内存、初始化虚拟地址和初始化页的工作。接下来我们会分别介绍这三个函数。
+Lab2 中 mips_init 的结构如下：
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); while (1) { } } （1）探测内存 mips_detect_memory 的作用是获取总物理内存大小，并根据物理内存计算分页数。
+注意！是物理内存
+void mips_detect_memory() { /* Step 1: Initialize memsize. */ memsize = *(volatile u_int *)(KSEG1 | DEV_MP_ADDRESS | DEV_MP_MEMORY) 第一步中的这条语句似乎使人困惑。为什么这样就可以获得物理内存大小了呢？我们可以查看一下 DEV_MP_ADDRESS 和 DEV_MP_MEMORY 所在的头文件。它们定义在 include/driver/dev_mp.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab1</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab1/</link>
+      <pubDate>Tue, 14 Mar 2023 21:13:05 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab1/</guid>
+      <description>一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。
+但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。
+二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……
+不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。
+（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。
+我们看一下该文件的开头。
+/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的
+.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit.</description>
+    </item>
+  </channel>
+</rss>

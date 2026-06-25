@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Hexo 个人博客搭建及主题配置教程 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Hexo">
+<meta name="description" content="一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。
+二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。
+（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。
+windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。
+linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码
+sudo apt-get install git 安装好后，用git --version来查看一下版本。
+安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。
+windows：nodejs选择LTS版本就行了。
+linux：
+sudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行
+node -v npm -v 检查一下有没有安装成功
+安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。
+输入命令
+npm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。
+接下来初始化一下hexo
+hexo init myblog 这个myblog可以自己取什么名字都行，然后
+cd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：
+node_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务
+hexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/hexo-personal-blog-tutorial/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/hexo-personal-blog-tutorial/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Hexo 个人博客搭建及主题配置教程" />
+<meta property="og:description" content="一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。
+二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。
+（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。
+windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。
+linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码
+sudo apt-get install git 安装好后，用git --version来查看一下版本。
+安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。
+windows：nodejs选择LTS版本就行了。
+linux：
+sudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行
+node -v npm -v 检查一下有没有安装成功
+安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。
+输入命令
+npm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。
+接下来初始化一下hexo
+hexo init myblog 这个myblog可以自己取什么名字都行，然后
+cd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：
+node_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务
+hexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/hexo-personal-blog-tutorial/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-09-11T18:28:06+08:00" />
+<meta property="article:modified_time" content="2022-09-11T18:28:06+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Hexo 个人博客搭建及主题配置教程"/>
+<meta name="twitter:description" content="一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。
+二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。
+（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。
+windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。
+linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码
+sudo apt-get install git 安装好后，用git --version来查看一下版本。
+安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。
+windows：nodejs选择LTS版本就行了。
+linux：
+sudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行
+node -v npm -v 检查一下有没有安装成功
+安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。
+输入命令
+npm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。
+接下来初始化一下hexo
+hexo init myblog 这个myblog可以自己取什么名字都行，然后
+cd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：
+node_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务
+hexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Hexo 个人博客搭建及主题配置教程",
+      "item": "https://wokron.github.io/posts/hexo-personal-blog-tutorial/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Hexo 个人博客搭建及主题配置教程",
+  "name": "Hexo 个人博客搭建及主题配置教程",
+  "description": "一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。\n二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。\n（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。\nwindows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。\nlinux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码\nsudo apt-get install git 安装好后，用git --version来查看一下版本。\n安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。\nwindows：nodejs选择LTS版本就行了。\nlinux：\nsudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行\nnode -v npm -v 检查一下有没有安装成功\n安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。\n输入命令\nnpm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。\n接下来初始化一下hexo\nhexo init myblog 这个myblog可以自己取什么名字都行，然后\ncd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：\nnode_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务\nhexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。",
+  "keywords": [
+    "Hexo"
+  ],
+  "articleBody": "一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。\n二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。\n（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。\nwindows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。\nlinux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码\nsudo apt-get install git 安装好后，用git --version来查看一下版本。\n安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。\nwindows：nodejs选择LTS版本就行了。\nlinux：\nsudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行\nnode -v npm -v 检查一下有没有安装成功\n安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。\n输入命令\nnpm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。\n接下来初始化一下hexo\nhexo init myblog 这个myblog可以自己取什么名字都行，然后\ncd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：\nnode_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务\nhexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。\n（3）Github部署 GitHub创建个人仓库 首先，注册Github账号。\n注册完登录后，在网站中点击New repository，新建仓库\n创建一个和用户名相同的仓库，后面加.github.io，只有这样，将来要部署到GitHub page的时候，才会被识别，也就是xxxx.github.io，其中xxx就是你注册GitHub的用户名。\n点击create repository，创建仓库。\n生成SSH添加到GitHub 回到git bash中，输入\ngit config --global user.name \"yourname\" git config --global user.email \"youremail\" yourname输入GitHub用户名，youremail输入GitHub的邮箱。\n可以用以下两条，检查一下你有没有输对\ngit config user.name git config user.email 然后创建SSH，输入\nssh-keygen -t rsa -C \"youremail\" 接着一路回车。 会显示已经生成了.ssh的文件夹。在你的电脑中找到这个文件夹。\n在GitHub的setting中，找到SSH keys的设置选项，点击New SSH key 把id_rsa.pub里面的信息复制进去。\n在gitbash中，查看是否成功\nssh -T git@github.com 将hexo部署到GitHub 这一步，我们就可以将hexo和GitHub关联起来，也就是将hexo生成的文章部署到GitHub上，打开站点配置文件 _config.yml，翻到最后，修改为\ndeploy: type: git repo: https://github.com/YourgithubName/YourgithubName.github.io.git branch: master YourgithubName就是你的GitHub账户\n这个时候需要先安装deploy-git ，也就是部署的命令,这样你才能用命令部署到GitHub。\nnpm install hexo-deployer-git --save 然后\nhexo clean hexo generate hexo deploy 其中 hexo clean清除了你之前生成的东西，也可以不加。 hexo generate 顾名思义，生成静态文章，可以用 hexo g缩写 hexo deploy 部署文章，可以用hexo d缩写\n注意deploy时可能要你输入username和password。\n得到下图就说明部署成功了，过一会儿就可以在http://yourname.github.io 这个网站看到你的博客了！！\n（4）Hexo基本配置 Hexo框架配置 文件根目录下的_config.yml，就是整个hexo框架的配置文件了。可以在里面修改大部分的配置。\n这里列出几个比较主要的配置参数：\n参数 描述 例子 title 网站标题 xxx的博客 subtitle 网站副标题 技术记录 description 网站描述 一个技术宅的博客 author 您的名字 author language 网站使用的语言 zh-CN timezone 网站时区,默认使用电脑时区 Asia/Shanghai 文件配置 输入命令\nhexo new newpaper 可以创建一篇新的文章。newpaper为文章的名字，格式为markdown文件。\n在文件最上方以 — 分隔的区域，可用于指定个别文件的变量，举例来说：\n--- title: Hexo个人博客搭建及主题配置教程 date: 2022-09-11 18:28:06 tags: Hexo categories: 教程 --- 以下是预先定义的参数，可在模板中使用这些参数值并加以利用。\n参数 描述 layout 布局 title 标题 date 建立日期 updated 更新日期 comments 开启文章的评论功能 tags 标签（不适用于分页） categories 分类（不适用于分页） permalink 覆盖文章网址 其中，分类和标签需要区别一下，分类具有顺序性和层次性，也就是说 Foo, Bar 不等于 Bar, Foo；而标签没有顺序和层次。 三、更换主题 本文将以NexT主题为例\n（1）安装并启用 NexT 主题 安装主题 打开博客根目录文件夹，右键Git Bash，输入如下代码将next主题下载到目录./themes：\ngit clone https://github.com/theme-next/hexo-theme-next themes/next 打开主题文件夹下的package.json文件可以查看NexT主题版本。本文使用的版本为\n\"version\": \"7.8.0\", 启用主题 打开根目录下的_config.yml(称为站点配置文件)，修改主题（注意冒号后都要有空格）。搜索theme参数，修改为next\ntheme: next 另外next主题有四种样式，分别为Muse、Mist、Pisces、Gemini，这里设置为Gemini，在./themes/next/下的_config.yml（称为主题配置文件）中搜索参数Schemes，将要选的主题取消注释：\n#scheme: Muse #scheme: Mist #scheme: Pisces scheme: Gemini # 选择该主题 回到根目录打开Git Bash，输入如下三条命令：\nhexo clean hexo g hexo d 将主题修改应用到网站上。\n（2）功能设置 开启tags/categories 开启该功能，博客会将写过的文章按照tags或categories进行归类。\n进入博客根目录下，输入命令\nhexo new page tags hexo new page categories 会在./source下出现tags和categories文件夹。博客中将出现关于tags和categories的新页面。\n打开文件夹中的文件，可以修改相关信息，类似于修改文章配置\n--- title: 标签 date: 2022-09-10 10:33:40 type: \"tags\" --- 修改侧边栏信息 在主题配置文件./theme/next/_config.yml中搜索avatar\n# Sidebar Avatar avatar: # Replace the default image and set the url here. url: /images/avatar.jpg # If true, the avatar will be dispalyed in circle. rounded: true # If true, the avatar will be rotated with the cursor. rotated: true 在这里可以设置侧边栏的头像。包括头像图片，头像是否原型，鼠标放置是否会转动。\n同样的文件搜索social\nsocial: GitHub: https://github.com/wokron || fab fa-github E-Mail: stringcatwok@gmail.com || fa fa-envelope #Weibo: https://weibo.com/yourname || fab fa-weibo #Google: https://plus.google.com/yourname || fab fa-google #Twitter: https://twitter.com/yourname || fab fa-twitter #FB Page: https://www.facebook.com/yourname || fab fa-facebook #StackOverflow: https://stackoverflow.com/yourname || fab fa-stack-overflow #YouTube: https://youtube.com/yourname || fab fa-youtube #Instagram: https://instagram.com/yourname || fab fa-instagram #Skype: skype:yourname?call|chat || fab fa-skype 可以设置相关的网络账户信息。\n修改代码框 搜索codeblock\ncodeblock: # Code Highlight theme # Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic # See: https://github.com/chriskempson/tomorrow-theme highlight_theme: night # Add copy button on codeblock copy_button: enable: true # Show text copy result. show_result: default # Available values: default | flat | mac style: mac 可以设置代码框相关的参数。包括代码主题、复制键是否开启、是否显示复制效果、代码框的样式（style: mac就可以设置成很美观的mac panel样式，不需要网上那些复杂的步骤）。\n（3）增加扩展 添加Live2D 首先在博客目录下执行：\nnpm install -save hexo-helper-live2d 然后在站点配置文件中加入：\nlive2d: enable: true scriptFrom: local pluginRootPath: live2dw/ pluginJsPath: lib/ pluginModelPath: assets/ tagMode: false log: false model: use: live2d-widget-model-hijiki #选择哪种模型 display: position: right width: 150 height: 300 mobile: show: true 接着下载对应模型\nnpm install live2d-widget-model-hijiki 文章图片支持 这里使用相对引用插入图片\n安装插件hexo-renderer-marked：\nnpm install hexo-renderer-marked 修改站点配置文件\npost_asset_folder: true 同时在其中添加：\nmarked: prependRoot: true postAsset: true 就可以进行图片的引用了。\n公式支持 需要更换 Hexo 的 markdown 渲染引擎，hexo-renderer-kramed 引擎是在默认的渲染引擎 hexo-renderer-marked 的基础上修改了一些 bug ，两者比较接近，也比较轻量级。\nnpm uninstall hexo-renderer-marked --save npm install hexo-renderer-kramed --save 执行上面的命令，先卸载原来的渲染引擎，再安装新的。\n接下来到博客根目录下，找到node_modules\\kramed\\lib\\rules\\inline.js，修改 escape以及em变量的值：\n//escape: /^\\\\([\\\\`*{}\\[\\]()#$+\\-.!_\u003e])/, escape: /^\\\\([`*\\[\\]()#$+\\-.!_\u003e])/, //em: /^\\b_((?:__|[\\s\\S])+?)_\\b|^\\*((?:\\*\\*|[\\s\\S])+?)\\*(?!\\*)/, em: /^\\*((?:\\*\\*|[\\s\\S])+?)\\*(?!\\*)/, 然后在主题中开启MathJax。打开主题配置文件，搜索mathjax，改为\n# hexo-renderer-pandoc (or hexo-renderer-kramed) required for full MathJax support. mathjax: enable: true # See: https://mhchem.github.io/MathJax-mhchem/ mhchem: false 最后在写文章时，在开头开启mathjax\n--- title: 雇佣K名工人的最低成本 date: 2022-09-11 09:02:32 tags: [LeetCode,优先队列,贪心,c++] categories: 算法 mathjax: true --- 即可在文章中使用公式。\n（4）主题美化 添加背景 把想设置的背景放入./themes/next/source/images中，命名为background.jpg。在根目录的source文件夹下新建文件夹_data与style文件source/_data/styles.styl，输入以下代码\nbody { background:url(/images/background.jpg); background-repeat: no-repeat; background-attachment:fixed; background-position:100% 100%; } 再在主题_config.yml文件中找到对应的custom_file_path，去掉注释即可。\ncustom_file_path: #head: source/_data/head.swig #header: source/_data/header.swig #sidebar: source/_data/sidebar.swig #postMeta: source/_data/post-meta.swig #postBodyEnd: source/_data/post-body-end.swig #footer: source/_data/footer.swig #bodyEnd: source/_data/body-end.swig #variable: source/_data/variables.styl #mixin: source/_data/mixins.styl style: source/_data/styles.styl 博客内容透明化 在上文新建的styles.styl文件中添加如下内容即可：\n//博客内容透明化 //文章内容的透明度设置 .content-wrap { opacity: 0.9; } //侧边框的透明度设置 .sidebar { opacity: 0.9; } //菜单栏的透明度设置 .header-inner { background: rgba(255,255,255,0.9); } //搜索框（local-search）的透明度设置 .popup { opacity: 0.9; } 四、结语 搭建和美化博客的工作内容颇多，本人也花了许久功夫去查阅资料、不断尝试，才最终得到了一个比较好的效果。在这一过程中，给过我帮助的文章已经难以一一回忆起来，因此在最后不能给出一份引用资料，实在抱歉。 这里就列出一些我还能找得到的参考文章：\nhttps://blog.csdn.net/sinat_37781304/article/details/82729029 https://blog.csdn.net/qq_34003239/article/details/100883213 https://zhuanlan.zhihu.com/p/265077468 https://blog.csdn.net/yexiaohhjk/article/details/82526604 https://www.snowmoon.top/2021/02/21/next%E4%B8%BB%E9%A2%98%E7%BE%8E%E5%8C%96/ ",
+  "wordCount" : "640",
+  "inLanguage": "zh",
+  "datePublished": "2022-09-11T18:28:06+08:00",
+  "dateModified": "2022-09-11T18:28:06+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/hexo-personal-blog-tutorial/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      Hexo 个人博客搭建及主题配置教程
+    </h1>
+    <div class="post-meta"><span title='2022-09-11 18:28:06 +0800 CST'>九月 11, 2022</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;640 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/hexo-personal-blog-tutorial.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%89%8d%e8%a8%80" aria-label="一、前言">一、前言</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e6%90%ad%e5%bb%ba%e9%98%b6%e6%ae%b5" aria-label="二、搭建阶段">二、搭建阶段</a><ul>
+                        
+                <li>
+                    <a href="#1hexo%e7%ae%80%e4%bb%8b" aria-label="（1）Hexo简介">（1）Hexo简介</a></li>
+                <li>
+                    <a href="#2%e5%89%8d%e6%9c%9f%e5%ae%89%e8%a3%85" aria-label="（2）前期安装">（2）前期安装</a><ul>
+                        
+                <li>
+                    <a href="#%e5%ae%89%e8%a3%85git" aria-label="安装Git">安装Git</a></li>
+                <li>
+                    <a href="#%e5%ae%89%e8%a3%85nodejs" aria-label="安装nodejs">安装nodejs</a></li>
+                <li>
+                    <a href="#%e5%ae%89%e8%a3%85hexo" aria-label="安装Hexo">安装Hexo</a></li></ul>
+                </li>
+                <li>
+                    <a href="#3github%e9%83%a8%e7%bd%b2" aria-label="（3）Github部署">（3）Github部署</a><ul>
+                        
+                <li>
+                    <a href="#github%e5%88%9b%e5%bb%ba%e4%b8%aa%e4%ba%ba%e4%bb%93%e5%ba%93" aria-label="GitHub创建个人仓库">GitHub创建个人仓库</a></li>
+                <li>
+                    <a href="#%e7%94%9f%e6%88%90ssh%e6%b7%bb%e5%8a%a0%e5%88%b0github" aria-label="生成SSH添加到GitHub">生成SSH添加到GitHub</a></li>
+                <li>
+                    <a href="#%e5%b0%86hexo%e9%83%a8%e7%bd%b2%e5%88%b0github" aria-label="将hexo部署到GitHub">将hexo部署到GitHub</a></li></ul>
+                </li>
+                <li>
+                    <a href="#4hexo%e5%9f%ba%e6%9c%ac%e9%85%8d%e7%bd%ae" aria-label="（4）Hexo基本配置">（4）Hexo基本配置</a><ul>
+                        
+                <li>
+                    <a href="#hexo%e6%a1%86%e6%9e%b6%e9%85%8d%e7%bd%ae" aria-label="Hexo框架配置">Hexo框架配置</a></li>
+                <li>
+                    <a href="#%e6%96%87%e4%bb%b6%e9%85%8d%e7%bd%ae" aria-label="文件配置">文件配置</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%89%e6%9b%b4%e6%8d%a2%e4%b8%bb%e9%a2%98" aria-label="三、更换主题">三、更换主题</a><ul>
+                        
+                <li>
+                    <a href="#1%e5%ae%89%e8%a3%85%e5%b9%b6%e5%90%af%e7%94%a8-next-%e4%b8%bb%e9%a2%98" aria-label="（1）安装并启用 NexT 主题">（1）安装并启用 NexT 主题</a><ul>
+                        
+                <li>
+                    <a href="#%e5%ae%89%e8%a3%85%e4%b8%bb%e9%a2%98" aria-label="安装主题">安装主题</a></li>
+                <li>
+                    <a href="#%e5%90%af%e7%94%a8%e4%b8%bb%e9%a2%98" aria-label="启用主题">启用主题</a></li></ul>
+                </li>
+                <li>
+                    <a href="#2%e5%8a%9f%e8%83%bd%e8%ae%be%e7%bd%ae" aria-label="（2）功能设置">（2）功能设置</a><ul>
+                        
+                <li>
+                    <a href="#%e5%bc%80%e5%90%aftagscategories" aria-label="开启tags/categories">开启tags/categories</a></li>
+                <li>
+                    <a href="#%e4%bf%ae%e6%94%b9%e4%be%a7%e8%be%b9%e6%a0%8f%e4%bf%a1%e6%81%af" aria-label="修改侧边栏信息">修改侧边栏信息</a></li>
+                <li>
+                    <a href="#%e4%bf%ae%e6%94%b9%e4%bb%a3%e7%a0%81%e6%a1%86" aria-label="修改代码框">修改代码框</a></li></ul>
+                </li>
+                <li>
+                    <a href="#3%e5%a2%9e%e5%8a%a0%e6%89%a9%e5%b1%95" aria-label="（3）增加扩展">（3）增加扩展</a><ul>
+                        
+                <li>
+                    <a href="#%e6%b7%bb%e5%8a%a0live2d" aria-label="添加Live2D">添加Live2D</a></li>
+                <li>
+                    <a href="#%e6%96%87%e7%ab%a0%e5%9b%be%e7%89%87%e6%94%af%e6%8c%81" aria-label="文章图片支持">文章图片支持</a></li>
+                <li>
+                    <a href="#%e5%85%ac%e5%bc%8f%e6%94%af%e6%8c%81" aria-label="公式支持">公式支持</a></li></ul>
+                </li>
+                <li>
+                    <a href="#4%e4%b8%bb%e9%a2%98%e7%be%8e%e5%8c%96" aria-label="（4）主题美化">（4）主题美化</a><ul>
+                        
+                <li>
+                    <a href="#%e6%b7%bb%e5%8a%a0%e8%83%8c%e6%99%af" aria-label="添加背景">添加背景</a></li>
+                <li>
+                    <a href="#%e5%8d%9a%e5%ae%a2%e5%86%85%e5%ae%b9%e9%80%8f%e6%98%8e%e5%8c%96" aria-label="博客内容透明化">博客内容透明化</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%9b%9b%e7%bb%93%e8%af%ad" aria-label="四、结语">四、结语</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一前言">一、前言<a hidden class="anchor" aria-hidden="true" href="#一前言">#</a></h2>
+<p>本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。</p>
+<h2 id="二搭建阶段">二、搭建阶段<a hidden class="anchor" aria-hidden="true" href="#二搭建阶段">#</a></h2>
+<h3 id="1hexo简介">（1）Hexo简介<a hidden class="anchor" aria-hidden="true" href="#1hexo简介">#</a></h3>
+<p>Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。</p>
+<h3 id="2前期安装">（2）前期安装<a hidden class="anchor" aria-hidden="true" href="#2前期安装">#</a></h3>
+<h4 id="安装git">安装Git<a hidden class="anchor" aria-hidden="true" href="#安装git">#</a></h4>
+<p>Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。</p>
+<p>windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。</p>
+<p>linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo apt-get install git
+</span></span></code></pre></div><p>安装好后，用<code>git --version</code>来查看一下版本。</p>
+<h4 id="安装nodejs">安装nodejs<a hidden class="anchor" aria-hidden="true" href="#安装nodejs">#</a></h4>
+<p>Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。</p>
+<p>windows：nodejs选择LTS版本就行了。</p>
+<p>linux：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo apt-get install nodejs
+</span></span><span class="line"><span class="cl">sudo apt-get install npm
+</span></span></code></pre></div><p>安装完后，打开命令行</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">node -v
+</span></span><span class="line"><span class="cl">npm -v
+</span></span></code></pre></div><p>检查一下有没有安装成功</p>
+<h4 id="安装hexo">安装Hexo<a hidden class="anchor" aria-hidden="true" href="#安装hexo">#</a></h4>
+<p>前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。</p>
+<p>输入命令</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm install -g hexo-cli
+</span></span></code></pre></div><p>用<code>hexo -v</code>查看一下版本，至此就全部安装完了。</p>
+<p>接下来初始化一下hexo</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hexo init myblog
+</span></span></code></pre></div><p>这个myblog可以自己取什么名字都行，然后</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">cd</span> myblog //进入这个myblog文件夹
+</span></span><span class="line"><span class="cl">npm install
+</span></span></code></pre></div><p>新建完成后，指定文件夹目录下有：</p>
+<ul>
+<li>node_modules: 依赖包</li>
+<li>public：存放生成的页面</li>
+<li>scaffolds：生成文章的一些模板</li>
+<li>source：用来存放你的文章</li>
+<li>themes：主题</li>
+<li>_config.yml: 博客的配置文件**</li>
+</ul>
+<p>打开hexo的服务</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hexo g
+</span></span><span class="line"><span class="cl">hexo server
+</span></span></code></pre></div><p>在浏览器输入localhost:4000就可以看到你生成的博客了。</p>
+<h3 id="3github部署">（3）Github部署<a hidden class="anchor" aria-hidden="true" href="#3github部署">#</a></h3>
+<h4 id="github创建个人仓库">GitHub创建个人仓库<a hidden class="anchor" aria-hidden="true" href="#github创建个人仓库">#</a></h4>
+<p>首先，注册Github账号。</p>
+<p>注册完登录后，在网站中点击New repository，新建仓库</p>
+<p>创建一个和用户名相同的仓库，后面加.github.io，只有这样，将来要部署到GitHub page的时候，才会被识别，也就是xxxx.github.io，其中xxx就是你注册GitHub的用户名。</p>
+<p>点击create repository，创建仓库。</p>
+<h4 id="生成ssh添加到github">生成SSH添加到GitHub<a hidden class="anchor" aria-hidden="true" href="#生成ssh添加到github">#</a></h4>
+<p>回到git bash中，输入</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git config --global user.name <span class="s2">&#34;yourname&#34;</span>
+</span></span><span class="line"><span class="cl">git config --global user.email <span class="s2">&#34;youremail&#34;</span>
+</span></span></code></pre></div><p>yourname输入GitHub用户名，youremail输入GitHub的邮箱。</p>
+<p>可以用以下两条，检查一下你有没有输对</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git config user.name
+</span></span><span class="line"><span class="cl">git config user.email
+</span></span></code></pre></div><p>然后创建SSH，输入</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh-keygen -t rsa -C <span class="s2">&#34;youremail&#34;</span>
+</span></span></code></pre></div><p>接着一路回车。
+会显示已经生成了.ssh的文件夹。在你的电脑中找到这个文件夹。</p>
+<p>在GitHub的setting中，找到SSH keys的设置选项，点击New SSH key
+把id_rsa.pub里面的信息复制进去。</p>
+<p>在gitbash中，查看是否成功</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh -T git@github.com
+</span></span></code></pre></div><h4 id="将hexo部署到github">将hexo部署到GitHub<a hidden class="anchor" aria-hidden="true" href="#将hexo部署到github">#</a></h4>
+<p>这一步，我们就可以将hexo和GitHub关联起来，也就是将hexo生成的文章部署到GitHub上，打开站点配置文件 _config.yml，翻到最后，修改为</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">deploy:
+</span></span><span class="line"><span class="cl">  type: git
+</span></span><span class="line"><span class="cl">  repo: https://github.com/YourgithubName/YourgithubName.github.io.git
+</span></span><span class="line"><span class="cl">  branch: master
+</span></span></code></pre></div><p>YourgithubName就是你的GitHub账户</p>
+<p>这个时候需要先安装deploy-git ，也就是部署的命令,这样你才能用命令部署到GitHub。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm install hexo-deployer-git --save
+</span></span></code></pre></div><p>然后</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hexo clean
+</span></span><span class="line"><span class="cl">hexo generate
+</span></span><span class="line"><span class="cl">hexo deploy
+</span></span></code></pre></div><p>其中 hexo clean清除了你之前生成的东西，也可以不加。
+hexo generate 顾名思义，生成静态文章，可以用 hexo g缩写
+hexo deploy 部署文章，可以用hexo d缩写</p>
+<p>注意deploy时可能要你输入username和password。</p>
+<p>得到下图就说明部署成功了，过一会儿就可以在http://yourname.github.io 这个网站看到你的博客了！！</p>
+<h3 id="4hexo基本配置">（4）Hexo基本配置<a hidden class="anchor" aria-hidden="true" href="#4hexo基本配置">#</a></h3>
+<h4 id="hexo框架配置">Hexo框架配置<a hidden class="anchor" aria-hidden="true" href="#hexo框架配置">#</a></h4>
+<p>文件根目录下的_config.yml，就是整个hexo框架的配置文件了。可以在里面修改大部分的配置。</p>
+<p>这里列出几个比较主要的配置参数：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>title</td>
+<td>网站标题</td>
+<td>xxx的博客</td>
+</tr>
+<tr>
+<td>subtitle</td>
+<td>网站副标题</td>
+<td>技术记录</td>
+</tr>
+<tr>
+<td>description</td>
+<td>网站描述</td>
+<td>一个技术宅的博客</td>
+</tr>
+<tr>
+<td>author</td>
+<td>您的名字</td>
+<td>author</td>
+</tr>
+<tr>
+<td>language</td>
+<td>网站使用的语言</td>
+<td>zh-CN</td>
+</tr>
+<tr>
+<td>timezone</td>
+<td>网站时区,默认使用电脑时区</td>
+<td>Asia/Shanghai</td>
+</tr>
+</tbody>
+</table>
+<h4 id="文件配置">文件配置<a hidden class="anchor" aria-hidden="true" href="#文件配置">#</a></h4>
+<p>输入命令</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hexo new newpaper
+</span></span></code></pre></div><p>可以创建一篇新的文章。newpaper为文章的名字，格式为markdown文件。</p>
+<p>在文件最上方以 &mdash; 分隔的区域，可用于指定个别文件的变量，举例来说：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">title: Hexo个人博客搭建及主题配置教程
+</span></span><span class="line"><span class="cl">date: 2022-09-11 18:28:06
+</span></span><span class="line"><span class="cl">tags: Hexo
+</span></span><span class="line"><span class="cl">categories: 教程
+</span></span><span class="line"><span class="cl">---
+</span></span></code></pre></div><p>以下是预先定义的参数，可在模板中使用这些参数值并加以利用。</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>layout</td>
+<td>布局</td>
+</tr>
+<tr>
+<td>title</td>
+<td>标题</td>
+</tr>
+<tr>
+<td>date</td>
+<td>建立日期</td>
+</tr>
+<tr>
+<td>updated</td>
+<td>更新日期</td>
+</tr>
+<tr>
+<td>comments</td>
+<td>开启文章的评论功能</td>
+</tr>
+<tr>
+<td>tags</td>
+<td>标签（不适用于分页）</td>
+</tr>
+<tr>
+<td>categories</td>
+<td>分类（不适用于分页）</td>
+</tr>
+<tr>
+<td>permalink</td>
+<td>覆盖文章网址</td>
+</tr>
+<tr>
+<td>其中，分类和标签需要区别一下，分类具有顺序性和层次性，也就是说 Foo, Bar 不等于 Bar, Foo；而标签没有顺序和层次。</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="三更换主题">三、更换主题<a hidden class="anchor" aria-hidden="true" href="#三更换主题">#</a></h2>
+<p>本文将以NexT主题为例</p>
+<h3 id="1安装并启用-next-主题">（1）安装并启用 NexT 主题<a hidden class="anchor" aria-hidden="true" href="#1安装并启用-next-主题">#</a></h3>
+<h4 id="安装主题">安装主题<a hidden class="anchor" aria-hidden="true" href="#安装主题">#</a></h4>
+<p>打开博客根目录文件夹，右键Git Bash，输入如下代码将next主题下载到目录<code>./themes</code>：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git clone https://github.com/theme-next/hexo-theme-next themes/next
+</span></span></code></pre></div><p>打开主题文件夹下的package.json文件可以查看NexT主题版本。本文使用的版本为</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="s2">&#34;version&#34;</span><span class="err">:</span> <span class="s2">&#34;7.8.0&#34;</span><span class="err">,</span>
+</span></span></code></pre></div><h4 id="启用主题">启用主题<a hidden class="anchor" aria-hidden="true" href="#启用主题">#</a></h4>
+<p>打开根目录下的_config.yml(称为站点配置文件)，修改主题（注意冒号后都要有空格）。搜索theme参数，修改为next</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">theme</span><span class="p">:</span><span class="w"> </span><span class="l">next</span><span class="w">
+</span></span></span></code></pre></div><p>另外next主题有四种样式，分别为Muse、Mist、Pisces、Gemini，这里设置为Gemini，在<code>./themes/next/</code>下的_config.yml（称为主题配置文件）中搜索参数Schemes，将要选的主题取消注释：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c">#scheme: Muse</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#scheme: Mist</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#scheme: Pisces</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l">Gemini</span><span class="w"> </span><span class="c"># 选择该主题</span><span class="w">
+</span></span></span></code></pre></div><p>回到根目录打开Git Bash，输入如下三条命令：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hexo clean
+</span></span><span class="line"><span class="cl">hexo g
+</span></span><span class="line"><span class="cl">hexo d
+</span></span></code></pre></div><p>将主题修改应用到网站上。</p>
+<h3 id="2功能设置">（2）功能设置<a hidden class="anchor" aria-hidden="true" href="#2功能设置">#</a></h3>
+<h4 id="开启tagscategories">开启tags/categories<a hidden class="anchor" aria-hidden="true" href="#开启tagscategories">#</a></h4>
+<p>开启该功能，博客会将写过的文章按照tags或categories进行归类。</p>
+<p>进入博客根目录下，输入命令</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hexo new page tags
+</span></span><span class="line"><span class="cl">hexo new page categories
+</span></span></code></pre></div><p>会在<code>./source</code>下出现tags和categories文件夹。博客中将出现关于tags和categories的新页面。</p>
+<p>打开文件夹中的文件，可以修改相关信息，类似于修改文章配置</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">title: 标签
+</span></span><span class="line"><span class="cl">date: 2022-09-10 10:33:40
+</span></span><span class="line"><span class="cl">type: &#34;tags&#34;
+</span></span><span class="line"><span class="cl">---
+</span></span></code></pre></div><h4 id="修改侧边栏信息">修改侧边栏信息<a hidden class="anchor" aria-hidden="true" href="#修改侧边栏信息">#</a></h4>
+<p>在主题配置文件<code>./theme/next/_config.yml</code>中搜索avatar</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># Sidebar Avatar</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">avatar</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Replace the default image and set the url here.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l">/images/avatar.jpg</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># If true, the avatar will be dispalyed in circle.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rounded</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># If true, the avatar will be rotated with the cursor.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rotated</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span></code></pre></div><p>在这里可以设置侧边栏的头像。包括头像图片，头像是否原型，鼠标放置是否会转动。</p>
+<p>同样的文件搜索social</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">social</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">GitHub</span><span class="p">:</span><span class="w"> </span><span class="l">https://github.com/wokron || fab fa-github</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">E-Mail</span><span class="p">:</span><span class="w"> </span><span class="l">stringcatwok@gmail.com || fa fa-envelope</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#Weibo: https://weibo.com/yourname || fab fa-weibo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#Google: https://plus.google.com/yourname || fab fa-google</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#Twitter: https://twitter.com/yourname || fab fa-twitter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#FB Page: https://www.facebook.com/yourname || fab fa-facebook</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#StackOverflow: https://stackoverflow.com/yourname || fab fa-stack-overflow</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#YouTube: https://youtube.com/yourname || fab fa-youtube</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#Instagram: https://instagram.com/yourname || fab fa-instagram</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#Skype: skype:yourname?call|chat || fab fa-skype</span><span class="w">
+</span></span></span></code></pre></div><p>可以设置相关的网络账户信息。</p>
+<h4 id="修改代码框">修改代码框<a hidden class="anchor" aria-hidden="true" href="#修改代码框">#</a></h4>
+<p>搜索codeblock</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">codeblock</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Code Highlight theme</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># See: https://github.com/chriskempson/tomorrow-theme</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">highlight_theme</span><span class="p">:</span><span class="w"> </span><span class="l">night</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Add copy button on codeblock</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">copy_button</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enable</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># Show text copy result.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">show_result</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># Available values: default | flat | mac</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">style</span><span class="p">:</span><span class="w"> </span><span class="l">mac</span><span class="w">
+</span></span></span></code></pre></div><p>可以设置代码框相关的参数。包括代码主题、复制键是否开启、是否显示复制效果、代码框的样式（<code>style: mac</code>就可以设置成很美观的mac panel样式，不需要网上那些复杂的步骤）。</p>
+<h3 id="3增加扩展">（3）增加扩展<a hidden class="anchor" aria-hidden="true" href="#3增加扩展">#</a></h3>
+<h4 id="添加live2d">添加Live2D<a hidden class="anchor" aria-hidden="true" href="#添加live2d">#</a></h4>
+<p>首先在博客目录下执行：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm install -save hexo-helper-live2d
+</span></span></code></pre></div><p>然后在站点配置文件中加入：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">live2d</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enable</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">scriptFrom</span><span class="p">:</span><span class="w"> </span><span class="l">local</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pluginRootPath</span><span class="p">:</span><span class="w"> </span><span class="l">live2dw/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pluginJsPath</span><span class="p">:</span><span class="w"> </span><span class="l">lib/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pluginModelPath</span><span class="p">:</span><span class="w"> </span><span class="l">assets/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">tagMode</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">log</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">use</span><span class="p">:</span><span class="w"> </span><span class="l">live2d-widget-model-hijiki</span><span class="w"> </span><span class="c">#选择哪种模型</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">display</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">position</span><span class="p">:</span><span class="w"> </span><span class="l">right</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="m">150</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">height</span><span class="p">:</span><span class="w"> </span><span class="m">300</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">mobile</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">show</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span></code></pre></div><p>接着下载对应模型</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm install live2d-widget-model-hijiki
+</span></span></code></pre></div><h4 id="文章图片支持">文章图片支持<a hidden class="anchor" aria-hidden="true" href="#文章图片支持">#</a></h4>
+<p>这里使用相对引用插入图片</p>
+<p>安装插件<code>hexo-renderer-marked</code>：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm install hexo-renderer-marked
+</span></span></code></pre></div><p>修改站点配置文件</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">post_asset_folder</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span></code></pre></div><p>同时在其中添加：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">marked</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">prependRoot</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">postAsset</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span></code></pre></div><p>就可以进行图片的引用了。</p>
+<h4 id="公式支持">公式支持<a hidden class="anchor" aria-hidden="true" href="#公式支持">#</a></h4>
+<p>需要更换 Hexo 的 markdown 渲染引擎，hexo-renderer-kramed 引擎是在默认的渲染引擎 hexo-renderer-marked 的基础上修改了一些 bug ，两者比较接近，也比较轻量级。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm uninstall hexo-renderer-marked --save
+</span></span><span class="line"><span class="cl">npm install hexo-renderer-kramed --save
+</span></span></code></pre></div><p>执行上面的命令，先卸载原来的渲染引擎，再安装新的。</p>
+<p>接下来到博客根目录下，找到<code>node_modules\kramed\lib\rules\inline.js</code>，修改 escape以及em变量的值：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="c1">//escape: /^\\([\\`*{}\[\]()#$+\-.!_&gt;])/,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">escape</span><span class="o">:</span> <span class="sr">/^\\([`*\[\]()#$+\-.!_&gt;])/</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//em: /^\b_((?:__|[\s\S])+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">em</span><span class="o">:</span> <span class="sr">/^\*((?:\*\*|[\s\S])+?)\*(?!\*)/</span><span class="p">,</span>
+</span></span></code></pre></div><p>然后在主题中开启MathJax。打开主题配置文件，搜索mathjax，改为</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># hexo-renderer-pandoc (or hexo-renderer-kramed) required for full MathJax support.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">mathjax</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enable</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># See: https://mhchem.github.io/MathJax-mhchem/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">mhchem</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span></code></pre></div><p>最后在写文章时，在开头开启mathjax</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">title: 雇佣K名工人的最低成本
+</span></span><span class="line"><span class="cl">date: 2022-09-11 09:02:32
+</span></span><span class="line"><span class="cl">tags: [LeetCode,优先队列,贪心,c++]
+</span></span><span class="line"><span class="cl">categories: 算法
+</span></span><span class="line"><span class="cl">mathjax: true 
+</span></span><span class="line"><span class="cl">---
+</span></span></code></pre></div><p>即可在文章中使用公式。</p>
+<h3 id="4主题美化">（4）主题美化<a hidden class="anchor" aria-hidden="true" href="#4主题美化">#</a></h3>
+<h4 id="添加背景">添加背景<a hidden class="anchor" aria-hidden="true" href="#添加背景">#</a></h4>
+<p>把想设置的背景放入./themes/next/source/images中，命名为background.jpg。在根目录的source文件夹下新建文件夹_data与style文件source/_data/styles.styl，输入以下代码</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-css" data-lang="css"><span class="line"><span class="cl"><span class="nt">body</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">background</span><span class="p">:</span><span class="nb">url</span><span class="p">(</span><span class="sx">/images/background.jpg</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">background-repeat</span><span class="p">:</span> <span class="kc">no-repeat</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">background-attachment</span><span class="p">:</span><span class="kc">fixed</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">background-position</span><span class="p">:</span><span class="mi">100</span><span class="kt">%</span> <span class="mi">100</span><span class="kt">%</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>再在主题_config.yml文件中找到对应的custom_file_path，去掉注释即可。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">custom_file_path</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#head: source/_data/head.swig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#header: source/_data/header.swig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#sidebar: source/_data/sidebar.swig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#postMeta: source/_data/post-meta.swig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#postBodyEnd: source/_data/post-body-end.swig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#footer: source/_data/footer.swig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#bodyEnd: source/_data/body-end.swig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#variable: source/_data/variables.styl</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c">#mixin: source/_data/mixins.styl</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">style</span><span class="p">:</span><span class="w"> </span><span class="l">source/_data/styles.styl</span><span class="w">
+</span></span></span></code></pre></div><h4 id="博客内容透明化">博客内容透明化<a hidden class="anchor" aria-hidden="true" href="#博客内容透明化">#</a></h4>
+<p>在上文新建的styles.styl文件中添加如下内容即可：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-css" data-lang="css"><span class="line"><span class="cl"><span class="o">//</span><span class="nt">博客内容透明化</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span><span class="nt">文章内容的透明度设置</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="nc">content-wrap</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">opacity</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">//</span><span class="nt">侧边框的透明度设置</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="nc">sidebar</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">opacity</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">//</span><span class="nt">菜单栏的透明度设置</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="nc">header-inner</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">background</span><span class="p">:</span> <span class="nb">rgba</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mi">255</span><span class="p">,</span><span class="mf">0.9</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">//</span><span class="nt">搜索框</span><span class="err">（</span><span class="nt">local-search</span><span class="err">）</span><span class="nt">的透明度设置</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="nc">popup</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">opacity</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="四结语">四、结语<a hidden class="anchor" aria-hidden="true" href="#四结语">#</a></h2>
+<p>搭建和美化博客的工作内容颇多，本人也花了许久功夫去查阅资料、不断尝试，才最终得到了一个比较好的效果。在这一过程中，给过我帮助的文章已经难以一一回忆起来，因此在最后不能给出一份引用资料，实在抱歉。
+这里就列出一些我还能找得到的参考文章：</p>
+<ul>
+<li><a href="https://blog.csdn.net/sinat_37781304/article/details/82729029">https://blog.csdn.net/sinat_37781304/article/details/82729029</a></li>
+<li><a href="https://blog.csdn.net/qq_34003239/article/details/100883213">https://blog.csdn.net/qq_34003239/article/details/100883213</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/265077468">https://zhuanlan.zhihu.com/p/265077468</a></li>
+<li><a href="https://blog.csdn.net/yexiaohhjk/article/details/82526604">https://blog.csdn.net/yexiaohhjk/article/details/82526604</a></li>
+<li><a href="https://www.snowmoon.top/2021/02/21/next%E4%B8%BB%E9%A2%98%E7%BE%8E%E5%8C%96/">https://www.snowmoon.top/2021/02/21/next%E4%B8%BB%E9%A2%98%E7%BE%8E%E5%8C%96/</a></li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/hexo/">Hexo</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/system-programming-note-1/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>系统编程之命令行编译</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/function-sketch-doc/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>FunctionSketch 说明文档</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hexo 个人博客搭建及主题配置教程 on x"
+            href="https://x.com/intent/tweet/?text=Hexo%20%e4%b8%aa%e4%ba%ba%e5%8d%9a%e5%ae%a2%e6%90%ad%e5%bb%ba%e5%8f%8a%e4%b8%bb%e9%a2%98%e9%85%8d%e7%bd%ae%e6%95%99%e7%a8%8b&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f&amp;hashtags=Hexo">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hexo 个人博客搭建及主题配置教程 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f&amp;title=Hexo%20%e4%b8%aa%e4%ba%ba%e5%8d%9a%e5%ae%a2%e6%90%ad%e5%bb%ba%e5%8f%8a%e4%b8%bb%e9%a2%98%e9%85%8d%e7%bd%ae%e6%95%99%e7%a8%8b&amp;summary=Hexo%20%e4%b8%aa%e4%ba%ba%e5%8d%9a%e5%ae%a2%e6%90%ad%e5%bb%ba%e5%8f%8a%e4%b8%bb%e9%a2%98%e9%85%8d%e7%bd%ae%e6%95%99%e7%a8%8b&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hexo 个人博客搭建及主题配置教程 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f&title=Hexo%20%e4%b8%aa%e4%ba%ba%e5%8d%9a%e5%ae%a2%e6%90%ad%e5%bb%ba%e5%8f%8a%e4%b8%bb%e9%a2%98%e9%85%8d%e7%bd%ae%e6%95%99%e7%a8%8b">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hexo 个人博客搭建及主题配置教程 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hexo 个人博客搭建及主题配置教程 on whatsapp"
+            href="https://api.whatsapp.com/send?text=Hexo%20%e4%b8%aa%e4%ba%ba%e5%8d%9a%e5%ae%a2%e6%90%ad%e5%bb%ba%e5%8f%8a%e4%b8%bb%e9%a2%98%e9%85%8d%e7%bd%ae%e6%95%99%e7%a8%8b%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hexo 个人博客搭建及主题配置教程 on telegram"
+            href="https://telegram.me/share/url?text=Hexo%20%e4%b8%aa%e4%ba%ba%e5%8d%9a%e5%ae%a2%e6%90%ad%e5%bb%ba%e5%8f%8a%e4%b8%bb%e9%a2%98%e9%85%8d%e7%bd%ae%e6%95%99%e7%a8%8b&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Hexo 个人博客搭建及主题配置教程 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=Hexo%20%e4%b8%aa%e4%ba%ba%e5%8d%9a%e5%ae%a2%e6%90%ad%e5%bb%ba%e5%8f%8a%e4%b8%bb%e9%a2%98%e9%85%8d%e7%bd%ae%e6%95%99%e7%a8%8b&u=https%3a%2f%2fwokron.github.io%2fposts%2fhexo-personal-blog-tutorial%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

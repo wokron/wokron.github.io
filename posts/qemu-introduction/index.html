@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>QEMU 模拟器介绍 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="QEMU, MIPS, C">
+<meta name="description" content="本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。
+然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。
+本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
+什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard&rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。
+QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。
+QEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。
+在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。
+通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。
+根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。
+第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。
+图片来自 Andrew S.">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/qemu-introduction/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/qemu-introduction/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="QEMU 模拟器介绍" />
+<meta property="og:description" content="本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。
+然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。
+本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
+什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard&rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。
+QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。
+QEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。
+在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。
+通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。
+根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。
+第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。
+图片来自 Andrew S." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/qemu-introduction/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-01-21T14:33:21+08:00" />
+<meta property="article:modified_time" content="2024-01-21T14:33:21+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="QEMU 模拟器介绍"/>
+<meta name="twitter:description" content="本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。
+然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。
+本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
+什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard&rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。
+QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。
+QEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。
+在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。
+通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。
+根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。
+第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。
+图片来自 Andrew S."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "QEMU 模拟器介绍",
+      "item": "https://wokron.github.io/posts/qemu-introduction/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "QEMU 模拟器介绍",
+  "name": "QEMU 模拟器介绍",
+  "description": "本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。\n2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。\n操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。\n然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。\n本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。\n什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。\n法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard\u0026rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。\nQEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。\nQEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。\nQEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。\n在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。\n通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。\n根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。\n第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。\n图片来自 Andrew S.",
+  "keywords": [
+    "QEMU", "MIPS", "C"
+  ],
+  "articleBody": " 本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。\n2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。\n操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。\n然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。\n本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。\n什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。\n法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard’s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。\nQEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。\nQEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。\nQEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。\n在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。\n通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。\n根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。\n第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。\n图片来自 Andrew S. Tanenbaum - Modern Operating Systems (4th Edition)\n现在我们说回 QEMU。QEMU 通过软件实现了对硬件的模拟，因此属于第二类虚拟机管理程序。但是和许多第二类虚拟机不同的是，QEMU 实现的是指令集架构级别的虚拟化。因此 QEMU 能够在一台机器上运行不同体系架构的程序。\n实现第二类虚拟化的最简单方法当然是实现一个解释器并不断读入机器码，根据指令模拟处理器的行为。但是这样做的性能实在太低。因此 QEMU 采用了动态二进制翻译（Dynamic Binary Translation）机制，以一种中间代码作为中介，将客户机架构的机器码运行时翻译（Just-In-Time，JIT）为宿主机架构的机器码形式，并将翻译结果交由宿主机的处理器直接执行。因而 QEMU 在不同的体系架构下也具有不错的性能。QEMU 的这种虚拟化加速方式称为 TCG（Tiny Code Generator）。\n此外，QEMU 还可以使用其他虚拟机管理程序进行加速。其中最常见的是使用 KVM（Kernel Virtual Machine）。KVM 是 Linux 的一个内核驱动模块，采用了硬件辅助的虚拟化技术，能够让 Linux 主机成为一个虚拟机管理程序。此时虚拟机管理程序直接位于硬件之上，因此属于第一类虚拟机管理程序。\n由于不需要经过操作系统，能够直接访问硬件资源，所以 KVM 的性能要优于纯 QEMU。当 QEMU 配合 KVM 使用时，会由 QEMU 负责 I/O 虚拟化，而 KVM 负责处理器和内存虚拟化。这种方法相较于直接使用 QEMU，可以极大提高性能；而相较于直接使用 KVM，又获得了强大的跨体系架构能力。因此二者相互配合，能够发挥自身的优势，相得益彰。这种加速方式对应了上图 (c)。\nQEMU 的使用 在实验中我们已经将所有需要用到的 QEMU 操作写到了 Makefile 中，因此如果只是为了完成实验，各位同学完全不需要了解 QEMU 的使用方法。\n不过更多了解一下 QEMU 也没有什么坏处，反而可能会使你对操作系统有更深的认识。所以在这一小节中，我们就通过在 QEMU 中执行 MIPS 裸机环境下的 Hello, world 程序，使各位同学了解内核程序在 QEMU 中的运行。\n下面的内容各位同学可以在自己跳板机的实验环境中完成，这样一来就不需要配置繁琐的开发环境了。 另外如果各位同学是在开始实验前阅读的本篇内容，则下面的源代码不需要理解具体含义。 在裸机环境下的一个 Hello, world 可执行程序可以是下面的形式：\n// minimal_hello_world.c void printch(char ch) { *((volatile char *)(0xB80003f8U)) = ch; } void print(char *str) { while (*str != '\\0') { printch(*str); str++; } } void __start() { print(\"Hello, world!\\n\"); while (1) { } } 需要注意，我们在源代码中没有定义 main 函数。__start 函数才是程序的入口。\n之后我们就可以编译该文件了。只需要使用交叉编译器 mips-linux-gnu-gcc 执行如下命令\n$ mips-linux-gnu-gcc \\ -EL \\ -nostdlib \\ -o hello_world.elf \\ minimal_hello_world.c 编译产生的目标程序为 hello_world.elf。接下来我们使用 QEMU 运行该文件。\n在这里要简单介绍一下 QEMU 的命令。所有的 QEMU 命令都为 qemu-* 的形式。对于某一体系架构下的模拟，需要使用 qemu-system-* 命令。如对于小端序的 mips 架构，对应的命令为 qemu-system-mipsel。此外 QEMU 还提供了其他的一些命令行工具，如 qemu-img 就用于创建、转换和修改磁盘镜像。\n为了运行我们的目标文件，需要使用 qemu-system-mipsel。运行下面的命令，我们就可以得到 Hello, world! 的输出。\n$ qemu-system-mipsel \\ -m 64 \\ -nographic \\ -M malta \\ -no-reboot \\ -kernel hello_world.elf Hello, world! 根据代码，我们的程序在输出 Hello, world! 后会进入死循环。此时需要先按下 Ctrl + A，随后单独按下 X，即可从模拟中退出。\n介绍一下上面命令所用到的选项：\n-m：用于指定虚拟机内存的大小。 -nographic：表示模拟中不使用图形界面，而是使用串口输出 -M：用于指定要模拟的目标机器，这里模拟的是 MIPS Malta 开发板 -no-reboot：虚拟机会直接退出而不是重启 -kernel：指定要启动的内核，这里就是我们的 hello_world.elf 我们的例子中并不需要外设，但在 MOS 实验中还需要对磁盘进行模拟，因此还需要使用 -device 选项设定仿真设备。\n在 QEMU 中使用 GDB 调试 本课程的实验采用 QEMU 作为实验环境，主要的原因就在于 QEMU 原生支持使用 GDB 进行调试，能够为同学们提供极好的调试体验。接下来我们还以上一小节中的程序为例，介绍在 QEMU 中使用 GDB 调试的方法。\n我们建议各位在阅读下面内容之前先了解关于 GDB 的使用方法，可以参考《GDB：程序的解剖术》一文。\n首先为了能够支持 GDB，我们需要在编译时加上 -g 选项以生成 Debug 版本的可执行文件。\n$ mips-linux-gnu-gcc \\ -g \\ -EL \\ -nostdlib \\ -o hello_world.elf \\ minimal_hello_world.c 接下来我们要在 QEMU 模拟时启用 GDB 调试功能。这需要在 qemu-system-mipsel 命令中加入 -s -S 两个选项。其中 -S 选项用于让模拟器不要在一开始就启动处理器；-s 选项用于等待 GDB 连接到 1234 端口。\n没错，GDB 和 QEMU 的协作是通过远程连接进行的，尽管目前我们只用一台主机运行 GDB 和 QEMU。这种调试方式称为远程调试，和我们平常使用 GDB 的方式不同，远程调试能够让我们调试位于远程主机上的程序。这为 GDB 提供了额外的灵活性，能够适应各种不同的调试情况（就比如现在这种情况）。\n现在我们启动 QEMU。因为我们要在同一个终端中运行 QEMU 和 GDB。所以 QEMU 需要在后台运行。这时我们必须将其标准输入重定向为 /dev/null。\n$ qemu-system-mipsel \\ -s \\ -S \\ -m 64 \\ -nographic \\ -M malta \\ -no-reboot \\ -kernel hello_world.elf \\ \u003c /dev/null \\ \u0026 使用 ps 命令查看当前终端下运行的进程，可以发现我们刚刚启动的 QEMU。\n$ ps PID TTY TIME CMD 248 pts/3 00:00:00 bash 2708 pts/3 00:00:00 qemu-system-mip 2793 pts/3 00:00:00 ps 接下來我们启动 GDB。但是需要注意，我们的实验环境是 x86 架构，而要调试的程序是 mips 架构。按说调试程序也应当像编译程序或模拟程序时一样，需要使用特定架构的编译器和模拟器，是这样吗？\n确实如此，gdb 命令本身只能用于调试当前处理器架构的程序，就像 gcc 只能编译当前处理器架构的程序。为了能够调试 mips 架构下的程序，我们的实验环境在 gdb 之外也安装了 gdb-multiarch。\ngdb-multiarch 是 gdb 的多架构版本，提供了调试不同架构下程序的功能。不同于交叉编译器，gdb-multiarch 一次性提供了对很多架构的支持，包括 mips 架构。如果我们使用 gdb-multiarch 命令进入 GDB 环境，输入 set architecture 并再按 Tab 键自动补全，则会发现有多达 200 种补全选项。\n$ gdb-multiarch ... (gdb) set architecture Display all 200 possibilities? (y or n) gdb-multiarch 的使用方法和 gdb 基本相同。因此对 gdb-multiarch 的说明就到此为止。现在我们使用命令 gdb-multiarch hello_world.elf 进入调试环境。\n$ gdb-multiarch hello_world.elf ... Reading symbols from hello_world.elf... (gdb) 但此时我们还没有连接到 QEMU 的 1234 端口。想要进入 GDB 的远程调试模式需要使用 target remote 指令。当下 应为 localhost:1234。输入该指令后，我们成功进入了 QEMU 的运行环境中。\n(gdb) target remote localhost:1234 Remote debugging using localhost:1234 0xbfc00000 in ?? () gdb 命令提供了 -ex 选项用于在启动 GDB 后执行指定的指令。所以如果想要一条命令直接进入 QEMU 远程调试环境，可以使用 gdb-multiarch hello_world.elf -ex \"target remote localhost:1234\"。这样将在启动 GDB 后自动执行 target remote localhost:1234 指令。\n需要注意，在 QEMU 调试时我们并不能使用 run 或 start。这里我们用断点加上 continue 来进入到 __start 函数的位置。\n(gdb) b __start Breakpoint 1 at 0x4001e8: file minimal_hello_world.c, line 11. (gdb) c Continuing. Breakpoint 1, __start () at minimal_hello_world.c:11 11 print(\"Hello, world!\\n\"); 此后的工作就和一般的调试过程相同了，这里不再赘述。唯一需要注意的是在退出前请使用 kill 指令杀死 QEMU 进程。如果直接退出的话，则只是 GDB 进程与 QEMU 进程 “分离”（detach）。这时 QEMU 进程还会继续运行，并且会持续占用 1234 端口，导致无法调试新的 QEMU 进程。\n如果退出前没有杀死 QEMU 进程也不要慌。可以使用 ps -ef | grep qemu 查找所有的 QEMU 进程。\n$ ps -ef | grep qemu yourname 717 246 0 13:43 pts/3 00:00:00 qemu-system-mipsel -s -S -m 64 -nographic -M malta -no-reboot -kernel hello_world.elf yourname 1118 246 0 13:49 pts/3 00:00:00 grep --color=auto qemu 其中第二列为进程的标识符（PID），从以上输出我们可以得知 QEMU 进程的 PID 为 717。现在只要手动结束该进程即可，这需要使用 kill -9 命令。\nkill 命令用于向 指定的进程发送信号，-9 表示发送的第 9 号信号。我们可以使用 kill -l 查看所有信号的名称和编号。从中我们可以得知，第 9 号信号为 SIGKILL。该信号用于结束进程的运行（也就是 “杀死” 进程）。\n$ kill -l 1) SIGHUP 2) SIGINT 3) SIGQUIT 4) SIGILL 5) SIGTRAP 6) SIGABRT 7) SIGBUS 8) SIGFPE 9) SIGKILL 10) SIGUSR1 11) SIGSEGV 12) SIGUSR2 13) SIGPIPE 14) SIGALRM 15) SIGTERM ... 现在我们使用 kill -9 717 就可以杀死 QEMU 进程了。\n$ kill -9 717 [1]+ 已杀死 qemu-system-mipsel -s -S -m 64 -nographic -M malta -no-reboot -kernel hello_world.elf \u003c /dev/null 当然各位也可能觉得这样还是太麻烦了。我们也可以将查找 QEMU 进程的 PID 的操作和发送 SIGKILL 信号的操作结合在一起。这样就只需要一条指令：pkill -9 qemu。\n$ pkill -9 qemu [1]+ 已杀死 qemu-system-mipsel -s -S -m 64 -nographic -M malta -no-reboot -kernel hello_world.elf \u003c /dev/nul ",
+  "wordCount" : "707",
+  "inLanguage": "zh",
+  "datePublished": "2024-01-21T14:33:21+08:00",
+  "dateModified": "2024-01-21T14:33:21+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/qemu-introduction/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      QEMU 模拟器介绍
+    </h1>
+    <div class="post-meta"><span title='2024-01-21 14:33:21 +0800 CST'>一月 21, 2024</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;707 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/qemu-introduction.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%bb%80%e4%b9%88%e6%98%af-qemu" aria-label="什么是 QEMU">什么是 QEMU</a></li>
+                <li>
+                    <a href="#qemu-%e7%9a%84%e5%b7%a5%e4%bd%9c%e5%8e%9f%e7%90%86" aria-label="QEMU 的工作原理">QEMU 的工作原理</a></li>
+                <li>
+                    <a href="#qemu-%e7%9a%84%e4%bd%bf%e7%94%a8" aria-label="QEMU 的使用">QEMU 的使用</a></li>
+                <li>
+                    <a href="#%e5%9c%a8-qemu-%e4%b8%ad%e4%bd%bf%e7%94%a8-gdb-%e8%b0%83%e8%af%95" aria-label="在 QEMU 中使用 GDB 调试">在 QEMU 中使用 GDB 调试</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><blockquote>
+<p>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。</p>
+<p>2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《<a href="../gdb-tutorial">GDB：程序的解剖术</a>》和《<a href="../qemu-introduction">QEMU 模拟器介绍</a>》两篇文章。</p>
+</blockquote>
+<p>操作系统是直接运行在计算机硬件之上，向下<strong>管理硬件资源</strong>，对上<strong>为软件提供统一服务</strong>的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。</p>
+<p>然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用<strong>模拟器</strong>则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。</p>
+<p>本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。</p>
+<h2 id="什么是-qemu">什么是 QEMU<a hidden class="anchor" aria-hidden="true" href="#什么是-qemu">#</a></h2>
+<p>QEMU（<strong>Q</strong>uick <strong>Emu</strong>lator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。</p>
+<p><img loading="lazy" src="qemu-logo.png" alt="qemu-logo"  />
+</p>
+<blockquote>
+<p><a href="https://bellard.org/">法布里斯·贝拉</a> 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard&rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。</p>
+<p><img loading="lazy" src="qemu-bellard.png" alt="qemu-bellard"  />
+</p>
+</blockquote>
+<p>QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的<strong>系统仿真</strong>模式。在此模式中，QEMU 能够模拟<strong>处理器</strong>的执行过程以及各种<strong>硬件设备</strong>的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。</p>
+<p>QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。</p>
+<h2 id="qemu-的工作原理">QEMU 的工作原理<a hidden class="anchor" aria-hidden="true" href="#qemu-的工作原理">#</a></h2>
+<blockquote>
+<p>这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。</p>
+</blockquote>
+<p>在正式谈论 QEMU 的工作原理前，我们需要先了解一下<strong>虚拟化</strong>（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为<strong>虚拟机</strong>（Virtual Machine），实现虚拟化的程序称为<strong>虚拟机管理程序</strong>（Hypervisor）。本质上，虚拟机管理程序是一种中间件。</p>
+<p>通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。</p>
+<p>根据虚拟化实现方式的不同，虚拟机管理程序分为<strong>第一类虚拟机管理程序</strong>（Type 1 Hypervisor）和<strong>第二类虚拟机管理程序</strong>（Type 2 Hypervisor）。</p>
+<ul>
+<li>第一类虚拟机管理程序直接运行在<strong>硬件之上</strong>，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。</li>
+<li>而第二类虚拟机管理程序则运行在<strong>操作系统之上</strong>，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为<strong>宿主机</strong>（Host），而管理程序中的虚拟机则为<strong>客户机</strong>（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为<strong>模拟器</strong>（Simulator）。</li>
+</ul>
+<p>第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。</p>
+<p><img loading="lazy" src="qemu-virtual-machines.png" alt="qemu-virtual-machines"  />
+</p>
+<blockquote>
+<p>图片来自 Andrew S. Tanenbaum - Modern Operating Systems (4th Edition)</p>
+</blockquote>
+<p>现在我们说回 QEMU。QEMU 通过软件实现了对硬件的模拟，因此属于第二类虚拟机管理程序。但是和许多第二类虚拟机不同的是，QEMU 实现的是<strong>指令集架构级别的虚拟化</strong>。因此 QEMU 能够在一台机器上运行不同体系架构的程序。</p>
+<p>实现第二类虚拟化的最简单方法当然是实现一个解释器并不断读入机器码，根据指令模拟处理器的行为。但是这样做的性能实在太低。因此 QEMU 采用了<strong>动态二进制翻译</strong>（Dynamic Binary Translation）机制，以一种中间代码作为中介，将客户机架构的机器码<strong>运行时翻译</strong>（Just-In-Time，JIT）为宿主机架构的机器码形式，并将翻译结果交由宿主机的处理器直接执行。因而 QEMU 在不同的体系架构下也具有不错的性能。QEMU 的这种虚拟化加速方式称为 <strong>TCG</strong>（Tiny Code Generator）。</p>
+<p>此外，QEMU 还可以使用其他虚拟机管理程序进行加速。其中最常见的是使用 <strong>KVM</strong>（Kernel Virtual Machine）。KVM 是 Linux 的一个内核驱动模块，采用了硬件辅助的虚拟化技术，能够让 Linux 主机成为一个虚拟机管理程序。此时虚拟机管理程序直接位于硬件之上，因此属于第一类虚拟机管理程序。</p>
+<p>由于不需要经过操作系统，能够直接访问硬件资源，所以 KVM 的性能要优于纯 QEMU。当 QEMU 配合 KVM 使用时，会由 QEMU 负责 I/O 虚拟化，而 KVM 负责处理器和内存虚拟化。这种方法相较于直接使用 QEMU，可以极大提高性能；而相较于直接使用 KVM，又获得了强大的跨体系架构能力。因此二者相互配合，能够发挥自身的优势，相得益彰。这种加速方式对应了上图 (c)。</p>
+<h2 id="qemu-的使用">QEMU 的使用<a hidden class="anchor" aria-hidden="true" href="#qemu-的使用">#</a></h2>
+<p>在实验中我们已经将所有需要用到的 QEMU 操作写到了 <code>Makefile</code> 中，因此如果只是为了完成实验，各位同学完全不需要了解 QEMU 的使用方法。</p>
+<p>不过更多了解一下 QEMU 也没有什么坏处，反而可能会使你对操作系统有更深的认识。所以在这一小节中，我们就通过在 QEMU 中执行 MIPS 裸机环境下的 <code>Hello, world</code> 程序，使各位同学了解内核程序在 QEMU 中的运行。</p>
+<blockquote>
+<ul>
+<li>下面的内容各位同学可以在自己跳板机的实验环境中完成，这样一来就不需要配置繁琐的开发环境了。</li>
+<li>另外如果各位同学是在开始实验前阅读的本篇内容，则下面的源代码不需要理解具体含义。</li>
+</ul>
+</blockquote>
+<p>在裸机环境下的一个 <code>Hello, world</code> 可执行程序可以是下面的形式：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// minimal_hello_world.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">printch</span><span class="p">(</span><span class="kt">char</span> <span class="n">ch</span><span class="p">)</span> <span class="p">{</span> <span class="o">*</span><span class="p">((</span><span class="k">volatile</span> <span class="kt">char</span> <span class="o">*</span><span class="p">)(</span><span class="mh">0xB80003f8U</span><span class="p">))</span> <span class="o">=</span> <span class="n">ch</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="o">*</span><span class="n">str</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printch</span><span class="p">(</span><span class="o">*</span><span class="n">str</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">str</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">__start</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">print</span><span class="p">(</span><span class="s">&#34;Hello, world!</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p>需要注意，我们在源代码中没有定义 <code>main</code> 函数。<code>__start</code> 函数才是程序的入口。</p>
+</blockquote>
+<p>之后我们就可以编译该文件了。只需要使用交叉编译器 <code>mips-linux-gnu-gcc</code> 执行如下命令</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> mips-linux-gnu-gcc <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="go">        -EL \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -nostdlib \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -o hello_world.elf \
+</span></span></span><span class="line"><span class="cl"><span class="go">        minimal_hello_world.c
+</span></span></span></code></pre></div><p>编译产生的目标程序为 <code>hello_world.elf</code>。接下来我们使用 QEMU 运行该文件。</p>
+<p>在这里要简单介绍一下 QEMU 的命令。所有的 QEMU 命令都为 <code>qemu-*</code> 的形式。对于某一体系架构下的模拟，需要使用 <code>qemu-system-*</code> 命令。如对于小端序的 <code>mips</code> 架构，对应的命令为 <code>qemu-system-mipsel</code>。此外 QEMU 还提供了其他的一些命令行工具，如 <code>qemu-img</code> 就用于创建、转换和修改磁盘镜像。</p>
+<p>为了运行我们的目标文件，需要使用 <code>qemu-system-mipsel</code>。运行下面的命令，我们就可以得到 <code>Hello, world!</code> 的输出。</p>
+<pre tabindex="0"><code>$ qemu-system-mipsel \
+        -m 64 \
+        -nographic \
+        -M malta \
+        -no-reboot \
+        -kernel hello_world.elf
+Hello, world!
+</code></pre><blockquote>
+<p>根据代码，我们的程序在输出 <code>Hello, world!</code> 后会进入死循环。此时需要先按下 <code>Ctrl + A</code>，随后单独按下 <code>X</code>，即可从模拟中退出。</p>
+</blockquote>
+<p>介绍一下上面命令所用到的选项：</p>
+<ul>
+<li><code>-m</code>：用于指定虚拟机内存的大小。</li>
+<li><code>-nographic</code>：表示模拟中不使用图形界面，而是使用串口输出</li>
+<li><code>-M</code>：用于指定要模拟的目标机器，这里模拟的是 MIPS Malta 开发板</li>
+<li><code>-no-reboot</code>：虚拟机会直接退出而不是重启</li>
+<li><code>-kernel</code>：指定要启动的内核，这里就是我们的 <code>hello_world.elf</code></li>
+</ul>
+<p>我们的例子中并不需要外设，但在 MOS 实验中还需要对磁盘进行模拟，因此还需要使用 <code>-device</code> 选项设定仿真设备。</p>
+<h2 id="在-qemu-中使用-gdb-调试">在 QEMU 中使用 GDB 调试<a hidden class="anchor" aria-hidden="true" href="#在-qemu-中使用-gdb-调试">#</a></h2>
+<p>本课程的实验采用 QEMU 作为实验环境，主要的原因就在于 QEMU 原生支持使用 GDB 进行调试，能够为同学们提供极好的调试体验。接下来我们还以上一小节中的程序为例，介绍在 QEMU 中使用 GDB 调试的方法。</p>
+<blockquote>
+<p>我们建议各位在阅读下面内容之前先了解关于 GDB 的使用方法，可以参考《<a href="../gdb-tutorial">GDB：程序的解剖术</a>》一文。</p>
+</blockquote>
+<p>首先为了能够支持 GDB，我们需要在编译时加上 <code>-g</code> 选项以生成 Debug 版本的可执行文件。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> mips-linux-gnu-gcc <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="go">        -g \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -EL \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -nostdlib \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -o hello_world.elf \
+</span></span></span><span class="line"><span class="cl"><span class="go">        minimal_hello_world.c
+</span></span></span></code></pre></div><p>接下来我们要在 QEMU 模拟时启用 GDB 调试功能。这需要在 <code>qemu-system-mipsel</code> 命令中加入 <code>-s -S</code> 两个选项。其中 <code>-S</code> 选项用于让模拟器不要在一开始就启动处理器；<code>-s</code> 选项用于等待 GDB 连接到 <strong>1234 端口</strong>。</p>
+<p>没错，GDB 和 QEMU 的协作是通过远程连接进行的，尽管目前我们只用一台主机运行 GDB 和 QEMU。这种调试方式称为<strong>远程调试</strong>，和我们平常使用 GDB 的方式不同，远程调试能够让我们调试位于远程主机上的程序。这为 GDB 提供了额外的灵活性，能够适应各种不同的调试情况（就比如现在这种情况）。</p>
+<p>现在我们启动 QEMU。因为我们要在同一个终端中运行 QEMU 和 GDB。所以 QEMU 需要在<strong>后台运行</strong>。这时我们必须将其标准输入重定向为 <code>/dev/null</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> qemu-system-mipsel <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="go">        -s \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -S \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -m 64 \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -nographic \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -M malta \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -no-reboot \
+</span></span></span><span class="line"><span class="cl"><span class="go">        -kernel hello_world.elf \
+</span></span></span><span class="line"><span class="cl"><span class="go">        &lt; /dev/null \
+</span></span></span><span class="line"><span class="cl"><span class="go">        &amp;
+</span></span></span></code></pre></div><p>使用 <code>ps</code> 命令查看当前终端下运行的进程，可以发现我们刚刚启动的 QEMU。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ps
+</span></span><span class="line"><span class="cl"><span class="go">  PID TTY          TIME CMD
+</span></span></span><span class="line"><span class="cl"><span class="go">  248 pts/3    00:00:00 bash
+</span></span></span><span class="line"><span class="cl"><span class="go"> 2708 pts/3    00:00:00 qemu-system-mip
+</span></span></span><span class="line"><span class="cl"><span class="go"> 2793 pts/3    00:00:00 ps
+</span></span></span></code></pre></div><p>接下來我们启动 GDB。但是需要注意，我们的实验环境是 x86 架构，而要调试的程序是 mips 架构。按说调试程序也应当像编译程序或模拟程序时一样，需要使用特定架构的编译器和模拟器，是这样吗？</p>
+<p>确实如此，<code>gdb</code> 命令本身只能用于调试当前处理器架构的程序，就像 <code>gcc</code> 只能编译当前处理器架构的程序。为了能够调试 mips 架构下的程序，我们的实验环境在 <code>gdb</code> 之外也安装了 <code>gdb-multiarch</code>。</p>
+<p><code>gdb-multiarch</code> 是 <code>gdb</code> 的多架构版本，提供了调试不同架构下程序的功能。不同于交叉编译器，<code>gdb-multiarch</code> 一次性提供了对很多架构的支持，包括 mips 架构。如果我们使用 <code>gdb-multiarch</code> 命令进入 GDB 环境，输入 <code>set architecture </code> 并再按 Tab 键自动补全，则会发现有多达 200 种补全选项。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb-multiarch
+</span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) set architecture 
+</span></span></span><span class="line"><span class="cl"><span class="go">Display all 200 possibilities? (y or n)
+</span></span></span></code></pre></div><p><code>gdb-multiarch</code> 的使用方法和 <code>gdb</code> 基本相同。因此对 <code>gdb-multiarch</code> 的说明就到此为止。现在我们使用命令 <code>gdb-multiarch hello_world.elf</code> 进入调试环境。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb-multiarch hello_world.elf
+</span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">Reading symbols from hello_world.elf...
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>但此时我们还没有连接到 QEMU 的 1234 端口。想要进入 GDB 的远程调试模式需要使用 <code>target remote &lt;address&gt;</code> 指令。当下 <code>&lt;address&gt;</code> 应为 <code>localhost:1234</code>。输入该指令后，我们成功进入了 QEMU 的运行环境中。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) target remote localhost:1234
+</span></span></span><span class="line"><span class="cl"><span class="go">Remote debugging using localhost:1234
+</span></span></span><span class="line"><span class="cl"><span class="go">0xbfc00000 in ?? ()
+</span></span></span></code></pre></div><blockquote>
+<p><code>gdb</code> 命令提供了 <code>-ex &lt;command&gt;</code> 选项用于在启动 GDB 后执行指定的指令。所以如果想要一条命令直接进入 QEMU 远程调试环境，可以使用 <code>gdb-multiarch hello_world.elf -ex &quot;target remote localhost:1234&quot;</code>。这样将在启动 GDB 后自动执行 <code>target remote localhost:1234</code> 指令。</p>
+</blockquote>
+<p>需要注意，在 QEMU 调试时我们并不能使用 <code>run</code> 或 <code>start</code>。这里我们用断点加上 <code>continue</code> 来进入到 <code>__start</code> 函数的位置。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) b __start
+</span></span></span><span class="line"><span class="cl"><span class="go">Breakpoint 1 at 0x4001e8: file minimal_hello_world.c, line 11.
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) c
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Breakpoint 1, __start () at minimal_hello_world.c:11
+</span></span></span><span class="line"><span class="cl"><span class="go">11          print(&#34;Hello, world!\n&#34;);
+</span></span></span></code></pre></div><p>此后的工作就和一般的调试过程相同了，这里不再赘述。唯一需要注意的是在退出前请使用 <code>kill</code> 指令杀死 QEMU 进程。如果直接退出的话，则只是 GDB 进程与 QEMU 进程 “分离”（detach）。这时 QEMU 进程还会继续运行，并且会持续占用 1234 端口，导致无法调试新的 QEMU 进程。</p>
+<blockquote>
+<p>如果退出前没有杀死 QEMU 进程也不要慌。可以使用 <code>ps -ef | grep qemu</code> 查找所有的 QEMU 进程。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ps -ef <span class="p">|</span> grep qemu
+</span></span><span class="line"><span class="cl"><span class="go">yourname       717   246  0 13:43 pts/3    00:00:00 qemu-system-mipsel -s -S -m 64 -nographic -M malta -no-reboot -kernel hello_world.elf
+</span></span></span><span class="line"><span class="cl"><span class="go">yourname      1118   246  0 13:49 pts/3    00:00:00 grep --color=auto qemu
+</span></span></span></code></pre></div><p>其中第二列为进程的标识符（PID），从以上输出我们可以得知 QEMU 进程的 PID 为 717。现在只要手动结束该进程即可，这需要使用 <code>kill -9 &lt;pid&gt;</code> 命令。</p>
+<p><code>kill</code> 命令用于向 <code>&lt;pid&gt;</code> 指定的进程<strong>发送信号</strong>，<code>-9</code> 表示发送的第 9 号信号。我们可以使用 <code>kill -l</code> 查看所有信号的名称和编号。从中我们可以得知，第 9 号信号为 <code>SIGKILL</code>。该信号用于结束进程的运行（也就是 “杀死” 进程）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">kill</span> -l
+</span></span><span class="line"><span class="cl"><span class="go">1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
+</span></span></span><span class="line"><span class="cl"><span class="go">6) SIGABRT      7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
+</span></span></span><span class="line"><span class="cl"><span class="go">11) SIGSEGV     12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
+</span></span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span></code></pre></div><p>现在我们使用 <code>kill -9 717</code> 就可以杀死 QEMU 进程了。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">kill</span> -9 <span class="m">717</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1]+  已杀死               qemu-system-mipsel -s -S -m 64 -nographic -M malta -no-reboot -kernel hello_world.elf &lt; /dev/null
+</span></span></span></code></pre></div><p>当然各位也可能觉得这样还是太麻烦了。我们也可以将查找 QEMU 进程的 PID 的操作和发送 <code>SIGKILL</code> 信号的操作结合在一起。这样就只需要一条指令：<code>pkill -9 qemu</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> pkill -9 qemu
+</span></span><span class="line"><span class="cl"><span class="go">[1]+  已杀死               qemu-system-mipsel -s -S -m 64 -nographic -M malta -no-reboot -kernel hello_world.elf &lt; /dev/nul
+</span></span></span></code></pre></div></blockquote>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/qemu/">QEMU</a></li>
+      <li><a href="https://wokron.github.io/tags/mips/">MIPS</a></li>
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/compiling-tech-from-zero-4/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>从零开始的编译原理（4）：语法分析与下推自动机</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/gdb-tutorial/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>GDB：程序的解剖术</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share QEMU 模拟器介绍 on x"
+            href="https://x.com/intent/tweet/?text=QEMU%20%e6%a8%a1%e6%8b%9f%e5%99%a8%e4%bb%8b%e7%bb%8d&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f&amp;hashtags=QEMU%2cMIPS%2cC">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share QEMU 模拟器介绍 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f&amp;title=QEMU%20%e6%a8%a1%e6%8b%9f%e5%99%a8%e4%bb%8b%e7%bb%8d&amp;summary=QEMU%20%e6%a8%a1%e6%8b%9f%e5%99%a8%e4%bb%8b%e7%bb%8d&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share QEMU 模拟器介绍 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f&title=QEMU%20%e6%a8%a1%e6%8b%9f%e5%99%a8%e4%bb%8b%e7%bb%8d">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share QEMU 模拟器介绍 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share QEMU 模拟器介绍 on whatsapp"
+            href="https://api.whatsapp.com/send?text=QEMU%20%e6%a8%a1%e6%8b%9f%e5%99%a8%e4%bb%8b%e7%bb%8d%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share QEMU 模拟器介绍 on telegram"
+            href="https://telegram.me/share/url?text=QEMU%20%e6%a8%a1%e6%8b%9f%e5%99%a8%e4%bb%8b%e7%bb%8d&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share QEMU 模拟器介绍 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=QEMU%20%e6%a8%a1%e6%8b%9f%e5%99%a8%e4%bb%8b%e7%bb%8d&u=https%3a%2f%2fwokron.github.io%2fposts%2fqemu-introduction%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Signal on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/signal/</link>
+    <description>Recent content in Signal on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Fri, 23 May 2025 17:22:16 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/signal/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>试试触发（几乎）所有信号</title>
+      <link>https://wokron.github.io/posts/raise-signals/</link>
+      <pubDate>Fri, 23 May 2025 17:22:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/raise-signals/</guid>
+      <description>输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。</description>
+    </item>
+  </channel>
+</rss>

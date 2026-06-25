@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Spring | Wokron&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/tags/spring/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/tags/spring/index.xml">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/tags/spring/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Spring" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/tags/spring/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Spring"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/tags/">Tags</a></div>
+  <h1>
+    Spring
+    <a href="/tags/spring/index.xml" title="RSS" aria-label="RSS">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" height="23">
+        <path d="M4 11a9 9 0 0 1 9 9" />
+        <path d="M4 4a16 16 0 0 1 16 16" />
+        <circle cx="5" cy="19" r="1" />
+      </svg>
+    </a>
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Spring 面向切面
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。
+面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。
+二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。
+通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。
+连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。
+切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。
+切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。
+引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。
+织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。
+三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。
+Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容
+AspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如
+execution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。
+切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如
+execution(* concert.Performance.perform(..)) &amp;&amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-10 16:47:00 +0800 CST'>一月 10, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;433 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Spring 面向切面" href="https://wokron.github.io/posts/spring-note-3/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Spring 高级装配
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>上一篇文章已经讲解了 spring 依赖注入装配的方法。但是为了处理一些特殊的问题，或者为了更好地实现某些功能，spring 还提供了更多的装配设置。
+一、条件化声明 Bean 让我们回到上一篇第一节的例子，假设这次我们需要在开发时使用 SQLite，而在生产环境使用 Oracle 要怎么办呢？
+或许可以这样，我们在生产环境注意将 DBUtil Bean 改成 Oracle，把原来的部分注释掉，就像是这样。
+@Bean public DBUtil databaseUtil() { // return new SQLiteUtil(); // for dev return new OracleUtil(); // for prod } 但这样做很明显是不合适的。如果许多组件都需要进行调整的话，修改上就会十分复杂，且很容易出错。
+我们可以使用注释 @Profile 实现不同环境条件下选择不同的装配方式。这需要给带有 @Bean 或 @Configuration 注释的方法或类添加注释 @Profile(&#34;某某环境&#34;)。于是数据库的选择就可以改为如下形式：
+@Bean @Profile(&#34;dev&#34;) public DBUtil sqliteUtil() { return new SQLiteUtil(); } @Bean @Profile(&#34;prod&#34;) public DBUtil oracleUtil() { return new OracleUtil(); } 想要启用某个 Bean 需要设置环境。具体来说，这通过两个环境变量来实现，spring.profiles.default 和 spring.profiles.active。这两个值可以在许多地方定义。一种方式是在 properties 或 yaml 文件中定义，如...</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-10 15:05:26 +0800 CST'>一月 10, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;502 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Spring 高级装配" href="https://wokron.github.io/posts/spring-note-2/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Spring 依赖注入
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、依赖注入 考虑这样一个例子，CustomerDAO 类使用了 DBUtil 类中的方法连接到 MySQL 数据库
+public class CustomerDAO { private DBUtil databaseUtil = new DBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 假设现在想要改为使用 Oracle 数据库，需要怎么做？可以使用 OracleDBUtil 继承 DBUtil，并重写其相关方法。但是由于 CustomerDAO 中将 DBUtil 实例添加到其初始化过程中。因此想要修改的话还是需要对 CustomerDAO 本身进行修改。这违反了开-闭原则。
+public class CustomerDAO { private DBUtil databaseUtil = new OracleDBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 为了使对 dbUtil 的修改不影响 CustomerDAO 本身，我们可以将实例的创建移到 CustomerDAO 之外。
+public class CustomerDAO { private DBUtil databaseUtil; public CustomerDAO(DBUtil databaseUtil) { this....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-09 17:42:35 +0800 CST'>一月 9, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;481 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Spring 依赖注入" href="https://wokron.github.io/posts/spring-note-1/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

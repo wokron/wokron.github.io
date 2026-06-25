@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>JavaScript on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/javascript/</link>
+    <description>Recent content in JavaScript on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 25 Jun 2026 17:04:22 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/javascript/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>2ascii：GIF 转 ASCII 动画</title>
+      <link>https://wokron.github.io/posts/2ascii/</link>
+      <pubDate>Thu, 25 Jun 2026 17:04:22 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/2ascii/</guid>
+      <description>几个月前，我决定把自己的 github 主页换成 ascii 动画。最初我以为很简单，但找了半天也没找到合适的脚本或网站，所以就自己手搓了个并不通用的脚本，调整了很久终于有了一个比较满意的结果。
+最近我想，为什么不把这个做成一个网页呢？如果有可视化的话，总比那时候慢慢调整更方便一点。所以就有了 2ascii 这个仓库。
+这只是一组静态页面，所以可以在任何地方访问。不过为了方便，我在这里托管了一个页面。
+我对 JS 并不熟悉，但是 LLM Agent 很好的弥补了这一点。作为一个小品级项目，LLM 还是够用的。</description>
+    </item>
+  </channel>
+</rss>

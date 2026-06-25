@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>后端开发入门笔记 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/series/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8%E7%AC%94%E8%AE%B0/</link>
+    <description>Recent content in 后端开发入门笔记 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Tue, 25 Apr 2023 18:10:33 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/series/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>后端开发入门笔记之脚本</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-4/</link>
+      <pubDate>Tue, 25 Apr 2023 18:10:33 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-4/</guid>
+      <description>一、前言 这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。
+二、shell 的异常处理 有时我们希望在 shell 脚本命令执行出现异常时进行处理，比如说输出异常情况或退出等等。我们知道发生异常时返回值不为 0，如果是在 c 语言中我们可以这样处理
+if (!do_something()) { // handle exception } 类似的在 shell 中
+dosomething arg1 arg2 if [ $? -ne 0 ] then # handle exception if 但是这样编写起来太过麻烦了，我们可以采用另一种方法，那就是使用短路逻辑运算符。
+我们还先以 c 语言为例，假设现在我们有两个函数，对他们取逻辑或
+int r = func1() &amp;amp;&amp;amp; func2() 那么在 func1 的返回值为 0 时，就会发生短路，不执行 func2。而在返回值为；而当 func1 的返回值不为 0 时，则会继续执行 func2。我们可以让 func2 完成 func1 的异常处理。
+当然，在 c 语言中这种方法很是牵强，因为不同函数的栈帧并不一样，很难跨函数进行处理。可是 shell 中就不同了，所有的变量都是全局变量。
+但还需要注意一点，shell 中 0 表示真，1 表示假。（因为 0 表示程序正常结束，所以为真。）所以在 shell 中就需要使用 || 而非 &amp;amp;&amp;amp;。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之 Docker</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-3/</link>
+      <pubDate>Tue, 25 Apr 2023 18:09:15 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-3/</guid>
+      <description>一、前言 最近事情有些多，这篇短文写写停停，花费了很长时间。本来想着在五一假期结束前完成这一系列文章的，现在看来还有些困难呀。
+这篇文章总结了自己使用 Docker 时用到的一些知识，可能内容不深，还请见谅。
+二、镜像的构筑 （1）Docker 镜像简介 正如在“准备工作”那篇文章中所说的，镜像时静态的容器，容器是运行的镜像。我们在使用 Docker 时，需要做的就是像编写代码一样构建 Docker 镜像。
+Docker 镜像中包含了一套文件系统，其所维护的文件包含了项目运行所需的环境以及项目本身。但是镜像和一般的文件系统不同，镜像由一系列层构成，每一层中存储了对之前镜像的修改信息。
+这样做有一定的优点，在下载镜像时，我们不需要每次都下载完整的镜像；而只需要下载与本地镜像不相同的层就可以了。另一方面，容器基于镜像进行构筑，在容器运行时，分层设计也有利于不同容器的共享。采取写时复制技术可以减少内存的占用。
+我们进行镜像的构筑时，也不需要从头开始，而可以选择在已有的镜像上添加新的层，通过修改已有环境来构建我们所需的项目运行环境。
+（2）Dockerfile 简介 Docker 中使用 Dockerfile 来设置镜像构建的操作流程，这一点类似于 Makefile。这里借我的后端项目中的 Dockerfile 的内容来稍微解释一下。
+# python alpine is the smallest python image FROM python:3.9-alpine COPY ./src /src COPY ./start.sh ./ COPY ./config.ini ./ RUN pip install -r ./src/requirements.txt # ash is shell for alpine CMD ash start.sh Dockerfile 中使用一系列大写关键字作为指令，构建镜像时，从头到尾依次执行。
+第一句使用了 FROM 指令。该指令指定了构筑时的基础镜像，接下来的指令都是对镜像的修改，会在基础镜像上增加新的层。这里 FROM python:3.9-alpine 指定了一个镜像，来自仓库 python，标签为 3.9-alpine。该镜像包含了 python3.9 的运行环境，底层的操作系统为 alpine，这也是 Linux 的一个发行版，以体积小著称。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之 Flask 简介</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-2/</link>
+      <pubDate>Sat, 22 Apr 2023 22:40:12 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-2/</guid>
+      <description>一、前言 这一篇文章中主要讲解了为完成后端项目所使用的 Flask 框架。对于自己所使用的功能和特性进行了着重的讨论。当然说是着重讨论，其实还是皮毛罢了。想要更加系统地了解 Flask，还请查看官方文档
+二、Flask （1）Flask 介绍 Flask 是一个 Python Web 框架，十分轻量灵活，可以用于开发小型 Web 应用。Flask 高度可扩展，可以通过添加不同的组件来实现定制化的功能。对于简单的后端任务来说，Flask 十分合适。
+（2）Flask 用于后端 虽然 Flask 可以实现经典的 MVC 架构，但是本项目只进行后端开发，提供一些用于数据库操作的 RESTful 接口，并不涉及显示的部分。因此只讨论 Flask 用于后端开发的方面。
+对于后端项目，我们希望其向下管理数据库，向上为前端提供接口。这就需要用到 ORM 来通过对象管理数据库关系；同时通过 Route 提供 api 接口。
+另外，我们还需要对项目进行管理，以合理的结构组织项目。我们需要了解 Flask 的 BluePrint。
+三、ORM （1）数据库设置 Flask 使用 Flask-SQLAlchemy 组件实现 ORM。SQLAlchemy 本是独立于 Flask 的 ORM 库，但在 Flask 中使用时，又针对 Flask 进行了一定封装。
+我们希望创建到数据库的连接，这需要在后端项目中进行设置。对 Flask 来说，设置以字符串的形式保存于项目的配置变量 SQLALCHEMY_DATABASE_URI 中。
+app = Flask(__name__) app.config[&amp;#39;SQLALCHEMY_DATABASE_URI&amp;#39;] = f&amp;#39;mysql+pymysql://{username}:{password}@{host}:{port}/{name}?charset=utf8mb4&amp;#39; 配置存储于 app.config 中。其中 app 是一个 Flask 类型的对象，用于表示 Flask 项目这个整体。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之准备工作</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-1/</link>
+      <pubDate>Sat, 22 Apr 2023 22:22:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-1/</guid>
+      <description>一、前言 当我第一次看到那份作业的时候，我绝想不到，这作业将牵扯出多少我还未曾学习过的知识；我更想不到，自己要以多久的时间涉猎完所有这些内容。当然现在这些都已经结束了，感慨不应该抒发太多，还是趁着自己没有忘记，做一下总结吧。
+这一系列应该会有几篇文章。主要内容是回顾总结我的第一次较为系统的后端开发经历。在学习的过程中我参考了许多文章，其中一些我也会在文章中给出链接。这些文章或许在一些方面比本篇文章讲的更加深入，但是本篇文章综合了许多文章的不同信息，给出了系统的安装配置流程和自己的一些见解，因此我认为还是有一些价值的。
+二、WSL，一切的起点 （1）WSL 简介 windows 系统虽然在个人电脑上常用，但是开发起后端来还是不方便，最好还是使用 linux。但是只有一台电脑的话，装双系统极其麻烦、虚拟机又太过笨重。那么有没有一种更加方便的方法呢？有的，那就是使用 WSL（Windows Subsystem for Linux），即 Windows 的 Linux 子系统。WSL 分为 WSL1 和 WSL2，此二者的实现原理并不相同。虽然有些跑题，但是还是介绍一下，毕竟是自己费力去查的结果。
+WSL1 不是虚拟机，Hyper-V 或 VMware 等虚拟机会用软件模拟硬件的行为，其中装入的操作系统是和模拟的硬件进行交互；而 WSL1 则是通过 Windows 操作系统库模拟了一个 Linux 内核，用 Windows 的系统调用来处理 Linux 的系统调用。并且由于 WSL1 不需要模拟硬件这一中间过程，因此效率会比虚拟机高。而 WSL2 则可以看做虚拟机，但是与其他虚拟机相比更加轻量，Linux 系统运行在此虚拟机上资源占用更少、运行更快。问题是 WSL2 使用了虚拟化技术，可能与其他虚拟机冲突，不能同时使用。
+在这里我们使用 WSL2。主要原因是 WSL2 运行了真正的 Linux 内核，和各种 Linux 程序的兼容性更好。
+（2）WSL 安装 安装 WSL 很简单。这里的安装流程参考 使用 WSL 在 Windows 上安装 Linux。插一句，微软的技术文档真的很有用，如果对搜索得到的关于微软的技术问题的解决方案有不确定的地方，参考微软的技术文档有时会有很大帮助。就比如 WSL 的安装，搜到的经常已经是过时的教程了。
+安装 WSL，只需要在 PowerShell 中以管理员模式运行如下命令即可。
+wsl --install 注意网上的教程中，需要使用 dism.</description>
+    </item>
+  </channel>
+</rss>

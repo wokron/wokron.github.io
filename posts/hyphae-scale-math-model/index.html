@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>基于概率模型的蘑菇菌丝规模分析 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="数学">
+<meta name="description" content="摘要： 本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。
+对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。
+对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。
+我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。 Keywords: 概率论，数值模拟
+简介 背景 蘑菇作为一种广泛存在于自然界的真菌，为人们所熟知。但其除了裸露在地表的子实体部分以外，在地下还拥有着极其庞大的菌丝结构。为了完成对蘑菇的全面详细研究，有必要对菌丝结构这一蘑菇的重要组成部分进行分析和度量。其中尤为重要的，就是确定菌丝结构的位置和范围。但是由于菌丝处于地下且规模巨大，难以通过直接测量得出结果。
+问题重述 蘑菇的孢子落到土壤中，不断生长出菌丝。菌丝以相同的速度向外辐射，构成庞大的菌丝菌丝。当环境条件合适时，这些菌丝会生长成裸露在地面的“蘑菇”。现在我们已知地面上属于同一菌丝结构的所有蘑菇的位置，如表 1 和图 1 所示：
+序号 横坐标 纵坐标 序号 横坐标 纵坐标 1 21.12 29.84 11 24.81 17.16 2 20.39 11.50 12 41.31 31.77 3 38.52 13.34 13 20.24 15.50 4 33.85 15.47 14 34.63 26.43 5 44.24 21.49 15 42.67 20.42 6 24.87 22.42 16 18.52 14.49 7 46.32 26.41 17 17.09 25.83 8 20.">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/hyphae-scale-math-model/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/hyphae-scale-math-model/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="基于概率模型的蘑菇菌丝规模分析" />
+<meta property="og:description" content="摘要： 本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。
+对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。
+对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。
+我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。 Keywords: 概率论，数值模拟
+简介 背景 蘑菇作为一种广泛存在于自然界的真菌，为人们所熟知。但其除了裸露在地表的子实体部分以外，在地下还拥有着极其庞大的菌丝结构。为了完成对蘑菇的全面详细研究，有必要对菌丝结构这一蘑菇的重要组成部分进行分析和度量。其中尤为重要的，就是确定菌丝结构的位置和范围。但是由于菌丝处于地下且规模巨大，难以通过直接测量得出结果。
+问题重述 蘑菇的孢子落到土壤中，不断生长出菌丝。菌丝以相同的速度向外辐射，构成庞大的菌丝菌丝。当环境条件合适时，这些菌丝会生长成裸露在地面的“蘑菇”。现在我们已知地面上属于同一菌丝结构的所有蘑菇的位置，如表 1 和图 1 所示：
+序号 横坐标 纵坐标 序号 横坐标 纵坐标 1 21.12 29.84 11 24.81 17.16 2 20.39 11.50 12 41.31 31.77 3 38.52 13.34 13 20.24 15.50 4 33.85 15.47 14 34.63 26.43 5 44.24 21.49 15 42.67 20.42 6 24.87 22.42 16 18.52 14.49 7 46.32 26.41 17 17.09 25.83 8 20." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/hyphae-scale-math-model/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-03-17T16:38:01+08:00" />
+<meta property="article:modified_time" content="2023-03-17T16:38:01+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="基于概率模型的蘑菇菌丝规模分析"/>
+<meta name="twitter:description" content="摘要： 本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。
+对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。
+对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。
+我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。 Keywords: 概率论，数值模拟
+简介 背景 蘑菇作为一种广泛存在于自然界的真菌，为人们所熟知。但其除了裸露在地表的子实体部分以外，在地下还拥有着极其庞大的菌丝结构。为了完成对蘑菇的全面详细研究，有必要对菌丝结构这一蘑菇的重要组成部分进行分析和度量。其中尤为重要的，就是确定菌丝结构的位置和范围。但是由于菌丝处于地下且规模巨大，难以通过直接测量得出结果。
+问题重述 蘑菇的孢子落到土壤中，不断生长出菌丝。菌丝以相同的速度向外辐射，构成庞大的菌丝菌丝。当环境条件合适时，这些菌丝会生长成裸露在地面的“蘑菇”。现在我们已知地面上属于同一菌丝结构的所有蘑菇的位置，如表 1 和图 1 所示：
+序号 横坐标 纵坐标 序号 横坐标 纵坐标 1 21.12 29.84 11 24.81 17.16 2 20.39 11.50 12 41.31 31.77 3 38.52 13.34 13 20.24 15.50 4 33.85 15.47 14 34.63 26.43 5 44.24 21.49 15 42.67 20.42 6 24.87 22.42 16 18.52 14.49 7 46.32 26.41 17 17.09 25.83 8 20."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "基于概率模型的蘑菇菌丝规模分析",
+      "item": "https://wokron.github.io/posts/hyphae-scale-math-model/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "基于概率模型的蘑菇菌丝规模分析",
+  "name": "基于概率模型的蘑菇菌丝规模分析",
+  "description": "摘要： 本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。\n对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。\n对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。\n我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。 Keywords: 概率论，数值模拟\n简介 背景 蘑菇作为一种广泛存在于自然界的真菌，为人们所熟知。但其除了裸露在地表的子实体部分以外，在地下还拥有着极其庞大的菌丝结构。为了完成对蘑菇的全面详细研究，有必要对菌丝结构这一蘑菇的重要组成部分进行分析和度量。其中尤为重要的，就是确定菌丝结构的位置和范围。但是由于菌丝处于地下且规模巨大，难以通过直接测量得出结果。\n问题重述 蘑菇的孢子落到土壤中，不断生长出菌丝。菌丝以相同的速度向外辐射，构成庞大的菌丝菌丝。当环境条件合适时，这些菌丝会生长成裸露在地面的“蘑菇”。现在我们已知地面上属于同一菌丝结构的所有蘑菇的位置，如表 1 和图 1 所示：\n序号 横坐标 纵坐标 序号 横坐标 纵坐标 1 21.12 29.84 11 24.81 17.16 2 20.39 11.50 12 41.31 31.77 3 38.52 13.34 13 20.24 15.50 4 33.85 15.47 14 34.63 26.43 5 44.24 21.49 15 42.67 20.42 6 24.87 22.42 16 18.52 14.49 7 46.32 26.41 17 17.09 25.83 8 20.",
+  "keywords": [
+    "数学"
+  ],
+  "articleBody": "摘要： 本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。\n对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。\n对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。\n我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。 Keywords: 概率论，数值模拟\n简介 背景 蘑菇作为一种广泛存在于自然界的真菌，为人们所熟知。但其除了裸露在地表的子实体部分以外，在地下还拥有着极其庞大的菌丝结构。为了完成对蘑菇的全面详细研究，有必要对菌丝结构这一蘑菇的重要组成部分进行分析和度量。其中尤为重要的，就是确定菌丝结构的位置和范围。但是由于菌丝处于地下且规模巨大，难以通过直接测量得出结果。\n问题重述 蘑菇的孢子落到土壤中，不断生长出菌丝。菌丝以相同的速度向外辐射，构成庞大的菌丝菌丝。当环境条件合适时，这些菌丝会生长成裸露在地面的“蘑菇”。现在我们已知地面上属于同一菌丝结构的所有蘑菇的位置，如表 1 和图 1 所示：\n序号 横坐标 纵坐标 序号 横坐标 纵坐标 1 21.12 29.84 11 24.81 17.16 2 20.39 11.50 12 41.31 31.77 3 38.52 13.34 13 20.24 15.50 4 33.85 15.47 14 34.63 26.43 5 44.24 21.49 15 42.67 20.42 6 24.87 22.42 16 18.52 14.49 7 46.32 26.41 17 17.09 25.83 8 20.27 11.62 18 32.33 17.14 9 44.56 19.73 19 18.72 17.83 10 47.69 19.25 20 28.52 25.85 我们的问题是，如何根据地上蘑菇子实体的位置信息，估计形成蘑菇的孢子最初落地的位置和地下菌丝结构的规模。\n我们的工作 在本篇文章中，我们建立了一种真菌生长的模型，将地下菌丝结构与地上子实体位置进行了概率上的关联。同时提出了求解该模型的不同思路，通过计算机模拟，对比选择出了更优的求解办法。\n问题假设 假设一：当地地形平坦，菌丝以相同的速度向外辐射，形成圆形 假设二：地上子实体的位置服从地下菌丝形状的均匀分布 符号说明 符号 定义 $(m, n)$ 孢子下落的最初位置 $r$ 菌丝区域的半径 $\\{(x_i, y_i)\\}$ 子实体位置样本集合 模型的建立与分析 问题分析 由于我们假设地形平坦，菌丝以相同的速度向外辐射，那么在蘑菇生长的任意时刻，菌丝结构在水平面上的投影都是正圆形。我们设孢子下落的位置为 $(m, n)$，菌丝距包子位置的最远距离为 $r$，那么菌丝结构可以视为二维平面上的圆形区域 $C: (x-m)^2 + (y-n)^2 \\le r$。\n又因为我们假设地上子实体的位置服从地下菌丝形状的均匀分布，那么对于任意子实体的位置 $(x_i, y_i)$，服从均匀分布，其概率密度函数为 $$ f(x, y)=\\left\\{ \\begin{aligned} \\frac{1}{\\pi r^2} \u0026 \\quad (x, y) \\in C \\\\ 0 \u0026 \\quad (x, y) \\notin C\\\\ \\end{aligned} \\right. $$ 这样我们就将问题转化为：已知有一组样本 $(x_1, x_2), ... (x_n, y_n)$ 服从区域 $C: (x-m)^2 + (y-n)^2 \\le r$ 上的均匀分布，$m, n, r$ 未知。求 $m, n, r$。\n这一问题包含两个子问题，（1）求解 $m, n$，（2）求解 $r$。接下来我们将分别建立模型。\n模型选择与分析 样本点平均值估计圆心 对样本 $(x_1, x_2), ... (x_n, y_n)$，记 $\\bar{x} = \\frac{1}{n}\\sum_{i=1}^n x_i$，$\\bar{y} = \\frac{1}{n}\\sum_{i=1}^n y_i$。总体的平均值 $$ \\bar{X} = \\int_{-\\infty}^{+\\infty}\\int_{-\\infty}^{+\\infty} xf(x, y)dxdy = m \\\\ \\bar{Y} = \\int_{-\\infty}^{+\\infty}\\int_{-\\infty}^{+\\infty} yf(x, y)dxdy = n $$ 用 $(\\bar{x}, \\bar{y})$ 作为 $(\\bar{X}, \\bar{Y})$ 的估计值，得到 $$ m = \\bar{x}, n = \\bar{y} $$ 最远点平均值估计圆心 我们设 $$ x_{min} = \\min{x_i} \\\\ x_{max} = \\max{x_i} \\\\ y_{min} = \\min{y_i} \\\\ y_{max} = \\max{y_i} $$ 利用最远点的平均值估计圆心，即 $$ m = \\frac{x_{max} - x_{min}}{2} \\\\ n = \\frac{y_{max} - y_{min}}{2} $$ 横纵坐标中位数估计圆心 我们记 $\\{x_i\\}$ 的中位数为 $\\widetilde{x}$，$\\{y_i\\}$ 的中位数为 $\\widetilde{y}$。总体的中位数为 $\\widetilde{X}$ 和 $\\widetilde{Y}$。用 $(\\widetilde{x}, \\widetilde{y})$ 作为 $(\\widetilde{X}, \\widetilde{Y})$ 的估计值。由于 $\\widetilde{X} = \\bar{X}, \\widetilde{Y} = \\bar{Y}$，则 $$ m = \\widetilde{x} \\\\ n = \\widetilde{y} $$ 平均值估计半径 假设此时我们已经确定了圆心 $(m, n)$ 的位置，那么我们可以计算出样本点相对于 $(m, n)$ 的距离 $$ r_i = \\sqrt{(x_i - m)^2 + (y_i - n)^2} $$ 我们设点到圆心的距离的平均值为 $\\bar{r} = \\frac{1}{n}\\sum_{i=1}^n r_i$，总体到圆心的平均距离为 $\\bar{R}$。用 $\\bar{r}$ 作为 $\\bar{R}$ 的估计值。\n为此我们需要求得 $\\bar{R}$ 的值。首先设随机变量 $Z$ 为点到圆心的距离，圆形半径为 $r$，则有概率分布函数 $$ F(z) = P\\{Z \\le z\\} = \\frac{\\pi z^2}{\\pi r^2} = \\frac{z^2}{r^2} $$ 对应的概率密度函数 $$ f(z) = \\frac{2z}{r^2} $$ 因此 $Z$ 的数学期望为 $$ E(Z) = \\int_{0}^{r} z f(z) dz = \\frac{2}{3}r $$ 因此有 $\\bar{R} = \\frac{2}{3}r$。所以 $$ r = \\frac{3}{2} \\bar{r} $$ 极大似然法估计半径 我们已知距圆心距离的概率密度函数为 $f(z) = \\frac{2z}{r^2}$。使用极大似然法估计参数 $r$。\n构造似然函数 $$ L(x; r) = \\prod_{i=1}^n f(r_i; r) = \\prod_{i=1}^n \\frac{2r_i}{r^2} $$ 为方便计算，对等式两边同取对数 $$ \\ln L(x; r) = \\ln \\prod_{i=1}^n \\frac{2r_i}{r^2} = \\sum_{i=1}^n \\ln 2r_i - n \\ln r^2 $$ 要求 $$ r = \\underset{r}{\\text{argmax}} \\ln L(x; r) $$ 对 $\\ln L(x; r)$ 求导，即 $$ \\frac{d \\ln L(x; r)}{r} = \\frac{2n}{r} \\gt 0 $$ 又因参数 $r$ 可能的取值范围为 $[\\max{r_i}, \\infty)$。因此根据极大似然法得到的半径估计为 $$ r = \\max{r_i} $$ 两端间隔模型估计半径 根据概率密度函数 $f(z) = \\frac{2z}{r^2}$ 可以得知，从样本点距圆心距离来看，越靠近圆心的点应该更加稀疏，越远离圆心的点应该更加稠密。我们按从小到大的顺序排列 $r_1 \\le r_2 \\le ...\\le r_n$。那么 $r_1$ 的大小概率上应该大于 $r - r_n$。我们可以假设有这样的关系 $$ \\frac{r_1 - 0}{r - r_n} = \\frac{f(r)}{f(r_1)} = \\frac{r}{r_1} $$ 因此有 $$ r = \\frac{r_n + \\sqrt{r_n^2 + 4r_1^2}}{2} $$ 模型求解 模型求解 我们将上面估计圆心位置的三种模型与估计半径的三种模型两两组合，形成九种求解方案。分别求得对应的 $m, n, r$。\n圆心估计模型 半径估计模型 横坐标m 纵坐标n 半径r 样本点平均值 半径平均值 34.83 20.92 11.55 样本点平均值 极大似然法 34.83 20.92 14.42 样本点平均值 两端间隔模型 34.83 20.92 14.53 最远点平均值 半径平均值 32.62 19.16 12.29 最远点平均值 极大似然法 32.62 19.16 13.87 最远点平均值 两端间隔模型 32.62 19.16 14.17 横纵坐标中位数 半径平均值 34.98 22.20 11.55 横纵坐标中位数 极大似然法 34.98 22.20 14.26 横纵坐标中位数 两端间隔模型 34.98 22.20 14.37 模型结果与分析 从当前已经获得的结果可知，横坐标大致在 32 ∼ 34，纵坐标大致在 19 ∼ 23，半径大致在 11 ∼ 15 范围内。但是不同的方案预测的结果差异较大，我们还需要从中选择出最佳的结果。为此 我们需要对模型进行评价。\n模型的评价 数值模拟 因为我们并不知道真正的结果是什么，所以无法通过模型求得的结果判断那种模型更加精确。为了进行模型评价，我们可以采用计算机模拟的方法。\n首先，我们需要确定生成圆形区域均匀分布的算法。对于角度，我们可以直接将 $[0, 1)$ 随机数线性映射到 $[0, 2\\pi)$。但对于半径的取值，我们必须依照概率密度函数 $f(z) = \\frac{2z}{r^2}$ 生成随机数。\n我们采用的方法是反函数法。具体来说，对概率分布函数 $F(z) = \\frac{z^2}{r^2}$。我们取得其反函数 $$ F^{-1}(p) = r\\sqrt{p} $$ 将 $[0, 1)$ 随机数经过该反函数的映射后即得到概率密度为 $f(z)$ 的随机数。\n随后将生成的随机数输入到模型中进行计算，得出数值结果。\n结果评价 我们设定 $m = 50, n = 50, r = 20$，从总体中随机取 $20$ 个点作为样本。对每个样本分别使用模型估计 $m, n, r$（其中估计 $r$ 时，给定真实的 $m, n$）。如此取 $200$ 个样本，计算 $200$ 个样本估计的 $m, n, r$ 平均值、平均值与真值的误差和标准差。结果如下：\n模型 x的平均值 x平均值的误差 x的标准差 y的平均值 y平均值的误差 y的标准差 样本点平均值 50.2 0.2 2.47 50.3 0.3 2.14 最远点平均值 50.04 0.04 1.77 50.02 0.02 1.66 横纵坐标中位数 50.26 0.26 3.63 50.31 0.31 3.1 模型 r的平均值 r平均值的误差 r的标准差 半径平均值 20.11 0.11 1.67 极大似然法 19.5 -0.5 0.48 两端间隔模型 20.47 0.47 1.01 我们也根据结果绘制了频率直方图，如下所示。其中模型序号与“模型选择与分析”一节中顺序相同。 根据模拟的结果可以得出以下的初步结论：\n对于圆心位置的估计来说，最远点平均值模型优于样本点平均值和中位数模型。不仅误差较小，标准差也最小。这说明在小样本条件下，平均值和中位数未必是最优的模型。 对于半径的估计来说，平均值模型拥有较小的误差，但标准差较大，预测结果不稳定；极大似然估计的结果标准差较小，但结果几乎总是小于真实值；两端间隔模型标准差较小，但误差却较大。因此这部分模型的选择需要考虑实际应用情况。 总体来说，对圆心位置的估计，最远点平均值模型最优；对半径的估计，如果不看重多次估计的集中程度，则平均值模型更优；反之，则可以选择两端间隔模型。因此，最远点平均值模型+平均值模型和最远点平均值模型+两端间隔模型是更合适的选择。\n总结 本篇文章中，我们从估计菌丝结构的问题出发，分析了“通过圆形区域内均匀分布的样本点，估计圆形位置和范围”的解决方法。利用概率论等相关知识，建立了一系列符合理论的数学模型，并通过数值模拟对模型进行了评价分析，选择出更加适合当前问题的模型。\nAppendices 附录 A 圆形区域均匀分布随机数生成算法 import math from random import Random import numpy as np def generate_circle_point(r): rand = Random() angle = rand.random() * (2 * np.pi) r_len = r * math.sqrt(rand.random()) return np.array([r_len * math.sin(angle), r_len * math.cos(angle)]) def generate_circle(m, n, r, point_num): points = [] for i in range(point_num): points.append(generate_circle_point(r)) points = np.array(points) points += np.array([m, n]) return points 附录 B 各类数学模型的代码实现 import math import numpy as np def circle_center1(points): return points.mean(axis=0) def circle_center2(points): x_min, y_min = points.min(axis=0) x_max, y_max = points.max(axis=0) return np.array([(x_min + x_max) / 2, (y_min + y_max) / 2]) def circle_center3(points): return np.median(points, axis=0) def circle_radius1(radius_list): r_mean = radius_list.mean() return (3 / 2) * r_mean def circle_radius2(radius_list): return max(radius_list) def circle_radius3(radius_list): r_min = min(radius_list) r_max = max(radius_list) return (r_max + math.sqrt(r_max ** 2 + 4 * r_min ** 2)) / 2 附录 C 模型求解方法 from math_model2 import * mushrooms = [] with open(\"mushrooms.txt\", \"r\") as f: for i, line in enumerate(f): if i == 0: continue grid = line.split(\"\\t\") mushrooms.append([float(grid[1]), float(grid[2])]) mushrooms = np.array(mushrooms) calc_center_funcs = [circle_center1, circle_center2, circle_center3] calc_radius_funcs = [circle_radius1, circle_radius2, circle_radius3] with open(\"ans.txt\", \"w\") as f: f.write(f\"圆心估计模型\\t半径估计模型\\t横坐标\\t纵坐标\\t半径\\n\") for i, center_func in enumerate(calc_center_funcs): for j, radius_func in enumerate(calc_radius_funcs): m, n = center = center_func(mushrooms) r_list = np.linalg.norm(mushrooms - center, axis=1) r = radius_func(r_list) f.write(f\"center{i+1}\\tradius{j+1}\\t{m:.2f}\\t{n:.2f}\\t{r:.2f}\\n\") 附录 D 数值模拟方法 import matplotlib.pyplot as plt from math_model2 import * from random_generator import generate_circle num = 20 m = 50 n = 50 r = 20 calc_center_funcs = [circle_center1, circle_center2, circle_center3] calc_radius_funcs = [circle_radius1, circle_radius2, circle_radius3] center = [[], [], []] radius = [[], [], []] for step in range(200): mushrooms = generate_circle(m, n, r, num) radius_list = np.linalg.norm(mushrooms - np.array([m, n]), axis=1) for i in range(3): center_func = calc_center_funcs[i] center_ans = center_func(mushrooms) center[i].append(center_ans) for i in range(3): radius_func = calc_radius_funcs[i] radius_ans = radius_func(radius_list) radius[i].append(radius_ans) table_val = np.zeros((3, 6)) row_label = [\"model 1\", \"model 2\", \"model 3\"] col_label = [\"x avg\", \"x error\", \"x std\", \"y avg\", \"y error\", \"y std\"] for idx, one_center in enumerate(center): x, y = zip(*one_center) x = np.array(x) y = np.array(y) table_val[idx][0] = x.mean() table_val[idx][1] = x.mean() - m table_val[idx][2] = x.std() table_val[idx][3] = y.mean() table_val[idx][4] = y.mean() - n table_val[idx][5] = y.std() plt.suptitle(f\"Centroid Estimation Model {idx+1}\") plt.subplot(1, 2, 1) plt.hist(x) plt.title(\"Estimation for X Axis\") plt.subplot(1, 2, 2) plt.hist(y) plt.title(\"Estimation for Y Axis\") plt.show() table_val = np.around(table_val, decimals=2) plt.suptitle(f\"Numerical Simulation for Centroid Estimation Models\") plt.table( cellText=table_val, rowLabels=row_label, colLabels=col_label, loc=\"center\", cellLoc=\"center\", rowLoc=\"center\", ) plt.axis(\"off\") plt.show() table_val = np.zeros((3, 3)) row_label = [\"model 1\", \"model 2\", \"model 3\"] col_label = [\"r avg\", \"r error\", \"r std\"] for idx, one_radius in enumerate(radius): one_radius = np.array(one_radius) table_val[idx][0] = one_radius.mean() table_val[idx][1] = one_radius.mean() - r table_val[idx][2] = one_radius.std() plt.hist(one_radius) plt.suptitle(f\"Radius Estimation Model {idx+1}\") plt.show() table_val = np.around(table_val, decimals=2) plt.suptitle(\"Numerical Simulation for Radius Estimation Models\") plt.table( cellText=table_val, rowLabels=row_label, colLabels=col_label, loc=\"center\", cellLoc=\"center\", rowLoc=\"center\", ) plt.axis(\"off\") plt.show() ",
+  "wordCount" : "1105",
+  "inLanguage": "zh",
+  "datePublished": "2023-03-17T16:38:01+08:00",
+  "dateModified": "2023-03-17T16:38:01+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/hyphae-scale-math-model/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      基于概率模型的蘑菇菌丝规模分析
+    </h1>
+    <div class="post-meta"><span title='2023-03-17 16:38:01 +0800 CST'>三月 17, 2023</span>&nbsp;·&nbsp;6 分钟&nbsp;·&nbsp;1105 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/hyphae-scale-math-model.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e7%ae%80%e4%bb%8b" aria-label="简介">简介</a><ul>
+                        
+                <li>
+                    <a href="#%e8%83%8c%e6%99%af" aria-label="背景">背景</a></li>
+                <li>
+                    <a href="#%e9%97%ae%e9%a2%98%e9%87%8d%e8%bf%b0" aria-label="问题重述">问题重述</a></li>
+                <li>
+                    <a href="#%e6%88%91%e4%bb%ac%e7%9a%84%e5%b7%a5%e4%bd%9c" aria-label="我们的工作">我们的工作</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e9%97%ae%e9%a2%98%e5%81%87%e8%ae%be" aria-label="问题假设">问题假设</a></li>
+                <li>
+                    <a href="#%e7%ac%a6%e5%8f%b7%e8%af%b4%e6%98%8e" aria-label="符号说明">符号说明</a></li>
+                <li>
+                    <a href="#%e6%a8%a1%e5%9e%8b%e7%9a%84%e5%bb%ba%e7%ab%8b%e4%b8%8e%e5%88%86%e6%9e%90" aria-label="模型的建立与分析">模型的建立与分析</a><ul>
+                        
+                <li>
+                    <a href="#%e9%97%ae%e9%a2%98%e5%88%86%e6%9e%90" aria-label="问题分析">问题分析</a></li>
+                <li>
+                    <a href="#%e6%a8%a1%e5%9e%8b%e9%80%89%e6%8b%a9%e4%b8%8e%e5%88%86%e6%9e%90" aria-label="模型选择与分析">模型选择与分析</a><ul>
+                        
+                <li>
+                    <a href="#%e6%a0%b7%e6%9c%ac%e7%82%b9%e5%b9%b3%e5%9d%87%e5%80%bc%e4%bc%b0%e8%ae%a1%e5%9c%86%e5%bf%83" aria-label="样本点平均值估计圆心">样本点平均值估计圆心</a></li>
+                <li>
+                    <a href="#%e6%9c%80%e8%bf%9c%e7%82%b9%e5%b9%b3%e5%9d%87%e5%80%bc%e4%bc%b0%e8%ae%a1%e5%9c%86%e5%bf%83" aria-label="最远点平均值估计圆心">最远点平均值估计圆心</a></li>
+                <li>
+                    <a href="#%e6%a8%aa%e7%ba%b5%e5%9d%90%e6%a0%87%e4%b8%ad%e4%bd%8d%e6%95%b0%e4%bc%b0%e8%ae%a1%e5%9c%86%e5%bf%83" aria-label="横纵坐标中位数估计圆心">横纵坐标中位数估计圆心</a></li>
+                <li>
+                    <a href="#%e5%b9%b3%e5%9d%87%e5%80%bc%e4%bc%b0%e8%ae%a1%e5%8d%8a%e5%be%84" aria-label="平均值估计半径">平均值估计半径</a></li>
+                <li>
+                    <a href="#%e6%9e%81%e5%a4%a7%e4%bc%bc%e7%84%b6%e6%b3%95%e4%bc%b0%e8%ae%a1%e5%8d%8a%e5%be%84" aria-label="极大似然法估计半径">极大似然法估计半径</a></li>
+                <li>
+                    <a href="#%e4%b8%a4%e7%ab%af%e9%97%b4%e9%9a%94%e6%a8%a1%e5%9e%8b%e4%bc%b0%e8%ae%a1%e5%8d%8a%e5%be%84" aria-label="两端间隔模型估计半径">两端间隔模型估计半径</a></li></ul>
+                </li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%a8%a1%e5%9e%8b%e6%b1%82%e8%a7%a3" aria-label="模型求解">模型求解</a><ul>
+                        
+                <li>
+                    <a href="#%e6%a8%a1%e5%9e%8b%e6%b1%82%e8%a7%a3-1" aria-label="模型求解">模型求解</a></li>
+                <li>
+                    <a href="#%e6%a8%a1%e5%9e%8b%e7%bb%93%e6%9e%9c%e4%b8%8e%e5%88%86%e6%9e%90" aria-label="模型结果与分析">模型结果与分析</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%af%84%e4%bb%b7" aria-label="模型的评价">模型的评价</a><ul>
+                        
+                <li>
+                    <a href="#%e6%95%b0%e5%80%bc%e6%a8%a1%e6%8b%9f" aria-label="数值模拟">数值模拟</a></li>
+                <li>
+                    <a href="#%e7%bb%93%e6%9e%9c%e8%af%84%e4%bb%b7" aria-label="结果评价">结果评价</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%80%bb%e7%bb%93" aria-label="总结">总结</a></li>
+                <li>
+                    <a href="#appendices" aria-label="Appendices">Appendices</a><ul>
+                        
+                <li>
+                    <a href="#%e9%99%84%e5%bd%95-a-%e5%9c%86%e5%bd%a2%e5%8c%ba%e5%9f%9f%e5%9d%87%e5%8c%80%e5%88%86%e5%b8%83%e9%9a%8f%e6%9c%ba%e6%95%b0%e7%94%9f%e6%88%90%e7%ae%97%e6%b3%95" aria-label="附录 A 圆形区域均匀分布随机数生成算法">附录 A 圆形区域均匀分布随机数生成算法</a></li>
+                <li>
+                    <a href="#%e9%99%84%e5%bd%95-b-%e5%90%84%e7%b1%bb%e6%95%b0%e5%ad%a6%e6%a8%a1%e5%9e%8b%e7%9a%84%e4%bb%a3%e7%a0%81%e5%ae%9e%e7%8e%b0" aria-label="附录 B 各类数学模型的代码实现">附录 B 各类数学模型的代码实现</a></li>
+                <li>
+                    <a href="#%e9%99%84%e5%bd%95-c-%e6%a8%a1%e5%9e%8b%e6%b1%82%e8%a7%a3%e6%96%b9%e6%b3%95" aria-label="附录 C 模型求解方法">附录 C 模型求解方法</a></li>
+                <li>
+                    <a href="#%e9%99%84%e5%bd%95-d-%e6%95%b0%e5%80%bc%e6%a8%a1%e6%8b%9f%e6%96%b9%e6%b3%95" aria-label="附录 D 数值模拟方法">附录 D 数值模拟方法</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p><strong>摘要：</strong>
+本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。</p>
+<p>对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。</p>
+<p>对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。</p>
+<p>我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。
+<strong>Keywords: 概率论，数值模拟</strong></p>
+<!-- raw HTML omitted -->
+<h2 id="简介">简介<a hidden class="anchor" aria-hidden="true" href="#简介">#</a></h2>
+<h3 id="背景">背景<a hidden class="anchor" aria-hidden="true" href="#背景">#</a></h3>
+<p>蘑菇作为一种广泛存在于自然界的真菌，为人们所熟知。但其除了裸露在地表的子实体部分以外，在地下还拥有着极其庞大的菌丝结构。为了完成对蘑菇的全面详细研究，有必要对菌丝结构这一蘑菇的重要组成部分进行分析和度量。其中尤为重要的，就是确定菌丝结构的位置和范围。但是由于菌丝处于地下且规模巨大，难以通过直接测量得出结果。</p>
+<h3 id="问题重述">问题重述<a hidden class="anchor" aria-hidden="true" href="#问题重述">#</a></h3>
+<p>蘑菇的孢子落到土壤中，不断生长出菌丝。菌丝以相同的速度向外辐射，构成庞大的菌丝菌丝。当环境条件合适时，这些菌丝会生长成裸露在地面的“蘑菇”。现在我们已知地面上属于同一菌丝结构的所有蘑菇的位置，如表 1 和图 1 所示：</p>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>横坐标</th>
+<th>纵坐标</th>
+<th>序号</th>
+<th>横坐标</th>
+<th>纵坐标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>21.12</td>
+<td>29.84</td>
+<td>11</td>
+<td>24.81</td>
+<td>17.16</td>
+</tr>
+<tr>
+<td>2</td>
+<td>20.39</td>
+<td>11.50</td>
+<td>12</td>
+<td>41.31</td>
+<td>31.77</td>
+</tr>
+<tr>
+<td>3</td>
+<td>38.52</td>
+<td>13.34</td>
+<td>13</td>
+<td>20.24</td>
+<td>15.50</td>
+</tr>
+<tr>
+<td>4</td>
+<td>33.85</td>
+<td>15.47</td>
+<td>14</td>
+<td>34.63</td>
+<td>26.43</td>
+</tr>
+<tr>
+<td>5</td>
+<td>44.24</td>
+<td>21.49</td>
+<td>15</td>
+<td>42.67</td>
+<td>20.42</td>
+</tr>
+<tr>
+<td>6</td>
+<td>24.87</td>
+<td>22.42</td>
+<td>16</td>
+<td>18.52</td>
+<td>14.49</td>
+</tr>
+<tr>
+<td>7</td>
+<td>46.32</td>
+<td>26.41</td>
+<td>17</td>
+<td>17.09</td>
+<td>25.83</td>
+</tr>
+<tr>
+<td>8</td>
+<td>20.27</td>
+<td>11.62</td>
+<td>18</td>
+<td>32.33</td>
+<td>17.14</td>
+</tr>
+<tr>
+<td>9</td>
+<td>44.56</td>
+<td>19.73</td>
+<td>19</td>
+<td>18.72</td>
+<td>17.83</td>
+</tr>
+<tr>
+<td>10</td>
+<td>47.69</td>
+<td>19.25</td>
+<td>20</td>
+<td>28.52</td>
+<td>25.85</td>
+</tr>
+</tbody>
+</table>
+<p><img loading="lazy" src="mushrooms1.png" alt="mushrooms1"  />
+</p>
+<p>我们的问题是，如何根据地上蘑菇子实体的位置信息，估计形成蘑菇的孢子最初落地的位置和地下菌丝结构的规模。</p>
+<h3 id="我们的工作">我们的工作<a hidden class="anchor" aria-hidden="true" href="#我们的工作">#</a></h3>
+<p>在本篇文章中，我们建立了一种真菌生长的模型，将地下菌丝结构与地上子实体位置进行了概率上的关联。同时提出了求解该模型的不同思路，通过计算机模拟，对比选择出了更优的求解办法。</p>
+<h2 id="问题假设">问题假设<a hidden class="anchor" aria-hidden="true" href="#问题假设">#</a></h2>
+<ul>
+<li>假设一：当地地形平坦，菌丝以相同的速度向外辐射，形成圆形</li>
+<li>假设二：地上子实体的位置服从地下菌丝形状的均匀分布</li>
+</ul>
+<h2 id="符号说明">符号说明<a hidden class="anchor" aria-hidden="true" href="#符号说明">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(m, n)$</td>
+<td>孢子下落的最初位置</td>
+</tr>
+<tr>
+<td>$r$</td>
+<td>菌丝区域的半径</td>
+</tr>
+<tr>
+<td>$\{(x_i, y_i)\}$</td>
+<td>子实体位置样本集合</td>
+</tr>
+</tbody>
+</table>
+<h2 id="模型的建立与分析">模型的建立与分析<a hidden class="anchor" aria-hidden="true" href="#模型的建立与分析">#</a></h2>
+<h3 id="问题分析">问题分析<a hidden class="anchor" aria-hidden="true" href="#问题分析">#</a></h3>
+<p>由于我们假设地形平坦，菌丝以相同的速度向外辐射，那么在蘑菇生长的任意时刻，菌丝结构在水平面上的投影都是正圆形。我们设孢子下落的位置为 $(m, n)$，菌丝距包子位置的最远距离为 $r$，那么菌丝结构可以视为二维平面上的圆形区域 $C: (x-m)^2 + (y-n)^2 \le r$。</p>
+<p>又因为我们假设地上子实体的位置服从地下菌丝形状的均匀分布，那么对于任意子实体的位置 $(x_i, y_i)$，服从均匀分布，其概率密度函数为
+</p>
+$$
+    f(x, y)=\left\{
+    \begin{aligned}
+    \frac{1}{\pi r^2} & \quad (x, y) \in C \\
+    0 & \quad (x, y) \notin C\\
+    \end{aligned}
+    \right.
+$$
+<p>这样我们就将问题转化为：已知有一组样本 $(x_1, x_2), ... (x_n, y_n)$ 服从区域 $C: (x-m)^2 + (y-n)^2 \le r$ 上的均匀分布，$m, n, r$ 未知。求 $m, n, r$。</p>
+<p>这一问题包含两个子问题，（1）求解 $m, n$，（2）求解 $r$。接下来我们将分别建立模型。</p>
+<h3 id="模型选择与分析">模型选择与分析<a hidden class="anchor" aria-hidden="true" href="#模型选择与分析">#</a></h3>
+<h4 id="样本点平均值估计圆心">样本点平均值估计圆心<a hidden class="anchor" aria-hidden="true" href="#样本点平均值估计圆心">#</a></h4>
+<p>对样本 $(x_1, x_2), ... (x_n, y_n)$，记 $\bar{x} = \frac{1}{n}\sum_{i=1}^n x_i$，$\bar{y} = \frac{1}{n}\sum_{i=1}^n y_i$。总体的平均值
+</p>
+$$
+    \bar{X} = \int_{-\infty}^{+\infty}\int_{-\infty}^{+\infty} xf(x, y)dxdy = m \\
+    \bar{Y} = \int_{-\infty}^{+\infty}\int_{-\infty}^{+\infty} yf(x, y)dxdy = n
+$$
+<p>用 $(\bar{x}, \bar{y})$ 作为 $(\bar{X}, \bar{Y})$ 的估计值，得到
+</p>
+$$
+    m = \bar{x}, n = \bar{y}
+$$
+<h4 id="最远点平均值估计圆心">最远点平均值估计圆心<a hidden class="anchor" aria-hidden="true" href="#最远点平均值估计圆心">#</a></h4>
+<p>我们设
+</p>
+$$
+    x_{min} = \min{x_i} \\
+    x_{max} = \max{x_i} \\
+    y_{min} = \min{y_i} \\
+    y_{max} = \max{y_i}
+$$
+<p>利用最远点的平均值估计圆心，即
+</p>
+$$
+    m = \frac{x_{max} - x_{min}}{2} \\
+    n = \frac{y_{max} - y_{min}}{2}
+$$
+<h4 id="横纵坐标中位数估计圆心">横纵坐标中位数估计圆心<a hidden class="anchor" aria-hidden="true" href="#横纵坐标中位数估计圆心">#</a></h4>
+<p>我们记 $\{x_i\}$ 的中位数为 $\widetilde{x}$，$\{y_i\}$ 的中位数为 $\widetilde{y}$。总体的中位数为 $\widetilde{X}$ 和 $\widetilde{Y}$。用 $(\widetilde{x}, \widetilde{y})$ 作为  $(\widetilde{X}, \widetilde{Y})$ 的估计值。由于 $\widetilde{X} = \bar{X}, \widetilde{Y} = \bar{Y}$，则
+</p>
+$$
+    m = \widetilde{x} \\
+    n = \widetilde{y}
+$$
+<h4 id="平均值估计半径">平均值估计半径<a hidden class="anchor" aria-hidden="true" href="#平均值估计半径">#</a></h4>
+<p>假设此时我们已经确定了圆心 $(m, n)$ 的位置，那么我们可以计算出样本点相对于 $(m, n)$ 的距离
+</p>
+$$
+    r_i = \sqrt{(x_i - m)^2 + (y_i - n)^2}
+$$
+<p>我们设点到圆心的距离的平均值为 $\bar{r} = \frac{1}{n}\sum_{i=1}^n r_i$，总体到圆心的平均距离为 $\bar{R}$。用 $\bar{r}$ 作为 $\bar{R}$ 的估计值。</p>
+<p>为此我们需要求得 $\bar{R}$ 的值。首先设随机变量 $Z$ 为点到圆心的距离，圆形半径为 $r$，则有概率分布函数
+</p>
+$$
+    F(z) = P\{Z \le z\} = \frac{\pi z^2}{\pi r^2} = \frac{z^2}{r^2}
+$$
+<p>对应的概率密度函数
+</p>
+$$
+    f(z) = \frac{2z}{r^2}
+$$
+<p>因此 $Z$ 的数学期望为
+</p>
+$$
+    E(Z) = \int_{0}^{r} z f(z) dz = \frac{2}{3}r
+$$
+<p>因此有 $\bar{R} = \frac{2}{3}r$。所以
+</p>
+$$
+    r = \frac{3}{2} \bar{r}
+$$
+<h4 id="极大似然法估计半径">极大似然法估计半径<a hidden class="anchor" aria-hidden="true" href="#极大似然法估计半径">#</a></h4>
+<p>我们已知距圆心距离的概率密度函数为 $f(z) = \frac{2z}{r^2}$。使用极大似然法估计参数 $r$。</p>
+<p>构造似然函数
+</p>
+$$
+    L(x; r) = \prod_{i=1}^n f(r_i; r) = \prod_{i=1}^n \frac{2r_i}{r^2}
+$$
+<p>为方便计算，对等式两边同取对数
+</p>
+$$
+    \ln L(x; r) = \ln \prod_{i=1}^n \frac{2r_i}{r^2} = \sum_{i=1}^n \ln 2r_i - n \ln r^2
+$$
+<p>要求
+</p>
+$$
+    r = \underset{r}{\text{argmax}} \ln L(x; r)
+$$
+<p>对 $\ln L(x; r)$ 求导，即
+</p>
+$$
+    \frac{d \ln L(x; r)}{r} = \frac{2n}{r} \gt 0
+$$
+<p>又因参数 $r$ 可能的取值范围为 $[\max{r_i}, \infty)$。因此根据极大似然法得到的半径估计为
+</p>
+$$
+    r = \max{r_i}
+$$
+<h4 id="两端间隔模型估计半径">两端间隔模型估计半径<a hidden class="anchor" aria-hidden="true" href="#两端间隔模型估计半径">#</a></h4>
+<p>根据概率密度函数 $f(z) = \frac{2z}{r^2}$ 可以得知，从样本点距圆心距离来看，越靠近圆心的点应该更加稀疏，越远离圆心的点应该更加稠密。我们按从小到大的顺序排列 $r_1 \le r_2 \le ...\le r_n$。那么 $r_1$ 的大小概率上应该大于 $r - r_n$。我们可以假设有这样的关系
+</p>
+$$
+    \frac{r_1 - 0}{r - r_n} = \frac{f(r)}{f(r_1)} = \frac{r}{r_1}
+$$
+<p>因此有
+</p>
+$$
+    r = \frac{r_n + \sqrt{r_n^2 + 4r_1^2}}{2}
+$$
+<h2 id="模型求解">模型求解<a hidden class="anchor" aria-hidden="true" href="#模型求解">#</a></h2>
+<h3 id="模型求解-1">模型求解<a hidden class="anchor" aria-hidden="true" href="#模型求解-1">#</a></h3>
+<p>我们将上面估计圆心位置的三种模型与估计半径的三种模型两两组合，形成九种求解方案。分别求得对应的 $m, n, r$。</p>
+<table>
+<thead>
+<tr>
+<th>圆心估计模型</th>
+<th>半径估计模型</th>
+<th>横坐标m</th>
+<th>纵坐标n</th>
+<th>半径r</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>样本点平均值</td>
+<td>半径平均值</td>
+<td>34.83</td>
+<td>20.92</td>
+<td>11.55</td>
+</tr>
+<tr>
+<td>样本点平均值</td>
+<td>极大似然法</td>
+<td>34.83</td>
+<td>20.92</td>
+<td>14.42</td>
+</tr>
+<tr>
+<td>样本点平均值</td>
+<td>两端间隔模型</td>
+<td>34.83</td>
+<td>20.92</td>
+<td>14.53</td>
+</tr>
+<tr>
+<td>最远点平均值</td>
+<td>半径平均值</td>
+<td>32.62</td>
+<td>19.16</td>
+<td>12.29</td>
+</tr>
+<tr>
+<td>最远点平均值</td>
+<td>极大似然法</td>
+<td>32.62</td>
+<td>19.16</td>
+<td>13.87</td>
+</tr>
+<tr>
+<td>最远点平均值</td>
+<td>两端间隔模型</td>
+<td>32.62</td>
+<td>19.16</td>
+<td>14.17</td>
+</tr>
+<tr>
+<td>横纵坐标中位数</td>
+<td>半径平均值</td>
+<td>34.98</td>
+<td>22.20</td>
+<td>11.55</td>
+</tr>
+<tr>
+<td>横纵坐标中位数</td>
+<td>极大似然法</td>
+<td>34.98</td>
+<td>22.20</td>
+<td>14.26</td>
+</tr>
+<tr>
+<td>横纵坐标中位数</td>
+<td>两端间隔模型</td>
+<td>34.98</td>
+<td>22.20</td>
+<td>14.37</td>
+</tr>
+</tbody>
+</table>
+<h3 id="模型结果与分析">模型结果与分析<a hidden class="anchor" aria-hidden="true" href="#模型结果与分析">#</a></h3>
+<p>从当前已经获得的结果可知，横坐标大致在 32 ∼ 34，纵坐标大致在 19 ∼ 23，半径大致在
+11 ∼ 15 范围内。但是不同的方案预测的结果差异较大，我们还需要从中选择出最佳的结果。为此
+我们需要对模型进行评价。</p>
+<h2 id="模型的评价">模型的评价<a hidden class="anchor" aria-hidden="true" href="#模型的评价">#</a></h2>
+<h3 id="数值模拟">数值模拟<a hidden class="anchor" aria-hidden="true" href="#数值模拟">#</a></h3>
+<p>因为我们并不知道真正的结果是什么，所以无法通过模型求得的结果判断那种模型更加精确。为了进行模型评价，我们可以采用计算机模拟的方法。</p>
+<p>首先，我们需要确定生成圆形区域均匀分布的算法。对于角度，我们可以直接将 $[0, 1)$ 随机数线性映射到 $[0, 2\pi)$。但对于半径的取值，我们必须依照概率密度函数 $f(z) = \frac{2z}{r^2}$ 生成随机数。</p>
+<p>我们采用的方法是反函数法。具体来说，对概率分布函数 $F(z) = \frac{z^2}{r^2}$。我们取得其反函数
+</p>
+$$
+    F^{-1}(p) = r\sqrt{p}
+$$
+<p>
+将 $[0, 1)$ 随机数经过该反函数的映射后即得到概率密度为 $f(z)$ 的随机数。</p>
+<p>随后将生成的随机数输入到模型中进行计算，得出数值结果。</p>
+<h3 id="结果评价">结果评价<a hidden class="anchor" aria-hidden="true" href="#结果评价">#</a></h3>
+<p>我们设定 $m = 50, n = 50, r = 20$，从总体中随机取 $20$ 个点作为样本。对每个样本分别使用模型估计 $m, n, r$（其中估计 $r$ 时，给定真实的 $m, n$）。如此取 $200$ 个样本，计算 $200$ 个样本估计的 $m, n, r$ 平均值、平均值与真值的误差和标准差。结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>x的平均值</th>
+<th>x平均值的误差</th>
+<th>x的标准差</th>
+<th>y的平均值</th>
+<th>y平均值的误差</th>
+<th>y的标准差</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>样本点平均值</td>
+<td>50.2</td>
+<td>0.2</td>
+<td>2.47</td>
+<td>50.3</td>
+<td>0.3</td>
+<td>2.14</td>
+</tr>
+<tr>
+<td>最远点平均值</td>
+<td>50.04</td>
+<td>0.04</td>
+<td>1.77</td>
+<td>50.02</td>
+<td>0.02</td>
+<td>1.66</td>
+</tr>
+<tr>
+<td>横纵坐标中位数</td>
+<td>50.26</td>
+<td>0.26</td>
+<td>3.63</td>
+<td>50.31</td>
+<td>0.31</td>
+<td>3.1</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>r的平均值</th>
+<th>r平均值的误差</th>
+<th>r的标准差</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>半径平均值</td>
+<td>20.11</td>
+<td>0.11</td>
+<td>1.67</td>
+</tr>
+<tr>
+<td>极大似然法</td>
+<td>19.5</td>
+<td>-0.5</td>
+<td>0.48</td>
+</tr>
+<tr>
+<td>两端间隔模型</td>
+<td>20.47</td>
+<td>0.47</td>
+<td>1.01</td>
+</tr>
+</tbody>
+</table>
+<p>我们也根据结果绘制了频率直方图，如下所示。其中模型序号与“模型选择与分析”一节中顺序相同。
+<img loading="lazy" src="c1.png" alt="c1"  />
+
+<img loading="lazy" src="c2.png" alt="c2"  />
+
+<img loading="lazy" src="c3.png" alt="c3"  />
+
+<img loading="lazy" src="r1.png" alt="r1"  />
+
+<img loading="lazy" src="r2.png" alt="r2"  />
+
+<img loading="lazy" src="r3.png" alt="r3"  />
+</p>
+<p>根据模拟的结果可以得出以下的初步结论：</p>
+<ul>
+<li>对于圆心位置的估计来说，最远点平均值模型优于样本点平均值和中位数模型。不仅误差较小，标准差也最小。这说明在小样本条件下，平均值和中位数未必是最优的模型。</li>
+<li>对于半径的估计来说，平均值模型拥有较小的误差，但标准差较大，预测结果不稳定；极大似然估计的结果标准差较小，但结果几乎总是小于真实值；两端间隔模型标准差较小，但误差却较大。因此这部分模型的选择需要考虑实际应用情况。</li>
+</ul>
+<p>总体来说，对圆心位置的估计，最远点平均值模型最优；对半径的估计，如果不看重多次估计的集中程度，则平均值模型更优；反之，则可以选择两端间隔模型。因此，最远点平均值模型+平均值模型和最远点平均值模型+两端间隔模型是更合适的选择。</p>
+<h2 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h2>
+<p>本篇文章中，我们从估计菌丝结构的问题出发，分析了“通过圆形区域内均匀分布的样本点，估计圆形位置和范围”的解决方法。利用概率论等相关知识，建立了一系列符合理论的数学模型，并通过数值模拟对模型进行了评价分析，选择出更加适合当前问题的模型。</p>
+<h2 id="appendices">Appendices<a hidden class="anchor" aria-hidden="true" href="#appendices">#</a></h2>
+<h3 id="附录-a-圆形区域均匀分布随机数生成算法">附录 A 圆形区域均匀分布随机数生成算法<a hidden class="anchor" aria-hidden="true" href="#附录-a-圆形区域均匀分布随机数生成算法">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">math</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">Random</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">generate_circle_point</span><span class="p">(</span><span class="n">r</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">rand</span> <span class="o">=</span> <span class="n">Random</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">angle</span> <span class="o">=</span> <span class="n">rand</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">r_len</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rand</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r_len</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="n">r_len</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span><span class="p">)])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">generate_circle</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">point_num</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">point_num</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">generate_circle_point</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">points</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">points</span>
+</span></span></code></pre></div><h3 id="附录-b-各类数学模型的代码实现">附录 B 各类数学模型的代码实现<a hidden class="anchor" aria-hidden="true" href="#附录-b-各类数学模型的代码实现">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">math</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">circle_center1</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">points</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">circle_center2</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">x_min</span><span class="p">,</span> <span class="n">y_min</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">x_max</span><span class="p">,</span> <span class="n">y_max</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">x_min</span> <span class="o">+</span> <span class="n">x_max</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">y_min</span> <span class="o">+</span> <span class="n">y_max</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">circle_center3</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">circle_radius1</span><span class="p">(</span><span class="n">radius_list</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">r_mean</span> <span class="o">=</span> <span class="n">radius_list</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">(</span><span class="mi">3</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">r_mean</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">circle_radius2</span><span class="p">(</span><span class="n">radius_list</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">radius_list</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">circle_radius3</span><span class="p">(</span><span class="n">radius_list</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">r_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">radius_list</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">r_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">radius_list</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">(</span><span class="n">r_max</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r_max</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">r_min</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+</span></span></code></pre></div><h3 id="附录-c-模型求解方法">附录 C 模型求解方法<a hidden class="anchor" aria-hidden="true" href="#附录-c-模型求解方法">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">math_model2</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">mushrooms</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&#34;mushrooms.txt&#34;</span><span class="p">,</span> <span class="s2">&#34;r&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">        <span class="n">grid</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\t</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mushrooms</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="mi">2</span><span class="p">])])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">mushrooms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mushrooms</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">calc_center_funcs</span> <span class="o">=</span> <span class="p">[</span><span class="n">circle_center1</span><span class="p">,</span> <span class="n">circle_center2</span><span class="p">,</span> <span class="n">circle_center3</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">calc_radius_funcs</span> <span class="o">=</span> <span class="p">[</span><span class="n">circle_radius1</span><span class="p">,</span> <span class="n">circle_radius2</span><span class="p">,</span> <span class="n">circle_radius3</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&#34;ans.txt&#34;</span><span class="p">,</span> <span class="s2">&#34;w&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;圆心估计模型</span><span class="se">\t</span><span class="s2">半径估计模型</span><span class="se">\t</span><span class="s2">横坐标</span><span class="se">\t</span><span class="s2">纵坐标</span><span class="se">\t</span><span class="s2">半径</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">center_func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">calc_center_funcs</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">radius_func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">calc_radius_funcs</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">center</span> <span class="o">=</span> <span class="n">center_func</span><span class="p">(</span><span class="n">mushrooms</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">r_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">mushrooms</span> <span class="o">-</span> <span class="n">center</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">r</span> <span class="o">=</span> <span class="n">radius_func</span><span class="p">(</span><span class="n">r_list</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;center</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="se">\t</span><span class="s2">radius</span><span class="si">{</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">m</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">r</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><h3 id="附录-d-数值模拟方法">附录 D 数值模拟方法<a hidden class="anchor" aria-hidden="true" href="#附录-d-数值模拟方法">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">math_model2</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">random_generator</span> <span class="kn">import</span> <span class="n">generate_circle</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">num</span> <span class="o">=</span> <span class="mi">20</span>
+</span></span><span class="line"><span class="cl"><span class="n">m</span> <span class="o">=</span> <span class="mi">50</span>
+</span></span><span class="line"><span class="cl"><span class="n">n</span> <span class="o">=</span> <span class="mi">50</span>
+</span></span><span class="line"><span class="cl"><span class="n">r</span> <span class="o">=</span> <span class="mi">20</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">calc_center_funcs</span> <span class="o">=</span> <span class="p">[</span><span class="n">circle_center1</span><span class="p">,</span> <span class="n">circle_center2</span><span class="p">,</span> <span class="n">circle_center3</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">calc_radius_funcs</span> <span class="o">=</span> <span class="p">[</span><span class="n">circle_radius1</span><span class="p">,</span> <span class="n">circle_radius2</span><span class="p">,</span> <span class="n">circle_radius3</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">center</span> <span class="o">=</span> <span class="p">[[],</span> <span class="p">[],</span> <span class="p">[]]</span>
+</span></span><span class="line"><span class="cl"><span class="n">radius</span> <span class="o">=</span> <span class="p">[[],</span> <span class="p">[],</span> <span class="p">[]]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mushrooms</span> <span class="o">=</span> <span class="n">generate_circle</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">radius_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">mushrooms</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">center_func</span> <span class="o">=</span> <span class="n">calc_center_funcs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">center_ans</span> <span class="o">=</span> <span class="n">center_func</span><span class="p">(</span><span class="n">mushrooms</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">center</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">center_ans</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">radius_func</span> <span class="o">=</span> <span class="n">calc_radius_funcs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">radius_ans</span> <span class="o">=</span> <span class="n">radius_func</span><span class="p">(</span><span class="n">radius_list</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">radius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">radius_ans</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">table_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">row_label</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;model 1&#34;</span><span class="p">,</span> <span class="s2">&#34;model 2&#34;</span><span class="p">,</span> <span class="s2">&#34;model 3&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">col_label</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;x avg&#34;</span><span class="p">,</span> <span class="s2">&#34;x error&#34;</span><span class="p">,</span> <span class="s2">&#34;x std&#34;</span><span class="p">,</span> <span class="s2">&#34;y avg&#34;</span><span class="p">,</span> <span class="s2">&#34;y error&#34;</span><span class="p">,</span> <span class="s2">&#34;y std&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">one_center</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">center</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">one_center</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">m</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">n</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Centroid Estimation Model </span><span class="si">{</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&#34;Estimation for X Axis&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&#34;Estimation for Y Axis&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">table_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">table_val</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Numerical Simulation for Centroid Estimation Models&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cellText</span><span class="o">=</span><span class="n">table_val</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">rowLabels</span><span class="o">=</span><span class="n">row_label</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">colLabels</span><span class="o">=</span><span class="n">col_label</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">loc</span><span class="o">=</span><span class="s2">&#34;center&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cellLoc</span><span class="o">=</span><span class="s2">&#34;center&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">rowLoc</span><span class="o">=</span><span class="s2">&#34;center&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&#34;off&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">table_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">row_label</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;model 1&#34;</span><span class="p">,</span> <span class="s2">&#34;model 2&#34;</span><span class="p">,</span> <span class="s2">&#34;model 3&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">col_label</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;r avg&#34;</span><span class="p">,</span> <span class="s2">&#34;r error&#34;</span><span class="p">,</span> <span class="s2">&#34;r std&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">one_radius</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">one_radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">one_radius</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">one_radius</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">one_radius</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">r</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table_val</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">one_radius</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">one_radius</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Radius Estimation Model </span><span class="si">{</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">table_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">table_val</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&#34;Numerical Simulation for Radius Estimation Models&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cellText</span><span class="o">=</span><span class="n">table_val</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">rowLabels</span><span class="o">=</span><span class="n">row_label</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">colLabels</span><span class="o">=</span><span class="n">col_label</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">loc</span><span class="o">=</span><span class="s2">&#34;center&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cellLoc</span><span class="o">=</span><span class="s2">&#34;center&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">rowLoc</span><span class="o">=</span><span class="s2">&#34;center&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&#34;off&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></span></code></pre></div>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/%E6%95%B0%E5%AD%A6/">数学</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/buaa-os-lab2/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>BUAA-OS 实验笔记之 Lab2</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/buaa-os-lab1/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>BUAA-OS 实验笔记之 Lab1</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 基于概率模型的蘑菇菌丝规模分析 on x"
+            href="https://x.com/intent/tweet/?text=%e5%9f%ba%e4%ba%8e%e6%a6%82%e7%8e%87%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%98%91%e8%8f%87%e8%8f%8c%e4%b8%9d%e8%a7%84%e6%a8%a1%e5%88%86%e6%9e%90&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f&amp;hashtags=%e6%95%b0%e5%ad%a6">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 基于概率模型的蘑菇菌丝规模分析 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f&amp;title=%e5%9f%ba%e4%ba%8e%e6%a6%82%e7%8e%87%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%98%91%e8%8f%87%e8%8f%8c%e4%b8%9d%e8%a7%84%e6%a8%a1%e5%88%86%e6%9e%90&amp;summary=%e5%9f%ba%e4%ba%8e%e6%a6%82%e7%8e%87%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%98%91%e8%8f%87%e8%8f%8c%e4%b8%9d%e8%a7%84%e6%a8%a1%e5%88%86%e6%9e%90&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 基于概率模型的蘑菇菌丝规模分析 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f&title=%e5%9f%ba%e4%ba%8e%e6%a6%82%e7%8e%87%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%98%91%e8%8f%87%e8%8f%8c%e4%b8%9d%e8%a7%84%e6%a8%a1%e5%88%86%e6%9e%90">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 基于概率模型的蘑菇菌丝规模分析 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 基于概率模型的蘑菇菌丝规模分析 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e5%9f%ba%e4%ba%8e%e6%a6%82%e7%8e%87%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%98%91%e8%8f%87%e8%8f%8c%e4%b8%9d%e8%a7%84%e6%a8%a1%e5%88%86%e6%9e%90%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 基于概率模型的蘑菇菌丝规模分析 on telegram"
+            href="https://telegram.me/share/url?text=%e5%9f%ba%e4%ba%8e%e6%a6%82%e7%8e%87%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%98%91%e8%8f%87%e8%8f%8c%e4%b8%9d%e8%a7%84%e6%a8%a1%e5%88%86%e6%9e%90&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 基于概率模型的蘑菇菌丝规模分析 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e5%9f%ba%e4%ba%8e%e6%a6%82%e7%8e%87%e6%a8%a1%e5%9e%8b%e7%9a%84%e8%98%91%e8%8f%87%e8%8f%8c%e4%b8%9d%e8%a7%84%e6%a8%a1%e5%88%86%e6%9e%90&u=https%3a%2f%2fwokron.github.io%2fposts%2fhyphae-scale-math-model%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

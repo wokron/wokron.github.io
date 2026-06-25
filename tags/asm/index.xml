@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>ASM on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/asm/</link>
+    <description>Recent content in ASM on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Tue, 21 Feb 2023 18:10:43 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/asm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>利用 ASM 库实现 Java 反射</title>
+      <link>https://wokron.github.io/posts/java-asm-lib/</link>
+      <pubDate>Tue, 21 Feb 2023 18:10:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/java-asm-lib/</guid>
+      <description>一、ASM库简介 ASM 库是一款基于 Java 字节码层面的代码分析和修改工具。它能分析二进制的 class 文件并对其进行动态修改。ASM 库侧重性能，设计和实现尽可能小和快。
+通过 ASM 库，我们可以方便地获取类信息，并实现类似于反射的功能。ASM 库处理字节码，因此能得到仅仅使用反射无法获取的信息，如方法内的结构。
+ASM 库同样具有动态修改和创建类文件的功能，但本篇文章主要使用 ASM 库的字节码读取功能。
+本篇文章假设读者能自行通过Maven或其他方式添加ASM库依赖。
+二、利用ASM库访问类文件 ASM 库的核心库提供了读取和修改字节码的基本 API。核心库包含如下几个工具类：
+ClassReader ClassReader 类用于从 class 文件中加载字节码。这样，这一 ClassReader 对象就拥有了关于某一类的所有信息。
+ClassVisitor ClassVisitor 类可以从 ClassReader 中获取想要的信息。
+ClassVisitor 是访问者模式的访问类。简单解释访问者模式，就是被访问的对象调用访问者类的方法，从而使得访问者获取希望得到的数据。
+还是通过 ASM 的例子来理解吧，ClassVisitor 实际是一个抽象类，其中定义了一个方法 visit。该方法的签名为：
+visit(int version, int access, String name, String signature, String superName, String[] interfaces) 假设我们继承 ClassVisitor 创建了一个新的访问类，那么获取信息的方式如下：
+ClassReader cr = new ClassReader(&amp;#34;className&amp;#34;); ClassVisitor cv = new ClassVisitor(Opcodes.ASM5) { // this is an anonymous class }; cr.</description>
+    </item>
+  </channel>
+</rss>

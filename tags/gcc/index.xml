@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>GCC on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/gcc/</link>
+    <description>Recent content in GCC on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sat, 06 Jan 2024 16:33:50 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/gcc/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>从零开始的编译原理（2）：编译程序架构</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-2/</link>
+      <pubDate>Sat, 06 Jan 2024 16:33:50 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-2/</guid>
+      <description>一、前言 本质是存在的真理，是自己过去了的或内在的存在。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《小逻辑》第二篇 本质论 §112
+本篇文章是一个间章。旨在衔接文法理论与编译过程，从架构上概述整个编译程序。文法理论旨在解释自然语言，而编译过程却要创造新的语言。编译程序通过将文法规则机械化，创造出易于理解的高级语言，实现了计算的高级抽象。
+二、何为 “编译” 为了理解何为 “编译”，我们可以从一个具体的编译器开始。这里我们以 C 语言的编译过程为例：
+现在有一个简单的由 C 语言文法写成的文本文件 test.c
+// test.c #include &amp;lt;stdio.h&amp;gt; int main() { printf(&amp;#34;hello, world.\n&amp;#34;); return 0; } 想要将其编译为可执行文件，当然可以使用 gcc test.c -o test 或 clang test.c -o test，但是这样就不能反映编译的具体过程了。所以这里我编写了一个 Makefile，用来指明 gcc 编译时所经历的具体步骤。
+# Makefile srcname = test cc = gcc # Default target all: $(srcname) @echo &amp;#34;Finish!&amp;#34; # Linking stage $(srcname): $(srcname).o @echo &amp;#34;Linking stage: Creating executable &amp;#39;$(srcname)&amp;#39;&amp;#34; $(cc) $(srcname).o -o $(srcname) # Assembly stage $(srcname).</description>
+    </item>
+    <item>
+      <title>系统编程之命令行编译</title>
+      <link>https://wokron.github.io/posts/system-programming-note-1/</link>
+      <pubDate>Mon, 12 Sep 2022 21:18:59 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-1/</guid>
+      <description>一、前言 本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。
+二、GCC 基本操作 编译选项 无选项编译链接 用法：gcc test.c 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。 选项 -o 用法：gcc test.c -o test 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。 选项 -E 用法：gcc -E test.c -o test.i 作用：将 test.c 预处理输出 test.i 文件。 选项 -S 用法：gcc -S test.i 作用：将预处理输出文件 test.i 编译成 test.s 文件。 选项 -c 用法：gcc -c test.s 作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。 无选项链接 用法：gcc test.o -o test 作用：将目标代码文件 test.o 链接成最终可执行文件 test。 选项 -O 用法：gcc -O1 test.c -o test 作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。 官方文档：GCC, the GNU Compiler Collection</description>
+    </item>
+  </channel>
+</rss>

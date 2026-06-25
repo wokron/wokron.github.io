@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>自动机 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/</link>
+    <description>Recent content in 自动机 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 15 Feb 2024 14:14:06 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>从零开始的编译原理（4）：语法分析与下推自动机</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-4/</link>
+      <pubDate>Thu, 15 Feb 2024 14:14:06 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-4/</guid>
+      <description>一、前言 从这个精神王国的圣餐杯里，
+他的无限性给他翻涌起泡沫。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识
+二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。
+然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。
+举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \rightarrow (S)S | \epsilon $$ 其中规则 $S \rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。
+而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。
+不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：
+可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。
+三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。</description>
+    </item>
+    <item>
+      <title>从零开始的编译原理（3）：词法分析与有穷自动机</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-3/</link>
+      <pubDate>Wed, 10 Jan 2024 19:04:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-3/</guid>
+      <description>一、前言 因而，每一生物的有机形体都是一个神圣的机器，或一台无限地优越于任何人造的自动机器的自然的自动机器（automata）。因为人的技艺所制造的机器的每一部分并非机器。……而自然的机器，即有机体，在其无限小的部分仍是机器。
+—— 戈特弗里德·威廉·莱布尼茨《单子论》第 64 节
+本章将从词法分析所用的 3 型文法入手，引入自动机的概念，并详细介绍有穷自动机的原理及实现。最终实现编译程序的词法分析模块。
+二、正则文法的解析过程 在第 1 章的最后我们介绍了 3 型文法。3 型文法也称正则文法，特征是对于文法中的每一条规则，其右侧要么是一个终结符，要么是一个终结符加上一个非终结符，且非终结符只位于终结符的一侧。根据非终结符位置的不同分为左线性和右线性。
+或许有些人会这样讲：“左线性是终结符在右侧；右线性是终结符在左侧”。但是这样实在太别扭了。应该说 “左线性是非终结符在左侧；右线性是非终结符在右侧”。
+为什么通过这一约束，3 型文法就能区别于 2 型文法了呢？我们可以通过正则文法的解析过程来理解。
+现在有一左线性正则文法 $G_1[Z]$： $$ \begin{align*} Z &amp; \rightarrow A1 \\ A &amp; \rightarrow B1 | 1 \\ B &amp; \rightarrow A0 \end{align*} $$ 现在可能不太能看得出来，但是 $G_1[Z]$ 能够接受符号串 $101011$。我们可以画出此符号串对应的文法树。
+通过文法树我们可以看出，对于左线性正则文法 $G_1[Z]$，其文法树只向左增长。当然这一点从规则中也可以看出，只不过不那么直观罢了。
+可为什么具有这样特性的文法就特殊了呢？接下来我们根据文法树，以归约的视角看待符号串 $101011$ 的解析过程：
+读入 1，1 归约得到 A； 读入 0，A0 归约得到 B； 读入 1，B1 归约得到 A； …… 以此类推，我们就可以发现其中的规律。对于这样的文法，读入一次即归约一次。因为文法中最多只有两个符号，所以一旦读入了一个新的符号，则必定进行一次归约。
+同理的，我们考虑右线性正则文法 $G_2[S]$： $$ \begin{align*} S &amp; \rightarrow 1A \\ A &amp; \rightarrow 0B | 1 \\ B &amp; \rightarrow 1A \end{align*} $$ $101011$ 也能被 $G_2[S]$ 接受。其文法树如下，对于右线性正则文法 $G_2[Z]$，其文法树只向右增长</description>
+    </item>
+  </channel>
+</rss>

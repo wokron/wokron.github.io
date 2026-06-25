@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Docker on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/docker/</link>
+    <description>Recent content in Docker on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Mon, 13 Oct 2025 10:24:54 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/docker/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>用 Namespace 手搓一个容器</title>
+      <link>https://wokron.github.io/posts/simple-container/</link>
+      <pubDate>Mon, 13 Oct 2025 10:24:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/simple-container/</guid>
+      <description>容器技术由 Linux 下三项技术构成。这三项技术分别是 Namespace、Cgroups 和 Unionfs。他们分别实现了系统逻辑资源的隔离、物理资源的限制以及容器的文件系统。
+在这之中最为关键的是 Namespace。因为 Namespace 实现了虚拟化中最重要的隔离的功能。在 Namespace 之外即使不使用 Cgroups，用其他文件系统替代 Unionfs，依然能够实现一个容器的许多功能。
+所以本文我们尝试用 Namespace 构建一个简单的容器。让我们首先想想，一个容器中的环境究竟需要与 host 隔离哪些资源。（请把容器想象成 host 之外的另一台机器。）
+文件系统：容器中的进程不能访问 host 的文件系统。这意味着挂载点的隔离 &amp;ndash; Mount Namespace 进程空间：容器中的进程无法查看容器外的进程信息。这意味着进程号的隔离 &amp;ndash; PID Namespace 网络接口：容器中的进程拥有自己的网络接口，不使用 host 上的网络接口。这意味着网络的隔离 &amp;ndash; Network Namespace 用户：容器中的用户和容器外的用户无关，例如容器内的 root 和容器外的 root 并不相同。这意味着用户的隔离 &amp;ndash; User Namespace 物理资源：容器能够看到和管理的物理资源和容器外的资源不同。这意味着 Cgroups 视图的隔离 &amp;ndash; Cgroups Namespace 时间：容器中的时间系统和容器外的时间不一定相同 &amp;ndash; Time Namespace 主机名：容器中的主机名和容器外的主机名不一定相同 &amp;ndash; UTS Namespace IPC：IPC，例如 Posix 消息队列，使用类似文件名的标识符，但是又并不真正存在于文件系统中。容器中的这些标识符和容器外的相同标识无关 &amp;ndash; IPC Namespace 虽然种类很多，但是想要形成虚拟化的错觉只需要用到其中的一部分即可。为了构建我们的容器，我们选择只使用 Mount、PID 和 User。
+隔离文件系统 容器化最重要的是隔离文件系统。所谓的程序运行环境，本质上就是文件系统中的各类库和应用程序。同一主机上的不同发行版的容器都运行在相同的内核上，他们只是在库和应用程序上存在不同。</description>
+    </item>
+    <item>
+      <title>Linux 下的用户和容器中的用户</title>
+      <link>https://wokron.github.io/posts/user-perm-and-container/</link>
+      <pubDate>Sun, 12 Oct 2025 16:11:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/user-perm-and-container/</guid>
+      <description>多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。
+不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。
+用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。
+操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。
+$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。
+$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。
+当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。
+子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。
+超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。
+超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。
+利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。
+$ sleep 1 &amp;amp; ps -o user,group,uid,gid -p $!</description>
+    </item>
+    <item>
+      <title>编译 Tensorflow 踩坑</title>
+      <link>https://wokron.github.io/posts/build-tensorflow-from-source/</link>
+      <pubDate>Mon, 20 Jan 2025 21:31:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/build-tensorflow-from-source/</guid>
+      <description>前段时间发现了 Tensorflow 里的一处小 Bug，现在有空正好提一个 PR。Bug 很快就修好了，不过之后进行本地编译时我却踩了不少坑。现在记录一下。
+一、各种版本傻傻分不清 在开始编译之前，需要介绍一下相关的 Nvidia GPU 依赖项。
+Nvidia 有不同架构的各型显卡。为了区分硬件上的区别，Nvidia 使用计算能力（Compute Capability）加以区分。计算能力版本分为两部分 x.y。大版本号表示计算架构（如 Pascal、Volta、Ampere 等等）上的变化，之间不可兼容；小版本号则表示同一架构内部的差别，更高版本可以兼容更低版本。
+GPU 驱动（GPU Driver）为操作系统提供硬件驱动。其版本可以通过 nvidia-smi --query-gpu=driver_version --format=csv 找到。同一版本的驱动支持一系列不同计算能力、不同架构的显卡。
+CUDA 驱动（CUDA Driver）在 GPU 驱动之上提供了 CUDA 接口。与 GPU 驱动属于内核态设备驱动不同，CUDA 驱动是一用户态的动态链接库（DSO）。CUDA 驱动的版本一般应当随着 GPU 驱动版本的更新而更新。
+CUDA Toolkit 提供了构建 CUDA 程序所需的编译器、运行时和库。构建后的 CUDA 应用程序依赖于 CUDA 驱动所提供的接口。又由于 CUDA 是向后兼容（Backward Compatibility）的，所以旧的 CUDA 应用程序可以运行在新的 CUDA 驱动上；换句话说，要运行某一 CUDA 程序，需要高于特定版本的 CUDA 驱动。
+向后兼容中的 Backward 指的是与时间上在前的进行兼容。这似乎是中英文导致的思维差异。
+二、构建配置 在构建 Tensorflow 时添加 CUDA 支持后，Tensorflow 需要满足 CUDA Toolkit 和 CUDA 驱动之间的兼容性要求。如前所述，为了更强的兼容性，我们希望 CUDA Toolkit 的版本较低。但更高的 Tensorflow 版本又会需要更高版本的 CUDA 特性。因此在编译时需要在这两方面进行权衡。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之 Docker</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-3/</link>
+      <pubDate>Tue, 25 Apr 2023 18:09:15 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-3/</guid>
+      <description>一、前言 最近事情有些多，这篇短文写写停停，花费了很长时间。本来想着在五一假期结束前完成这一系列文章的，现在看来还有些困难呀。
+这篇文章总结了自己使用 Docker 时用到的一些知识，可能内容不深，还请见谅。
+二、镜像的构筑 （1）Docker 镜像简介 正如在“准备工作”那篇文章中所说的，镜像时静态的容器，容器是运行的镜像。我们在使用 Docker 时，需要做的就是像编写代码一样构建 Docker 镜像。
+Docker 镜像中包含了一套文件系统，其所维护的文件包含了项目运行所需的环境以及项目本身。但是镜像和一般的文件系统不同，镜像由一系列层构成，每一层中存储了对之前镜像的修改信息。
+这样做有一定的优点，在下载镜像时，我们不需要每次都下载完整的镜像；而只需要下载与本地镜像不相同的层就可以了。另一方面，容器基于镜像进行构筑，在容器运行时，分层设计也有利于不同容器的共享。采取写时复制技术可以减少内存的占用。
+我们进行镜像的构筑时，也不需要从头开始，而可以选择在已有的镜像上添加新的层，通过修改已有环境来构建我们所需的项目运行环境。
+（2）Dockerfile 简介 Docker 中使用 Dockerfile 来设置镜像构建的操作流程，这一点类似于 Makefile。这里借我的后端项目中的 Dockerfile 的内容来稍微解释一下。
+# python alpine is the smallest python image FROM python:3.9-alpine COPY ./src /src COPY ./start.sh ./ COPY ./config.ini ./ RUN pip install -r ./src/requirements.txt # ash is shell for alpine CMD ash start.sh Dockerfile 中使用一系列大写关键字作为指令，构建镜像时，从头到尾依次执行。
+第一句使用了 FROM 指令。该指令指定了构筑时的基础镜像，接下来的指令都是对镜像的修改，会在基础镜像上增加新的层。这里 FROM python:3.9-alpine 指定了一个镜像，来自仓库 python，标签为 3.9-alpine。该镜像包含了 python3.9 的运行环境，底层的操作系统为 alpine，这也是 Linux 的一个发行版，以体积小著称。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之准备工作</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-1/</link>
+      <pubDate>Sat, 22 Apr 2023 22:22:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-1/</guid>
+      <description>一、前言 当我第一次看到那份作业的时候，我绝想不到，这作业将牵扯出多少我还未曾学习过的知识；我更想不到，自己要以多久的时间涉猎完所有这些内容。当然现在这些都已经结束了，感慨不应该抒发太多，还是趁着自己没有忘记，做一下总结吧。
+这一系列应该会有几篇文章。主要内容是回顾总结我的第一次较为系统的后端开发经历。在学习的过程中我参考了许多文章，其中一些我也会在文章中给出链接。这些文章或许在一些方面比本篇文章讲的更加深入，但是本篇文章综合了许多文章的不同信息，给出了系统的安装配置流程和自己的一些见解，因此我认为还是有一些价值的。
+二、WSL，一切的起点 （1）WSL 简介 windows 系统虽然在个人电脑上常用，但是开发起后端来还是不方便，最好还是使用 linux。但是只有一台电脑的话，装双系统极其麻烦、虚拟机又太过笨重。那么有没有一种更加方便的方法呢？有的，那就是使用 WSL（Windows Subsystem for Linux），即 Windows 的 Linux 子系统。WSL 分为 WSL1 和 WSL2，此二者的实现原理并不相同。虽然有些跑题，但是还是介绍一下，毕竟是自己费力去查的结果。
+WSL1 不是虚拟机，Hyper-V 或 VMware 等虚拟机会用软件模拟硬件的行为，其中装入的操作系统是和模拟的硬件进行交互；而 WSL1 则是通过 Windows 操作系统库模拟了一个 Linux 内核，用 Windows 的系统调用来处理 Linux 的系统调用。并且由于 WSL1 不需要模拟硬件这一中间过程，因此效率会比虚拟机高。而 WSL2 则可以看做虚拟机，但是与其他虚拟机相比更加轻量，Linux 系统运行在此虚拟机上资源占用更少、运行更快。问题是 WSL2 使用了虚拟化技术，可能与其他虚拟机冲突，不能同时使用。
+在这里我们使用 WSL2。主要原因是 WSL2 运行了真正的 Linux 内核，和各种 Linux 程序的兼容性更好。
+（2）WSL 安装 安装 WSL 很简单。这里的安装流程参考 使用 WSL 在 Windows 上安装 Linux。插一句，微软的技术文档真的很有用，如果对搜索得到的关于微软的技术问题的解决方案有不确定的地方，参考微软的技术文档有时会有很大帮助。就比如 WSL 的安装，搜到的经常已经是过时的教程了。
+安装 WSL，只需要在 PowerShell 中以管理员模式运行如下命令即可。
+wsl --install 注意网上的教程中，需要使用 dism.</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>BUAA on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/buaa/</link>
+    <description>Recent content in BUAA on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Tue, 10 Sep 2024 16:07:58 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/buaa/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>编译技术教程：附录 - 项目测试</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-06/</link>
+      <pubDate>Tue, 10 Sep 2024 16:07:58 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-06/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。
+因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。
+一、单元测试 （1）单元测试的结构 单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 Lexer、Parser、Visitor 等等分别编写了单元测试。
+一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当尽可能相互独立、互不影响。这也意味着单元测试的执行顺序不应当影响测试的结果。
+需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。
+由于上述特点，单元测试实际上应当看作一一个不同的可执行程序。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：构造、操作和检验。
+CMake 中提供的 “测试” 实际上就是这样的可执行程序。
+构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。
+操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。
+最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 to_string 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。
+（2）Mock 如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是代码中的副作用或具体类之间的耦合导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。
+例如，在实现 Lexer 时，我们没有将 ifstream 作为参数，而是将其父类 istream 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。
+class Lexer { Lexer(std::istream &amp;amp;in) : _input(in) {} // ... } 这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 istream 存在子类 istringstream。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。</description>
+    </item>
+    <item>
+      <title>编译技术教程：语义分析</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-05/</link>
+      <pubDate>Tue, 10 Sep 2024 16:05:08 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-05/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。
+根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。
+一、遍历语法树 树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 Node 类表示树的节点：
+struct Node { int val; std::vector&amp;lt;Node*&amp;gt; children; } 那么我们很容易想到两种遍历的方式。第一种便是在 Node 中增加一个方法 visit。
+struct Node { int val; std::vector&amp;lt;Node&amp;gt; children; void visit() { // do something, like `std::cout &amp;lt;&amp;lt; val &amp;lt;&amp;lt; std::endl;` for (auto child : children) { child.visit(); } } }; 而第二种方式则是将 Node 作为参数。为了避免使用全局变量，我们需要创建一个新的类 Visitor。
+struct Visitor { void visit(Node &amp;amp;node) { // do something, like `std::cout &amp;lt;&amp;lt; val &amp;lt;&amp;lt; std::endl;` for (auto child : children) { visit(child); } } }; 那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 Visitor 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 visit 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能跨越语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。</description>
+    </item>
+    <item>
+      <title>编译技术教程：符号表与类型系统</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-04/</link>
+      <pubDate>Tue, 10 Sep 2024 16:04:07 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-04/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。
+一、符号表 符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！
+二、符号表的创建 在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 pre，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 next。此外，在编译的过程中，有一个指向当前作用域符号表的指针 cur。
+符号表的生成主要有以下几个操作：
+初始时，创建一个全局变量符号表，也是最外层作用域符号表，cur 指向该符号表。 编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 cur 指向的符号表。 编译时，进入新的作用域（block），生成新的符号表，设置 cur 指向的符号表的 next 指针指向新符号表，新符号表的 pre 设置为 cur，然后将 cur 指向新符号表，后续会在新符号表上填入信息。 编译时，离开作用域（block），通过 cur 指向的符号表的 pre 指针回溯至外层符号表，并对应修改 cur 指针。 不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。
+在 tolangc 中，我们定义了一个栈式符号表。符号表类 SymbolTable 对应某一作用域的符号表。每一个符号表拥有一个 _father 字段，指向更外层作用域的符号表。另有 _symbols 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 Symbol 类对象）作为值。
+class SymbolTable : public std::enable_shared_from_this&amp;lt;SymbolTable&amp;gt; { // ... private: std::unordered_map&amp;lt;std::string, std::shared_ptr&amp;lt;Symbol&amp;gt;&amp;gt; _symbols; std::shared_ptr&amp;lt;SymbolTable&amp;gt; _father; }; 当进入新的作用域时，我们调用 push_scope 函数，创建新的符号表，并将该符号表的 _father 字段设置为当前符号表。</description>
+    </item>
+    <item>
+      <title>编译技术教程：语法分析</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-03/</link>
+      <pubDate>Tue, 10 Sep 2024 16:03:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-03/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。
+一、语法分析的作用 进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。
+例如，对于上表达式
+a + (3 + b) * 2 对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。
+实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。
+还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树
+LVal: Ident PrimaryExp: &amp;#39;(&amp;#39; Exp &amp;#39;)&amp;#39; | LVal | Number UnaryExp: PrimaryExp | Ident &amp;#39;(&amp;#39; [FuncRParams] &amp;#39;)&amp;#39; | UnaryOp UnaryExp UnaryOp: &amp;#39;+&amp;#39; | &amp;#39;-&amp;#39; | &amp;#39;!&amp;#39; MulExp: UnaryExp | MulExp (&amp;#39;*&amp;#39; | &amp;#39;/&amp;#39; | &amp;#39;%&amp;#39;) UnaryExp AddExp: MulExp | AddExp (&amp;#39;+&amp;#39; | &amp;#39;-&amp;#39;) MulExp Exp: AddExp 在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且语法树的层次结构自然保证了计算顺序的正确性。</description>
+    </item>
+    <item>
+      <title>编译技术教程：抽象语法树</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-02/</link>
+      <pubDate>Tue, 10 Sep 2024 16:01:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-02/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将字符序列解析为单词序列，其中每一个单词都是一个最小的语法单元。词法分析的分析结果是非结构化的序列，无法表达程序的复杂语法结构。因此我们还需进行语义分析，用给定的上下文无关文法识别单词序列。而语义分析的最终结果，就是抽象语法树。
+一、语法树的表示方法 文法反映了句子中不同结构之间的组成关系。例如下面的文法：
+VarDecl: BType Ident Dims [ &amp;#39;=&amp;#39; InitVals ] 便反映了变量定义由类型、标识符、维度以及可选的初始化值组成。
+而对于组成这一概念，十分常见的建模方法便是将整体定义为类，而将各子部分定义为其属性。因此对于上面的文法，可以将其建模为如下形式：
+struct VarDecl { BType btype; Ident ident; Dims dims; InitVals *init_vals; }; 同理，我们也可以进一步定义 BType、Ident、Dims 以及 InitVals。如此继续下去，我们便可以对文法中的任意符号定义对应的类型，从而实现对源程序的结构化表示。我们所定义的这一系列类型，实际上也就是文法所对应的语法树中的可能节点。
+在定义节点的时候，需要注意某一非终结符对应多条规则的情况。例如下面的规则：
+Stmt: &amp;#39;if&amp;#39; &amp;#39;(&amp;#39; Cond &amp;#39;)&amp;#39; Stmt [ &amp;#39;else&amp;#39; Stmt ] | &amp;#39;while&amp;#39; &amp;#39;(&amp;#39; Cond &amp;#39;)&amp;#39; Stmt 这种情况下我们会发现，if 语句和 while 语句的结构并不相同，然而不管是 if 语句还是 while 语句，它们都是语句。
+对是（is-a）关系的一种很容易想到的建模方法便是继承。因此，我们可以用如下方法表示 Stmt 符号对应的两条规则：
+struct Stmt {}; struct IfStmt : public Stmt {}; struct WhileStmt : public Stmt {}; 然而，继承不仅意味着变量多态，还意味着函数多态，可是在语法树的表示中，我们实际上只是希望用同一个名称指代不同的数据类型，而并不需要同一个函数拥有不同行为。因此，继承在此处似乎太 “重” 了。</description>
+    </item>
+    <item>
+      <title>编译技术教程：词法分析</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-01/</link>
+      <pubDate>Tue, 10 Sep 2024 16:00:13 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-01/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 不论是从标准输入中读取还是从文件中解析，我们的源程序总是以字符流的形式存在。例如，对于下面这个简单的源程序：
+int main() { int var = 8 + 2; if (var != 10) { printf(&amp;#34;error!&amp;#34;); } else { printf(&amp;#34;correct!&amp;#34;); } return 0; } 尽管从我们的视角来看，源程序是结构化的，包含了顺序、分支、循环等多种结构；同时通过空格、换行等方法，我们还可以将程序中的各个成分清晰地区分开来。但是从编译器的角度看，源程序不带有任何结构，只是由字符组成的序列（字符串）：
+int main() {\n\tint var = 8+2;\n\tif (var != 10) {\n\t\tprintf(“error!”);\n\t}\n\telse {\n\t\tprintf(“correct!”);\n\t}\n\treturn 0;\n} 这导致了一个问题，虽然字符是构成字符串的基本单元，却每个字符自身却不一定具备特定的含义。这些字符需要组成一个单词才能传达出对于程序来说有意义的信息。因此，实现编译器的第一步就是要把这样的线性字符串分割成一个个单词，便于后续分析。在编译器中，这一阶段被称为词法分析。
+一、词法分析作用 词法分析器作为编译器的第一部分，承担的任务就是通过扫描输入的源程序字符串，将其分割成一个个单词。如图所示，经过词法分析器的处理，我们将字符序列转换为单词序列。对于每个单词，我们至少应当记录单词的取值及其类别信息。另外，编译器在词法分析阶段也可能记录单词在源代码中的位置信息，例如源文件路径、行号、列号等等。这些额外信息对于编译器的错误处理十分重要。得当的错误定位能够为代码的编写者提供极大便利。
+在源程序中，还有一些字符并不会影响程序的语法语义，如换行符 \n、注释等，这些符号自然也不会被词法分析器解析为单词，但词法分析器也需对这些符号进行适当处理，如忽略跳过、记录行号列号等等。
+二、词法分析器的接口 在上一小节中，我们了解了词法分析阶段的主要作用，在本小节中，我们将基于此介绍词法分析器（Lexer）。
+首先，词法分析的输出是单词序列，因而我们需要定义单词的数据结构。在 tolangc 中，我们所实现的 Token 类包括三个字段：type、content 和 lineno，分别对应了单词的类型、取值和位置。
+struct Token { enum TokenType { #define X(a, b) a, TOKEN_TYPE #undef X } type; std::string content; int lineno; Token() = default; Token(TokenType type, std::string content, int lineno) : type(type), content(content), lineno(lineno) {} }; 对于单词类型，除了文法定义中出现的类型外，我们还额外定义了 TK_EOF 类型。这一类型用于表示我们已经读到了输入字符串的末尾。</description>
+    </item>
+    <item>
+      <title>编译技术教程：前言</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-00/</link>
+      <pubDate>Tue, 10 Sep 2024 15:56:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-00/</guid>
+      <description>本系列是北航《编译技术》实验教程的前端教程部分，介绍了编译器前端的实现过程。此系列内容由本人编写或参与修改，在此也感谢所有参与教程编写工作的本届和往届助教。对于完整的实验教程，可见 wokron/tolangc。
+系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 一、本教程的背景 编译技术实验是计算机科学与技术专业核心专业必修课编译技术的实践环节，旨在帮助学生深入理解编译原理和技术，并掌握实际编译器的设计和实现方法。在本实验中，各位同学需要自行设计、实现一个完整的编译器，该编译器能够实现 SysY 语言（C 语言子集）到中间代码 LLVM、Pcode 或目标代码 MIPS 的编译过程。
+亲自实现一个编译器对各位同学理解编译技术有着极大的帮助。然而，作为这门课的初学者，同学们往往难以在一开始就对编译器产生完整全面的认识。在实验中，这一点体现为一些同学在编译器的设计上存在不足，难以运用理论课上的知识实现一个架构清晰、可随实验进度不断扩展的编译器。这导致这种情况的出现：早期的设计隐患在之后的实验中爆发，不得不重构之前的程序逻辑。在浪费时间的同时，无法学到编译器设计的更好方法。
+当然，这并不意味着理论课的内容毫无必要，而是理论与实际之间本就有着难以轻易逾越的鸿沟。将理论与实践融会贯通，本就需要付出极大的努力。在往届的实验中，我们也曾提供或推荐一些已有的编译器代码供同学们学习，然而这些代码或过于老旧、或过于复杂，常常难以满足同学们的学习和借鉴需要。
+为了能稍稍帮助同学们更好的完成编译实验，实验课教程组决定做出一点自己的贡献。以往的编译实验教程主要关注于讲述实验中可能会用到的相关知识，尽管也有一些辅助理解的例子，但也常常局限于单一章节的内容，不同章节间内容互不相通。这一定程度上妨碍了同学们从中学习编译器的设计方法，并容易造成了理解上的混乱。
+因此，我们决定修改原有的编译实验教程，通过示例驱动的方式给同学们提供更有参考价值的教程内容。具体来说，我们会设计一个十分简单的编程语言：tolang。在本教程中，我们将以 tolang 编译器 tolangc 的编写为主线，介绍基本的编译器设计和实现方法，从而为同学们提供一个相对较好的实践样例。
+二、tolang 介绍 tolang 这个名字很奇怪，最初起名时的含义是 toy lang，但是也有 too long 的谐音。不过这个语言确实是一个玩具语言，根本没有复杂冗长的语法语义。
+（1）文法定义 我们的 tolang 可以由如下的 EBNF 范式确定：
+CompUnit: {FuncDef} {VarDecl} {Stmt} FuncDef: &amp;#39;fn&amp;#39; Ident &amp;#39;(&amp;#39; [FuncFParams] &amp;#39;)&amp;#39; &amp;#39;=&amp;gt;&amp;#39; Exp &amp;#39;;&amp;#39; FuncFParams: Ident { &amp;#39;,&amp;#39; Ident } VarDecl: &amp;#39;var&amp;#39; Ident &amp;#39;;&amp;#39; Stmt: &amp;#39;get&amp;#39; Ident &amp;#39;;&amp;#39; | &amp;#39;put&amp;#39; Exp &amp;#39;;&amp;#39; | &amp;#39;tag&amp;#39; Ident &amp;#39;;&amp;#39; | &amp;#39;let&amp;#39; Ident &amp;#39;=&amp;#39; Exp &amp;#39;;&amp;#39; | &amp;#39;if&amp;#39; Cond &amp;#39;to&amp;#39; Ident &amp;#39;;&amp;#39; | &amp;#39;to&amp;#39; Ident &amp;#39;;&amp;#39; Exp: AddExp AddExp: MulExp | AddExp (&amp;#39;+&amp;#39; | &amp;#39;-&amp;#39;) MulExp MulExp: UnaryExp | MulExp (&amp;#39;*&amp;#39; | &amp;#39;/&amp;#39; | &amp;#39;%&amp;#39;) UnaryExp UnaryExp: PrimaryExp | Ident &amp;#39;(&amp;#39; [FuncRParams] &amp;#39;)&amp;#39; | (&amp;#39;+&amp;#39; | &amp;#39;-&amp;#39;) UnaryExp PrimaryExp: &amp;#39;(&amp;#39; Exp &amp;#39;)&amp;#39; | Ident | Number FuncRParams: Exp { &amp;#39;,&amp;#39; Exp } Cond: Exp (&amp;#39;&amp;lt;&amp;#39; | &amp;#39;&amp;gt;&amp;#39; | &amp;#39;&amp;lt;=&amp;#39; | &amp;#39;&amp;gt;=&amp;#39; | &amp;#39;==&amp;#39; | &amp;#39;!</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab6</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab6/</link>
+      <pubDate>Fri, 19 May 2023 15:59:29 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab6/</guid>
+      <description>一、Lab6 前言 操作系统实验的最后一篇笔记，不说什么了。本文主要讲了 Shell 的实现机制，管道通信略有说明。
+二、Shell 程序的启动 这次我们还要回到 Init/init.c 文件。我们的 MOS 的所有实验都结束之后，mips_init 函数应该是这样的
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); // lab3: env_init(); // lab6: ENV_CREATE(user_icode); // This must be the first env! // lab5: ENV_CREATE(fs_serv); // This must be the second env! // lab3: kclock_init(); enable_irq(); while (1) { } } 其中我们使用 ENV_CREATE 创建了两个用户进程。这两个进程的代码在编译时便写入了内核 ELF 文件中。其中第二个进程 fs_serv 就是 Lab5 中用到的文件系统服务进程；而第一个进程 user_icode 则是整个操作系统中除文件系统服务进程外所有进程的共同祖先进程，该进程便用于启动 Shell 进程。user_icode 或为 “user init code” 之意。</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab5</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab5/</link>
+      <pubDate>Tue, 02 May 2023 08:34:31 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab5/</guid>
+      <description>一、Lab5 前言 这是最长的一篇文章，可就算这么长，文中出现的代码也不过本次 Lab 中新增加的代码的一小部分。幸好完成本次实验不需要熟悉所有代码，一部分练习甚至不需要熟悉要填写的代码的前后文，只需要根据注释就可以填出很多。可是我感觉本篇文章还是有帮助的，毕竟谁也不知道 Exam 会出什么题。
+Lab5 主要分为四部分，分别是镜像制作工具、关于设备的系统调用、文件系统服务进程、文件操作库函数。本文对这四个方面都有所涉及，第二章主要讲镜像制作工具，第三章主要讲文件系统服务进程和文件操作库函数，最后一章讲关于设备的系统调用。
+二、磁盘镜像 （1）镜像制作工具 在本次实验中我们要实现一个文件系统。广义来说，一切字节序列都可以称为文件，但本次实验中我们还是主要关注在磁盘中存储的数据，将这些数据按一定的结构组织起来，就是本次实验的主要目标。
+本文依旧不按照指导书中的顺序。我们先查看位于 tools 文件夹下的磁盘镜像制作工具 fsformat 的源代码，以便我们理解磁盘以及文件系统的组织结构。
+（2）磁盘数据初始化 我们查看 tools/fsformat.c 文件。找到其中的 main 函数。main 函数首先调用了 init_disk 用于初始化磁盘。
+int main(int argc, char **argv) { static_assert(sizeof(struct File) == BY2FILE); init_disk(); 该函数中我们要用到一个数据结构 disk。因此我们先考察 disk。disk 是一个数组，大小为 NBLOCK，每个元素是一个结构体，其中有字段 data，是一个 BY2BLK 字节大小的空间，用于存储一个磁盘块的数据。很容易得知，NBLOCK * BY2BLK = 磁盘空间大小。这样就可以理解 disk 起到的作用了，也就是在构筑磁盘镜像时暂时存储磁盘数据，等到构筑完成后再将 disk 中 data 的内容拼接并输出为二进制镜像文件。
+struct Block { uint8_t data[BY2BLK]; uint32_t type; } disk[NBLOCK]; 磁盘块是对磁盘空间的逻辑划分；扇区是对磁盘空间的物理划分
+另外 Block 结构体还有一个字段 type，该字段的值为如下枚举的值
+enum { BLOCK_FREE = 0, BLOCK_BOOT = 1, BLOCK_BMAP = 2, BLOCK_SUPER = 3, BLOCK_DATA = 4, BLOCK_FILE = 5, BLOCK_INDEX = 6, }; 让我们回到 init_disk。该函数中首先将第一个磁盘块类型设为 BLOCK_BOOT，表示主引导扇区。之后我们要从第三个磁盘块开始（为什么不是第二个？因为第二个磁盘块为 “超级块”，将在后面介绍），设置磁盘块的位图分配机制。在函数中我们计算了在磁盘中存储位图需要的磁盘块数量。NBLOCK 是磁盘块的总数，那么我们同样需要 NBLOCK bit 大小的位图，又因为一个磁盘块有 BIT2BLK bit，那么总共需要 NBLOCK / BIT2BLK 个磁盘块。向上取整，总共需要 (NBLOCK + BIT2BLK - 1) / BIT2BLK 个磁盘块来存储位图。现在我们已经将 0 到 nbitblock-1 的位图分配了用途，那么下一个空闲的磁盘块就是 nextbno = 2 + nbitblock 了。</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab4</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab4/</link>
+      <pubDate>Thu, 13 Apr 2023 22:30:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab4/</guid>
+      <description>一、Lab4 前言 Lab4 主要实现了系统调用，并通过系统调用实现了进程的创建和通信等操作。按照提示编写代码的难度应该不大（除非你的 Lab3 schedule 函数有 bug，很可惜我就是这样 :(），所以本次的笔记更多的讨论了一些和实验无关的代码。希望不会显得太啰嗦。
+二、系统调用 （1）从一个用户程序引入 在之前的几篇文章中，我们大致循着内核初始化的过程进行分析。可是在这 Lab4 中这一思路就不适用了。因为在本次实验中我们所要实现的，不过是一些由内核提供的，可供用户程序调用的接口而已。这种调用被称为系统调用。
+但是为了保持文章行文的一致性，我们还是希望确定一个入口开始讲解。正好在 mips_init 中有这样的语句，那我们就从被创建的这个用户程序开始。
+// lab4: // ENV_CREATE(user_tltest); 这里需要插一嘴，在 Lab3 中我们就已经使用 ENV_CREATE 完成了一些程序的加载，可你有没有仔细看过被加载的程序的源代码是什么样的？代码在 user/bare 路径下。我们查看其中的 put_a.c 程序
+void _start() { for (unsigned i = 0;; ++i) { if ((i &amp;amp; ((1 &amp;lt;&amp;lt; 16) - 1)) == 0) { // Requires `e-&amp;gt;env_tf.cp0_status &amp;amp;= ~STATUS_KUp;` in kernel to work *(volatile char *)0xb0000000 = &amp;#39;a&amp;#39;; *(volatile char *)0xb0000000 = &amp;#39; &amp;#39;; } } } 你会发现这些所谓的程序并没有 main 函数，而是 _start。实际上和内核一样，我们同样在用于用户程序编译的链接器脚本中将程序入口设定为 _start。该脚本为 user/user.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab3</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab3/</link>
+      <pubDate>Thu, 30 Mar 2023 14:36:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab3/</guid>
+      <description>一、Lab3 前言 不知道为什么，虽然写 Lab3 所用的时间比 Lab2 少，但这次的笔记居然比 Lab2 长。我认为可能是因为自己在本篇文章中讲了更多和实验本身无关的东西。不过既然讲了，应该也会对进一步认识操作系统起到一些作用吧。希望本篇文章不会显得太啰嗦。
+二、内核初始化（再续） Lab2 中，我们在内核初始化阶段初始化了虚拟内存的相关信息，Lab3 中我们要继续这一过程。本次实验中我们会完成进程控制的初始化。
+（1）再度 mips_init 我们查看 Lab3 中 init/init.c 的 mips_init 函数的内容变化。与 Lab2 相比，其中多调用了如下的方法 env_init、ENV_CREATE_PRIORITY、kclock_init 和 enable_irq。
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); // lab3: env_init(); // lab3: ENV_CREATE_PRIORITY(user_bare_loop, 1); ENV_CREATE_PRIORITY(user_bare_loop, 2); // lab3: kclock_init(); enable_irq(); while (1) { } } 其中 env_init 用于进程控制的初始化，ENV_CREATE_PRIORITY 手工创建了两个进程，kclock_init 和 enable_irq 设置了时钟中断并启用了中断。后两者将分别在第三和四节介绍。本届只介绍前者。
+（2）进程管理的数据结构 让我们深入在 kern/env.c 中的 env_init，在该函数中，首先初始化了两个列表
+void env_init(void) { int i; /* Step 1: Initialize &amp;#39;env_free_list&amp;#39; with &amp;#39;LIST_INIT&amp;#39; and &amp;#39;env_sched_list&amp;#39; with * &amp;#39;TAILQ_INIT&amp;#39;.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab2</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab2/</link>
+      <pubDate>Mon, 20 Mar 2023 21:38:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab2/</guid>
+      <description>一、Lab2 前言 这篇文章应该是我目前写过的文章中长度排行前几的了。Lab2 的内容着实繁多，不仅是分页内存管理本身的理论和实现细节颇多；操作系统的基本知识和注意事项也占据了很大的篇幅。后者在不理解的情况下实在会对本次实验产生许多困惑。本人也是在逐步地探索之后才得以有了较多的认识——当然，这一认识或许也只是片面的。
+本文逐函数、逐代码地讲解了 Lab2 中新增的内容。主要在于内核初始化中关于内存的部分以及分页内存管理的实现。在本文中，关于链表宏和虚拟/物理内存的辨析也占据了比较多的内容。
+二、内核初始化（续） 在 Lab1 中，我们的内核初始化过程只进行了一部分。因为 Lab1 中 mips_init 函数几乎没有任何功能。在 Lab2 中，我们会继续推进这一过程。
+在 Lab2 中，我们会建立操作系统的内存管理机制。具体来说，我们会在 mips_init 中调用三个函数 mips_detect_memory、mips_vm_init 和 page_init。这三个函数会分别完成探测内存、初始化虚拟地址和初始化页的工作。接下来我们会分别介绍这三个函数。
+Lab2 中 mips_init 的结构如下：
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); while (1) { } } （1）探测内存 mips_detect_memory 的作用是获取总物理内存大小，并根据物理内存计算分页数。
+注意！是物理内存
+void mips_detect_memory() { /* Step 1: Initialize memsize. */ memsize = *(volatile u_int *)(KSEG1 | DEV_MP_ADDRESS | DEV_MP_MEMORY) 第一步中的这条语句似乎使人困惑。为什么这样就可以获得物理内存大小了呢？我们可以查看一下 DEV_MP_ADDRESS 和 DEV_MP_MEMORY 所在的头文件。它们定义在 include/driver/dev_mp.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab1</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab1/</link>
+      <pubDate>Tue, 14 Mar 2023 21:13:05 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab1/</guid>
+      <description>一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。
+但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。
+二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……
+不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。
+（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。
+我们看一下该文件的开头。
+/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的
+.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit.</description>
+    </item>
+  </channel>
+</rss>

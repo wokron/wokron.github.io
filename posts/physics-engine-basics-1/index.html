@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>2D 物理引擎基础之物理属性 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="数学, Python">
+<meta name="description" content="一、前言 本系列是我学习物理引擎相关知识的总结。虽说最初的目标是自己实现一个完整的物理引擎，但是随着学习的深入我认识到，为了让引擎更好地模拟实际，所需要的各种数学原理和处理技巧远远超出了“涉猎”的程度。因此我决定就此止步，但是还是留下了自己的实践成果和经验总结，就在这系列文章中。
+本文是“2D物理引擎基础”的第一篇，将介绍物理引擎中物体所需的物理属性
+二、物理引擎中的物体 在物理引擎中，模拟的物体对象被假定为刚体。刚体是如此致密坚硬的一种物体，以至于任何碰撞都无法改变其形状。同时物理引擎还常常假定对象的密度均匀，这样对象的质心将只由其几何形状决定。通过这样的假设，物理引擎将能够通过算法优化高效地进行计算模拟：
+刚体说明物体不会改变形状，这样当物体受到力的作用时，力的作用效果就不会造成改变物体运动之外的其他影响，如质心改变。 密度均匀使得质心的求解更为方便，将质心位置和偏转角度作为物体属性，就可以完全表示物体上各点的位置信息 接下来所说的物理属性也是在如上约定的基础上的。
+三、运动学属性 形状的表示 物理引擎中的形状用描述物体边界的属性表示。不同形状的物体通过不同的几何参数进行表示，如矩形可用长宽表示，圆可用半径长度表示，这些较为简单。更一般地我们考虑多边形，多边形可用顶点坐标表示，但是我们希望形状是位置无关的，那么多边形的顶点坐标也不能在坐标轴上随意选取。虽然 $(0, 0), (1, 0), (1, 1), (0, 1)$ 和 $(1, 1), (2, 1), (2, 2), (1, 2)$ 表示相同形状的多边形，但我们需要选择与位置无关的那一个。我们可以选择使多边形的质心在坐标原点的顶点集合，因为我们后续需要通过质心确定运动学属性。对于均质物体来说，这也就是多边形的几何中心在原点。
+我们不能人为地在设置形状时就限制顶点围成的形状中心必须在原点，这对于复杂的形状来说十分困难。我们可以根据顶点集合先确定几何中心位置，再对每一顶点减去中心坐标以将物体平移到集合中心为原点的位置。
+对于多边形，计算几何中心的公式为 $$ A = \frac{1}{2} \sum_{i=0}^{N-1}(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ $$ c_x = \frac{1}{6A} \sum_{i=0}^{N-1}(x_i &#43; x_{i&#43;1})(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ $$ c_y = \frac{1}{6A} \sum_{i=0}^{N-1}(y_i &#43; y_{i&#43;1})(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ 其中 $A$ 为多边形面积， $(c_x, c_y)$ 即几何中心位置。需要注意的是，在这个公式中，顶点序列为逆时针，且第一个和最后一个应是同一个坐标，以暗示这是一个闭合图形并且方便公式表示。$N$ 是不重合的顶点个数/边数。
+如下是求集合中心的 python 代码
+def get_geometric_center(points): area = 0 c_x = c_y = 0 n = points.">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/physics-engine-basics-1/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/physics-engine-basics-1/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="2D 物理引擎基础之物理属性" />
+<meta property="og:description" content="一、前言 本系列是我学习物理引擎相关知识的总结。虽说最初的目标是自己实现一个完整的物理引擎，但是随着学习的深入我认识到，为了让引擎更好地模拟实际，所需要的各种数学原理和处理技巧远远超出了“涉猎”的程度。因此我决定就此止步，但是还是留下了自己的实践成果和经验总结，就在这系列文章中。
+本文是“2D物理引擎基础”的第一篇，将介绍物理引擎中物体所需的物理属性
+二、物理引擎中的物体 在物理引擎中，模拟的物体对象被假定为刚体。刚体是如此致密坚硬的一种物体，以至于任何碰撞都无法改变其形状。同时物理引擎还常常假定对象的密度均匀，这样对象的质心将只由其几何形状决定。通过这样的假设，物理引擎将能够通过算法优化高效地进行计算模拟：
+刚体说明物体不会改变形状，这样当物体受到力的作用时，力的作用效果就不会造成改变物体运动之外的其他影响，如质心改变。 密度均匀使得质心的求解更为方便，将质心位置和偏转角度作为物体属性，就可以完全表示物体上各点的位置信息 接下来所说的物理属性也是在如上约定的基础上的。
+三、运动学属性 形状的表示 物理引擎中的形状用描述物体边界的属性表示。不同形状的物体通过不同的几何参数进行表示，如矩形可用长宽表示，圆可用半径长度表示，这些较为简单。更一般地我们考虑多边形，多边形可用顶点坐标表示，但是我们希望形状是位置无关的，那么多边形的顶点坐标也不能在坐标轴上随意选取。虽然 $(0, 0), (1, 0), (1, 1), (0, 1)$ 和 $(1, 1), (2, 1), (2, 2), (1, 2)$ 表示相同形状的多边形，但我们需要选择与位置无关的那一个。我们可以选择使多边形的质心在坐标原点的顶点集合，因为我们后续需要通过质心确定运动学属性。对于均质物体来说，这也就是多边形的几何中心在原点。
+我们不能人为地在设置形状时就限制顶点围成的形状中心必须在原点，这对于复杂的形状来说十分困难。我们可以根据顶点集合先确定几何中心位置，再对每一顶点减去中心坐标以将物体平移到集合中心为原点的位置。
+对于多边形，计算几何中心的公式为 $$ A = \frac{1}{2} \sum_{i=0}^{N-1}(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ $$ c_x = \frac{1}{6A} \sum_{i=0}^{N-1}(x_i &#43; x_{i&#43;1})(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ $$ c_y = \frac{1}{6A} \sum_{i=0}^{N-1}(y_i &#43; y_{i&#43;1})(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ 其中 $A$ 为多边形面积， $(c_x, c_y)$ 即几何中心位置。需要注意的是，在这个公式中，顶点序列为逆时针，且第一个和最后一个应是同一个坐标，以暗示这是一个闭合图形并且方便公式表示。$N$ 是不重合的顶点个数/边数。
+如下是求集合中心的 python 代码
+def get_geometric_center(points): area = 0 c_x = c_y = 0 n = points." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/physics-engine-basics-1/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-02-08T10:52:13+08:00" />
+<meta property="article:modified_time" content="2023-02-08T10:52:13+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="2D 物理引擎基础之物理属性"/>
+<meta name="twitter:description" content="一、前言 本系列是我学习物理引擎相关知识的总结。虽说最初的目标是自己实现一个完整的物理引擎，但是随着学习的深入我认识到，为了让引擎更好地模拟实际，所需要的各种数学原理和处理技巧远远超出了“涉猎”的程度。因此我决定就此止步，但是还是留下了自己的实践成果和经验总结，就在这系列文章中。
+本文是“2D物理引擎基础”的第一篇，将介绍物理引擎中物体所需的物理属性
+二、物理引擎中的物体 在物理引擎中，模拟的物体对象被假定为刚体。刚体是如此致密坚硬的一种物体，以至于任何碰撞都无法改变其形状。同时物理引擎还常常假定对象的密度均匀，这样对象的质心将只由其几何形状决定。通过这样的假设，物理引擎将能够通过算法优化高效地进行计算模拟：
+刚体说明物体不会改变形状，这样当物体受到力的作用时，力的作用效果就不会造成改变物体运动之外的其他影响，如质心改变。 密度均匀使得质心的求解更为方便，将质心位置和偏转角度作为物体属性，就可以完全表示物体上各点的位置信息 接下来所说的物理属性也是在如上约定的基础上的。
+三、运动学属性 形状的表示 物理引擎中的形状用描述物体边界的属性表示。不同形状的物体通过不同的几何参数进行表示，如矩形可用长宽表示，圆可用半径长度表示，这些较为简单。更一般地我们考虑多边形，多边形可用顶点坐标表示，但是我们希望形状是位置无关的，那么多边形的顶点坐标也不能在坐标轴上随意选取。虽然 $(0, 0), (1, 0), (1, 1), (0, 1)$ 和 $(1, 1), (2, 1), (2, 2), (1, 2)$ 表示相同形状的多边形，但我们需要选择与位置无关的那一个。我们可以选择使多边形的质心在坐标原点的顶点集合，因为我们后续需要通过质心确定运动学属性。对于均质物体来说，这也就是多边形的几何中心在原点。
+我们不能人为地在设置形状时就限制顶点围成的形状中心必须在原点，这对于复杂的形状来说十分困难。我们可以根据顶点集合先确定几何中心位置，再对每一顶点减去中心坐标以将物体平移到集合中心为原点的位置。
+对于多边形，计算几何中心的公式为 $$ A = \frac{1}{2} \sum_{i=0}^{N-1}(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ $$ c_x = \frac{1}{6A} \sum_{i=0}^{N-1}(x_i &#43; x_{i&#43;1})(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ $$ c_y = \frac{1}{6A} \sum_{i=0}^{N-1}(y_i &#43; y_{i&#43;1})(x_iy_{i&#43;1} - x_{i&#43;1}y_i) $$ 其中 $A$ 为多边形面积， $(c_x, c_y)$ 即几何中心位置。需要注意的是，在这个公式中，顶点序列为逆时针，且第一个和最后一个应是同一个坐标，以暗示这是一个闭合图形并且方便公式表示。$N$ 是不重合的顶点个数/边数。
+如下是求集合中心的 python 代码
+def get_geometric_center(points): area = 0 c_x = c_y = 0 n = points."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "2D 物理引擎基础之物理属性",
+      "item": "https://wokron.github.io/posts/physics-engine-basics-1/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "2D 物理引擎基础之物理属性",
+  "name": "2D 物理引擎基础之物理属性",
+  "description": "一、前言 本系列是我学习物理引擎相关知识的总结。虽说最初的目标是自己实现一个完整的物理引擎，但是随着学习的深入我认识到，为了让引擎更好地模拟实际，所需要的各种数学原理和处理技巧远远超出了“涉猎”的程度。因此我决定就此止步，但是还是留下了自己的实践成果和经验总结，就在这系列文章中。\n本文是“2D物理引擎基础”的第一篇，将介绍物理引擎中物体所需的物理属性\n二、物理引擎中的物体 在物理引擎中，模拟的物体对象被假定为刚体。刚体是如此致密坚硬的一种物体，以至于任何碰撞都无法改变其形状。同时物理引擎还常常假定对象的密度均匀，这样对象的质心将只由其几何形状决定。通过这样的假设，物理引擎将能够通过算法优化高效地进行计算模拟：\n刚体说明物体不会改变形状，这样当物体受到力的作用时，力的作用效果就不会造成改变物体运动之外的其他影响，如质心改变。 密度均匀使得质心的求解更为方便，将质心位置和偏转角度作为物体属性，就可以完全表示物体上各点的位置信息 接下来所说的物理属性也是在如上约定的基础上的。\n三、运动学属性 形状的表示 物理引擎中的形状用描述物体边界的属性表示。不同形状的物体通过不同的几何参数进行表示，如矩形可用长宽表示，圆可用半径长度表示，这些较为简单。更一般地我们考虑多边形，多边形可用顶点坐标表示，但是我们希望形状是位置无关的，那么多边形的顶点坐标也不能在坐标轴上随意选取。虽然 $(0, 0), (1, 0), (1, 1), (0, 1)$ 和 $(1, 1), (2, 1), (2, 2), (1, 2)$ 表示相同形状的多边形，但我们需要选择与位置无关的那一个。我们可以选择使多边形的质心在坐标原点的顶点集合，因为我们后续需要通过质心确定运动学属性。对于均质物体来说，这也就是多边形的几何中心在原点。\n我们不能人为地在设置形状时就限制顶点围成的形状中心必须在原点，这对于复杂的形状来说十分困难。我们可以根据顶点集合先确定几何中心位置，再对每一顶点减去中心坐标以将物体平移到集合中心为原点的位置。\n对于多边形，计算几何中心的公式为 $$ A = \\frac{1}{2} \\sum_{i=0}^{N-1}(x_iy_{i+1} - x_{i+1}y_i) $$ $$ c_x = \\frac{1}{6A} \\sum_{i=0}^{N-1}(x_i + x_{i+1})(x_iy_{i+1} - x_{i+1}y_i) $$ $$ c_y = \\frac{1}{6A} \\sum_{i=0}^{N-1}(y_i + y_{i+1})(x_iy_{i+1} - x_{i+1}y_i) $$ 其中 $A$ 为多边形面积， $(c_x, c_y)$ 即几何中心位置。需要注意的是，在这个公式中，顶点序列为逆时针，且第一个和最后一个应是同一个坐标，以暗示这是一个闭合图形并且方便公式表示。$N$ 是不重合的顶点个数/边数。\n如下是求集合中心的 python 代码\ndef get_geometric_center(points): area = 0 c_x = c_y = 0 n = points.",
+  "keywords": [
+    "数学", "Python"
+  ],
+  "articleBody": "一、前言 本系列是我学习物理引擎相关知识的总结。虽说最初的目标是自己实现一个完整的物理引擎，但是随着学习的深入我认识到，为了让引擎更好地模拟实际，所需要的各种数学原理和处理技巧远远超出了“涉猎”的程度。因此我决定就此止步，但是还是留下了自己的实践成果和经验总结，就在这系列文章中。\n本文是“2D物理引擎基础”的第一篇，将介绍物理引擎中物体所需的物理属性\n二、物理引擎中的物体 在物理引擎中，模拟的物体对象被假定为刚体。刚体是如此致密坚硬的一种物体，以至于任何碰撞都无法改变其形状。同时物理引擎还常常假定对象的密度均匀，这样对象的质心将只由其几何形状决定。通过这样的假设，物理引擎将能够通过算法优化高效地进行计算模拟：\n刚体说明物体不会改变形状，这样当物体受到力的作用时，力的作用效果就不会造成改变物体运动之外的其他影响，如质心改变。 密度均匀使得质心的求解更为方便，将质心位置和偏转角度作为物体属性，就可以完全表示物体上各点的位置信息 接下来所说的物理属性也是在如上约定的基础上的。\n三、运动学属性 形状的表示 物理引擎中的形状用描述物体边界的属性表示。不同形状的物体通过不同的几何参数进行表示，如矩形可用长宽表示，圆可用半径长度表示，这些较为简单。更一般地我们考虑多边形，多边形可用顶点坐标表示，但是我们希望形状是位置无关的，那么多边形的顶点坐标也不能在坐标轴上随意选取。虽然 $(0, 0), (1, 0), (1, 1), (0, 1)$ 和 $(1, 1), (2, 1), (2, 2), (1, 2)$ 表示相同形状的多边形，但我们需要选择与位置无关的那一个。我们可以选择使多边形的质心在坐标原点的顶点集合，因为我们后续需要通过质心确定运动学属性。对于均质物体来说，这也就是多边形的几何中心在原点。\n我们不能人为地在设置形状时就限制顶点围成的形状中心必须在原点，这对于复杂的形状来说十分困难。我们可以根据顶点集合先确定几何中心位置，再对每一顶点减去中心坐标以将物体平移到集合中心为原点的位置。\n对于多边形，计算几何中心的公式为 $$ A = \\frac{1}{2} \\sum_{i=0}^{N-1}(x_iy_{i+1} - x_{i+1}y_i) $$ $$ c_x = \\frac{1}{6A} \\sum_{i=0}^{N-1}(x_i + x_{i+1})(x_iy_{i+1} - x_{i+1}y_i) $$ $$ c_y = \\frac{1}{6A} \\sum_{i=0}^{N-1}(y_i + y_{i+1})(x_iy_{i+1} - x_{i+1}y_i) $$ 其中 $A$ 为多边形面积， $(c_x, c_y)$ 即几何中心位置。需要注意的是，在这个公式中，顶点序列为逆时针，且第一个和最后一个应是同一个坐标，以暗示这是一个闭合图形并且方便公式表示。$N$ 是不重合的顶点个数/边数。\n如下是求集合中心的 python 代码\ndef get_geometric_center(points): area = 0 c_x = c_y = 0 n = points.shape[0] - 1 # edge num for i in range(n): cross = np.cross(points[i], points[i+1]) area += cross c_x += (points[i][0] + points[i + 1][0]) * cross c_y += (points[i][1] + points[i + 1][1]) * cross area = area / 2 c_x = c_x / (6 * area) c_y = c_y / (6 * area) return np.array([c_x, c_y]) 这样得到无视位置的多边形顶点集合\nmass_point = get_geometric_center(points) points = points - mass_point 位置和运动 我们需要属性来表示物体的位置，对于二维空间而言，就需要二维的坐标表示位置；另外，我们还需要表示物体旋转的角度，在二维空间只需要一个标量即可。\n对于物体的运动状态，包括速度、加速度、角速度和角加速度。前两者为二维向量，后两者为标量（虽说本质上它们是垂直于二维平面的第三维度方向的向量）。\n加速度和角加速度是速度的改变方式，也就是力/力矩的作用的表现。它们随力/力矩的产生而产生，随力/力矩的消失而消失，因此并不是物体的本质属性。对物理引擎而言，我们可以在一帧里添加一定的力，由这力产生加速度与角加速度。\n速度和角速度是对物体位置状态改变的度量。在物理引擎的刚体模拟中，我们特指速度为质心的速度，角速度为围绕质心旋转的角速度。\n物理引擎以离散的时间间隔更新物体的位置和运动，如下所示 $$ \\vec{v} = \\vec{v}_0 + \\vec{a}\\Delta t $$ $$ \\vec{p} = \\vec{p}_0 +\\vec{v} \\Delta t $$ $$ w = w_0 + \\beta \\Delta t $$ $$ \\theta = \\theta_0 + w \\Delta t $$ 当然，这种更新是存在误差的，我们以加速度-速度-位置为例，根据 $$ v = v_0 + \\int_0^{\\Delta t} a \\mathrm{d} t $$ $$ p = p_0 + \\int_0^{\\Delta t} v(t) \\mathrm{d} t $$ 可得 $$ p = p_0 + v_0\\Delta{t} + \\frac{1}{2} a \\Delta{t}^2 $$ 可是将物理引擎的更新方式中的前两个式子可得 $$ p = p_0 + v_0\\Delta{t} + a \\Delta{t}^2 $$ 两者之间存在着误差，这是由物理引擎的离散性决定的，看似也可以直接用带有二分之一的式子来更新位置，但是这也是在假定在这段时间内加速度不变的情况下得到的，在由万有引力作用的情境下，这样的结果同样不够精确。\n但是物理引擎的目的本就不是十分精确的模拟，因此这样的误差可以接受。\n四、动力学属性 密度、质量和转动惯量 物体的质量由物体的形状和各点的密度决定，而物体围绕质心的转动惯量又由物体的形状和质量决定。又因为物理引擎中假设物体为刚体，物体形状确定不变，因此我们只需要确定密度就可以计算出质量和转动惯量了。\n当然，对于二维，我们这里说的密度是面密度（$\\sigma$）。有公式 $$ M = \\int_S \\sigma \\mathrm{d} s $$ 对于物理引擎假设的均质物体 $$ M = \\sigma S $$ 特别的，对于多边形我们有面积公式，在求几何中心时也有提及。 $$ A = \\frac{1}{2} \\sum_{i=0}^{N-1}(x_iy_{i+1} - x_{i+1}y_i) $$ 对于转动惯量，情况就有些复杂了，不同的形状有不同的计算公式。一般的形状如圆形的公式较为简单，但对于形状不定的多边形而言就比较难以确定了。但是依旧有公式，这一点似乎网上很少有文章提及 $$ I = M \\frac{\\sum_{n=0}^{N-1} (P_{n+1} \\times P_n) ((P_n · P_n) + (P_n ·P_{n+1}) + (P_{n+1} · P_{n+1}))}{6 \\sum_{n=1}^N (P_{n+1} \\times P_n)} $$ 其中 $P_i$ 为各顶点， $\\times$ 为向量叉积，$\\cdot$ 为向量点积，$M$ 为质量，$N$ 依旧为不相同的顶点数/边数。\n如下有代码\ndef get_moments_of_inertia(points, mass): p = points n = points.shape[0] - 1 sum1 = 0 sum2 = 0 for i in range(n): cross = np.cross(p[i + 1], p[i]) sum1 += cross * (np.dot(p[i], p[i]) + np.dot(p[i], p[i + 1]) + np.dot(p[i + 1], p[i + 1])) sum2 += cross return mass * (sum1 / (6 * sum2)) 这样，密度、质量和转动惯量实际只需要一个量来表示。\n恢复系数与摩擦系数 我们考虑一个简单的问题，两个球体质量分别为 $m_1, m_2$，碰撞前速度为 $v_1, v_2$，碰撞后速度为 $u_1, U_2$。那么我们由动量守恒和能量守恒得 $$ m_1u_1 + m_2u_2 = m_1v_1 + m_2v_2 $$ $$ \\frac{1}{2}m_1v_1^2 + \\frac{1}{2}m_2v_2^2 = (\\frac{1}{2}m_1v_1^2 + \\frac{1}{2}m_2v_2^2) $$ 联立可得 $$ u_1 = \\frac{(m_1 - m_2)v_1 + 2m_2v_2}{m_1 + m_2} $$ $$ u_2 = \\frac{(m_2 - m_1)v_2 + 2m_1v_1}{m_1 + m_2} $$ 这是完全弹性碰撞的情况，我们还需要考虑存在能量损失的情况。我们引入恢复系数（coefficient of restitution） $C_r = \\frac{u_1 - u_2}{v_1 - v_2}$。这代表了相对速度在碰撞后的损失率。此时有 $$ u_1 = \\frac{m_1v_1 + m_2v_2 + C_r m_2 (v_2 - v_1)}{m_1 + m_2} $$ $$ u_2 = \\frac{m_1v_1 + m_2v_2 + C_r m_1 (v_1 - v_2)}{m_1 + m_2} $$ 当 $C_r = 1$ 时，退化为完全弹性碰撞时的式子，当 $C_r = 0$ 时，碰撞后速度相同，为完全非弹性碰撞的情况。$0 \u003c C_r \u003c 1$ 时则为非完全弹性碰撞。\n恢复系数反映了碰撞时物体弹力所产生的物体运动状态改变的效果，它与物体材质有关。当两不同材质物体发生碰撞时，我们取其恢复系数为两者中的较小值\ncr = min(body_a.restitution, body_b.restitution) 在 box2d 引擎中还设置了 restitutionThreshold，只有在该值速度之上才会应用恢复系数进行反弹，当然这应该只是为了保持物体状态稳定所做的限制，并不具有实际物理意义\n当两个物体接触时，在切向上会有摩擦力的作用。在物理引擎中，可以忽略动摩擦系数和静摩擦系数间的微小差别，用单一的摩擦系数表示。\n摩擦系数与接触面的属性有关，因此两个不同材质的接触面可能会有所不同。为了简化程序，物理引擎可能会为每个物体设置单独的摩擦系数，并通过计算得出接触面的实际摩擦系数。如在 box2d 引擎中，就使用了将两个摩擦力相乘再开方的方式得到摩擦系数。 $$ friction = \\sqrt{friction1 * friction2} $$ 五、总结 本文章介绍了 2d 物理引擎中的对象应该具有的基本属性，最后总结一下这些属性。\n形状：物体的几何形状，不同形状表示方式不同，其中多边形用顶点序列表示 位置：（质点的）空间位置和（相对质点的）旋转角度 速度：（质点的）线速度和（相对质点的）角速度 加速度：线加速度和角加速度，由力所产生 密度：物体的面密度 质量：质量由密度和形状求出 转动惯量：转动惯量由质量和形状求出 恢复系数：表示物体的弹性程度 摩擦系数：表示物体的粗糙程度 由此我们可以定义物理引擎的主体类 Body。为了方便，这里只使用多边形作为形状。\nclass Body: force = np.zeros(2) torque = 0 def __init__(self, points, position, density, rotate=0, v=0, w=0, restitution=0, friction=0.66): mass_point = get_geometric_center(points) points = points - mass_point self.points = points self.position = position self.density = density self.mass = density * get_area(self.points) self.inv_mass = 1 / self.mass self.inertia = get_moments_of_inertia(self.points, self.mass) self.inv_inertia = 1 / self.inertia self.rotate = rotate self.v = v self.w = w self.restitution = restitution self.friction = friction def apply_force(self, force, pos): self.force += force self.torque += np.cross(pos - self.position, force) def step(self, dt): self.v = self.v + self.force / self.mass * dt self.position = self.position + self.v * dt self.w = self.w + self.torque / self.inertia * dt self.rotate = self.rotate + self.w * dt self.force = np.zeros(2) self.torque = 0 注意这里并未存储线加速度和角加速度，而是存储了力和力矩。\n",
+  "wordCount" : "615",
+  "inLanguage": "zh",
+  "datePublished": "2023-02-08T10:52:13+08:00",
+  "dateModified": "2023-02-08T10:52:13+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/physics-engine-basics-1/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      2D 物理引擎基础之物理属性
+    </h1>
+    <div class="post-meta"><span title='2023-02-08 10:52:13 +0800 CST'>二月 8, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;615 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/physics-engine-basics-1.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%89%8d%e8%a8%80" aria-label="一、前言">一、前言</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e4%b8%ad%e7%9a%84%e7%89%a9%e4%bd%93" aria-label="二、物理引擎中的物体">二、物理引擎中的物体</a></li>
+                <li>
+                    <a href="#%e4%b8%89%e8%bf%90%e5%8a%a8%e5%ad%a6%e5%b1%9e%e6%80%a7" aria-label="三、运动学属性">三、运动学属性</a><ul>
+                        
+                <li>
+                    <a href="#%e5%bd%a2%e7%8a%b6%e7%9a%84%e8%a1%a8%e7%a4%ba" aria-label="形状的表示">形状的表示</a></li>
+                <li>
+                    <a href="#%e4%bd%8d%e7%bd%ae%e5%92%8c%e8%bf%90%e5%8a%a8" aria-label="位置和运动">位置和运动</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%9b%9b%e5%8a%a8%e5%8a%9b%e5%ad%a6%e5%b1%9e%e6%80%a7" aria-label="四、动力学属性">四、动力学属性</a><ul>
+                        
+                <li>
+                    <a href="#%e5%af%86%e5%ba%a6%e8%b4%a8%e9%87%8f%e5%92%8c%e8%bd%ac%e5%8a%a8%e6%83%af%e9%87%8f" aria-label="密度、质量和转动惯量">密度、质量和转动惯量</a></li>
+                <li>
+                    <a href="#%e6%81%a2%e5%a4%8d%e7%b3%bb%e6%95%b0%e4%b8%8e%e6%91%a9%e6%93%a6%e7%b3%bb%e6%95%b0" aria-label="恢复系数与摩擦系数">恢复系数与摩擦系数</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%ba%94%e6%80%bb%e7%bb%93" aria-label="五、总结">五、总结</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一前言">一、前言<a hidden class="anchor" aria-hidden="true" href="#一前言">#</a></h2>
+<p>本系列是我学习物理引擎相关知识的总结。虽说最初的目标是自己实现一个完整的物理引擎，但是随着学习的深入我认识到，为了让引擎更好地模拟实际，所需要的各种数学原理和处理技巧远远超出了“涉猎”的程度。因此我决定就此止步，但是还是留下了自己的实践成果和经验总结，就在这系列文章中。</p>
+<p>本文是“2D物理引擎基础”的第一篇，将介绍物理引擎中物体所需的物理属性</p>
+<h2 id="二物理引擎中的物体">二、物理引擎中的物体<a hidden class="anchor" aria-hidden="true" href="#二物理引擎中的物体">#</a></h2>
+<p>在物理引擎中，模拟的物体对象被假定为刚体。刚体是如此致密坚硬的一种物体，以至于任何碰撞都无法改变其形状。同时物理引擎还常常假定对象的密度均匀，这样对象的质心将只由其几何形状决定。通过这样的假设，物理引擎将能够通过算法优化高效地进行计算模拟：</p>
+<ul>
+<li>刚体说明物体不会改变形状，这样当物体受到力的作用时，力的作用效果就不会造成改变物体运动之外的其他影响，如质心改变。</li>
+<li>密度均匀使得质心的求解更为方便，将质心位置和偏转角度作为物体属性，就可以完全表示物体上各点的位置信息</li>
+</ul>
+<p>接下来所说的物理属性也是在如上约定的基础上的。</p>
+<h2 id="三运动学属性">三、运动学属性<a hidden class="anchor" aria-hidden="true" href="#三运动学属性">#</a></h2>
+<h3 id="形状的表示">形状的表示<a hidden class="anchor" aria-hidden="true" href="#形状的表示">#</a></h3>
+<p>物理引擎中的形状用描述物体边界的属性表示。不同形状的物体通过不同的几何参数进行表示，如矩形可用长宽表示，圆可用半径长度表示，这些较为简单。更一般地我们考虑多边形，多边形可用顶点坐标表示，但是我们希望形状是位置无关的，那么多边形的顶点坐标也不能在坐标轴上随意选取。虽然 $(0, 0), (1, 0), (1, 1), (0, 1)$ 和 $(1, 1), (2, 1), (2, 2), (1, 2)$ 表示相同形状的多边形，但我们需要选择与位置无关的那一个。我们可以选择使多边形的质心在坐标原点的顶点集合，因为我们后续需要通过质心确定运动学属性。对于均质物体来说，这也就是多边形的几何中心在原点。</p>
+<p>我们不能人为地在设置形状时就限制顶点围成的形状中心必须在原点，这对于复杂的形状来说十分困难。我们可以根据顶点集合先确定几何中心位置，再对每一顶点减去中心坐标以将物体平移到集合中心为原点的位置。</p>
+<p>对于多边形，计算几何中心的公式为
+</p>
+$$
+    A = \frac{1}{2} \sum_{i=0}^{N-1}(x_iy_{i+1} - x_{i+1}y_i)
+$$
+$$
+    c_x = \frac{1}{6A} \sum_{i=0}^{N-1}(x_i + x_{i+1})(x_iy_{i+1} - x_{i+1}y_i)
+$$
+$$
+    c_y = \frac{1}{6A} \sum_{i=0}^{N-1}(y_i + y_{i+1})(x_iy_{i+1} - x_{i+1}y_i)
+$$
+<p>
+其中 $A$ 为多边形面积， $(c_x, c_y)$ 即几何中心位置。需要注意的是，在这个公式中，顶点序列为逆时针，且第一个和最后一个应是同一个坐标，以暗示这是一个闭合图形并且方便公式表示。$N$ 是不重合的顶点个数/边数。</p>
+<p>如下是求集合中心的 python 代码</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_geometric_center</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">area</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="n">c_x</span> <span class="o">=</span> <span class="n">c_y</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="n">n</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># edge num</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">cross</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="n">area</span> <span class="o">+=</span> <span class="n">cross</span>
+</span></span><span class="line"><span class="cl">        <span class="n">c_x</span> <span class="o">+=</span> <span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">points</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">cross</span>
+</span></span><span class="line"><span class="cl">        <span class="n">c_y</span> <span class="o">+=</span> <span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">points</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">cross</span>
+</span></span><span class="line"><span class="cl">    <span class="n">area</span> <span class="o">=</span> <span class="n">area</span> <span class="o">/</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">    <span class="n">c_x</span> <span class="o">=</span> <span class="n">c_x</span> <span class="o">/</span> <span class="p">(</span><span class="mi">6</span> <span class="o">*</span> <span class="n">area</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">c_y</span> <span class="o">=</span> <span class="n">c_y</span> <span class="o">/</span> <span class="p">(</span><span class="mi">6</span> <span class="o">*</span> <span class="n">area</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c_x</span><span class="p">,</span> <span class="n">c_y</span><span class="p">])</span>
+</span></span></code></pre></div><p>这样得到无视位置的多边形顶点集合</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="n">mass_point</span> <span class="o">=</span> <span class="n">get_geometric_center</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">points</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">mass_point</span>
+</span></span></code></pre></div><h3 id="位置和运动">位置和运动<a hidden class="anchor" aria-hidden="true" href="#位置和运动">#</a></h3>
+<p>我们需要属性来表示物体的位置，对于二维空间而言，就需要二维的坐标表示位置；另外，我们还需要表示物体旋转的角度，在二维空间只需要一个标量即可。</p>
+<p>对于物体的运动状态，包括速度、加速度、角速度和角加速度。前两者为二维向量，后两者为标量（虽说本质上它们是垂直于二维平面的第三维度方向的向量）。</p>
+<p>加速度和角加速度是速度的改变方式，也就是力/力矩的作用的表现。它们随力/力矩的产生而产生，随力/力矩的消失而消失，因此并不是物体的本质属性。对物理引擎而言，我们可以在一帧里添加一定的力，由这力产生加速度与角加速度。</p>
+<p>速度和角速度是对物体位置状态改变的度量。在物理引擎的刚体模拟中，我们特指速度为质心的速度，角速度为围绕质心旋转的角速度。</p>
+<p>物理引擎以离散的时间间隔更新物体的位置和运动，如下所示
+</p>
+$$
+    \vec{v} = \vec{v}_0 + \vec{a}\Delta t
+$$
+$$
+    \vec{p} = \vec{p}_0 +\vec{v} \Delta t
+$$
+$$
+    w = w_0 + \beta \Delta t
+$$
+$$
+    \theta = \theta_0 + w \Delta t 
+$$
+<p>当然，这种更新是存在误差的，我们以加速度-速度-位置为例，根据
+</p>
+$$
+    v = v_0 + \int_0^{\Delta t} a \mathrm{d} t
+$$
+$$
+    p = p_0 + \int_0^{\Delta t} v(t) \mathrm{d} t
+$$
+<p>可得
+</p>
+$$
+    p = p_0 + v_0\Delta{t} + \frac{1}{2} a \Delta{t}^2
+$$
+<p>可是将物理引擎的更新方式中的前两个式子可得
+</p>
+$$
+    p = p_0 + v_0\Delta{t} + a \Delta{t}^2
+$$
+<p>两者之间存在着误差，这是由物理引擎的离散性决定的，看似也可以直接用带有二分之一的式子来更新位置，但是这也是在假定在这段时间内加速度不变的情况下得到的，在由万有引力作用的情境下，这样的结果同样不够精确。</p>
+<p>但是物理引擎的目的本就不是十分精确的模拟，因此这样的误差可以接受。</p>
+<h2 id="四动力学属性">四、动力学属性<a hidden class="anchor" aria-hidden="true" href="#四动力学属性">#</a></h2>
+<h3 id="密度质量和转动惯量">密度、质量和转动惯量<a hidden class="anchor" aria-hidden="true" href="#密度质量和转动惯量">#</a></h3>
+<p>物体的质量由物体的形状和各点的密度决定，而物体围绕质心的转动惯量又由物体的形状和质量决定。又因为物理引擎中假设物体为刚体，物体形状确定不变，因此我们只需要确定密度就可以计算出质量和转动惯量了。</p>
+<p>当然，对于二维，我们这里说的密度是面密度（$\sigma$）。有公式
+</p>
+$$
+    M = \int_S \sigma \mathrm{d} s
+$$
+<p>对于物理引擎假设的均质物体
+</p>
+$$
+    M = \sigma S
+$$
+<p>特别的，对于多边形我们有面积公式，在求几何中心时也有提及。
+</p>
+$$
+    A = \frac{1}{2} \sum_{i=0}^{N-1}(x_iy_{i+1} - x_{i+1}y_i)
+$$
+<p>对于转动惯量，情况就有些复杂了，不同的形状有不同的计算公式。一般的形状如圆形的公式较为简单，但对于形状不定的多边形而言就比较难以确定了。但是依旧有公式，这一点似乎网上很少有文章提及
+</p>
+$$
+    I = M \frac{\sum_{n=0}^{N-1} (P_{n+1} \times P_n) ((P_n · P_n) + (P_n ·P_{n+1}) + (P_{n+1} · P_{n+1}))}{6 \sum_{n=1}^N (P_{n+1} \times P_n)}
+$$
+<p>其中 $P_i$ 为各顶点， $\times$ 为向量叉积，$\cdot$ 为向量点积，$M$ 为质量，$N$ 依旧为不相同的顶点数/边数。</p>
+<p>如下有代码</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_moments_of_inertia</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">mass</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span> <span class="o">=</span> <span class="n">points</span>
+</span></span><span class="line"><span class="cl">    <span class="n">n</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sum1</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sum2</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">cross</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sum1</span> <span class="o">+=</span> <span class="n">cross</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sum2</span> <span class="o">+=</span> <span class="n">cross</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">mass</span> <span class="o">*</span> <span class="p">(</span><span class="n">sum1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">6</span> <span class="o">*</span> <span class="n">sum2</span><span class="p">))</span>
+</span></span></code></pre></div><p>这样，密度、质量和转动惯量实际只需要一个量来表示。</p>
+<h3 id="恢复系数与摩擦系数">恢复系数与摩擦系数<a hidden class="anchor" aria-hidden="true" href="#恢复系数与摩擦系数">#</a></h3>
+<p>我们考虑一个简单的问题，两个球体质量分别为 $m_1, m_2$，碰撞前速度为 $v_1, v_2$，碰撞后速度为 $u_1, U_2$。那么我们由动量守恒和能量守恒得
+</p>
+$$
+    m_1u_1 + m_2u_2 = m_1v_1 + m_2v_2
+$$
+$$
+    \frac{1}{2}m_1v_1^2 + \frac{1}{2}m_2v_2^2 =  (\frac{1}{2}m_1v_1^2 + \frac{1}{2}m_2v_2^2)
+$$
+<p>联立可得
+</p>
+$$
+    u_1 = \frac{(m_1 - m_2)v_1 + 2m_2v_2}{m_1 + m_2}
+$$
+$$
+    u_2 = \frac{(m_2 - m_1)v_2 + 2m_1v_1}{m_1 + m_2}
+$$
+<p>这是完全弹性碰撞的情况，我们还需要考虑存在能量损失的情况。我们引入恢复系数（coefficient of restitution） $C_r = \frac{u_1 - u_2}{v_1 - v_2}$。这代表了相对速度在碰撞后的损失率。此时有
+</p>
+$$
+    u_1 = \frac{m_1v_1 + m_2v_2 + C_r m_2 (v_2 - v_1)}{m_1 + m_2}
+$$
+$$
+    u_2 = \frac{m_1v_1 + m_2v_2 + C_r m_1 (v_1 - v_2)}{m_1 + m_2}
+$$
+<p>当 $C_r = 1$ 时，退化为完全弹性碰撞时的式子，当 $C_r = 0$ 时，碰撞后速度相同，为完全非弹性碰撞的情况。$0 < C_r < 1$ 时则为非完全弹性碰撞。</p>
+<p>恢复系数反映了碰撞时物体弹力所产生的物体运动状态改变的效果，它与物体材质有关。当两不同材质物体发生碰撞时，我们取其恢复系数为两者中的较小值</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="n">cr</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">body_a</span><span class="o">.</span><span class="n">restitution</span><span class="p">,</span> <span class="n">body_b</span><span class="o">.</span><span class="n">restitution</span><span class="p">)</span>
+</span></span></code></pre></div><blockquote>
+<p>在 box2d 引擎中还设置了 <code>restitutionThreshold</code>，只有在该值速度之上才会应用恢复系数进行反弹，当然这应该只是为了保持物体状态稳定所做的限制，并不具有实际物理意义</p>
+</blockquote>
+<p>当两个物体接触时，在切向上会有摩擦力的作用。在物理引擎中，可以忽略动摩擦系数和静摩擦系数间的微小差别，用单一的摩擦系数表示。</p>
+<p>摩擦系数与接触面的属性有关，因此两个不同材质的接触面可能会有所不同。为了简化程序，物理引擎可能会为每个物体设置单独的摩擦系数，并通过计算得出接触面的实际摩擦系数。如在 box2d 引擎中，就使用了将两个摩擦力相乘再开方的方式得到摩擦系数。
+</p>
+$$
+    friction = \sqrt{friction1 * friction2}
+$$
+<h2 id="五总结">五、总结<a hidden class="anchor" aria-hidden="true" href="#五总结">#</a></h2>
+<p>本文章介绍了 2d 物理引擎中的对象应该具有的基本属性，最后总结一下这些属性。</p>
+<ul>
+<li>形状：物体的几何形状，不同形状表示方式不同，其中多边形用顶点序列表示</li>
+<li>位置：（质点的）空间位置和（相对质点的）旋转角度</li>
+<li>速度：（质点的）线速度和（相对质点的）角速度</li>
+<li>加速度：线加速度和角加速度，由力所产生</li>
+<li>密度：物体的面密度</li>
+<li>质量：质量由密度和形状求出</li>
+<li>转动惯量：转动惯量由质量和形状求出</li>
+<li>恢复系数：表示物体的弹性程度</li>
+<li>摩擦系数：表示物体的粗糙程度</li>
+</ul>
+<p>由此我们可以定义物理引擎的主体类 Body。为了方便，这里只使用多边形作为形状。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Body</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">force</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">torque</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                 <span class="n">rotate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">restitution</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">friction</span><span class="o">=</span><span class="mf">0.66</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mass_point</span> <span class="o">=</span> <span class="n">get_geometric_center</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">points</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">mass_point</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">position</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">density</span> <span class="o">=</span> <span class="n">density</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="n">density</span> <span class="o">*</span> <span class="n">get_area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">inv_mass</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">inertia</span> <span class="o">=</span> <span class="n">get_moments_of_inertia</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">inv_inertia</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">inertia</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">rotate</span> <span class="o">=</span> <span class="n">rotate</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">v</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">w</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">restitution</span> <span class="o">=</span> <span class="n">restitution</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">friction</span> <span class="o">=</span> <span class="n">friction</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">apply_force</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">force</span> <span class="o">+=</span> <span class="n">force</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">torque</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">force</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">force</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">*</span> <span class="n">dt</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">*</span> <span class="n">dt</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">torque</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">inertia</span> <span class="o">*</span> <span class="n">dt</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">rotate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rotate</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">*</span> <span class="n">dt</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">force</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">torque</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span></code></pre></div><blockquote>
+<p>注意这里并未存储线加速度和角加速度，而是存储了力和力矩。</p>
+</blockquote>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/%E6%95%B0%E5%AD%A6/">数学</a></li>
+      <li><a href="https://wokron.github.io/tags/python/">Python</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/physics-engine-basics-2/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>2D 物理引擎基础之碰撞检测</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/pytorch-rnn/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>用 Pytorch 实现简单循环神经网络</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 2D 物理引擎基础之物理属性 on x"
+            href="https://x.com/intent/tweet/?text=2D%20%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e5%9f%ba%e7%a1%80%e4%b9%8b%e7%89%a9%e7%90%86%e5%b1%9e%e6%80%a7&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f&amp;hashtags=%e6%95%b0%e5%ad%a6%2cPython">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 2D 物理引擎基础之物理属性 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f&amp;title=2D%20%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e5%9f%ba%e7%a1%80%e4%b9%8b%e7%89%a9%e7%90%86%e5%b1%9e%e6%80%a7&amp;summary=2D%20%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e5%9f%ba%e7%a1%80%e4%b9%8b%e7%89%a9%e7%90%86%e5%b1%9e%e6%80%a7&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 2D 物理引擎基础之物理属性 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f&title=2D%20%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e5%9f%ba%e7%a1%80%e4%b9%8b%e7%89%a9%e7%90%86%e5%b1%9e%e6%80%a7">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 2D 物理引擎基础之物理属性 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 2D 物理引擎基础之物理属性 on whatsapp"
+            href="https://api.whatsapp.com/send?text=2D%20%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e5%9f%ba%e7%a1%80%e4%b9%8b%e7%89%a9%e7%90%86%e5%b1%9e%e6%80%a7%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 2D 物理引擎基础之物理属性 on telegram"
+            href="https://telegram.me/share/url?text=2D%20%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e5%9f%ba%e7%a1%80%e4%b9%8b%e7%89%a9%e7%90%86%e5%b1%9e%e6%80%a7&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 2D 物理引擎基础之物理属性 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=2D%20%e7%89%a9%e7%90%86%e5%bc%95%e6%93%8e%e5%9f%ba%e7%a1%80%e4%b9%8b%e7%89%a9%e7%90%86%e5%b1%9e%e6%80%a7&u=https%3a%2f%2fwokron.github.io%2fposts%2fphysics-engine-basics-1%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

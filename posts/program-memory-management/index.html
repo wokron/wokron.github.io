@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Linux 进程的内存管理 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Linux, C">
+<meta name="description" content="虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。
+堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。
+在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。
+在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。
+下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。
+#include &lt;stdio.h&gt; #include &lt;unistd.h&gt; extern char end; int main() { printf(&#34;Address of end symbol: %p\n&#34;, (void *)&amp;end); printf(&#34;Current program break: %p\n&#34;, sbrk(0)); printf(&#34;New program break: %p\n&#34;, sbrk(1024) &#43; 1024); printf(&#34;After deallocation: %p\n&#34;, sbrk(-512) - 512); } 运行结果如下">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/program-memory-management/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/program-memory-management/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Linux 进程的内存管理" />
+<meta property="og:description" content="虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。
+堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。
+在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。
+在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。
+下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。
+#include &lt;stdio.h&gt; #include &lt;unistd.h&gt; extern char end; int main() { printf(&#34;Address of end symbol: %p\n&#34;, (void *)&amp;end); printf(&#34;Current program break: %p\n&#34;, sbrk(0)); printf(&#34;New program break: %p\n&#34;, sbrk(1024) &#43; 1024); printf(&#34;After deallocation: %p\n&#34;, sbrk(-512) - 512); } 运行结果如下" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/program-memory-management/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-05-17T09:33:11+08:00" />
+<meta property="article:modified_time" content="2025-05-17T09:33:11+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Linux 进程的内存管理"/>
+<meta name="twitter:description" content="虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。
+堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。
+在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。
+在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。
+下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。
+#include &lt;stdio.h&gt; #include &lt;unistd.h&gt; extern char end; int main() { printf(&#34;Address of end symbol: %p\n&#34;, (void *)&amp;end); printf(&#34;Current program break: %p\n&#34;, sbrk(0)); printf(&#34;New program break: %p\n&#34;, sbrk(1024) &#43; 1024); printf(&#34;After deallocation: %p\n&#34;, sbrk(-512) - 512); } 运行结果如下"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Linux 进程的内存管理",
+      "item": "https://wokron.github.io/posts/program-memory-management/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Linux 进程的内存管理",
+  "name": "Linux 进程的内存管理",
+  "description": "虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。\n堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。\n在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。\n在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。\n下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。\n#include \u0026lt;stdio.h\u0026gt; #include \u0026lt;unistd.h\u0026gt; extern char end; int main() { printf(\u0026#34;Address of end symbol: %p\\n\u0026#34;, (void *)\u0026amp;end); printf(\u0026#34;Current program break: %p\\n\u0026#34;, sbrk(0)); printf(\u0026#34;New program break: %p\\n\u0026#34;, sbrk(1024) + 1024); printf(\u0026#34;After deallocation: %p\\n\u0026#34;, sbrk(-512) - 512); } 运行结果如下",
+  "keywords": [
+    "Linux", "C"
+  ],
+  "articleBody": "虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。\n堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。\n在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。\n在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。\n下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。\n#include #include extern char end; int main() { printf(\"Address of end symbol: %p\\n\", (void *)\u0026end); printf(\"Current program break: %p\\n\", sbrk(0)); printf(\"New program break: %p\\n\", sbrk(1024) + 1024); printf(\"After deallocation: %p\\n\", sbrk(-512) - 512); } 运行结果如下\nAddress of end symbol: 0x55b76abe2040 Current program break: 0x55b77f1aa000 New program break: 0x55b77f1aa400 After deallocation: 0x55b77f1aa200 可见有 end \u003c= program break。此处两者不同的原因是在 main() 之前 glibc 已经使用了堆内存。\n另外，虽然 program break 的地址不一定按页对齐，但是堆空间依然是按页分配的（当然了）。这意味着在堆顶之外进行访存可能并不会造成 SIGSEGV。这一点容易造成隐性 bug。\n如下程序将 program break 设置为按页对齐再加 1 字节的位置。这时这一页的内存都可以被访问。只在超过一页范围后才会触发 SIGSEGV。\n#include #include int main() { const size_t PAGE_SIZE = sysconf(_SC_PAGESIZE); void *origin_ptr = sbrk(0); size_t origin_ptr_size = (size_t)origin_ptr; size_t ptr_size_up_aligned = (origin_ptr_size + PAGE_SIZE - 1) \u0026 ~(PAGE_SIZE - 1); void *ptr_up_aligned = (void *)ptr_size_up_aligned; // Allocate 1 byte more brk(ptr_up_aligned + 1); char *ptr = (char *)ptr_up_aligned; for (int i = 0; i \u003c PAGE_SIZE; i++) { ptr[i] = 1; } write(1, \"ok\\n\", 3); ptr[PAGE_SIZE] = 2; write(1, \"not ok\\n\", 9); } 运行结果如下\nok fish: Job 1, './a.out' terminated by signal SIGSEGV (Address boundary error) 还需注意 brk 所申请的堆空间并未全部映射到物理内存（也是当然），物理内存的分配只发生在实际访存时。下面代码申请 total 页堆内存，并访问其中 access 页。我们运行程序，通过 perf 统计 page-fault 次数。\n#include #include #include int main(int argc, char *argv[]) { if (argc \u003c 3) { fprintf(stderr, \"Usage: %s \\n\", argv[0]); exit(1); } int total = atoi(argv[1]); int access = atoi(argv[2]); if (access \u003e total) { fprintf(stderr, \"Access exceeds allocated memory\\n\"); exit(1); } const size_t PAGE_SIZE = sysconf(_SC_PAGESIZE); char *ptr = sbrk(total * PAGE_SIZE); for (int i = 0; i \u003c access; i++) { ptr[i * PAGE_SIZE] = 1; } return 0; } 结果如下，可以看到 page-faults 随着访存数量线性增长。这说明 brk 不分配物理内存，而只是在页表中将对应项标为可用。\n$ sudo perf stat -e 'page-faults' -- ./test_page_fault 10000 0 Performance counter stats for './test_page_fault 10000 0': 54 page-faults ... $ sudo perf stat -e 'page-faults' -- ./test_page_fault 10000 10 Performance counter stats for './test_page_fault 10000 10': 63 page-faults ... $ sudo perf stat -e 'page-faults' -- ./test_page_fault 10000 100 Performance counter stats for './test_page_fault 10000 100': 154 page-faults ... $ sudo perf stat -e 'page-faults' -- ./test_page_fault 10000 1000 Performance counter stats for './test_page_fault 10000 1000': 1,054 page-faults ... $ sudo perf stat -e 'page-faults' -- ./test_page_fault 10000 10000 Performance counter stats for './test_page_fault 10000 10000': 10,054 page-faults ... malloc 内存管理 如果只是需要申请堆内存，那么 sbrk() 和 malloc() 没有什么区别。真正的区别在于 free() 函数上。malloc 的机制实现了内存的回收重用，减缓了内存使用量的增长、避免了内存泄露，同时减少了 brk 系统调用的次数。\n考虑 malloc 的实现是一个有意思的事。因为 malloc 的作用是管理动态增长的堆内存，为此需要维护一套动态增长的数据结构，这些数据结构又需要堆内存本身来存储。所以 malloc 不仅需要管理用户的内存申请，还需要管理自身的内存申请。\nglibc 的实现会在用户数据之前存储内存块数据。这样在调用 free() 函数时就可以得知要释放的内存块大小。\nchunk-\u003e +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Size of previous chunk, if unallocated (P clear) | +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Size of chunk, in bytes |A|M|P| mem-\u003e +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | User data starts here... . . . . (malloc_usable_size() bytes) . . | nextchunk-\u003e +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | (size of chunk, but used for application data) | +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Size of next chunk, in bytes |A|0|1| +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 对于空闲的内存块，则会将原本用于存储用户数据的部分用来维护空闲内存块链表。这样当用户调用 malloc() 请求分配内存时，便可以通过空闲链表选择适当的内存块进行分配。\nchunk-\u003e +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Size of previous chunk, if unallocated (P clear) | +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ `head:' | Size of chunk, in bytes |A|0|P| mem-\u003e +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Forward pointer to next chunk in list | +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Back pointer to previous chunk in list | +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Unused space (may be 0 bytes long) . . . . | nextchunk-\u003e +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ `foot:' | Size of chunk, in bytes | +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | Size of next chunk, in bytes |A|0|0| +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 上述 ascii 图源自 glibc/malloc/malloc.c。\n通过在相同数据结构上同时维护用户数据和 malloc 数据，malloc() 实现了灵活的堆内存分配。不过如果用户程序未能合理使用内存，造成越界访问的话，也很容易破坏 malloc 的数据结构，使得程序出现漏洞或直接崩溃。\n下面的程序尝试修改 malloc_chunk 中数据\n#include struct malloc_chunk { size_t mchunk_prev_size; /* Size of previous chunk (if free). */ size_t mchunk_size; /* Size in bytes, including overhead. */ struct malloc_chunk *fd; /* double links -- used only if free. */ struct malloc_chunk *bk; /* Only used for large blocks: pointer to next larger size. */ struct malloc_chunk *fd_nextsize; /* double links -- used only if free. */ struct malloc_chunk *bk_nextsize; }; struct malloc_chunk *container_of(void *p) { size_t off = (size_t)(\u0026((struct malloc_chunk *)NULL)-\u003efd); return (struct malloc_chunk *)(p - off); } int main() { void *ptr = malloc(32); struct malloc_chunk *chunk = container_of(ptr); chunk-\u003emchunk_size = 1; free(ptr); return 0; } struct malloc_chunk 源自 glibc/malloc/malloc.c。\n运行结果如下。free() 函数中调用 abort() 终止了程序运行。\nfree(): invalid pointer fish: Job 1, './a.out' terminated by signal SIGABRT (Abort) 如果修改空闲链表中的数据，同样会导致程序崩溃。下面的程序在调用 free() 之后还对指针对应数据进行了修改。这一行为覆盖了空闲链表中的前后指针数据。\n#include #include int main() { void *a = malloc(32); void *b = malloc(32); free(a); free(b); memset(b, 1, 32); b = malloc(32); a = malloc(32); return 0; } 运行结果如下。再次调用 malloc() 后，指针 b 所对应的 malloc_chunk 项中的指针指向了无效的地址，因此程序崩溃。\nmalloc(): unaligned tcache chunk detected fish: Job 1, './a.out' terminated by signal SIGABRT (Abort) 一个好习惯是在调用 free() 之后将指针置为空。这样程序运行到 memset() 时就会出错，而不是 a = malloc(32) 处。\n栈上内存分配 通常来说，栈的大小在编译期确定。但是这一点也有例外。使用 alloca() 函数可以在栈上分配动态大小的空间。\nLLVM 中的 alloca 指令或许与此有某种渊源。\n下面的程序给出了 alloca() 的使用例子。alloca() 在行为上实际可以等价于变长数组 T arr[N]。\n#include #include int main() { int n; scanf(\"%d\", \u0026n); int *arr = alloca(sizeof(int) * n); for (int i = 0; i \u003c n; i++) { scanf(\"%d\", \u0026arr[i]); } for (int i = n - 1; i \u003e= 0; i--) { printf(\"%d \", arr[i]); } printf(\"\\n\"); return 0; } alloca() 是通过编译器开孔实现的。其背后是 __builtin_alloca。我们通过一个例子查看其实现原理。\n// alloca_example.c #include void func(int m, int n) { for (int i = 0; i \u003c m; i++) { int *ptr = alloca(sizeof(int) * n); } } 使用 clang 编译，以 riscv64 为后端（我只看得懂这个……）。\n$ clang -S alloca_example.c --target=riscv64-linux-gnu 得到如下汇编码，注释标出了需要关注的内容。在栈帧内，当需要申请额外栈内存时，sp 寄存器向低地址移动，并将移动后地址作为 alloca() 的返回值。而 fp 寄存器则在此过程中保持不变，局部变量的寻址也基于 fp 寄存器进行。在函数返回时，同样根据 fp 寄存器的地址将 sp 寄存器重置为最开始的取值。\nfunc: addi sp, sp, -48 sd ra, 40(sp) sd s0, 32(sp) addi s0, sp, 48 # s0 即 fp，因为 fp 在栈帧内不会变化，所以后面使用 fp 寻址 sw a0, -20(s0) sw a1, -24(s0) li a0, 0 sw a0, -28(s0) j .LBB0_1 .LBB0_1: lw a0, -28(s0) lw a1, -20(s0) bge a0, a1, .LBB0_4 j .LBB0_2 .LBB0_2: lw a0, -24(s0) slli a0, a0, 2 addi a0, a0, 15 andi a1, a0, -16 mv a0, sp sub a0, a0, a1 # sp 向下移动，栈帧增长 mv sp, a0 sd a0, -40(s0) j .LBB0_3 .LBB0_3: lw a0, -28(s0) addiw a0, a0, 1 sw a0, -28(s0) j .LBB0_1 .LBB0_4: addi sp, s0, -48 # 根据 fp 寄存器移动 sp ld ra, 40(sp) ld s0, 32(sp) addi sp, sp, 48 ret 需要注意源代码中 alloca() 是位于循环中的，翻译为汇编码后 sp 寄存器的移动依然处于循环之中。这意味着在一次循环结束后并不会释放当次 alloca() 所申请的内存。只有当从函数返回时才会将所有 alloca() 申请的内存释放。\n从汇编中可以看出这一过程中 fp 寄存器的作用是十分关键的。因为这一寄存器记录了当前栈帧的底部位置。一般来说当编译器启用优化时（-Oxx）都会包含“消除帧指针”优化。不过当此处我们启用这一优化时，会发现使用 alloca() 的函数依然会保留 fp 寄存器。\n$ clang -S alloca_example.c --target=riscv64-linux-gnu -fomit-frame-pointer 虽然“消除帧指针”优化通常都会开启，但还是关闭比较好。\n虽然说了这么多，不过实际上 alloca() 的用处很小。因为每个线程的栈空间有限，通常为 4KB，这使得无法在栈上申请较大的空间。另外，就算扩充栈的大小，alloca() 也没有太大用处。因为其生命周期是和栈帧绑定的，当函数返回时，alloca() 也自动释放。如果想要延长这些数据的生命周期，只能通过复制的方式实现，而不能通过指针。\n内存映射区 我们都说内存分为堆和栈。那么 mmap() 申请的内存属于哪里呢？这部分内存肯定不属于栈，但其实也不属于堆。mmap() 所申请的内存属于堆和栈之外的内存映射区。\n内存映射区位于堆和栈的中间，高于内核常量 TASK_UNMAPPED_BASE 的位置。和 malloc() 不同，mmap() 内存区域的申请由内核实现。mmap() 同样按页申请内存。\n下面程序调用 mmap() 申请了一块内存。\n#include #include #include int main() { int size = 10; void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0); printf(\"ptr: %p\\n\", ptr); pause(); munmap(ptr, size); return 0; } 我们运行该程序，并通过 proc 查看该进程的内存布局\n$ clang run_mmap.c -o run_mmap $ ./run_mmap \u0026 ptr: 0x7f81ffca2000 $ cat /proc/$!/maps 该进程的内存布局如下。这里用 ===== 隔开了内存空间各部分。* 标记出了程序中调用 mmap() 所申请的内存所处位置。\n===== 55a9bde3a000-55a9bde3b000 r--p 00000000 103:05 8392660 /path/to/run_mmap 55a9bde3b000-55a9bde3c000 r-xp 00001000 103:05 8392660 /path/to/run_mmap ELF 55a9bde3c000-55a9bde3d000 r--p 00002000 103:05 8392660 /path/to/run_mmap 55a9bde3d000-55a9bde3e000 r--p 00002000 103:05 8392660 /path/to/run_mmap 55a9bde3e000-55a9bde3f000 rw-p 00003000 103:05 8392660 /path/to/run_mmap ===== Heap 55a9c4507000-55a9c4528000 rw-p 00000000 00:00 0 [heap] ===== 7f81ffa83000-7f81ffa86000 rw-p 00000000 00:00 0 7f81ffa86000-7f81ffaa8000 r--p 00000000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7f81ffaa8000-7f81ffc20000 r-xp 00022000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7f81ffc20000-7f81ffc78000 r--p 0019a000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7f81ffc78000-7f81ffc7c000 r--p 001f1000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7f81ffc7c000-7f81ffc7e000 rw-p 001f5000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 MMap 7f81ffc7e000-7f81ffc8b000 rw-p 00000000 00:00 0 * 7f81ffca2000-7f81ffca5000 rw-p 00000000 00:00 0 7f81ffca5000-7f81ffca6000 r--p 00000000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7f81ffca6000-7f81ffcce000 r-xp 00001000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7f81ffcce000-7f81ffcd8000 r--p 00029000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7f81ffcd8000-7f81ffcda000 r--p 00033000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7f81ffcda000-7f81ffcdc000 rw-p 00035000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 ===== Stack 7ffe63299000-7ffe632ba000 rw-p 00000000 00:00 0 [stack] ===== 7ffe6332c000-7ffe63330000 r--p 00000000 00:00 0 [vvar] 7ffe63330000-7ffe63332000 r-xp 00000000 00:00 0 [vdso] ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0 [vsyscall] ===== 由上表可知，虚拟内存空间地址由低到高依次为程序（ELF各段）、堆、内存映射和栈。调用 mmap() 所申请的内存空间在内存映射区内，这同时包括匿名映射和文件映射。另外我们还可以看到内存映射区内包含了两个共享库（libc.so.6 和 ld-linux-x86-64.so.2），这是因为动态链接库的加载（dlopen()）实际上是基于 mmap() 实现的。dlopen() 或读取共享库文件，并将其中各段映射到内存中对应位置，并赋予对应的读、写和执行权限。\nvvar、vdso 和 vsyscall 是为了加速某些系统调用而增加的内存段。\n非主线程的线程栈 当进程里只有一个线程时，只需要使用单一栈空间，这时栈空间已经在程序运行前预先分配了给定的大小。但是如果存在多个线程，就需要拥有多个线程栈。这些线程栈的位置与主线程的栈不同。非主线程的线程栈实际上位于内存映射区内。\n下面是一个简单的 pthread 多线程程序。\n#include #include void *thread_function(void *arg) { return NULL; } int main() { pthread_t thread; pthread_create(\u0026thread, NULL, thread_function, NULL); pthread_join(thread, NULL); return 0; } 我们使用 strace 追踪该程序运行过程中调用的系统调用。\n$ clang test_thread.c -o test_thread $ strace ./test_thread 得到的结果如下\nexecve(\"./test_thread\", [\"./test_thread\"], 0x7ffc659bbb00 /* 73 vars */) = 0 brk(NULL) = 0x55d5e4bb3000 ... mmap(NULL, 8392704, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7fb614801000 mprotect(0x7fb614802000, 8388608, PROT_READ|PROT_WRITE) = 0 ... 我们关注的是其中的 mmap 系统调用。该调用中传入的 flags 中包含 MAP_STACK。这说明申请的地址是作为程序栈使用的。紧接着 mmap 之后是一个 mprotect 调用，该调用将 mmap 所申请的一部分内存设置为可读写。这部分内存是栈实际使用的部分。\n我们从 /proc//maps 中也可找到这段内存映射，如下表中 * 所标记的地方。这说明对于非主线程，其线程栈由 mmap 申请，位于内存映射区内。\n55d5b2fd6000-55d5b2fd7000 r--p 00000000 103:05 8392953 /path/to/test_thread 55d5b2fd7000-55d5b2fd8000 r-xp 00001000 103:05 8392953 /path/to/test_thread 55d5b2fd8000-55d5b2fd9000 r--p 00002000 103:05 8392953 /path/to/test_thread 55d5b2fd9000-55d5b2fda000 r--p 00002000 103:05 8392953 /path/to/test_thread 55d5b2fda000-55d5b2fdb000 rw-p 00003000 103:05 8392953 /path/to/test_thread 55d5e4bb3000-55d5e4bd4000 rw-p 00000000 00:00 0 [heap] * 7fb614801000-7fb614802000 ---p 00000000 00:00 0 * 7fb614802000-7fb615005000 rw-p 00000000 00:00 0 7fb615005000-7fb615027000 r--p 00000000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7fb615027000-7fb61519f000 r-xp 00022000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7fb61519f000-7fb6151f7000 r--p 0019a000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7fb6151f7000-7fb6151fb000 r--p 001f1000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7fb6151fb000-7fb6151fd000 rw-p 001f5000 103:06 9063362 /usr/lib/x86_64-linux-gnu/libc.so.6 7fb6151fd000-7fb61520a000 rw-p 00000000 00:00 0 7fb615222000-7fb615224000 rw-p 00000000 00:00 0 7fb615224000-7fb615225000 r--p 00000000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fb615225000-7fb61524d000 r-xp 00001000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fb61524d000-7fb615257000 r--p 00029000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fb615257000-7fb615259000 r--p 00033000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fb615259000-7fb61525b000 rw-p 00035000 103:06 9063067 /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7ffc7f9b5000-7ffc7f9d6000 rw-p 00000000 00:00 0 [stack] 7ffc7f9d9000-7ffc7f9dd000 r--p 00000000 00:00 0 [vvar] 7ffc7f9dd000-7ffc7f9df000 r-xp 00000000 00:00 0 [vdso] ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0 [vsyscall] ",
+  "wordCount" : "1484",
+  "inLanguage": "zh",
+  "datePublished": "2025-05-17T09:33:11+08:00",
+  "dateModified": "2025-05-17T09:33:11+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/program-memory-management/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      Linux 进程的内存管理
+    </h1>
+    <div class="post-meta"><span title='2025-05-17 09:33:11 +0800 CST'>五月 17, 2025</span>&nbsp;·&nbsp;7 分钟&nbsp;·&nbsp;1484 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/program-memory-management.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e5%a0%86%e7%9a%84%e5%a2%9e%e9%95%bf" aria-label="堆的增长">堆的增长</a></li>
+                <li>
+                    <a href="#malloc-%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86" aria-label="malloc 内存管理">malloc 内存管理</a></li>
+                <li>
+                    <a href="#%e6%a0%88%e4%b8%8a%e5%86%85%e5%ad%98%e5%88%86%e9%85%8d" aria-label="栈上内存分配">栈上内存分配</a></li>
+                <li>
+                    <a href="#%e5%86%85%e5%ad%98%e6%98%a0%e5%b0%84%e5%8c%ba" aria-label="内存映射区">内存映射区</a></li>
+                <li>
+                    <a href="#%e9%9d%9e%e4%b8%bb%e7%ba%bf%e7%a8%8b%e7%9a%84%e7%ba%bf%e7%a8%8b%e6%a0%88" aria-label="非主线程的线程栈">非主线程的线程栈</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。</p>
+<h2 id="堆的增长">堆的增长<a hidden class="anchor" aria-hidden="true" href="#堆的增长">#</a></h2>
+<p>libc 中提供 <code>malloc</code> 函数申请堆上内存。底层由 <code>brk</code> 系统调用负责申请堆上内存。</p>
+<p>在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 <code>end</code>）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 <code>brk</code> 系统调用的作用便是将某一地址设置为堆顶。</p>
+<p>在 <code>brk</code> 系统调用之上，glibc 提供了两个不同的函数 <code>int brk(void *addr)</code> 和 <code>void *sbrk(intptr_t increment)</code>。前者直接设置 program break 地址，后者则根据 <code>increment</code> 取值调整 program break 位置。</p>
+<p>下面使用 <code>sbrk()</code> 函数进行内存分配。<code>sbrk()</code> 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 <code>brk(N)</code> 和 <code>malloc(N)</code> 的返回值都代表新分配的内存的起始地址。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="k">extern</span> <span class="kt">char</span> <span class="n">end</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Address of end symbol: %p</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">end</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Current program break: %p</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">sbrk</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;New program break:     %p</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">sbrk</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1024</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;After deallocation:    %p</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">sbrk</span><span class="p">(</span><span class="o">-</span><span class="mi">512</span><span class="p">)</span> <span class="o">-</span> <span class="mi">512</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行结果如下</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">Address of end symbol: 0x55b76abe2040
+</span></span></span><span class="line"><span class="cl"><span class="go">Current program break: 0x55b77f1aa000
+</span></span></span><span class="line"><span class="cl"><span class="go">New program break:     0x55b77f1aa400
+</span></span></span><span class="line"><span class="cl"><span class="go">After deallocation:    0x55b77f1aa200
+</span></span></span></code></pre></div><p>可见有 <code>end &lt;= program break</code>。此处两者不同的原因是在 <code>main()</code> 之前 glibc 已经使用了堆内存。</p>
+<p>另外，虽然 program break 的地址不一定按页对齐，但是堆空间依然是按页分配的（当然了）。这意味着在堆顶之外进行访存可能并不会造成 <code>SIGSEGV</code>。这一点容易造成隐性 bug。</p>
+<p>如下程序将 program break 设置为按页对齐再加 1 字节的位置。这时这一页的内存都可以被访问。只在超过一页范围后才会触发 <code>SIGSEGV</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">PAGE_SIZE</span> <span class="o">=</span> <span class="nf">sysconf</span><span class="p">(</span><span class="n">_SC_PAGESIZE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">origin_ptr</span> <span class="o">=</span> <span class="nf">sbrk</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">size_t</span> <span class="n">origin_ptr_size</span> <span class="o">=</span> <span class="p">(</span><span class="kt">size_t</span><span class="p">)</span><span class="n">origin_ptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">size_t</span> <span class="n">ptr_size_up_aligned</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">        <span class="p">(</span><span class="n">origin_ptr_size</span> <span class="o">+</span> <span class="n">PAGE_SIZE</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="p">(</span><span class="n">PAGE_SIZE</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">ptr_up_aligned</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">ptr_size_up_aligned</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Allocate 1 byte more
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">brk</span><span class="p">(</span><span class="n">ptr_up_aligned</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">ptr_up_aligned</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">PAGE_SIZE</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ptr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;ok</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">ptr</span><span class="p">[</span><span class="n">PAGE_SIZE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;not ok</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">9</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行结果如下</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">ok
+</span></span></span><span class="line"><span class="cl"><span class="go">fish: Job 1, &#39;./a.out&#39; terminated by signal SIGSEGV (Address boundary error)
+</span></span></span></code></pre></div><p>还需注意 <code>brk</code> 所申请的堆空间并未全部映射到物理内存（也是当然），物理内存的分配只发生在实际访存时。下面代码申请 <code>total</code> 页堆内存，并访问其中 <code>access</code> 页。我们运行程序，通过 <code>perf</code> 统计 page-fault 次数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;Usage: %s &lt;total&gt; &lt;access&gt;</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">total</span> <span class="o">=</span> <span class="nf">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">access</span> <span class="o">=</span> <span class="nf">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">access</span> <span class="o">&gt;</span> <span class="n">total</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;Access exceeds allocated memory</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">PAGE_SIZE</span> <span class="o">=</span> <span class="nf">sysconf</span><span class="p">(</span><span class="n">_SC_PAGESIZE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="nf">sbrk</span><span class="p">(</span><span class="n">total</span> <span class="o">*</span> <span class="n">PAGE_SIZE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">access</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ptr</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">PAGE_SIZE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>结果如下，可以看到 page-faults 随着访存数量线性增长。这说明 <code>brk</code> 不分配物理内存，而只是在页表中将对应项标为可用。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> sudo perf stat -e <span class="s1">&#39;page-faults&#39;</span> -- ./test_page_fault <span class="m">10000</span> <span class="m">0</span>
+</span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go"> Performance counter stats for &#39;./test_page_fault 10000 0&#39;:
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">                54      page-faults
+</span></span></span><span class="line"><span class="cl"><span class="go"> ...
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> sudo perf stat -e <span class="s1">&#39;page-faults&#39;</span> -- ./test_page_fault <span class="m">10000</span> <span class="m">10</span>
+</span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go"> Performance counter stats for &#39;./test_page_fault 10000 10&#39;:
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">                63      page-faults
+</span></span></span><span class="line"><span class="cl"><span class="go"> ...
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> sudo perf stat -e <span class="s1">&#39;page-faults&#39;</span> -- ./test_page_fault <span class="m">10000</span> <span class="m">100</span>
+</span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go"> Performance counter stats for &#39;./test_page_fault 10000 100&#39;:
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">               154      page-faults
+</span></span></span><span class="line"><span class="cl"><span class="go"> ...
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> sudo perf stat -e <span class="s1">&#39;page-faults&#39;</span> -- ./test_page_fault <span class="m">10000</span> <span class="m">1000</span>
+</span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go"> Performance counter stats for &#39;./test_page_fault 10000 1000&#39;:
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">             1,054      page-faults
+</span></span></span><span class="line"><span class="cl"><span class="go"> ...
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> sudo perf stat -e <span class="s1">&#39;page-faults&#39;</span> -- ./test_page_fault <span class="m">10000</span> <span class="m">10000</span>
+</span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go"> Performance counter stats for &#39;./test_page_fault 10000 10000&#39;:
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">            10,054      page-faults
+</span></span></span><span class="line"><span class="cl"><span class="go"> ...
+</span></span></span></code></pre></div><h2 id="malloc-内存管理"><code>malloc</code> 内存管理<a hidden class="anchor" aria-hidden="true" href="#malloc-内存管理">#</a></h2>
+<p>如果只是需要申请堆内存，那么 <code>sbrk()</code> 和 <code>malloc()</code> 没有什么区别。真正的区别在于 <code>free()</code> 函数上。<code>malloc</code> 的机制实现了内存的回收重用，减缓了内存使用量的增长、避免了内存泄露，同时减少了 <code>brk</code> 系统调用的次数。</p>
+<p>考虑 <code>malloc</code> 的实现是一个有意思的事。因为 <code>malloc</code> 的作用是管理动态增长的堆内存，为此需要维护一套动态增长的数据结构，这些数据结构又需要堆内存本身来存储。所以 <code>malloc</code> 不仅需要管理用户的内存申请，还需要管理自身的内存申请。</p>
+<p>glibc 的实现会在用户数据之前存储内存块数据。这样在调用 <code>free()</code> 函数时就可以得知要释放的内存块大小。</p>
+<pre tabindex="0"><code>     chunk-&gt; +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Size of previous chunk, if unallocated (P clear)  |
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Size of chunk, in bytes                     |A|M|P|
+       mem-&gt; +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             User data starts here...                          .
+             .                                                               .
+             .             (malloc_usable_size() bytes)                      .
+             .                                                               |
+ nextchunk-&gt; +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             (size of chunk, but used for application data)    |
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Size of next chunk, in bytes                |A|0|1|
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre><p>对于空闲的内存块，则会将原本用于存储用户数据的部分用来维护空闲内存块链表。这样当用户调用 <code>malloc()</code> 请求分配内存时，便可以通过空闲链表选择适当的内存块进行分配。</p>
+<pre tabindex="0"><code>     chunk-&gt; +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Size of previous chunk, if unallocated (P clear)  |
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     `head:&#39; |             Size of chunk, in bytes                     |A|0|P|
+       mem-&gt; +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Forward pointer to next chunk in list             |
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Back pointer to previous chunk in list            |
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Unused space (may be 0 bytes long)                .
+             .                                                               .
+             .                                                               |
+ nextchunk-&gt; +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     `foot:&#39; |             Size of chunk, in bytes                           |
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+             |             Size of next chunk, in bytes                |A|0|0|
+             +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre><blockquote>
+<p>上述 ascii 图源自 <a href="https://sourceware.org/git/?p=glibc.git;a=blob;f=malloc/malloc.c;h=fe56a631bce6f5271d94096d18c2bef2c5fd0050;hb=refs/heads/master">glibc/malloc/malloc.c</a>。</p>
+</blockquote>
+<p>通过在相同数据结构上同时维护用户数据和 <code>malloc</code> 数据，<code>malloc()</code> 实现了灵活的堆内存分配。不过如果用户程序未能合理使用内存，造成越界访问的话，也很容易破坏 <code>malloc</code> 的数据结构，使得程序出现漏洞或直接崩溃。</p>
+<p>下面的程序尝试修改 <code>malloc_chunk</code> 中数据</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">size_t</span> <span class="n">mchunk_prev_size</span><span class="p">;</span> <span class="cm">/* Size of previous chunk (if free).  */</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">size_t</span> <span class="n">mchunk_size</span><span class="p">;</span>      <span class="cm">/* Size in bytes, including overhead. */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="n">fd</span><span class="p">;</span> <span class="cm">/* double links -- used only if free. */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="n">bk</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/* Only used for large blocks: pointer to next larger size.  */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="n">fd_nextsize</span><span class="p">;</span> <span class="cm">/* double links -- used only if free. */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="n">bk_nextsize</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="nf">container_of</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">p</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">size_t</span> <span class="n">off</span> <span class="o">=</span> <span class="p">(</span><span class="kt">size_t</span><span class="p">)(</span><span class="o">&amp;</span><span class="p">((</span><span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="p">)</span><span class="nb">NULL</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">(</span><span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="p">)(</span><span class="n">p</span> <span class="o">-</span> <span class="n">off</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="mi">32</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">malloc_chunk</span> <span class="o">*</span><span class="n">chunk</span> <span class="o">=</span> <span class="nf">container_of</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">chunk</span><span class="o">-&gt;</span><span class="n">mchunk_size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nf">free</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p><code>struct malloc_chunk</code> 源自 <a href="https://sourceware.org/git/?p=glibc.git;a=blob;f=malloc/malloc.c;h=fe56a631bce6f5271d94096d18c2bef2c5fd0050;hb=refs/heads/master">glibc/malloc/malloc.c</a>。</p>
+</blockquote>
+<p>运行结果如下。<code>free()</code> 函数中调用 <code>abort()</code> 终止了程序运行。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">free(): invalid pointer
+</span></span></span><span class="line"><span class="cl"><span class="go">fish: Job 1, &#39;./a.out&#39; terminated by signal SIGABRT (Abort)
+</span></span></span></code></pre></div><p>如果修改空闲链表中的数据，同样会导致程序崩溃。下面的程序在调用 <code>free()</code> 之后还对指针对应数据进行了修改。这一行为覆盖了空闲链表中的前后指针数据。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">a</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="mi">32</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">b</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="mi">32</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">free</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">free</span><span class="p">(</span><span class="n">b</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">memset</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">32</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">b</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="mi">32</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">a</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="mi">32</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行结果如下。再次调用 <code>malloc()</code> 后，指针 <code>b</code> 所对应的 <code>malloc_chunk</code> 项中的指针指向了无效的地址，因此程序崩溃。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">malloc(): unaligned tcache chunk detected
+</span></span></span><span class="line"><span class="cl"><span class="go">fish: Job 1, &#39;./a.out&#39; terminated by signal SIGABRT (Abort)
+</span></span></span></code></pre></div><blockquote>
+<p>一个好习惯是在调用 <code>free()</code> 之后将指针置为空。这样程序运行到 <code>memset()</code> 时就会出错，而不是 <code>a = malloc(32)</code> 处。</p>
+</blockquote>
+<h2 id="栈上内存分配">栈上内存分配<a hidden class="anchor" aria-hidden="true" href="#栈上内存分配">#</a></h2>
+<p>通常来说，栈的大小在编译期确定。但是这一点也有例外。使用 <code>alloca()</code> 函数可以在栈上分配动态大小的空间。</p>
+<blockquote>
+<p>LLVM 中的 <code>alloca</code> 指令或许与此有某种渊源。</p>
+</blockquote>
+<p>下面的程序给出了 <code>alloca()</code> 的使用例子。<code>alloca()</code> 在行为上实际可以等价于变长数组 <code>T arr[N]</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;alloca.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">n</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">scanf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="nf">alloca</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">scanf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">--</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d &#34;</span><span class="p">,</span> <span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>alloca()</code> 是通过编译器开孔实现的。其背后是 <code>__builtin_alloca</code>。我们通过一个例子查看其实现原理。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// alloca_example.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;alloca.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span><span class="kt">int</span> <span class="n">m</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="nf">alloca</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>使用 clang 编译，以 riscv64 为后端（我只看得懂这个……）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> clang -S alloca_example.c --target<span class="o">=</span>riscv64-linux-gnu
+</span></span></code></pre></div><p>得到如下汇编码，注释标出了需要关注的内容。在栈帧内，当需要申请额外栈内存时，sp 寄存器向低地址移动，并将移动后地址作为 <code>alloca()</code> 的返回值。而 fp 寄存器则在此过程中保持不变，局部变量的寻址也基于 fp 寄存器进行。在函数返回时，同样根据 fp 寄存器的地址将 sp 寄存器重置为最开始的取值。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nl">func:</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">addi</span>    <span class="no">sp</span><span class="p">,</span> <span class="no">sp</span><span class="p">,</span> <span class="p">-</span><span class="mi">48</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sd</span>      <span class="no">ra</span><span class="p">,</span> <span class="mi">40</span><span class="p">(</span><span class="no">sp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sd</span>      <span class="no">s0</span><span class="p">,</span> <span class="mi">32</span><span class="p">(</span><span class="no">sp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">addi</span>    <span class="no">s0</span><span class="p">,</span> <span class="no">sp</span><span class="p">,</span> <span class="mi">48</span> <span class="c1"># s0 即 fp，因为 fp 在栈帧内不会变化，所以后面使用 fp 寻址
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nf">sw</span>      <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">20</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sw</span>      <span class="no">a1</span><span class="p">,</span> <span class="p">-</span><span class="mi">24</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">li</span>      <span class="no">a0</span><span class="p">,</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sw</span>      <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">28</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">j</span>       <span class="no">.LBB0_1</span>
+</span></span><span class="line"><span class="cl"><span class="nl">.LBB0_1:</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">lw</span>      <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">28</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">lw</span>      <span class="no">a1</span><span class="p">,</span> <span class="p">-</span><span class="mi">20</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">bge</span>     <span class="no">a0</span><span class="p">,</span> <span class="no">a1</span><span class="p">,</span> <span class="no">.LBB0_4</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">j</span>       <span class="no">.LBB0_2</span>
+</span></span><span class="line"><span class="cl"><span class="nl">.LBB0_2:</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">lw</span>      <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">24</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">slli</span>    <span class="no">a0</span><span class="p">,</span> <span class="no">a0</span><span class="p">,</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">addi</span>    <span class="no">a0</span><span class="p">,</span> <span class="no">a0</span><span class="p">,</span> <span class="mi">15</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">andi</span>    <span class="no">a1</span><span class="p">,</span> <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">16</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">mv</span>      <span class="no">a0</span><span class="p">,</span> <span class="no">sp</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sub</span>     <span class="no">a0</span><span class="p">,</span> <span class="no">a0</span><span class="p">,</span> <span class="no">a1</span> <span class="c1"># sp 向下移动，栈帧增长
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nf">mv</span>      <span class="no">sp</span><span class="p">,</span> <span class="no">a0</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sd</span>      <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">40</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">j</span>       <span class="no">.LBB0_3</span>
+</span></span><span class="line"><span class="cl"><span class="nl">.LBB0_3:</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">lw</span>      <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">28</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">addiw</span>   <span class="no">a0</span><span class="p">,</span> <span class="no">a0</span><span class="p">,</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sw</span>      <span class="no">a0</span><span class="p">,</span> <span class="p">-</span><span class="mi">28</span><span class="p">(</span><span class="no">s0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">j</span>       <span class="no">.LBB0_1</span>
+</span></span><span class="line"><span class="cl"><span class="nl">.LBB0_4:</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">addi</span>    <span class="no">sp</span><span class="p">,</span> <span class="no">s0</span><span class="p">,</span> <span class="p">-</span><span class="mi">48</span> <span class="c1"># 根据 fp 寄存器移动 sp
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nf">ld</span>      <span class="no">ra</span><span class="p">,</span> <span class="mi">40</span><span class="p">(</span><span class="no">sp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">ld</span>      <span class="no">s0</span><span class="p">,</span> <span class="mi">32</span><span class="p">(</span><span class="no">sp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">addi</span>    <span class="no">sp</span><span class="p">,</span> <span class="no">sp</span><span class="p">,</span> <span class="mi">48</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">ret</span>
+</span></span></code></pre></div><p>需要注意源代码中 <code>alloca()</code> 是位于循环中的，翻译为汇编码后 sp 寄存器的移动依然处于循环之中。这意味着在一次循环结束后并不会释放当次 <code>alloca()</code> 所申请的内存。只有当从函数返回时才会将所有 <code>alloca()</code> 申请的内存释放。</p>
+<p>从汇编中可以看出这一过程中 fp 寄存器的作用是十分关键的。因为这一寄存器记录了当前栈帧的底部位置。一般来说当编译器启用优化时（<code>-Oxx</code>）都会包含“消除帧指针”优化。不过当此处我们启用这一优化时，会发现使用 <code>alloca()</code>
+的函数依然会保留 fp 寄存器。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> clang -S alloca_example.c --target<span class="o">=</span>riscv64-linux-gnu -fomit-frame-pointer
+</span></span></code></pre></div><blockquote>
+<p>虽然“消除帧指针”优化通常都会开启，但还是关闭比较好。</p>
+</blockquote>
+<p>虽然说了这么多，不过实际上 <code>alloca()</code> 的用处很小。因为每个线程的栈空间有限，通常为 4KB，这使得无法在栈上申请较大的空间。另外，就算扩充栈的大小，<code>alloca()</code> 也没有太大用处。因为其生命周期是和栈帧绑定的，当函数返回时，<code>alloca()</code> 也自动释放。如果想要延长这些数据的生命周期，只能通过复制的方式实现，而不能通过指针。</p>
+<h2 id="内存映射区">内存映射区<a hidden class="anchor" aria-hidden="true" href="#内存映射区">#</a></h2>
+<p>我们都说内存分为堆和栈。那么 <code>mmap()</code> 申请的内存属于哪里呢？这部分内存肯定不属于栈，但其实也不属于堆。<code>mmap()</code> 所申请的内存属于堆和栈之外的内存映射区。</p>
+<p>内存映射区位于堆和栈的中间，高于内核常量 <code>TASK_UNMAPPED_BASE</code> 的位置。和 <code>malloc()</code> 不同，<code>mmap()</code> 内存区域的申请由内核实现。<code>mmap()</code> 同样按页申请内存。</p>
+<p>下面程序调用 <code>mmap()</code> 申请了一块内存。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/mman.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="nf">mmap</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">PROT_READ</span> <span class="o">|</span> <span class="n">PROT_WRITE</span><span class="p">,</span> <span class="n">MAP_PRIVATE</span> <span class="o">|</span> <span class="n">MAP_ANONYMOUS</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;ptr: %p</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">munmap</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span> <span class="n">size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们运行该程序，并通过 proc 查看该进程的内存布局</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> clang run_mmap.c -o run_mmap
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ./run_mmap <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="go">ptr: 0x7f81ffca2000
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> cat /proc/<span class="nv">$!</span>/maps
+</span></span></code></pre></div><p>该进程的内存布局如下。这里用 <code>=====</code> 隔开了内存空间各部分。<code>*</code> 标记出了程序中调用 <code>mmap()</code> 所申请的内存所处位置。</p>
+<pre tabindex="0"><code>=====
+      55a9bde3a000-55a9bde3b000 r--p 00000000 103:05 8392660                   /path/to/run_mmap
+      55a9bde3b000-55a9bde3c000 r-xp 00001000 103:05 8392660                   /path/to/run_mmap
+ELF   55a9bde3c000-55a9bde3d000 r--p 00002000 103:05 8392660                   /path/to/run_mmap
+      55a9bde3d000-55a9bde3e000 r--p 00002000 103:05 8392660                   /path/to/run_mmap
+      55a9bde3e000-55a9bde3f000 rw-p 00003000 103:05 8392660                   /path/to/run_mmap
+=====  
+Heap  55a9c4507000-55a9c4528000 rw-p 00000000 00:00 0                          [heap]
+=====
+      7f81ffa83000-7f81ffa86000 rw-p 00000000 00:00 0 
+      7f81ffa86000-7f81ffaa8000 r--p 00000000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+      7f81ffaa8000-7f81ffc20000 r-xp 00022000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+      7f81ffc20000-7f81ffc78000 r--p 0019a000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+      7f81ffc78000-7f81ffc7c000 r--p 001f1000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+      7f81ffc7c000-7f81ffc7e000 rw-p 001f5000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+MMap  7f81ffc7e000-7f81ffc8b000 rw-p 00000000 00:00 0 
+    * 7f81ffca2000-7f81ffca5000 rw-p 00000000 00:00 0 
+      7f81ffca5000-7f81ffca6000 r--p 00000000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      7f81ffca6000-7f81ffcce000 r-xp 00001000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      7f81ffcce000-7f81ffcd8000 r--p 00029000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      7f81ffcd8000-7f81ffcda000 r--p 00033000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      7f81ffcda000-7f81ffcdc000 rw-p 00035000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+=====
+Stack 7ffe63299000-7ffe632ba000 rw-p 00000000 00:00 0                          [stack]
+=====
+      7ffe6332c000-7ffe63330000 r--p 00000000 00:00 0                          [vvar]
+      7ffe63330000-7ffe63332000 r-xp 00000000 00:00 0                          [vdso]
+      ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+=====
+</code></pre><p>由上表可知，虚拟内存空间地址由低到高依次为<strong>程序（ELF各段）</strong>、<strong>堆</strong>、<strong>内存映射</strong>和<strong>栈</strong>。调用 <code>mmap()</code> 所申请的内存空间在内存映射区内，这同时包括匿名映射和文件映射。另外我们还可以看到内存映射区内包含了两个共享库（<code>libc.so.6</code> 和 <code>ld-linux-x86-64.so.2</code>），这是因为动态链接库的加载（<code>dlopen()</code>）实际上是基于 <code>mmap()</code> 实现的。<code>dlopen()</code> 或读取共享库文件，并将其中各段映射到内存中对应位置，并赋予对应的读、写和执行权限。</p>
+<blockquote>
+<p><code>vvar</code>、<code>vdso</code> 和 <code>vsyscall</code> 是为了加速某些系统调用而增加的内存段。</p>
+</blockquote>
+<h2 id="非主线程的线程栈">非主线程的线程栈<a hidden class="anchor" aria-hidden="true" href="#非主线程的线程栈">#</a></h2>
+<p>当进程里只有一个线程时，只需要使用单一栈空间，这时栈空间已经在程序运行前预先分配了给定的大小。但是如果存在多个线程，就需要拥有多个线程栈。这些线程栈的位置与主线程的栈不同。非主线程的线程栈实际上位于内存映射区内。</p>
+<p>下面是一个简单的 pthread 多线程程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;pthread.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="o">*</span><span class="nf">thread_function</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">arg</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pthread_t</span> <span class="kr">thread</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pthread_create</span><span class="p">(</span><span class="o">&amp;</span><span class="kr">thread</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">thread_function</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pthread_join</span><span class="p">(</span><span class="kr">thread</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们使用 <code>strace</code> 追踪该程序运行过程中调用的系统调用。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> clang test_thread.c -o test_thread
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> strace ./test_thread
+</span></span></code></pre></div><p>得到的结果如下</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">execve(&#34;./test_thread&#34;, [&#34;./test_thread&#34;], 0x7ffc659bbb00 /* 73 vars */) = 0
+</span></span></span><span class="line"><span class="cl"><span class="go">brk(NULL)                               = 0x55d5e4bb3000
+</span></span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">mmap(NULL, 8392704, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7fb614801000
+</span></span></span><span class="line"><span class="cl"><span class="go">mprotect(0x7fb614802000, 8388608, PROT_READ|PROT_WRITE) = 0
+</span></span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span></code></pre></div><p>我们关注的是其中的 <code>mmap</code> 系统调用。该调用中传入的 flags 中包含 <code>MAP_STACK</code>。这说明申请的地址是作为程序栈使用的。紧接着 <code>mmap</code> 之后是一个 <code>mprotect</code> 调用，该调用将 <code>mmap</code> 所申请的一部分内存设置为可读写。这部分内存是栈实际使用的部分。</p>
+<p>我们从 <code>/proc/&lt;PID&gt;/maps</code> 中也可找到这段内存映射，如下表中 <code>*</code> 所标记的地方。这说明对于非主线程，其线程栈由 <code>mmap</code> 申请，位于内存映射区内。</p>
+<pre tabindex="0"><code>  55d5b2fd6000-55d5b2fd7000 r--p 00000000 103:05 8392953                   /path/to/test_thread
+  55d5b2fd7000-55d5b2fd8000 r-xp 00001000 103:05 8392953                   /path/to/test_thread
+  55d5b2fd8000-55d5b2fd9000 r--p 00002000 103:05 8392953                   /path/to/test_thread
+  55d5b2fd9000-55d5b2fda000 r--p 00002000 103:05 8392953                   /path/to/test_thread
+  55d5b2fda000-55d5b2fdb000 rw-p 00003000 103:05 8392953                   /path/to/test_thread
+  55d5e4bb3000-55d5e4bd4000 rw-p 00000000 00:00 0                          [heap]
+* 7fb614801000-7fb614802000 ---p 00000000 00:00 0 
+* 7fb614802000-7fb615005000 rw-p 00000000 00:00 0 
+  7fb615005000-7fb615027000 r--p 00000000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+  7fb615027000-7fb61519f000 r-xp 00022000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+  7fb61519f000-7fb6151f7000 r--p 0019a000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+  7fb6151f7000-7fb6151fb000 r--p 001f1000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+  7fb6151fb000-7fb6151fd000 rw-p 001f5000 103:06 9063362                   /usr/lib/x86_64-linux-gnu/libc.so.6
+  7fb6151fd000-7fb61520a000 rw-p 00000000 00:00 0 
+  7fb615222000-7fb615224000 rw-p 00000000 00:00 0 
+  7fb615224000-7fb615225000 r--p 00000000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  7fb615225000-7fb61524d000 r-xp 00001000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  7fb61524d000-7fb615257000 r--p 00029000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  7fb615257000-7fb615259000 r--p 00033000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  7fb615259000-7fb61525b000 rw-p 00035000 103:06 9063067                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+  7ffc7f9b5000-7ffc7f9d6000 rw-p 00000000 00:00 0                          [stack]
+  7ffc7f9d9000-7ffc7f9dd000 r--p 00000000 00:00 0                          [vvar]
+  7ffc7f9dd000-7ffc7f9df000 r-xp 00000000 00:00 0                          [vdso]
+  ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+</code></pre>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/linux/">Linux</a></li>
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/raise-signals/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>试试触发（几乎）所有信号</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/compile-time-sort/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>写个编译期排序</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 进程的内存管理 on x"
+            href="https://x.com/intent/tweet/?text=Linux%20%e8%bf%9b%e7%a8%8b%e7%9a%84%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f&amp;hashtags=Linux%2cC">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 进程的内存管理 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f&amp;title=Linux%20%e8%bf%9b%e7%a8%8b%e7%9a%84%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86&amp;summary=Linux%20%e8%bf%9b%e7%a8%8b%e7%9a%84%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 进程的内存管理 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f&title=Linux%20%e8%bf%9b%e7%a8%8b%e7%9a%84%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 进程的内存管理 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 进程的内存管理 on whatsapp"
+            href="https://api.whatsapp.com/send?text=Linux%20%e8%bf%9b%e7%a8%8b%e7%9a%84%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 进程的内存管理 on telegram"
+            href="https://telegram.me/share/url?text=Linux%20%e8%bf%9b%e7%a8%8b%e7%9a%84%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 进程的内存管理 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=Linux%20%e8%bf%9b%e7%a8%8b%e7%9a%84%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86&u=https%3a%2f%2fwokron.github.io%2fposts%2fprogram-memory-management%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

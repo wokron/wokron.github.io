@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>系统编程之进程管理 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="C, Linux">
+<meta name="description" content="一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。
+二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。
+在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。
+2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。
+这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。
+进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。
+需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。
+当一个可执行文件被加载到内存时，这个程序就成为进程。
+两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。
+三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。
+1. 使用 fork 创建新进程 #include &lt;unistd.h&gt; pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：
+一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。
+#include &lt;sys/wait.h&gt; pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/system-programming-note-3/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/system-programming-note-3/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="系统编程之进程管理" />
+<meta property="og:description" content="一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。
+二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。
+在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。
+2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。
+这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。
+进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。
+需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。
+当一个可执行文件被加载到内存时，这个程序就成为进程。
+两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。
+三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。
+1. 使用 fork 创建新进程 #include &lt;unistd.h&gt; pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：
+一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。
+#include &lt;sys/wait.h&gt; pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/system-programming-note-3/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-10-31T22:08:16+08:00" />
+<meta property="article:modified_time" content="2022-10-31T22:08:16+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="系统编程之进程管理"/>
+<meta name="twitter:description" content="一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。
+二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。
+在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。
+2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。
+这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。
+进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。
+需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。
+当一个可执行文件被加载到内存时，这个程序就成为进程。
+两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。
+三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。
+1. 使用 fork 创建新进程 #include &lt;unistd.h&gt; pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：
+一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。
+#include &lt;sys/wait.h&gt; pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "系统编程之进程管理",
+      "item": "https://wokron.github.io/posts/system-programming-note-3/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "系统编程之进程管理",
+  "name": "系统编程之进程管理",
+  "description": "一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。\n二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。\n在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。\n2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。\n这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。\n进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。\n需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。\n当一个可执行文件被加载到内存时，这个程序就成为进程。\n两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。\n三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。\n1. 使用 fork 创建新进程 #include \u0026lt;unistd.h\u0026gt; pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：\n一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。\n#include \u0026lt;sys/wait.h\u0026gt; pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。",
+  "keywords": [
+    "C", "Linux"
+  ],
+  "articleBody": "一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。\n二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。\n在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。\n2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。\n这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。\n进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。\n需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。\n当一个可执行文件被加载到内存时，这个程序就成为进程。\n两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。\n三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。\n1. 使用 fork 创建新进程 #include pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：\n一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。\n#include pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。\n#include #include #include #include int main(){ pid_t pid1 = fork(); if (pid1 == 0) // child1 { printf(\"A\"); } else // parent { wait(NULL); printf(\"B\"); fflush(stdout); pid_t pid2 = fork(); if (pid2 == 0) // child2 { printf(\"C\"); } else // parent { wait(NULL); } } return 0; } 代码说明： 在该程序中，我们先调用 fork 创建了一个子进程，通过 pid 的数值来区分父子进程。对子进程来说，打印字符 A，对父进程来说，调用 wait 等待子进程结束，随后父进程打印字符 B。（注意这里使用 fflush 刷新了缓冲区，这是因为调用 fork 进行进程复制也会将缓冲区的内容进行复制，没有在此之前刷新缓冲区会导致字符 B 输出两次）接着，类似的，我们根据 pid 判断父子进程，并在子进程中打印字符 C。父进程调用 wait 等待子进程结束，最后退出程序。\n2. exec族函数 #include int execl(const char *pathname, const char *arg0, ... /* (char *)0 */); int execv(const char *pathname, char *const argv[]); int execle(const char *pathname, const char *arg0, .../* (char *)0, char *const envp[] */); int execve(const char *pathname, char *const argv[], char *const envp[]); int execlp(const char *filename, const char *arg0, ... /* (char *)0 */); int execvp(const char *filename, char *const argv[]); int fexecve(int fd, char *const argv[], char *const envp[]); // 第一个参数使用的是打开的文件描述符，而非文件路径名 exec 函数族的作用是根据指定的文件名找到可执行文件，并用它来取代调用进程的内容换句话说，就是在调用进程内部执行一个可执行文件。这里的可执行文件既可以是二进制文件，也可以是任何 Linux 下可执行的脚本文件。与一般情况不同，exec 函数族的函数执行成功后不会返回，因为调用进程的实体，包括代码段，数据段和堆栈等都已经被新的内容取代，只留下进程 ID 等一些表面上的信息仍保持原样。只有调用失败了，它们才会返回一个 -1，从原程序的调用点接着往下执行。\n这几个函数的用法大体上是一致的，只是参数格式有所不同。\n\" l \" 代表 list 即列表，对应可变参数argv 以列表的形式出现 \" v \" 代表 vector 即矢量数组，对应可变参数argv以数组的形式出现 \" e \" 代表 environment ，对应 envp数组，是指给可执行文件指定环境变量。在全部 7 个函数中，只有execle、execve和fexecve使用了char *envp[]传递环境变量，其它的 4 个函数都没有这个参数，这并不意味着它们不传递环境变量，这 4 个函数将把默认的环境变量不做任何修改地传给被执行的应用程序。而它们用指定的环境变量去替代默认的那些。 \" p \" 代表 环境变量 PATH ,字母 p 是指在环境变量 PATH 的目录里去查找要执行的可执行文件。2 个以 p 结尾的函数execlp和execvp，看起来，和execl与execv的差别很小，事实也如此，它们的区别从第一个参数名可以看出：除 execlp和execvp之外的 4 个函数都要求，它们的第 1 个参数 path 必须是一个完整的路径，如\"/bin/ls\"；而execlp和execvp 的第 1 个参数 file 可以仅仅只是一个文件名，如\"ls\"，这两个函数可以自动到环境变量 PATH 指定的目录里去查找。 注意：\n当进程调用一种exec函数时，该进程执行的程序完全替换为新程序，而新程序从其main函数开始执行。 调用exec并不创建新进程，前后的进程 ID 并未改变，exec只是用磁盘上的一个新程 序替换了当前进程的正文段、数据段、堆段和栈段。 在很多 UNIX 实现中，这7个函数只有execve是内核的系统调用，另外6个只 是库函数，它们最终都要调用该系统调用。 如下的实例程序会对当前目录使用ls -l。\n#include int main() { execlp(\"ls\", \"ls\", \"-l\", NULL); return 0; } 请注意，使用 execlp 及类似函数时，arg0 应为调用的程序名。在可变参数的末尾要加上 NULL\n3. dup重定向 #include int dup(int oldfd); int dup2(int oldfd, int newfd); 使用 dup 和 dup2 函数可以复制一个现存的文件描述符。从而实现输入输出的重定向。\ndup 用来复制参数oldfd所指的文件描述符。当复制成功是，返回最小的尚未被使用过的文件描述符。 dup2 与 dup 区别是 dup2 可以用参数 newfd 指定新文件描述符的数值。若参数 newfd 已经被程序使用，则系统就会将 newfd 所指的文件关闭，若 newfd 等于 oldfd，则返回 newfd，而不关闭 newfd 所指的文件。 如下程序将 printf 的输出内容重定向到 redirect.txt。\n#include #include #include #include int main() { int filefd = open(\"redirect.txt\", O_CREAT|O_RDWR, 777); int redirectfd = dup2(filefd, 1); printf(\"hahaha~~\"); return 0; } 4. 管道 #include int pipe(int pipefd[2]); 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。\n管道分为匿名管道和命名管道，这里只介绍匿名管的。匿名管道创建后本质上是 2 个文件描述符，父子进程分别持有就能够使用管道，需要注意的是不能够共用匿名管道，也就是除了使用的进程，其他进程需要关闭文件描述符，保证管道 的 2 个描述符分别同时只有 1 个进程持有。\n下面是在父子进程间使用管道的例子（父进程写，子进程读）：\n#include #include int main() { int fd[2]; pipe(fd); pid_t pid = fork(); if (pid == 0) // child { close(fd[1]); // do something to read with fd[0] } else { close(fd[0]); // do something to write with fd[1] } return 0; } 需要注意的是，调用 pipe 应该在 fork 之前。\n接下来是一个利用进程实现素数筛的程序\n#include #include #include #include #include int main(int argc, char* argv[]) { int numRead[1000]; int readCnt = 0; int numWrite[1000]; if (argc \u003e 1) { int input; sscanf(argv[1], \"%d\", \u0026input); readCnt = input-1; for (int i = 2; i \u003c= input; i++) numRead[i-2] = i; } pid_t pid; int fds[2]; do { pipe(fds); pid = fork(); if (pid == 0) // child { close(fds[1]); int fdRead = fds[0]; readCnt = read(fdRead, numRead, sizeof(numRead)) / 4; if (readCnt == 1 \u0026\u0026 numRead[0] == -1) return 0; } }while(pid == 0); close(fds[0]); int fdWrite = fds[1]; int prime = numRead[0]; printf(\"%d\\n\", prime); fflush(stdout); int writeCnt = 0; for (int i = 1; i \u003c readCnt; i++) { if (numRead[i] % prime != 0) numWrite[writeCnt++] = numRead[i]; } if (writeCnt == 0) { fflush(stdout); numWrite[0] = -1; write(fdWrite, numWrite, 4); } else write(fdWrite, numWrite, 4 * writeCnt); wait(NULL); return 0; } 原理如下：\nEratosthenes的筛选法可以通过执行以下伪代码来模拟：\np = get a number from left neighbor print p loop: n = get a number from left neighbor if (p does not divide n) send n to right neighbor p = 从左邻居中获取一个数 print p loop: n = 从左邻居中获取一个数 if (n不能被p整除) 将n发送给右邻居 生成进程可以将数字2、3、4、…、1000输入管道的左端：行中的第一个进程消除2的倍数，第二个进程消除3的倍数，第三个进程消除5的倍数，依此类推。\n",
+  "wordCount" : "651",
+  "inLanguage": "zh",
+  "datePublished": "2022-10-31T22:08:16+08:00",
+  "dateModified": "2022-10-31T22:08:16+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/system-programming-note-3/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      系统编程之进程管理
+    </h1>
+    <div class="post-meta"><span title='2022-10-31 22:08:16 +0800 CST'>十月 31, 2022</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;651 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/system-programming-note-3.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%bc%95%e8%a8%80" aria-label="一、引言">一、引言</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e8%bf%9b%e7%a8%8b%e7%ae%80%e4%bb%8b" aria-label="二、进程简介">二、进程简介</a><ul>
+                        
+                <li>
+                    <a href="#1-%e7%a8%8b%e5%ba%8f%e6%89%a7%e8%a1%8c%e5%8e%9f%e7%90%86" aria-label="1. 程序执行原理">1. 程序执行原理</a></li>
+                <li>
+                    <a href="#2-%e8%bf%9b%e7%a8%8b%e6%a6%82%e5%bf%b5%e7%9a%84%e7%94%a8%e9%80%94" aria-label="2. 进程概念的用途">2. 进程概念的用途</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%89-%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86" aria-label="三. 进程管理">三. 进程管理</a><ul>
+                        
+                <li>
+                    <a href="#1-%e4%bd%bf%e7%94%a8-fork-%e5%88%9b%e5%bb%ba%e6%96%b0%e8%bf%9b%e7%a8%8b" aria-label="1. 使用 fork 创建新进程">1. 使用 fork 创建新进程</a></li>
+                <li>
+                    <a href="#2-exec%e6%97%8f%e5%87%bd%e6%95%b0" aria-label="2. exec族函数">2. exec族函数</a></li>
+                <li>
+                    <a href="#3-dup%e9%87%8d%e5%ae%9a%e5%90%91" aria-label="3. dup重定向">3. dup重定向</a></li>
+                <li>
+                    <a href="#4-%e7%ae%a1%e9%81%93" aria-label="4. 管道">4. 管道</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一引言">一、引言<a hidden class="anchor" aria-hidden="true" href="#一引言">#</a></h2>
+<p>进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。</p>
+<h2 id="二进程简介">二、进程简介<a hidden class="anchor" aria-hidden="true" href="#二进程简介">#</a></h2>
+<h3 id="1-程序执行原理">1. 程序执行原理<a hidden class="anchor" aria-hidden="true" href="#1-程序执行原理">#</a></h3>
+<p>程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如<code>cs:ip</code>）指向程序入口，再初始化一些进程相关内容就完成了。</p>
+<p>在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。<strong>总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。</strong></p>
+<h3 id="2-进程概念的用途">2. 进程概念的用途<a hidden class="anchor" aria-hidden="true" href="#2-进程概念的用途">#</a></h3>
+<p>早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。</p>
+<p>这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了<strong>进程</strong>概念的诞生。</p>
+<p>进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。</p>
+<blockquote>
+<p>需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。</p>
+<p>当一个可执行文件被加载到内存时，这个程序就成为进程。</p>
+<p>两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。</p>
+</blockquote>
+<h2 id="三-进程管理">三. 进程管理<a hidden class="anchor" aria-hidden="true" href="#三-进程管理">#</a></h2>
+<p>接下来介绍使用操作系统 API 进行进程管理的方法。</p>
+<h3 id="1-使用-fork-创建新进程">1. 使用 fork 创建新进程<a hidden class="anchor" aria-hidden="true" href="#1-使用-fork-创建新进程">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">pid_t</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span></code></pre></div><p><code>fork</code> 无参数，返回一个用于指示子进程的 <code>pid</code>（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 <code>fork</code> 下面的代码继续执行。<code>fork</code>有以下两种用法：</p>
+<ul>
+<li>一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。</li>
+<li>一个进程要执行一个不同的程序。在这种情况下，子进程从<code>fork</code>返回后立即调用<code>exec</code>。</li>
+</ul>
+<p>如果在调用 <code>fork</code> 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 <code>wait</code> 或 <code>waitpid</code> 来使父进程等待子进程结束，并释放子进程的信息。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/wait.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">pid_t</span> <span class="nf">wait</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">pid_t</span> <span class="nf">waitpid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="n">status</span><span class="p">,</span><span class="kt">int</span> <span class="n">options</span><span class="p">);</span>
+</span></span></code></pre></div><p>下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/wait.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">pid1</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">pid1</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="c1">// child1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    	<span class="nf">printf</span><span class="p">(</span><span class="s">&#34;A&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="c1">// parent
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;B&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">pid_t</span> <span class="n">pid2</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">pid2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="c1">// child2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;C&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span> <span class="c1">// parent
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><strong>代码说明：</strong> 在该程序中，我们先调用 <code>fork</code> 创建了一个子进程，通过 pid 的数值来区分父子进程。对子进程来说，打印字符 A，对父进程来说，调用 <code>wait</code> 等待子进程结束，随后父进程打印字符 B。（注意这里使用 <code>fflush</code> 刷新了缓冲区，这是因为调用 <code>fork</code> 进行进程复制也会将缓冲区的内容进行复制，没有在此之前刷新缓冲区会导致字符 B 输出两次）接着，类似的，我们根据 pid 判断父子进程，并在子进程中打印字符 C。父进程调用 <code>wait</code> 等待子进程结束，最后退出程序。</p>
+<h3 id="2-exec族函数">2. exec族函数<a hidden class="anchor" aria-hidden="true" href="#2-exec族函数">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">execl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...</span> <span class="cm">/* (char *)</span><span class="mi">0</span> <span class="err">*/</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">execv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[]);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">execle</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...</span><span class="cm">/* (char *)</span><span class="mi">0</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">envp</span><span class="p">[]</span> <span class="err">*/</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">execve</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">envp</span><span class="p">[]);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">execlp</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...</span> <span class="cm">/* (char *)</span><span class="mi">0</span> <span class="err">*/</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">execvp</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[]);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">fexecve</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">envp</span><span class="p">[]);</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 第一个参数使用的是打开的文件描述符，而非文件路径名
+</span></span></span></code></pre></div><p>exec 函数族的作用是根据指定的文件名找到可执行文件，并用它来取代调用进程的内容换句话说，就是在调用进程内部执行一个可执行文件。这里的可执行文件既可以是二进制文件，也可以是任何 Linux 下可执行的脚本文件。与一般情况不同，exec 函数族的函数执行成功后不会返回，因为调用进程的实体，包括代码段，数据段和堆栈等都已经被新的内容取代，只留下进程 ID 等一些表面上的信息仍保持原样。只有调用失败了，它们才会返回一个 -1，从原程序的调用点接着往下执行。</p>
+<p>这几个函数的用法大体上是一致的，只是参数格式有所不同。</p>
+<ul>
+<li>&quot; l &quot; 代表 list 即列表，对应可变参数<code>argv</code> 以列表的形式出现</li>
+<li>&quot; v &quot; 代表 vector 即矢量数组，对应可变参数<code>argv</code>以数组的形式出现</li>
+<li>&quot; e &quot; 代表 environment ，对应 <code>envp</code>数组，是指给可执行文件指定环境变量。在全部 7 个函数中，只有<code>execle</code>、<code>execve</code>和<code>fexecve</code>使用了<code>char *envp[]</code>传递环境变量，其它的 4 个函数都没有这个参数，这并不意味着它们不传递环境变量，这 4 个函数将把默认的环境变量不做任何修改地传给被执行的应用程序。而它们用指定的环境变量去替代默认的那些。</li>
+<li>&quot; p &quot; 代表 环境变量 PATH ,字母 p 是指在环境变量 PATH 的目录里去查找要执行的可执行文件。2 个以 p 结尾的函数<code>execlp</code>和<code>execvp</code>，看起来，和<code>execl</code>与<code>execv</code>的差别很小，事实也如此，它们的区别从第一个参数名可以看出：除 <code>execlp</code>和<code>execvp</code>之外的 4 个函数都要求，它们的第 1 个参数 path 必须是一个完整的路径，如&quot;/bin/ls&quot;；而<code>execlp</code>和<code>execvp</code> 的第 1 个参数 file 可以仅仅只是一个文件名，如&quot;ls&quot;，这两个函数可以自动到环境变量 PATH 指定的目录里去查找。</li>
+</ul>
+<blockquote>
+<p><strong>注意：</strong></p>
+<ul>
+<li>当进程调用一种<code>exec</code>函数时，该进程执行的程序完全替换为新程序，而新程序从其<code>main</code>函数开始执行。</li>
+<li>调用<code>exec</code>并不创建新进程，前后的进程 ID 并未改变，<code>exec</code>只是用磁盘上的一个新程 序替换了当前进程的正文段、数据段、堆段和栈段。</li>
+<li>在很多 UNIX 实现中，<strong>这<code>7</code>个函数只有<code>execve</code>是内核的系统调用</strong>，另外<code>6</code>个只 是库函数，它们最终都要调用该系统调用。</li>
+</ul>
+</blockquote>
+<p>如下的实例程序会对当前目录使用<code>ls -l</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">execlp</span><span class="p">(</span><span class="s">&#34;ls&#34;</span><span class="p">,</span> <span class="s">&#34;ls&#34;</span><span class="p">,</span> <span class="s">&#34;-l&#34;</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p>请注意，使用 <code>execlp</code> 及类似函数时，arg0 应为调用的程序名。在可变参数的末尾要加上 NULL</p>
+</blockquote>
+<h3 id="3-dup重定向">3. dup重定向<a hidden class="anchor" aria-hidden="true" href="#3-dup重定向">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">dup</span><span class="p">(</span><span class="kt">int</span> <span class="n">oldfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">dup2</span><span class="p">(</span><span class="kt">int</span> <span class="n">oldfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">newfd</span><span class="p">);</span>
+</span></span></code></pre></div><p>使用 <code>dup</code> 和 <code>dup2</code> 函数可以复制一个现存的文件描述符。从而实现输入输出的重定向。</p>
+<ul>
+<li><code>dup</code> 用来复制参数oldfd所指的文件描述符。当复制成功是，返回最小的尚未被使用过的文件描述符。</li>
+<li><code>dup2</code> 与 <code>dup</code> 区别是 <code>dup2</code> 可以用参数 <code>newfd</code> 指定新文件描述符的数值。若参数 <code>newfd</code> 已经被程序使用，则系统就会将 <code>newfd</code> 所指的文件关闭，若 <code>newfd</code> 等于 <code>oldfd</code>，则返回 <code>newfd</code>，而不关闭 <code>newfd</code> 所指的文件。</li>
+</ul>
+<p>如下程序将 <code>printf</code> 的输出内容重定向到 redirect.txt。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;fcntl.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">filefd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="s">&#34;redirect.txt&#34;</span><span class="p">,</span> <span class="n">O_CREAT</span><span class="o">|</span><span class="n">O_RDWR</span><span class="p">,</span> <span class="mi">777</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">redirectfd</span> <span class="o">=</span> <span class="nf">dup2</span><span class="p">(</span><span class="n">filefd</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;hahaha~~&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="4-管道">4. 管道<a hidden class="anchor" aria-hidden="true" href="#4-管道">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">pipe</span><span class="p">(</span><span class="kt">int</span> <span class="n">pipefd</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+</span></span></code></pre></div><p>管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。</p>
+<p>管道分为匿名管道和命名管道，这里只介绍匿名管的。匿名管道创建后本质上是 2 个文件描述符，父子进程分别持有就能够使用管道，需要注意的是不能够共用匿名管道，也就是除了使用的进程，其他进程需要关闭文件描述符，保证管道 的 2 个描述符分别同时只有 1 个进程持有。</p>
+<p>下面是在父子进程间使用管道的例子（父进程写，子进程读）：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/wait.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">fd</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pipe</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">pid</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="c1">// child
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">close</span><span class="p">(</span><span class="n">fd</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// do something to read with fd[0]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">close</span><span class="p">(</span><span class="n">fd</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// do something to write with fd[1]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p>需要注意的是，调用 <code>pipe</code> 应该在 <code>fork</code> 之前。</p>
+</blockquote>
+<p>接下来是一个利用进程实现素数筛的程序</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/wait.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">numRead</span><span class="p">[</span><span class="mi">1000</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">readCnt</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">numWrite</span><span class="p">[</span><span class="mi">1000</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    	<span class="kt">int</span> <span class="n">input</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    	<span class="nf">sscanf</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">input</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    	<span class="n">readCnt</span> <span class="o">=</span> <span class="n">input</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">input</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    		<span class="n">numRead</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">pid</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">fds</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="k">do</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    	<span class="nf">pipe</span><span class="p">(</span><span class="n">fds</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    	<span class="n">pid</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    	<span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="c1">// child
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">    		<span class="nf">close</span><span class="p">(</span><span class="n">fds</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    		<span class="kt">int</span> <span class="n">fdRead</span> <span class="o">=</span> <span class="n">fds</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    		<span class="n">readCnt</span> <span class="o">=</span> <span class="nf">read</span><span class="p">(</span><span class="n">fdRead</span><span class="p">,</span> <span class="n">numRead</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">numRead</span><span class="p">))</span> <span class="o">/</span> <span class="mi">4</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    		<span class="k">if</span> <span class="p">(</span><span class="n">readCnt</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">numRead</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    			<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span><span class="k">while</span><span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">close</span><span class="p">(</span><span class="n">fds</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">fdWrite</span> <span class="o">=</span> <span class="n">fds</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">prime</span> <span class="o">=</span> <span class="n">numRead</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">prime</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">writeCnt</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">readCnt</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    	<span class="k">if</span> <span class="p">(</span><span class="n">numRead</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">%</span> <span class="n">prime</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    		<span class="n">numWrite</span><span class="p">[</span><span class="n">writeCnt</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="n">numRead</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">writeCnt</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    	<span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    	<span class="n">numWrite</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    	<span class="nf">write</span><span class="p">(</span><span class="n">fdWrite</span><span class="p">,</span> <span class="n">numWrite</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span>
+</span></span><span class="line"><span class="cl">    	<span class="nf">write</span><span class="p">(</span><span class="n">fdWrite</span><span class="p">,</span> <span class="n">numWrite</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">writeCnt</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><strong>原理如下：</strong></p>
+<blockquote>
+<p>Eratosthenes的筛选法可以通过执行以下伪代码来模拟：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">p = get a number from left neighbor
+</span></span><span class="line"><span class="cl">print p
+</span></span><span class="line"><span class="cl">loop:
+</span></span><span class="line"><span class="cl">    n = get a number from left neighbor
+</span></span><span class="line"><span class="cl">    if (p does not divide n)
+</span></span><span class="line"><span class="cl">        send n to right neighbor
+</span></span><span class="line"><span class="cl">p = 从左邻居中获取一个数
+</span></span><span class="line"><span class="cl">print p
+</span></span><span class="line"><span class="cl">loop:
+</span></span><span class="line"><span class="cl">    n = 从左邻居中获取一个数
+</span></span><span class="line"><span class="cl">    if (n不能被p整除)
+</span></span><span class="line"><span class="cl">        将n发送给右邻居
+</span></span></code></pre></div><p>生成进程可以将数字2、3、4、…、1000输入管道的左端：行中的第一个进程消除2的倍数，第二个进程消除3的倍数，第三个进程消除5的倍数，依此类推。</p>
+</blockquote>
+<p><img loading="lazy" src="p1.png" alt="Eratosthenes"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+      <li><a href="https://wokron.github.io/tags/linux/">Linux</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/system-programming-note-4/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>系统编程之信号及信号处理</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/machine-learning-note-11/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>机器学习之异常检测</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程管理 on x"
+            href="https://x.com/intent/tweet/?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f&amp;hashtags=C%2cLinux">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程管理 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f&amp;title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86&amp;summary=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程管理 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f&title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程管理 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程管理 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程管理 on telegram"
+            href="https://telegram.me/share/url?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程管理 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e7%ae%a1%e7%90%86&u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-3%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

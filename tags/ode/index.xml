@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>ODE on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/ode/</link>
+    <description>Recent content in ODE on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 11 May 2023 22:25:34 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/ode/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>奇技淫巧：RNN 求解常微分方程组</title>
+      <link>https://wokron.github.io/posts/rnn-solve-ode/</link>
+      <pubDate>Thu, 11 May 2023 22:25:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/rnn-solve-ode/</guid>
+      <description>一、前言 前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。
+参考：
+貌离神合的RNN与ODE：花式RNN简介 基于RNN的微分方程拟合 二、常微分方程组和欧拉法 所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程 $$ \frac{dv}{dt} = a $$ 速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。
+类似的，路程 $s$ 也满足微分方程 $$ \frac{ds}{dt} = v $$ 那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组 $$ \begin{cases} \frac{dv}{dt} = a \\ \frac{ds}{dt} = v \end{cases} $$ 虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。
+还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令 $$ \begin{cases} v_{t_m} &amp;= v_{t_{m-1}} + a \Delta t \\ s_{t_m} &amp;= s_{t_{m-1}} + v_{t_m} \Delta t \end{cases} $$ 其中 $t_{m-1} &lt; t_{m}, \Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。</description>
+    </item>
+  </channel>
+</rss>

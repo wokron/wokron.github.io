@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Shell on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/shell/</link>
+    <description>Recent content in Shell on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Mon, 13 Oct 2025 10:24:54 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/shell/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>用 Namespace 手搓一个容器</title>
+      <link>https://wokron.github.io/posts/simple-container/</link>
+      <pubDate>Mon, 13 Oct 2025 10:24:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/simple-container/</guid>
+      <description>容器技术由 Linux 下三项技术构成。这三项技术分别是 Namespace、Cgroups 和 Unionfs。他们分别实现了系统逻辑资源的隔离、物理资源的限制以及容器的文件系统。
+在这之中最为关键的是 Namespace。因为 Namespace 实现了虚拟化中最重要的隔离的功能。在 Namespace 之外即使不使用 Cgroups，用其他文件系统替代 Unionfs，依然能够实现一个容器的许多功能。
+所以本文我们尝试用 Namespace 构建一个简单的容器。让我们首先想想，一个容器中的环境究竟需要与 host 隔离哪些资源。（请把容器想象成 host 之外的另一台机器。）
+文件系统：容器中的进程不能访问 host 的文件系统。这意味着挂载点的隔离 &amp;ndash; Mount Namespace 进程空间：容器中的进程无法查看容器外的进程信息。这意味着进程号的隔离 &amp;ndash; PID Namespace 网络接口：容器中的进程拥有自己的网络接口，不使用 host 上的网络接口。这意味着网络的隔离 &amp;ndash; Network Namespace 用户：容器中的用户和容器外的用户无关，例如容器内的 root 和容器外的 root 并不相同。这意味着用户的隔离 &amp;ndash; User Namespace 物理资源：容器能够看到和管理的物理资源和容器外的资源不同。这意味着 Cgroups 视图的隔离 &amp;ndash; Cgroups Namespace 时间：容器中的时间系统和容器外的时间不一定相同 &amp;ndash; Time Namespace 主机名：容器中的主机名和容器外的主机名不一定相同 &amp;ndash; UTS Namespace IPC：IPC，例如 Posix 消息队列，使用类似文件名的标识符，但是又并不真正存在于文件系统中。容器中的这些标识符和容器外的相同标识无关 &amp;ndash; IPC Namespace 虽然种类很多，但是想要形成虚拟化的错觉只需要用到其中的一部分即可。为了构建我们的容器，我们选择只使用 Mount、PID 和 User。
+隔离文件系统 容器化最重要的是隔离文件系统。所谓的程序运行环境，本质上就是文件系统中的各类库和应用程序。同一主机上的不同发行版的容器都运行在相同的内核上，他们只是在库和应用程序上存在不同。</description>
+    </item>
+    <item>
+      <title>讨论一下环境变量</title>
+      <link>https://wokron.github.io/posts/shell-env-var/</link>
+      <pubDate>Sat, 02 Nov 2024 15:01:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/shell-env-var/</guid>
+      <description>这里所说的环境变量并不仅仅指 Shell 中的变量，而是每一个进程各自拥有的，能够通过系统 API 获取的变量。当然，Shell 通常会提供环境变量的操作方法，我们也经常通过在 Shell 中管理环境变量。但是 Shell 中的变量和环境变量实际上并不完全相同，在使用 Shell 时可能会混淆这两种概念，这里便稍微分辨一下。
+一、环境变量 从程序的角度来看，环境变量很简单。环境变量是每个进程各自拥有的键值对集合。进程可以从其环境变量中读取已有变量，修改已有变量或创建新的变量。当进程创建其子进程时，子进程会继承父进程的环境变量，但子进程的环境变量的修改并不会影响父进程的环境变量。
+为了方便，这里以 python 为例。
+进程可以读取已有环境变量：
+# inherit.py import os print(os.environ[&amp;#34;HOME&amp;#34;]) 也可以写入或创建环境变量：
+os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;my_value&amp;#34; 子进程会继承父进程的环境变量：
+# env.py import os import sys assert len(sys.argv) == 2 father_proc = bool(int(sys.argv[1])) print_my_var = lambda: print( f&amp;#34;process={&amp;#39;father&amp;#39; if father_proc else &amp;#39;child&amp;#39;}, &amp;#34; f&amp;#34;MY_VAR={os.environ.get(&amp;#39;MY_VAR&amp;#39;, None)}&amp;#34; ) print_my_var() if father_proc: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;1&amp;#34; print_my_var() os.system(f&amp;#34;{sys.executable} {sys.argv[0]} 0&amp;#34;) print_my_var() else: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;2&amp;#34; print_my_var() $ python inherit.</description>
+    </item>
+    <item>
+      <title>不务正业：玩个 zsh</title>
+      <link>https://wokron.github.io/posts/play-with-zsh/</link>
+      <pubDate>Sat, 21 Oct 2023 17:13:03 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/play-with-zsh/</guid>
+      <description>一、前言 不知道为什么，这学期看到好几个人都用 zsh。最近恰好有时间，我也是时候换一个 shell 了。
+不过嘛，shell 毕竟是用来工作的，不是一件艺术品，所以这里的配置也是以实用为主了。本文也没有用到 oh-my-zsh，用一个专门的框架来管理 shell 的配置在我看来还是太过沉重了。
+本篇文章所用的环境当然是 linux。更加具体来说是 debian 系的发行版。
+二、zsh 的安装 这里当然不会仔细介绍 zsh，将网上许多其他文章都重复过的内容再重复一遍。zsh 只是一个 shell，只不过这个 shell 有较强的可扩展性，同时具有一些比较有用的特性，仅此而已。
+安装 zsh，只需要一条命令
+apt-get install zsh 之后可以查看 /etc/shells 文件的内容，该文件记录了系统中已有的所有 shell，此时应当也有 zsh。
+cat /etc/shells 本人的输出结果是这样的
+# /etc/shells: valid login shells /bin/sh /bin/bash /usr/bin/bash /bin/rbash /usr/bin/rbash /usr/bin/sh /bin/dash /usr/bin/dash /bin/zsh /usr/bin/zsh 之后首次运行 zsh
+zsh 应该会出现如下内容，因为此时我们并未创建 zsh 的配置文件。正如 bash 的 .bashrc。这里只需要选择 0 即可。之后会在用户目录创建一个空的 .zshrc，该文件将在下一小节中详细说明。选择后重新输入命令 zsh 进入 zsh，此时应该可以看到输入提示符等内容。
+This is the Z Shell configuration function for new users, zsh-newuser-install.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab6</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab6/</link>
+      <pubDate>Fri, 19 May 2023 15:59:29 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab6/</guid>
+      <description>一、Lab6 前言 操作系统实验的最后一篇笔记，不说什么了。本文主要讲了 Shell 的实现机制，管道通信略有说明。
+二、Shell 程序的启动 这次我们还要回到 Init/init.c 文件。我们的 MOS 的所有实验都结束之后，mips_init 函数应该是这样的
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); // lab3: env_init(); // lab6: ENV_CREATE(user_icode); // This must be the first env! // lab5: ENV_CREATE(fs_serv); // This must be the second env! // lab3: kclock_init(); enable_irq(); while (1) { } } 其中我们使用 ENV_CREATE 创建了两个用户进程。这两个进程的代码在编译时便写入了内核 ELF 文件中。其中第二个进程 fs_serv 就是 Lab5 中用到的文件系统服务进程；而第一个进程 user_icode 则是整个操作系统中除文件系统服务进程外所有进程的共同祖先进程，该进程便用于启动 Shell 进程。user_icode 或为 “user init code” 之意。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之脚本</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-4/</link>
+      <pubDate>Tue, 25 Apr 2023 18:10:33 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-4/</guid>
+      <description>一、前言 这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。
+二、shell 的异常处理 有时我们希望在 shell 脚本命令执行出现异常时进行处理，比如说输出异常情况或退出等等。我们知道发生异常时返回值不为 0，如果是在 c 语言中我们可以这样处理
+if (!do_something()) { // handle exception } 类似的在 shell 中
+dosomething arg1 arg2 if [ $? -ne 0 ] then # handle exception if 但是这样编写起来太过麻烦了，我们可以采用另一种方法，那就是使用短路逻辑运算符。
+我们还先以 c 语言为例，假设现在我们有两个函数，对他们取逻辑或
+int r = func1() &amp;amp;&amp;amp; func2() 那么在 func1 的返回值为 0 时，就会发生短路，不执行 func2。而在返回值为；而当 func1 的返回值不为 0 时，则会继续执行 func2。我们可以让 func2 完成 func1 的异常处理。
+当然，在 c 语言中这种方法很是牵强，因为不同函数的栈帧并不一样，很难跨函数进行处理。可是 shell 中就不同了，所有的变量都是全局变量。
+但还需要注意一点，shell 中 0 表示真，1 表示假。（因为 0 表示程序正常结束，所以为真。）所以在 shell 中就需要使用 || 而非 &amp;amp;&amp;amp;。</description>
+    </item>
+    <item>
+      <title>系统编程之信号及信号处理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-4/</link>
+      <pubDate>Sun, 13 Nov 2022 15:30:11 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-4/</guid>
+      <description>一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&amp;lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl+c ctrl+\ ctrl+Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &amp;lt;signal.h&amp;gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&amp;gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&amp;lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。</description>
+    </item>
+    <item>
+      <title>系统编程之 Shell 编程</title>
+      <link>https://wokron.github.io/posts/system-programming-note-2/</link>
+      <pubDate>Sat, 08 Oct 2022 19:30:58 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-2/</guid>
+      <description>一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。
+二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。
+而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。
+三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如
+vi c1.sh vim c2.sh &amp;gt; c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。
+创建的shell脚本，一定要在开头第一行加上如下语句：
+#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。
+执行脚本 shell脚本的执行方法有
+sh &amp;lt;scriptname&amp;gt; bash &amp;lt;scriptname&amp;gt; 或者使用chmod命令修改脚本为可执行，再直接使用 ./&amp;lt;scriptname&amp;gt; 运行。
+四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。
+其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。
+声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。
+var=hello_world 注意shell对空格敏感，声明时等号两边不能有空格
+另外可以在变量名前添加 readonly关键字设为只读
+readonly constVar shell中声明数组同样直接写出数组名称
+arr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。
+注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash &amp;lt;scriptname&amp;gt;
+赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。
+var1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。
+并且，为了满足命令处理的需要，shell设计出了引号变量值。
+shell中的引号包括单引号、双引号和倒引号。
+单引号中的字符均作为普通字符出现。（可以包括空格）
+var1=hello_world # var2=hello world # 不合法 var3=&amp;#39;hello world&amp;#39; 双引号中的字符大部分作为普通字符对待。除了$\’和双引号，这些变量依旧用于对字符串内容进行变量替换。</description>
+    </item>
+    <item>
+      <title>系统编程之命令行编译</title>
+      <link>https://wokron.github.io/posts/system-programming-note-1/</link>
+      <pubDate>Mon, 12 Sep 2022 21:18:59 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-1/</guid>
+      <description>一、前言 本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。
+二、GCC 基本操作 编译选项 无选项编译链接 用法：gcc test.c 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。 选项 -o 用法：gcc test.c -o test 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。 选项 -E 用法：gcc -E test.c -o test.i 作用：将 test.c 预处理输出 test.i 文件。 选项 -S 用法：gcc -S test.i 作用：将预处理输出文件 test.i 编译成 test.s 文件。 选项 -c 用法：gcc -c test.s 作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。 无选项链接 用法：gcc test.o -o test 作用：将目标代码文件 test.o 链接成最终可执行文件 test。 选项 -O 用法：gcc -O1 test.c -o test 作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。 官方文档：GCC, the GNU Compiler Collection</description>
+    </item>
+  </channel>
+</rss>

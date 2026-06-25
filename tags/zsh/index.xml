@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Zsh on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/zsh/</link>
+    <description>Recent content in Zsh on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sat, 21 Oct 2023 17:13:03 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/zsh/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>不务正业：玩个 zsh</title>
+      <link>https://wokron.github.io/posts/play-with-zsh/</link>
+      <pubDate>Sat, 21 Oct 2023 17:13:03 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/play-with-zsh/</guid>
+      <description>一、前言 不知道为什么，这学期看到好几个人都用 zsh。最近恰好有时间，我也是时候换一个 shell 了。
+不过嘛，shell 毕竟是用来工作的，不是一件艺术品，所以这里的配置也是以实用为主了。本文也没有用到 oh-my-zsh，用一个专门的框架来管理 shell 的配置在我看来还是太过沉重了。
+本篇文章所用的环境当然是 linux。更加具体来说是 debian 系的发行版。
+二、zsh 的安装 这里当然不会仔细介绍 zsh，将网上许多其他文章都重复过的内容再重复一遍。zsh 只是一个 shell，只不过这个 shell 有较强的可扩展性，同时具有一些比较有用的特性，仅此而已。
+安装 zsh，只需要一条命令
+apt-get install zsh 之后可以查看 /etc/shells 文件的内容，该文件记录了系统中已有的所有 shell，此时应当也有 zsh。
+cat /etc/shells 本人的输出结果是这样的
+# /etc/shells: valid login shells /bin/sh /bin/bash /usr/bin/bash /bin/rbash /usr/bin/rbash /usr/bin/sh /bin/dash /usr/bin/dash /bin/zsh /usr/bin/zsh 之后首次运行 zsh
+zsh 应该会出现如下内容，因为此时我们并未创建 zsh 的配置文件。正如 bash 的 .bashrc。这里只需要选择 0 即可。之后会在用户目录创建一个空的 .zshrc，该文件将在下一小节中详细说明。选择后重新输入命令 zsh 进入 zsh，此时应该可以看到输入提示符等内容。
+This is the Z Shell configuration function for new users, zsh-newuser-install.</description>
+    </item>
+  </channel>
+</rss>

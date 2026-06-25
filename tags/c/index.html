@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>C | Wokron&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/tags/c/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/tags/c/index.xml">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/tags/c/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="C" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/tags/c/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="C"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/tags/">Tags</a></div>
+  <h1>
+    C
+    <a href="/tags/c/index.xml" title="RSS" aria-label="RSS">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" height="23">
+        <path d="M4 11a9 9 0 0 1 9 9" />
+        <path d="M4 4a16 16 0 0 1 16 16" />
+        <circle cx="5" cy="19" r="1" />
+      </svg>
+    </a>
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">试试触发（几乎）所有信号
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-05-23 17:22:16 +0800 CST'>五月 23, 2025</span>&nbsp;·&nbsp;10 分钟&nbsp;·&nbsp;2058 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 试试触发（几乎）所有信号" href="https://wokron.github.io/posts/raise-signals/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Linux 进程的内存管理
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。
+堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。
+在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。
+在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。
+下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。
+#include &lt;stdio.h&gt; #include &lt;unistd.h&gt; extern char end; int main() { printf(&#34;Address of end symbol: %p\n&#34;, (void *)&amp;end); printf(&#34;Current program break: %p\n&#34;, sbrk(0)); printf(&#34;New program break: %p\n&#34;, sbrk(1024) &#43; 1024); printf(&#34;After deallocation: %p\n&#34;, sbrk(-512) - 512); } 运行结果如下...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-05-17 09:33:11 +0800 CST'>五月 17, 2025</span>&nbsp;·&nbsp;7 分钟&nbsp;·&nbsp;1484 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Linux 进程的内存管理" href="https://wokron.github.io/posts/program-memory-management/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">QEMU 模拟器介绍
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。
+然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。
+本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
+什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard’s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。
+QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。
+QEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。
+在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。
+通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。
+根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。
+第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。
+图片来自 Andrew S....</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-01-21 14:33:21 +0800 CST'>一月 21, 2024</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;707 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to QEMU 模拟器介绍" href="https://wokron.github.io/posts/qemu-introduction/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">GDB：程序的解剖术
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。
+为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。
+GDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。
+GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。
+GDB 是一个功能十分强大的调试器，它适用于 C、C&#43;&#43;、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：
+启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。
+准备工作 在开始之前需要说明两点：
+接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-01-18 19:44:35 +0800 CST'>一月 18, 2024</span>&nbsp;·&nbsp;16 分钟&nbsp;·&nbsp;3244 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to GDB：程序的解剖术" href="https://wokron.github.io/posts/gdb-tutorial/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（2）：编译程序架构
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 本质是存在的真理，是自己过去了的或内在的存在。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《小逻辑》第二篇 本质论 §112
+本篇文章是一个间章。旨在衔接文法理论与编译过程，从架构上概述整个编译程序。文法理论旨在解释自然语言，而编译过程却要创造新的语言。编译程序通过将文法规则机械化，创造出易于理解的高级语言，实现了计算的高级抽象。
+二、何为 “编译” 为了理解何为 “编译”，我们可以从一个具体的编译器开始。这里我们以 C 语言的编译过程为例：
+现在有一个简单的由 C 语言文法写成的文本文件 test.c
+// test.c #include &lt;stdio.h&gt; int main() { printf(&#34;hello, world.\n&#34;); return 0; } 想要将其编译为可执行文件，当然可以使用 gcc test.c -o test 或 clang test.c -o test，但是这样就不能反映编译的具体过程了。所以这里我编写了一个 Makefile，用来指明 gcc 编译时所经历的具体步骤。
+# Makefile srcname = test cc = gcc # Default target all: $(srcname) @echo &#34;Finish!&#34; # Linking stage $(srcname): $(srcname).o @echo &#34;Linking stage: Creating executable &#39;$(srcname)&#39;&#34; $(cc) $(srcname).o -o $(srcname) # Assembly stage $(srcname)....</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-01-06 16:33:50 +0800 CST'>一月 6, 2024</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;442 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（2）：编译程序架构" href="https://wokron.github.io/posts/compiling-tech-from-zero-2/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">面向对象的 C 语言
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c&#43;&#43;、c#、java、python、golang
+c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 &#43; 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。
+了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。
+二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。
+让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。
+明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。
+此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。
+这样也可以理解为什么 c&#43;&#43; 中只能使用指针实现多态（引用本质还是指针）。
+Child c; Father *f = &amp;c; // 正确 Father f2 = c; // 错误 而 c&#43;&#43; 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别...</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-10-01 22:53:53 +0800 CST'>十月 1, 2023</span>&nbsp;·&nbsp;5 分钟&nbsp;·&nbsp;962 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 面向对象的 C 语言" href="https://wokron.github.io/posts/oop-by-c/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="next" href="https://wokron.github.io/tags/c/page/2/">下一页&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>WSL on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/wsl/</link>
+    <description>Recent content in WSL on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sat, 22 Apr 2023 22:22:55 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/wsl/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>后端开发入门笔记之准备工作</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-1/</link>
+      <pubDate>Sat, 22 Apr 2023 22:22:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-1/</guid>
+      <description>一、前言 当我第一次看到那份作业的时候，我绝想不到，这作业将牵扯出多少我还未曾学习过的知识；我更想不到，自己要以多久的时间涉猎完所有这些内容。当然现在这些都已经结束了，感慨不应该抒发太多，还是趁着自己没有忘记，做一下总结吧。
+这一系列应该会有几篇文章。主要内容是回顾总结我的第一次较为系统的后端开发经历。在学习的过程中我参考了许多文章，其中一些我也会在文章中给出链接。这些文章或许在一些方面比本篇文章讲的更加深入，但是本篇文章综合了许多文章的不同信息，给出了系统的安装配置流程和自己的一些见解，因此我认为还是有一些价值的。
+二、WSL，一切的起点 （1）WSL 简介 windows 系统虽然在个人电脑上常用，但是开发起后端来还是不方便，最好还是使用 linux。但是只有一台电脑的话，装双系统极其麻烦、虚拟机又太过笨重。那么有没有一种更加方便的方法呢？有的，那就是使用 WSL（Windows Subsystem for Linux），即 Windows 的 Linux 子系统。WSL 分为 WSL1 和 WSL2，此二者的实现原理并不相同。虽然有些跑题，但是还是介绍一下，毕竟是自己费力去查的结果。
+WSL1 不是虚拟机，Hyper-V 或 VMware 等虚拟机会用软件模拟硬件的行为，其中装入的操作系统是和模拟的硬件进行交互；而 WSL1 则是通过 Windows 操作系统库模拟了一个 Linux 内核，用 Windows 的系统调用来处理 Linux 的系统调用。并且由于 WSL1 不需要模拟硬件这一中间过程，因此效率会比虚拟机高。而 WSL2 则可以看做虚拟机，但是与其他虚拟机相比更加轻量，Linux 系统运行在此虚拟机上资源占用更少、运行更快。问题是 WSL2 使用了虚拟化技术，可能与其他虚拟机冲突，不能同时使用。
+在这里我们使用 WSL2。主要原因是 WSL2 运行了真正的 Linux 内核，和各种 Linux 程序的兼容性更好。
+（2）WSL 安装 安装 WSL 很简单。这里的安装流程参考 使用 WSL 在 Windows 上安装 Linux。插一句，微软的技术文档真的很有用，如果对搜索得到的关于微软的技术问题的解决方案有不确定的地方，参考微软的技术文档有时会有很大帮助。就比如 WSL 的安装，搜到的经常已经是过时的教程了。
+安装 WSL，只需要在 PowerShell 中以管理员模式运行如下命令即可。
+wsl --install 注意网上的教程中，需要使用 dism.</description>
+    </item>
+  </channel>
+</rss>

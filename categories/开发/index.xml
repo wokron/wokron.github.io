@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>开发 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/categories/%E5%BC%80%E5%8F%91/</link>
+    <description>Recent content in 开发 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 25 Jun 2026 17:04:22 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/categories/%E5%BC%80%E5%8F%91/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>2ascii：GIF 转 ASCII 动画</title>
+      <link>https://wokron.github.io/posts/2ascii/</link>
+      <pubDate>Thu, 25 Jun 2026 17:04:22 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/2ascii/</guid>
+      <description>几个月前，我决定把自己的 github 主页换成 ascii 动画。最初我以为很简单，但找了半天也没找到合适的脚本或网站，所以就自己手搓了个并不通用的脚本，调整了很久终于有了一个比较满意的结果。
+最近我想，为什么不把这个做成一个网页呢？如果有可视化的话，总比那时候慢慢调整更方便一点。所以就有了 2ascii 这个仓库。
+这只是一组静态页面，所以可以在任何地方访问。不过为了方便，我在这里托管了一个页面。
+我对 JS 并不熟悉，但是 LLM Agent 很好的弥补了这一点。作为一个小品级项目，LLM 还是够用的。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之脚本</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-4/</link>
+      <pubDate>Tue, 25 Apr 2023 18:10:33 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-4/</guid>
+      <description>一、前言 这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。
+二、shell 的异常处理 有时我们希望在 shell 脚本命令执行出现异常时进行处理，比如说输出异常情况或退出等等。我们知道发生异常时返回值不为 0，如果是在 c 语言中我们可以这样处理
+if (!do_something()) { // handle exception } 类似的在 shell 中
+dosomething arg1 arg2 if [ $? -ne 0 ] then # handle exception if 但是这样编写起来太过麻烦了，我们可以采用另一种方法，那就是使用短路逻辑运算符。
+我们还先以 c 语言为例，假设现在我们有两个函数，对他们取逻辑或
+int r = func1() &amp;amp;&amp;amp; func2() 那么在 func1 的返回值为 0 时，就会发生短路，不执行 func2。而在返回值为；而当 func1 的返回值不为 0 时，则会继续执行 func2。我们可以让 func2 完成 func1 的异常处理。
+当然，在 c 语言中这种方法很是牵强，因为不同函数的栈帧并不一样，很难跨函数进行处理。可是 shell 中就不同了，所有的变量都是全局变量。
+但还需要注意一点，shell 中 0 表示真，1 表示假。（因为 0 表示程序正常结束，所以为真。）所以在 shell 中就需要使用 || 而非 &amp;amp;&amp;amp;。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之 Docker</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-3/</link>
+      <pubDate>Tue, 25 Apr 2023 18:09:15 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-3/</guid>
+      <description>一、前言 最近事情有些多，这篇短文写写停停，花费了很长时间。本来想着在五一假期结束前完成这一系列文章的，现在看来还有些困难呀。
+这篇文章总结了自己使用 Docker 时用到的一些知识，可能内容不深，还请见谅。
+二、镜像的构筑 （1）Docker 镜像简介 正如在“准备工作”那篇文章中所说的，镜像时静态的容器，容器是运行的镜像。我们在使用 Docker 时，需要做的就是像编写代码一样构建 Docker 镜像。
+Docker 镜像中包含了一套文件系统，其所维护的文件包含了项目运行所需的环境以及项目本身。但是镜像和一般的文件系统不同，镜像由一系列层构成，每一层中存储了对之前镜像的修改信息。
+这样做有一定的优点，在下载镜像时，我们不需要每次都下载完整的镜像；而只需要下载与本地镜像不相同的层就可以了。另一方面，容器基于镜像进行构筑，在容器运行时，分层设计也有利于不同容器的共享。采取写时复制技术可以减少内存的占用。
+我们进行镜像的构筑时，也不需要从头开始，而可以选择在已有的镜像上添加新的层，通过修改已有环境来构建我们所需的项目运行环境。
+（2）Dockerfile 简介 Docker 中使用 Dockerfile 来设置镜像构建的操作流程，这一点类似于 Makefile。这里借我的后端项目中的 Dockerfile 的内容来稍微解释一下。
+# python alpine is the smallest python image FROM python:3.9-alpine COPY ./src /src COPY ./start.sh ./ COPY ./config.ini ./ RUN pip install -r ./src/requirements.txt # ash is shell for alpine CMD ash start.sh Dockerfile 中使用一系列大写关键字作为指令，构建镜像时，从头到尾依次执行。
+第一句使用了 FROM 指令。该指令指定了构筑时的基础镜像，接下来的指令都是对镜像的修改，会在基础镜像上增加新的层。这里 FROM python:3.9-alpine 指定了一个镜像，来自仓库 python，标签为 3.9-alpine。该镜像包含了 python3.9 的运行环境，底层的操作系统为 alpine，这也是 Linux 的一个发行版，以体积小著称。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之 Flask 简介</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-2/</link>
+      <pubDate>Sat, 22 Apr 2023 22:40:12 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-2/</guid>
+      <description>一、前言 这一篇文章中主要讲解了为完成后端项目所使用的 Flask 框架。对于自己所使用的功能和特性进行了着重的讨论。当然说是着重讨论，其实还是皮毛罢了。想要更加系统地了解 Flask，还请查看官方文档
+二、Flask （1）Flask 介绍 Flask 是一个 Python Web 框架，十分轻量灵活，可以用于开发小型 Web 应用。Flask 高度可扩展，可以通过添加不同的组件来实现定制化的功能。对于简单的后端任务来说，Flask 十分合适。
+（2）Flask 用于后端 虽然 Flask 可以实现经典的 MVC 架构，但是本项目只进行后端开发，提供一些用于数据库操作的 RESTful 接口，并不涉及显示的部分。因此只讨论 Flask 用于后端开发的方面。
+对于后端项目，我们希望其向下管理数据库，向上为前端提供接口。这就需要用到 ORM 来通过对象管理数据库关系；同时通过 Route 提供 api 接口。
+另外，我们还需要对项目进行管理，以合理的结构组织项目。我们需要了解 Flask 的 BluePrint。
+三、ORM （1）数据库设置 Flask 使用 Flask-SQLAlchemy 组件实现 ORM。SQLAlchemy 本是独立于 Flask 的 ORM 库，但在 Flask 中使用时，又针对 Flask 进行了一定封装。
+我们希望创建到数据库的连接，这需要在后端项目中进行设置。对 Flask 来说，设置以字符串的形式保存于项目的配置变量 SQLALCHEMY_DATABASE_URI 中。
+app = Flask(__name__) app.config[&amp;#39;SQLALCHEMY_DATABASE_URI&amp;#39;] = f&amp;#39;mysql+pymysql://{username}:{password}@{host}:{port}/{name}?charset=utf8mb4&amp;#39; 配置存储于 app.config 中。其中 app 是一个 Flask 类型的对象，用于表示 Flask 项目这个整体。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之准备工作</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-1/</link>
+      <pubDate>Sat, 22 Apr 2023 22:22:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-1/</guid>
+      <description>一、前言 当我第一次看到那份作业的时候，我绝想不到，这作业将牵扯出多少我还未曾学习过的知识；我更想不到，自己要以多久的时间涉猎完所有这些内容。当然现在这些都已经结束了，感慨不应该抒发太多，还是趁着自己没有忘记，做一下总结吧。
+这一系列应该会有几篇文章。主要内容是回顾总结我的第一次较为系统的后端开发经历。在学习的过程中我参考了许多文章，其中一些我也会在文章中给出链接。这些文章或许在一些方面比本篇文章讲的更加深入，但是本篇文章综合了许多文章的不同信息，给出了系统的安装配置流程和自己的一些见解，因此我认为还是有一些价值的。
+二、WSL，一切的起点 （1）WSL 简介 windows 系统虽然在个人电脑上常用，但是开发起后端来还是不方便，最好还是使用 linux。但是只有一台电脑的话，装双系统极其麻烦、虚拟机又太过笨重。那么有没有一种更加方便的方法呢？有的，那就是使用 WSL（Windows Subsystem for Linux），即 Windows 的 Linux 子系统。WSL 分为 WSL1 和 WSL2，此二者的实现原理并不相同。虽然有些跑题，但是还是介绍一下，毕竟是自己费力去查的结果。
+WSL1 不是虚拟机，Hyper-V 或 VMware 等虚拟机会用软件模拟硬件的行为，其中装入的操作系统是和模拟的硬件进行交互；而 WSL1 则是通过 Windows 操作系统库模拟了一个 Linux 内核，用 Windows 的系统调用来处理 Linux 的系统调用。并且由于 WSL1 不需要模拟硬件这一中间过程，因此效率会比虚拟机高。而 WSL2 则可以看做虚拟机，但是与其他虚拟机相比更加轻量，Linux 系统运行在此虚拟机上资源占用更少、运行更快。问题是 WSL2 使用了虚拟化技术，可能与其他虚拟机冲突，不能同时使用。
+在这里我们使用 WSL2。主要原因是 WSL2 运行了真正的 Linux 内核，和各种 Linux 程序的兼容性更好。
+（2）WSL 安装 安装 WSL 很简单。这里的安装流程参考 使用 WSL 在 Windows 上安装 Linux。插一句，微软的技术文档真的很有用，如果对搜索得到的关于微软的技术问题的解决方案有不确定的地方，参考微软的技术文档有时会有很大帮助。就比如 WSL 的安装，搜到的经常已经是过时的教程了。
+安装 WSL，只需要在 PowerShell 中以管理员模式运行如下命令即可。
+wsl --install 注意网上的教程中，需要使用 dism.</description>
+    </item>
+    <item>
+      <title>Spring 面向切面</title>
+      <link>https://wokron.github.io/posts/spring-note-3/</link>
+      <pubDate>Tue, 10 Jan 2023 16:47:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/spring-note-3/</guid>
+      <description>一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。
+面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。
+二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。
+通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。
+连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。
+切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。
+切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。
+引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。
+织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。
+三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。
+Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容
+AspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如
+execution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。
+切点表达式中还可以使用与（&amp;amp;&amp;amp;）或（||）非（!）操作。如
+execution(* concert.Performance.perform(..)) &amp;amp;&amp;amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。</description>
+    </item>
+    <item>
+      <title>Spring 高级装配</title>
+      <link>https://wokron.github.io/posts/spring-note-2/</link>
+      <pubDate>Tue, 10 Jan 2023 15:05:26 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/spring-note-2/</guid>
+      <description>上一篇文章已经讲解了 spring 依赖注入装配的方法。但是为了处理一些特殊的问题，或者为了更好地实现某些功能，spring 还提供了更多的装配设置。
+一、条件化声明 Bean 让我们回到上一篇第一节的例子，假设这次我们需要在开发时使用 SQLite，而在生产环境使用 Oracle 要怎么办呢？
+或许可以这样，我们在生产环境注意将 DBUtil Bean 改成 Oracle，把原来的部分注释掉，就像是这样。
+@Bean public DBUtil databaseUtil() { // return new SQLiteUtil(); // for dev return new OracleUtil(); // for prod } 但这样做很明显是不合适的。如果许多组件都需要进行调整的话，修改上就会十分复杂，且很容易出错。
+我们可以使用注释 @Profile 实现不同环境条件下选择不同的装配方式。这需要给带有 @Bean 或 @Configuration 注释的方法或类添加注释 @Profile(&amp;quot;某某环境&amp;quot;)。于是数据库的选择就可以改为如下形式：
+@Bean @Profile(&amp;#34;dev&amp;#34;) public DBUtil sqliteUtil() { return new SQLiteUtil(); } @Bean @Profile(&amp;#34;prod&amp;#34;) public DBUtil oracleUtil() { return new OracleUtil(); } 想要启用某个 Bean 需要设置环境。具体来说，这通过两个环境变量来实现，spring.profiles.default 和 spring.profiles.active。这两个值可以在许多地方定义。一种方式是在 properties 或 yaml 文件中定义，如</description>
+    </item>
+    <item>
+      <title>Spring 依赖注入</title>
+      <link>https://wokron.github.io/posts/spring-note-1/</link>
+      <pubDate>Mon, 09 Jan 2023 17:42:35 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/spring-note-1/</guid>
+      <description>一、依赖注入 考虑这样一个例子，CustomerDAO 类使用了 DBUtil 类中的方法连接到 MySQL 数据库
+public class CustomerDAO { private DBUtil databaseUtil = new DBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 假设现在想要改为使用 Oracle 数据库，需要怎么做？可以使用 OracleDBUtil 继承 DBUtil，并重写其相关方法。但是由于 CustomerDAO 中将 DBUtil 实例添加到其初始化过程中。因此想要修改的话还是需要对 CustomerDAO 本身进行修改。这违反了开-闭原则。
+public class CustomerDAO { private DBUtil databaseUtil = new OracleDBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 为了使对 dbUtil 的修改不影响 CustomerDAO 本身，我们可以将实例的创建移到 CustomerDAO 之外。
+public class CustomerDAO { private DBUtil databaseUtil; public CustomerDAO(DBUtil databaseUtil) { this.</description>
+    </item>
+    <item>
+      <title>Django 创建表结构</title>
+      <link>https://wokron.github.io/posts/django-orm/</link>
+      <pubDate>Mon, 09 Jan 2023 13:44:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/django-orm/</guid>
+      <description>一、对象关系映射（ORM） 面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。
+面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。
+二、django 的 ORM 实现 django 通过 models.Model 类来对应数据库中的表结构，如
+class User(models.Model): 即表示了 User 类，也对应了数据库中的 user 表。django 会根据类的声明自动在数据库中建表。
+django 用类中的属性来表示表的列字段。如
+class User(models.Model): id = models.IntegerField(primary_key=True) name = models.CharField(max_length=50) password = models.CharField(max_length=50) 定义了 user 表的主键、名字、密码信息。
+表间关系通过类与其属性表示，如
+class User(models.Model): id = models.IntegerField(primary_key=True) name = models.CharField(max_length=50) password = models.CharField(max_length=50) courses = models.ManyToManyField(to=&amp;#34;Course&amp;#34;) courses 属性表示用户具有的课程，反映了用户与课程之间的关系。
+三、类属性与数据库字段的对应 如上一节所述，django 建立了类属性与数据库字段之间的对应关系。常见的如
+models.CharField models.TextField models.IntegerField models.FloatField 就对应了数据库中的 char(n)，text，int，float 类型。不一一详述。
+四、主键与外键 在表中要定义主键，作为该表一条记录的唯一标识。相应的，在 django 中定义主键需要在对应属性上添加 primary_key=True 参数。例如</description>
+    </item>
+    <item>
+      <title>MySQL 的中文插入问题</title>
+      <link>https://wokron.github.io/posts/using-chinese-in-mysql/</link>
+      <pubDate>Sat, 31 Dec 2022 15:24:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/using-chinese-in-mysql/</guid>
+      <description>一、问题描述 在执行一个sql脚本的时候出现了这样的问题：
+ERROR 1366 (HY000): Incorrect string value: &amp;#39;\xA3\x8E\xE6\x9C\x89\xE5...&amp;#39; for column &amp;#39;name_zh&amp;#39; at row 1 问题很明显是由于中文引起的。查看报错的语句：
+INSERT INTO `admin_menu` VALUES (&amp;#39;1&amp;#39;, &amp;#39;/admin&amp;#39;, &amp;#39;AdminIndex&amp;#39;, &amp;#39;首页&amp;#39;, &amp;#39;el-icon-s-home&amp;#39;, &amp;#39;AdminIndex&amp;#39;, &amp;#39;0&amp;#39;); 是 “首页” 无法被识别。考虑是字符集的问题。
+二、问题处理 情况一：数据库字符集与脚本所用字符集不一致 第一种可能是数据库所用的字符集和脚本字符集不一致，比如说建表时使用的字符集为 latin1，而脚本使用的却是 utf-8，这样就会导致错误。
+输入命令，查看建库语句
+SHOW CREATE DATABASE wj; +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ | Database | Create Database | +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ | white_jotter | CREATE DATABASE `wj` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION=&amp;#39;N&amp;#39; */ | +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ 显示所用字符集为 utf8mb4，说明数据库字符集与脚本所用字符集一致。</description>
+    </item>
+    <item>
+      <title>FunctionSketch 说明文档</title>
+      <link>https://wokron.github.io/posts/function-sketch-doc/</link>
+      <pubDate>Sat, 10 Sep 2022 18:33:26 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/function-sketch-doc/</guid>
+      <description>一、简述 本文档将介绍程序函数画板的主要功能和基本操作。函数画板是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。
+二、函数绘制 1、添加函数 运行exe文件后，将进入程序的主界面。如下图所示。 点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。 输入函数表达式后按回车键（或采取使输入框不再被选中的操作），若表达式正确，则会将该表达式所对应的函数绘制到主界面左侧的窗口上。
+其中正确的表达式包括如下几种情况：
+表示单变量函数 此时表达式请以x为自变量，不忽略运算符（特别注意，对数如logm(n)请写作mlogn）。表达式前可忽略“y=”。例如“y=x+x^2”或“x*(elogx)” 表示参数方程 此时请同时输入两个单变量函数表达式，以x或t为自变量，两表达式间以逗号间隔。注意请不要在两个表达式前添加“x=”或“y=”。例如“t^2,t”或“sinx,cosx” 表示隐函数（或一般的方程） 此时请以x，y表示横纵两坐标轴对应的变量。表达式中必须包含等号。例如“x^2+y^2=1”。当等式左侧为“y=”时自动转换为单变量函数计算。 另外，一次输入可以绘制多个图像。若要输入多个表达式，请将各表达式以分号间隔。
+2、函数属性设置 添加函数后，函数图像将在左侧窗口内显示，同时右侧函数列表栏内也会出现记录该函数信息的卡片（超出范围的卡片可以滑动滚轮以查看）。 每一个函数信息卡右侧有两个按钮。上面标有“x&amp;quot;字的按钮点击后可关闭该函数卡并删除左侧窗口内对应的函数图像。下面显示“···”符号的按钮，点击后可以设置该函数相关的属性。主要包括如下内容。 坐标形式 单变量函数和参数方程共有。设置图像以直角坐标或极坐标形式呈现。 线性变换 单变量函数和参数方程共有。表示一个2*2矩阵。在绘制过程中，图像的每一个坐标点会与该矩阵相乘。 位移 单变量函数和参数方程共有。表示一个二维矢量。在绘制过程中，图像的每一个坐标点会与该矢量相加。 积分 单变量函数特有。表示一个积分区间。默认不计算积分（积分范围NaN-&amp;gt;NaN）。若输入正确的积分范围，则会在左侧窗口内将求积分的面积涂色。并在信息卡上显示积分结果。 求导 单变量函数特有。点击求导按钮后会求一阶导数，并将得到的新函数添加到函数列表栏的末尾。图像也会在左侧窗口内显示。 参数范围 参数方程特有。用以表示参数的范围。左侧窗口内只会绘制参数范围内的图像。 三、保存文件 1、保存当前函数图像 点击主窗口上侧菜单栏“文件”选项。其中第一项“保存”可以将当前绘制的图像保存为图片格式（当前暂时只支持jpg格式）。
+2、查看默认保存位置 第二项“打开默认保存路径”会打开exe所在路径之下的SaveImage文件夹。可用于作为保存文件的位置。
+四、设置 1、绘制设置 点击菜单栏“设置”选项，会打开一个设置窗口。 其中前三项用于绘制设置。
+显示范围 相对位置用于设置当前显示位置与默认位置的偏移量。可以理解该值为一个表示当前窗口显示的位置相对于原点的坐标。 显示宽度用于设置当前窗口宽度下，横坐标数值的变化范围。 （该项设置也可以在主界面显示窗口用鼠标拖动和滚轮实现。） 线条颜色 设置图像曲线、坐标轴、积分区域的颜色。 线条宽度 设置图像曲线、坐标轴线条的粗细。注意该粗细不会随着窗口的缩放而发生变化。 2、算法设置 设置窗口第四项用于设置算法相关参数。算法原理详见设计文档。 基本 最小绘制间隔即生成基本绘制点时自变量的间隔。 平滑算法 平滑算法用于处理曲率较大的情况。平滑率表示连点绘制的曲线的“尖锐度”的阈值，过于“尖锐”的部分将被试图平滑。最大递归层数用于避免过深的递归，减少绘制时间。 Marching Square算法 Marching Square算法用于处理一般方程，能较有效地绘制隐函数图像。但计算量较大，以dx为单位长度绘制速度较慢。因此以dx乘以某一常数得到的长度作为新的单位长度，该常数即方块比例。 五、帮助 1、查看源代码 点击菜单栏“帮助”选项，第一项“源代码”点击后会转到保存该程序源代码的github仓库。
+2、操作说明 第二项“操作说明”可以打开一个新的帮助窗口，其中记录了一些较为常见的操作的提示。可在使用时随时查看。</description>
+    </item>
+    <item>
+      <title>FunctionSketch 设计文档</title>
+      <link>https://wokron.github.io/posts/function-sketch-design-doc/</link>
+      <pubDate>Sat, 10 Sep 2022 18:28:04 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/function-sketch-design-doc/</guid>
+      <description>一、程序简述 本软件是一个轻量级的图像绘制软件。在实现较为丰富的函数绘制功能的同时，避免了庞大的体量。与Matlab、Mathematica等专业软件的二维图像绘制功能相比，更方便上手，便于使用。可用于满足学习和简单研究的二维绘图需要。
+二、实现思路 1、表达式字符串解析 （1）解析目标 本程序的主要输入内容为表达式字符串，用以表示单变量函数、参数方程或是隐函数。为了进行计算，我们需要将其转化为可使用计算机计算的函数。我们可以将三种方程分别看成单参数、单返回值的函数；单参数、双返回值的函数；双参数，单返回值的函数（即f(x,y)=0）。这可以利用C#的delegate实现。C#中预先定义了Func&amp;lt;&amp;gt;委托。利用泛型可分别存储三种类型的方法。
+因此现在的问题便是，如何依据不同的字符串，构造出对应的可反映该表达式计算过程的方法。这里采取表达式树的结构。
+（2）FunctionParser类——字符串转表达式树 字符串转表达式树的基本算法已经在大一的数据结构课上讲过了。这里不赘述。
+不同的地方在于面向对象可以方便的利用多态代替判断。因此对于表达式树，不再需要节点内储存数据表示不同的节点类型。只需要所有的节点继承共同的抽象父类ExpressionElement，同时ExpressionElement具有函数Calculate,子类，包括Value、ArgumentX、ArgumentY、Operator等等，各自实现不同的Calculate操作。 最后，将Calculate方法赋给Func&amp;lt;&amp;gt;类型的变量，就可以实现表达式的存储了。
+（3）FunctionFactory类——字符串转函数封装信息 但是，不同类型的函数有着不同的信息，比如单变量函数可以方便地求导、积分；参数方程需要指定参数的范围。因此在绘制图像之前，还需要对函数的信息做一次封装。
+FunctionFactory读入字符串，判断其类型，将其封装为不同的类（SingleVarFuncStorage 、DoubleVarFuncStorage和ParamVarFuncStorage。其中各自具有对应函数的属性和方法），并以FunctionStorage[]父类数组的形式返回。
+2、FunctionDrawing类——图像绘制 （1）基础算法 FunctionStorage类的成员将传入FunctionDrawing类中，成员被存储在一个List&amp;lt;FunctionStorage&amp;gt;内。每次调用Refresh函数重绘，都将对列表内的每一个元素调用绘制。
+不同的函数类型将采取不同的绘制策略。绘制时先用里氏转换将函数转换会真正的子类。随后调用多态方法DrawFunction。
+虽然绘制算法并不相同，但本质上都采取了取点描线的方式。绘制利用了WPF的绘图API，主要是运用了DrawingGroup、DrawingContext类。并将绘制结果以DrawingImage的形式作为位于主界面左侧窗口的Image的Source。
+（2）平滑算法 单变量函数和参数方程的基本绘制，就是简单的以某一小间隔dx为单位，从自变量初值递增到终值，对每一个自变量，计算对应的坐标。最后将所有在绘制范围内的坐标点连接起来。
+而平滑算法是用于改善一些极端情况，如y=sin(1/x)，的绘制效果的算法。用于平滑过于“尖锐”的图像。这是一个递归算法，具体操作如下
+输入参数为三个点，构成两条线段 如果这两条线段较为“平滑”（本程序采用斜率之差的绝对值小于某一值），则退出 否则，分别对于两条线段，各自取端点参数的中值，算出坐标，将原线段的端点和中值的坐标作为参数，重复1。 （3）Marching Square算法 对于图像一般形式f(x,y)=0，就算遍历全部绘制范围也较难恰好取到等于0的情况。另外如果以某一确定的eps作为误差范围，也会因为不同的梯度导致绘制的曲线误差较大。因此需要采用新的算法。
+Marching Square算法一定程度上解决了这一问题。该算法通过将绘制区域划分成等大的方块，并取样方块顶点上的函数值，根据函数值的正负估计曲线的走向。最后利用线性插值估计f(x,y)=0在方块边上的位置，连线得出图像。 3、UI设计 （1）图像尺寸自适应 软件需要能实现尺寸的自由变化，而如果只绘制某一特定尺寸的图像，那么就无法实现较好的变化效果。
+采取的解决方式是在FunctionDrawing类内添加属性AspectRatio用于表示长宽比。同时监听窗口的尺寸变化事件。在尺寸变化后，获取新的长宽比，更新AspectRatio并调用Refresh方法重绘界面。
+（2）UserControl自定义控件 在添加函数后，主界面右侧函数列表会出现记录该函数的信息卡片。并具有删除和设置函数的按钮。该卡片集成了该函数所能做的所有操作，是FunctionStorage在UI的反映。
+如果每创建一个新的函数，都要执行一大段生成包括Button、Label、TextBlock PopUp等控件的代码，很显然是不明智的。因此采用用户控件UserControl在新的窗口设计信息卡片需要的功能。主页面则只需要在添加函数时创建关于该函数的卡片实例即可。类似的，表达式输入框等内容也是如此。 （3）Frame——Page实现单窗口多页面 点击菜单栏的设置选项，会出现一个用于设置的新窗口。选择左侧边栏的不同设置选项，右侧会显示不同的页面。这个单窗口多页面的功能，由Frame加Page控件实现。
+主设置页添加一个Frame控件，在打开该窗口时，Frame加载显示不同设置的Page。在点击左侧边栏按钮的时候，调用Frame的Navigate方法导航到对应的设置页。 三、运行环境 编写时使用Visual Studio版本为VS2019 16.11.17 .NET版本为netcoreapp3.1 c#版本为C#8.0
+四、收获 学习了面向对象编程的思想，实践了简单的代码重构。 获得了开发近4000行代码的项目的经验。 学习了一些图形学算法。 对C#的理解更加深入，并获得了简单的WPF经验。 </description>
+    </item>
+  </channel>
+</rss>

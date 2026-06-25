@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>面向对象的 C 语言 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="C, C&#43;&#43;, C#, Java, Python, Golang">
+<meta name="description" content="一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c&#43;&#43;、c#、java、python、golang
+c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 &#43; 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。
+了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。
+二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。
+让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。
+明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。
+此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。
+这样也可以理解为什么 c&#43;&#43; 中只能使用指针实现多态（引用本质还是指针）。
+Child c; Father *f = &amp;c; // 正确 Father f2 = c; // 错误 而 c&#43;&#43; 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/oop-by-c/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/oop-by-c/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="面向对象的 C 语言" />
+<meta property="og:description" content="一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c&#43;&#43;、c#、java、python、golang
+c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 &#43; 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。
+了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。
+二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。
+让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。
+明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。
+此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。
+这样也可以理解为什么 c&#43;&#43; 中只能使用指针实现多态（引用本质还是指针）。
+Child c; Father *f = &amp;c; // 正确 Father f2 = c; // 错误 而 c&#43;&#43; 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/oop-by-c/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-10-01T22:53:53+08:00" />
+<meta property="article:modified_time" content="2023-10-01T22:53:53+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="面向对象的 C 语言"/>
+<meta name="twitter:description" content="一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c&#43;&#43;、c#、java、python、golang
+c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 &#43; 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。
+了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。
+二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。
+让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。
+明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。
+此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。
+这样也可以理解为什么 c&#43;&#43; 中只能使用指针实现多态（引用本质还是指针）。
+Child c; Father *f = &amp;c; // 正确 Father f2 = c; // 错误 而 c&#43;&#43; 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "面向对象的 C 语言",
+      "item": "https://wokron.github.io/posts/oop-by-c/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "面向对象的 C 语言",
+  "name": "面向对象的 C 语言",
+  "description": "一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang\nc 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 + 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。\n了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。\n二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。\n让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。\n明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。\n此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。\n这样也可以理解为什么 c++ 中只能使用指针实现多态（引用本质还是指针）。\nChild c; Father *f = \u0026amp;c; // 正确 Father f2 = c; // 错误 而 c++ 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别",
+  "keywords": [
+    "C", "C++", "C#", "Java", "Python", "Golang"
+  ],
+  "articleBody": "一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang\nc 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 + 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。\n了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。\n二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。\n让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。\n明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。\n此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。\n这样也可以理解为什么 c++ 中只能使用指针实现多态（引用本质还是指针）。\nChild c; Father *f = \u0026c; // 正确 Father f2 = c; // 错误 而 c++ 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别\n// c++ SomeClass *obj = new SomeClass(); // java SomeClass obj = new SomeClass(); // c# SomeClass obj = new SomeClass(); 现在让我们结束一些形而上的讨论，看一下 c 语言到底应当如何实现面向对象。\n三、封装的实现 所谓封装就是数据成员与方法结合，隐藏类内成员，对外暴露方法接口。这一点很是简单。\n假设现在有一个简单的 Dog 类，里面有一个字段 name。\nstruct Dog { char *name; }; 一般来说，想要访问 name 字段只需要直接指明字段名即可。\nint main() { struct Dog dog; dog.name = \"scooby\"; printf(\"the dog's name is %s\\n\", dog.name); return 0; } 不过为了封装，可以使用 getter setter 对字段进行读写。\nchar *dog_get_name(struct Dog *self) { return self-\u003ename; } char *dog_set_name(struct Dog *self, char name[]) { self-\u003ename = name; } 这里 Dog 作为了函数的第一个参数，以此表明该函数是属于 Dog 的方法。那么上面的程序就可以改写为下面的形式。\nint main() { struct Dog dog; dog_set_name(\u0026dog, \"scooby\"); printf(\"the dog's name is %s\\n\", dog_get_name(\u0026dog)); return 0; } 当然对于简单的字段都要用程序封装实在是一种古板的做法，尤其是在使用 c 语言模拟面向对象的时候，但这只是一个例子而已。除此之外，golang 将首字母大写的属性公开的方法也有可取之处，c# 的 property 也模拟了类似的读写语法。\n// golang type Dog struct { Name string } // csharp class Dog { public string Name { get; set; } } 另外，各位应该能看出这样的写法和 python 实在类似，我们可以用 python 写出类似的代码。从中也可以稍微体会到一些 python 特有的设计哲学。\nclass Dog: name: str def get_name(self): return self.name def set_name(self, name): self.name = name if __name__ == \"__main__\": dog = Dog() Dog.set_name(dog, \"scooby\") print(f\"the dog's name is {Dog.get_name(dog)}\") 四、继承的实现 在第二小节时说过，继承体现在子类与父类具有相同的内存结构，举个例子，假如有两个类 Pet 和 Dog，其中 Pet 具有属性 name，Dog 继承了 Pet，同时增加了属性 color。那么对于 Dog 中的 name 来说，其所在的位置应该与 Pet 中的位置相同。\n也就是说，对于 Pet\nstruct Pet { char *name; }; void pet_describe(struct Pet *self) { printf(\"the pet's name is %s\\n\", self-\u003ename); } 那么 Dog 也应当具有相同的结构，name 应当位于最开始的位置\n// 正确 struct Dog { // : Pet char *name; char *color; }; // 错误 struct DogFalse { // : Pet char *color; char *name; }; 对于错误的结构，会导致错误的输出。\nint main() { struct Dog dog1 = {\"scooby\", \"brown\"}; struct DogFalse dog2 = {\"white\", \"kitty\"}; struct Pet *p1 = \u0026dog1; struct Pet *p2 = \u0026dog2; pet_describe(p1); pet_describe(p2); } the pet's name is scooby the pet's name is white 除此之外，继承还有另一种实现方式，就是使用嵌套的结构体，因为最终在内存中，嵌套的结构都会被展平。此时 Pet 的定义不变，Dog 的定义变为如下形式\nstruct Dog { struct Pet super; char *color; } 但是这样存在一个问题，就是 Pet 类中的字段我们不再能直接访问，这违反了继承的原则，尽管这种写法和之前的写法中 Dog 结构体的结构都是一样的。\ngolang 中采用后一种写法表示“继承”关系，规定当只使用类型名而不添加字段名的时候，自动使“子类”获得“父类”的属性。这就以一种很简单的方式解决了继承问题。Ken Thompson 在设计 golang 时确实保留了一些 c 的风格。\ntype Pet struct { Name string } type Dog struct { Pet Color string } func main() { dog := Dog{\"scooby\", \"brown\"}; fmt.Println(dog.name); // 正确 } 五、多态的实现 除了属性之外，还有方法需要处理。为了实现多态，我们需要让方法也具有继承关系。具体来说，也应当有一个类似于属性的结构体，其中存储该类型所用到的所有函数，而当出现一个子类的时候，也应当有一个属于该子类的，继承父类函数结构体的结构体。该结构体称为虚表。\n我们举 Pet、Dog 和 Cat 作为例子。Pet 具有属性 name 和方法 describe；Dog 和 Cat 继承 Pet。Dog 有额外属性 color 和方法 bark，Cat 有方法 meow。\n那么三个类型各有其虚表\nstruct PetVTable { char *(*describe)(struct Pet *, char []); }; struct DogVTable { char *(*describe)(struct Pet *, char []); void (*bark)(struct Dog *); }; struct CatVTable { char *(*describe)(struct Pet *, char []); void (*meow)(struct Cat *); }; 此时我们若想调用某一对象的方法，就不再直接通过函数的全局名称访问，而是通过虚表间接访问。由于虚表之间有着结构上的继承关系，所以子类必定拥有父类的方法；又由于虚表存储着函数的地址而非函数本身，因此对于有着不同虚表的对象，调用相同的方法也可能实际执行不同的函数。\n对于面向对象来说，每个类的对象有着相同的虚表，因此只需要一个类使用一个全局的虚表即可。我们可以在每个类的字段中添加一个指向虚表的指针。由于需要保证对于父类和子类，都能访问其虚表，因此该指针必须放在结构体的首部。\nstruct Pet { struct PetVTable *f; char *name; }; struct Dog { struct DogVTable *f; char *name; char *color; }; struct Cat { struct CatVTable *f; char *name; }; 接下来需要将虚表与对象关联起来，也就是说，在初始化时，将类所对应的虚表的值赋给 f。这就需要引入构造函数了。\nstruct Pet *create_Pet(struct Pet *self, char name[]) { static struct PetVTable v = {NULL}; self-\u003ef = \u0026v; self-\u003ename = name; } struct Dog *create_Dog(struct Dog *self, char name[], char color[]) { self = create_Pet(self, name); static struct DogVTable v = {dog_describe, dog_bark}; self-\u003ef = \u0026v; self-\u003ecolor = color; } struct Cat *create_Cat(struct Cat *self, char name[]) { self = create_Pet(self, name); static struct CatVTable v = {cat_describe, cat_meow}; self-\u003ef = \u0026v; } 这里分别定义了三个类型的构造函数，都传入了一个指针表示要初始化的对象的地址，为什么不在构造函数内部调用 malloc 呢？因为还存在栈上变量的可能。因此应该传入指针，把内存的申请留给用户。另外在 Dog 和 Cat 的构造函数中先调用了 Pet 的构造函数，这也是面向对象语言中的初始化流程。还有，我们将虚表定义为了函数内的 static 变量，这也保证了同一类只有同一虚表。\n最后还请注意 create_Pet 函数中的虚表，这里将其值设定为 NULL，说明 Pet 类不存在一个对应 describe 方法的实际函数。这意味着 Pet 类不应调用 describe 函数，或更进一步的，Pet 类不应存在实例。也就是说 Pet 类应该是一个抽象类。这一点实际上很像 c++ 中对于虚函数的定义。以 c++ 来描述 Pet 类的话应该就是这样的：\nstruct Pet { char *name; virtual char *describe(char buf[]) = 0; } 将 describe“赋值”为 0 和将虚表中的 describe 项赋值为 NULL（也是0）完全是一样的。\n另外，是不是觉得 create_Pet 这样的函数名太奇怪了？这其实是为预处理宏来准备的。接下来上一点宏魔法 :)\n#define NEW(cls, ...) create_##cls(malloc(sizeof(struct cls)), __VA_ARGS__) // alloc on heap #define DECL(cls, name, ...) struct cls name; create_##cls(\u0026name, __VA_ARGS__) // alloc on stack 这样分别定义了两个宏用来在堆和栈上创建变量。使用起来就如下面这样：\nint main() { struct Pet *pet = NEW(Cat, \"Kitty\"); // Pet *pet = new Cat(\"Kitty\"); DECL(Dog, dog, \"Beauty\", \"white\"); // Dog dog(\"Beauty\", \"white\"); } 是不是有一点 c++ 的感觉了？\n最后，我们实现一下 Dog 和 Cat 类的函数，并用一个小程序测试一下。\nchar *dog_describe(struct Pet *self, char buf[]) { struct Dog *dself = self; sprintf(buf, \"the %s dog is %s\", dself-\u003ecolor, dself-\u003ename); return buf; } void *dog_bark(struct Dog *self) { printf(\"%s said: \\\"wooof!!!\\\"\\n\", self-\u003ename); } char *cat_describe(struct Pet *self, char buf[]) { struct Cat *cself = self; sprintf(buf, \"this cat named %s\", cself-\u003ename); return buf; } void *cat_meow(struct Cat *self) { printf(\"%s said: \\\"meow...\\\"\\n\", self-\u003ename); } int main() { struct Pet *pet1 = NEW(Cat, \"Kitty\"); struct Pet *pet2 = NEW(Dog, \"Scooby\", \"brown\"); char desc_buf[30]; printf(\"desc cat: %s\\n\", pet1-\u003ef-\u003edescribe(pet1, desc_buf)); printf(\"desc dog: %s\\n\", pet2-\u003ef-\u003edescribe(pet2, desc_buf)); struct Cat *cat = pet1; struct Dog *dog = pet2; cat-\u003ef-\u003emeow(cat); dog-\u003ef-\u003ebark(dog); return 0; } 输出结果如下，可以看出 describe 函数的多态性。\ndesc cat: this cat named Kitty desc dog: the brown dog is Scooby Kitty said: \"meow...\" Scooby said: \"wooof!!!\" 六、函数重载？ 最后还想讲一点关于函数重载的内容，函数重载也是面向对象的一部分。c 语言没有函数重载，这对于程序员来说十分不友好，因为众所周知，取名字是一项十分耗费时间精力的工作。可如果我说能够让 c 语言也有函数重载，你是否相信呢？\n当然这一点是夸大了，我们不可能改变 c 语言的语法，我的意思是，如何在没有函数重载的情况下以类似的方式解决函数重载所解决的问题。对于这一点，实际上我们可以完全参考 python 的解决方法。python 没有函数重载，实际上我在使用 python 很长时间之后还没有意识到这一点，当然这一定上源于用 python 进行的工作大部分不过是调用 api 而已。但是这还是能一定程度上说明 python 的解决方法是较为合理的。\npython 的实现方法实际上就是参数表。通过设定默认值使得调用者只需要设定自己需要的参数，从而实现了“伪重载”。举一个例子\ndef add( a: int = 0, b: int = 0, arr: list[int] = None, ): if arr is None: return a + b else: return sum(arr) print(add(a=1, b=2)) print(add(arr=[1, 2, 3, 4, 5])) 输出\n3 15 当然 python 不需要重载还有部分鸭子类型的原因。c 语言虽然没有，但是依旧可以使用参数表模拟多态的方式更加灵活地调用函数。\n#include struct AddParam { int a; int b; int *arr; int size; }; int add(struct AddParam *param) { if (param-\u003earr == NULL) { return param-\u003ea + param-\u003eb; } else { int sum = 0; for (int i = 0; i \u003c param-\u003esize; i++) { sum += param-\u003earr[i]; } return sum; } } int main() { struct AddParam param1; param1.a = 1; param1.b = 2; printf(\"%d\\n\", add(\u0026param1)); struct AddParam param2; int arr[5] = {1, 2, 3, 4, 5}; param2.arr = arr; param2.size = 5; printf(\"%d\\n\", add(\u0026param2)); } ",
+  "wordCount" : "962",
+  "inLanguage": "zh",
+  "datePublished": "2023-10-01T22:53:53+08:00",
+  "dateModified": "2023-10-01T22:53:53+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/oop-by-c/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      面向对象的 C 语言
+    </h1>
+    <div class="post-meta"><span title='2023-10-01 22:53:53 +0800 CST'>十月 1, 2023</span>&nbsp;·&nbsp;5 分钟&nbsp;·&nbsp;962 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/oop-by-c.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%89%8d%e8%a8%80%e5%af%b9%e8%b1%a1%e4%b8%8e%e8%bf%87%e7%a8%8b" aria-label="一、前言——对象与过程">一、前言——对象与过程</a></li>
+                <li>
+                    <a href="#%e4%ba%8cc%e8%af%ad%e8%a8%80%e7%9a%84%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e4%bd%95%e4%bb%a5%e5%8f%af%e8%83%bd" aria-label="二、c语言的面向对象何以可能">二、c语言的面向对象何以可能</a></li>
+                <li>
+                    <a href="#%e4%b8%89%e5%b0%81%e8%a3%85%e7%9a%84%e5%ae%9e%e7%8e%b0" aria-label="三、封装的实现">三、封装的实现</a></li>
+                <li>
+                    <a href="#%e5%9b%9b%e7%bb%a7%e6%89%bf%e7%9a%84%e5%ae%9e%e7%8e%b0" aria-label="四、继承的实现">四、继承的实现</a></li>
+                <li>
+                    <a href="#%e4%ba%94%e5%a4%9a%e6%80%81%e7%9a%84%e5%ae%9e%e7%8e%b0" aria-label="五、多态的实现">五、多态的实现</a></li>
+                <li>
+                    <a href="#%e5%85%ad%e5%87%bd%e6%95%b0%e9%87%8d%e8%bd%bd" aria-label="六、函数重载？">六、函数重载？</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一前言对象与过程">一、前言——对象与过程<a hidden class="anchor" aria-hidden="true" href="#一前言对象与过程">#</a></h2>
+<blockquote>
+<p>碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang</p>
+</blockquote>
+<p>c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式：
+</p>
+$$
+    程序 = 数据结构 + 算法
+$$
+<!-- raw HTML omitted -->
+<p>面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。</p>
+<p>了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何<strong>操纵</strong>数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，<strong>管理</strong>流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。</p>
+<h2 id="二c语言的面向对象何以可能">二、c语言的面向对象何以可能<a hidden class="anchor" aria-hidden="true" href="#二c语言的面向对象何以可能">#</a></h2>
+<p>说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。</p>
+<p>让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是<strong>相同</strong>的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所<strong>不同</strong>。</p>
+<p>明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中<strong>相同</strong>的方法名对应的具体过程<strong>不同</strong>。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。</p>
+<p>此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。</p>
+<p>这样也可以理解为什么 c++ 中只能使用指针实现多态（引用本质还是指针）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Child</span> <span class="n">c</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">Father</span> <span class="o">*</span><span class="n">f</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">c</span><span class="p">;</span>  <span class="c1">// 正确
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">Father</span> <span class="n">f2</span> <span class="o">=</span> <span class="n">c</span><span class="p">;</span>   <span class="c1">// 错误
+</span></span></span></code></pre></div><p>而 c++ 中使用 <code>new</code> 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// c++
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">SomeClass</span> <span class="o">*</span><span class="n">obj</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SomeClass</span><span class="p">();</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="c1">// java</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">SomeClass</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SomeClass</span><span class="p">();</span><span class="w">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-csharp" data-lang="csharp"><span class="line"><span class="cl"><span class="c1">// c#</span>
+</span></span><span class="line"><span class="cl"><span class="n">SomeClass</span> <span class="n">obj</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SomeClass</span><span class="p">();</span>
+</span></span></code></pre></div><p>现在让我们结束一些形而上的讨论，看一下 c 语言到底应当如何实现面向对象。</p>
+<h2 id="三封装的实现">三、封装的实现<a hidden class="anchor" aria-hidden="true" href="#三封装的实现">#</a></h2>
+<p>所谓封装就是数据成员与方法结合，隐藏类内成员，对外暴露方法接口。这一点很是简单。</p>
+<p>假设现在有一个简单的 <code>Dog</code> 类，里面有一个字段 <code>name</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Dog</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>一般来说，想要访问 <code>name</code> 字段只需要直接指明字段名即可。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Dog</span> <span class="n">dog</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dog</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#34;scooby&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;the dog&#39;s name is %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">dog</span><span class="p">.</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>不过为了封装，可以使用 <code>getter</code> <code>setter</code> 对字段进行读写。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">char</span> <span class="o">*</span><span class="nf">dog_get_name</span><span class="p">(</span><span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">self</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">self</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">char</span> <span class="o">*</span><span class="nf">dog_set_name</span><span class="p">(</span><span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">char</span> <span class="n">name</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这里 <code>Dog</code> 作为了函数的第一个参数，以此表明该函数是属于 <code>Dog</code> 的方法。那么上面的程序就可以改写为下面的形式。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Dog</span> <span class="n">dog</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">dog_set_name</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dog</span><span class="p">,</span> <span class="s">&#34;scooby&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;the dog&#39;s name is %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">dog_get_name</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dog</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>当然对于简单的字段都要用程序封装实在是一种古板的做法，尤其是在使用 c 语言模拟面向对象的时候，但这只是一个例子而已。除此之外，golang 将首字母大写的属性公开的方法也有可取之处，c# 的 property 也模拟了类似的读写语法。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// golang
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Dog</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Name</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-csharp" data-lang="csharp"><span class="line"><span class="cl"><span class="c1">// csharp</span>
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Dog</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kt">string</span> <span class="n">Name</span> <span class="p">{</span> <span class="k">get</span><span class="p">;</span> <span class="k">set</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>另外，各位应该能看出这样的写法和 python 实在类似，我们可以用 python 写出类似的代码。从中也可以稍微体会到一些 python 特有的设计哲学。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Dog</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">set_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dog</span> <span class="o">=</span> <span class="n">Dog</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Dog</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="n">dog</span><span class="p">,</span> <span class="s2">&#34;scooby&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;the dog&#39;s name is </span><span class="si">{</span><span class="n">Dog</span><span class="o">.</span><span class="n">get_name</span><span class="p">(</span><span class="n">dog</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><h2 id="四继承的实现">四、继承的实现<a hidden class="anchor" aria-hidden="true" href="#四继承的实现">#</a></h2>
+<p>在第二小节时说过，继承体现在子类与父类具有相同的内存结构，举个例子，假如有两个类 <code>Pet</code> 和 <code>Dog</code>，其中 <code>Pet</code> 具有属性 <code>name</code>，<code>Dog</code> 继承了 <code>Pet</code>，同时增加了属性 <code>color</code>。那么对于 <code>Dog</code> 中的 <code>name</code> 来说，其所在的位置应该与 <code>Pet</code> 中的位置相同。</p>
+<p>也就是说，对于 <code>Pet</code></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Pet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">pet_describe</span><span class="p">(</span><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">self</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;the pet&#39;s name is %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">self</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>那么 <code>Dog</code> 也应当具有相同的结构，<code>name</code> 应当位于最开始的位置</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// 正确
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">struct</span> <span class="n">Dog</span> <span class="p">{</span> <span class="c1">// : Pet
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">color</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 错误
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">struct</span> <span class="n">DogFalse</span> <span class="p">{</span> <span class="c1">// : Pet
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">char</span> <span class="o">*</span><span class="n">color</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>对于错误的结构，会导致错误的输出。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Dog</span> <span class="n">dog1</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#34;scooby&#34;</span><span class="p">,</span> <span class="s">&#34;brown&#34;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">DogFalse</span> <span class="n">dog2</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#34;white&#34;</span><span class="p">,</span> <span class="s">&#34;kitty&#34;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">p1</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">dog1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">p2</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">dog2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pet_describe</span><span class="p">(</span><span class="n">p1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pet_describe</span><span class="p">(</span><span class="n">p2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">the pet&#39;s name is scooby
+</span></span><span class="line"><span class="cl">the pet&#39;s name is white
+</span></span></code></pre></div><p>除此之外，继承还有另一种实现方式，就是使用嵌套的结构体，因为最终在内存中，嵌套的结构都会被展平。此时 <code>Pet</code> 的定义不变，<code>Dog</code> 的定义变为如下形式</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Dog</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Pet</span> <span class="n">super</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">color</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>但是这样存在一个问题，就是 <code>Pet</code> 类中的字段我们不再能直接访问，这违反了继承的原则，尽管这种写法和之前的写法中 <code>Dog</code> 结构体的结构都是一样的。</p>
+<p>golang 中采用后一种写法表示“继承”关系，规定当只使用类型名而不添加字段名的时候，自动使“子类”获得“父类”的属性。这就以一种很简单的方式解决了继承问题。Ken Thompson 在设计 golang 时确实保留了一些 c 的风格。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Pet</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Name</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Dog</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Pet</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Color</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">dog</span> <span class="o">:=</span> <span class="nx">Dog</span><span class="p">{</span><span class="s">&#34;scooby&#34;</span><span class="p">,</span> <span class="s">&#34;brown&#34;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">dog</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>  <span class="c1">// 正确
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><h2 id="五多态的实现">五、多态的实现<a hidden class="anchor" aria-hidden="true" href="#五多态的实现">#</a></h2>
+<p>除了属性之外，还有方法需要处理。为了实现多态，我们需要让方法也具有继承关系。具体来说，也应当有一个类似于属性的结构体，其中存储该类型所用到的所有函数，而当出现一个子类的时候，也应当有一个属于该子类的，继承父类函数结构体的结构体。该结构体称为虚表。</p>
+<p>我们举 <code>Pet</code>、<code>Dog</code> 和 <code>Cat</code> 作为例子。<code>Pet</code> 具有属性 <code>name</code> 和方法 <code>describe</code>；<code>Dog</code> 和 <code>Cat</code> 继承 <code>Pet</code>。<code>Dog</code> 有额外属性 <code>color</code> 和方法 <code>bark</code>，<code>Cat</code> 有方法 <code>meow</code>。</p>
+<p>那么三个类型各有其虚表</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">PetVTable</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">describe</span><span class="p">)(</span><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="p">,</span> <span class="kt">char</span> <span class="p">[]);</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">DogVTable</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">describe</span><span class="p">)(</span><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="p">,</span> <span class="kt">char</span> <span class="p">[]);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">bark</span><span class="p">)(</span><span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">CatVTable</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">describe</span><span class="p">)(</span><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="p">,</span> <span class="kt">char</span> <span class="p">[]);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">meow</span><span class="p">)(</span><span class="k">struct</span> <span class="n">Cat</span> <span class="o">*</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>此时我们若想调用某一对象的方法，就不再直接通过函数的全局名称访问，而是通过虚表间接访问。由于虚表之间有着结构上的继承关系，所以子类必定拥有父类的方法；又由于虚表存储着函数的地址而非函数本身，因此对于有着不同虚表的对象，调用相同的方法也可能实际执行不同的函数。</p>
+<p>对于面向对象来说，每个类的对象有着相同的虚表，因此只需要一个类使用一个全局的虚表即可。我们可以在每个类的字段中添加一个指向虚表的指针。由于需要保证对于父类和子类，都能访问其虚表，因此该指针必须放在结构体的首部。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Pet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">PetVTable</span> <span class="o">*</span><span class="n">f</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Dog</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">DogVTable</span> <span class="o">*</span><span class="n">f</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">color</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Cat</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">CatVTable</span> <span class="o">*</span><span class="n">f</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>接下来需要将虚表与对象关联起来，也就是说，在初始化时，将类所对应的虚表的值赋给 <code>f</code>。这就需要引入构造函数了。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="nf">create_Pet</span><span class="p">(</span><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">char</span> <span class="n">name</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">static</span> <span class="k">struct</span> <span class="n">PetVTable</span> <span class="n">v</span> <span class="o">=</span> <span class="p">{</span><span class="nb">NULL</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span><span class="o">-&gt;</span><span class="n">f</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">v</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span><span class="o">-&gt;</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="nf">create_Dog</span><span class="p">(</span><span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">char</span> <span class="n">name</span><span class="p">[],</span> <span class="kt">char</span> <span class="n">color</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span> <span class="o">=</span> <span class="nf">create_Pet</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">static</span> <span class="k">struct</span> <span class="n">DogVTable</span> <span class="n">v</span> <span class="o">=</span> <span class="p">{</span><span class="n">dog_describe</span><span class="p">,</span> <span class="n">dog_bark</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span><span class="o">-&gt;</span><span class="n">f</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">v</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span><span class="o">-&gt;</span><span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Cat</span> <span class="o">*</span><span class="nf">create_Cat</span><span class="p">(</span><span class="k">struct</span> <span class="n">Cat</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">char</span> <span class="n">name</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span> <span class="o">=</span> <span class="nf">create_Pet</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">static</span> <span class="k">struct</span> <span class="n">CatVTable</span> <span class="n">v</span> <span class="o">=</span> <span class="p">{</span><span class="n">cat_describe</span><span class="p">,</span> <span class="n">cat_meow</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="n">self</span><span class="o">-&gt;</span><span class="n">f</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">v</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这里分别定义了三个类型的构造函数，都传入了一个指针表示要初始化的对象的地址，为什么不在构造函数内部调用 <code>malloc</code> 呢？因为还存在栈上变量的可能。因此应该传入指针，把内存的申请留给用户。另外在 <code>Dog</code> 和 <code>Cat</code> 的构造函数中先调用了 <code>Pet</code> 的构造函数，这也是面向对象语言中的初始化流程。还有，我们将虚表定义为了函数内的 <code>static</code> 变量，这也保证了同一类只有同一虚表。</p>
+<p>最后还请注意 <code>create_Pet</code> 函数中的虚表，这里将其值设定为 NULL，说明 <code>Pet</code> 类不存在一个对应 <code>describe</code> 方法的实际函数。这意味着 <code>Pet</code> 类不应调用 <code>describe</code> 函数，或更进一步的，<code>Pet</code> 类不应存在实例。也就是说 <code>Pet</code> 类应该是一个抽象类。这一点实际上很像 c++ 中对于虚函数的定义。以 c++ 来描述 <code>Pet</code> 类的话应该就是这样的：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">Pet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">virtual</span> <span class="kt">char</span> <span class="o">*</span><span class="nf">describe</span><span class="p">(</span><span class="kt">char</span> <span class="n">buf</span><span class="p">[])</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>将 <code>describe</code>“赋值”为 0 和将虚表中的 <code>describe</code> 项赋值为 NULL（也是0）完全是一样的。</p>
+<p>另外，是不是觉得 <code>create_Pet</code> 这样的函数名太奇怪了？这其实是为预处理宏来准备的。接下来上一点宏魔法 <code>:)</code></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#define NEW(cls, ...) create_##cls(malloc(sizeof(struct cls)), __VA_ARGS__)  </span><span class="c1">// alloc on heap
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#define DECL(cls, name, ...) struct cls name; create_##cls(&amp;name, __VA_ARGS__)  </span><span class="c1">// alloc on stack
+</span></span></span></code></pre></div><p>这样分别定义了两个宏用来在堆和栈上创建变量。使用起来就如下面这样：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">pet</span> <span class="o">=</span> <span class="nf">NEW</span><span class="p">(</span><span class="n">Cat</span><span class="p">,</span> <span class="s">&#34;Kitty&#34;</span><span class="p">);</span>  <span class="c1">// Pet *pet = new Cat(&#34;Kitty&#34;);
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">DECL</span><span class="p">(</span><span class="n">Dog</span><span class="p">,</span> <span class="n">dog</span><span class="p">,</span> <span class="s">&#34;Beauty&#34;</span><span class="p">,</span> <span class="s">&#34;white&#34;</span><span class="p">);</span>  <span class="c1">// Dog dog(&#34;Beauty&#34;, &#34;white&#34;);
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>是不是有一点 c++ 的感觉了？</p>
+<p>最后，我们实现一下 <code>Dog</code> 和 <code>Cat</code> 类的函数，并用一个小程序测试一下。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">char</span> <span class="o">*</span><span class="nf">dog_describe</span><span class="p">(</span><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">char</span> <span class="n">buf</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">dself</span> <span class="o">=</span> <span class="n">self</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="s">&#34;the %s dog is %s&#34;</span><span class="p">,</span> <span class="n">dself</span><span class="o">-&gt;</span><span class="n">color</span><span class="p">,</span> <span class="n">dself</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="o">*</span><span class="nf">dog_bark</span><span class="p">(</span><span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">self</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%s said: </span><span class="se">\&#34;</span><span class="s">wooof!!!</span><span class="se">\&#34;\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">self</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">char</span> <span class="o">*</span><span class="nf">cat_describe</span><span class="p">(</span><span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">char</span> <span class="n">buf</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Cat</span> <span class="o">*</span><span class="n">cself</span> <span class="o">=</span> <span class="n">self</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="s">&#34;this cat named %s&#34;</span><span class="p">,</span> <span class="n">cself</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="o">*</span><span class="nf">cat_meow</span><span class="p">(</span><span class="k">struct</span> <span class="n">Cat</span> <span class="o">*</span><span class="n">self</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%s said: </span><span class="se">\&#34;</span><span class="s">meow...</span><span class="se">\&#34;\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">self</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">pet1</span> <span class="o">=</span> <span class="nf">NEW</span><span class="p">(</span><span class="n">Cat</span><span class="p">,</span> <span class="s">&#34;Kitty&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Pet</span> <span class="o">*</span><span class="n">pet2</span> <span class="o">=</span> <span class="nf">NEW</span><span class="p">(</span><span class="n">Dog</span><span class="p">,</span> <span class="s">&#34;Scooby&#34;</span><span class="p">,</span> <span class="s">&#34;brown&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">desc_buf</span><span class="p">[</span><span class="mi">30</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;desc cat: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pet1</span><span class="o">-&gt;</span><span class="n">f</span><span class="o">-&gt;</span><span class="nf">describe</span><span class="p">(</span><span class="n">pet1</span><span class="p">,</span> <span class="n">desc_buf</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;desc dog: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pet2</span><span class="o">-&gt;</span><span class="n">f</span><span class="o">-&gt;</span><span class="nf">describe</span><span class="p">(</span><span class="n">pet2</span><span class="p">,</span> <span class="n">desc_buf</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Cat</span> <span class="o">*</span><span class="n">cat</span> <span class="o">=</span> <span class="n">pet1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">Dog</span> <span class="o">*</span><span class="n">dog</span> <span class="o">=</span> <span class="n">pet2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cat</span><span class="o">-&gt;</span><span class="n">f</span><span class="o">-&gt;</span><span class="nf">meow</span><span class="p">(</span><span class="n">cat</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dog</span><span class="o">-&gt;</span><span class="n">f</span><span class="o">-&gt;</span><span class="nf">bark</span><span class="p">(</span><span class="n">dog</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>输出结果如下，可以看出 <code>describe</code> 函数的多态性。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">desc cat: this cat named Kitty
+</span></span><span class="line"><span class="cl">desc dog: the brown dog is Scooby
+</span></span><span class="line"><span class="cl">Kitty said: &#34;meow...&#34;
+</span></span><span class="line"><span class="cl">Scooby said: &#34;wooof!!!&#34;
+</span></span></code></pre></div><h2 id="六函数重载">六、函数重载？<a hidden class="anchor" aria-hidden="true" href="#六函数重载">#</a></h2>
+<p>最后还想讲一点关于函数重载的内容，函数重载也是面向对象的一部分。c 语言没有函数重载，这对于程序员来说十分不友好，因为众所周知，取名字是一项十分耗费时间精力的工作。可如果我说能够让 c 语言也有函数重载，你是否相信呢？</p>
+<p>当然这一点是夸大了，我们不可能改变 c 语言的语法，我的意思是，如何在没有函数重载的情况下以类似的方式解决函数重载所解决的问题。对于这一点，实际上我们可以完全参考 python 的解决方法。python 没有函数重载，实际上我在使用 python 很长时间之后还没有意识到这一点，当然这一定上源于用 python 进行的工作大部分不过是调用 api 而已。但是这还是能一定程度上说明 python 的解决方法是较为合理的。</p>
+<p>python 的实现方法实际上就是参数表。通过设定默认值使得调用者只需要设定自己需要的参数，从而实现了“伪重载”。举一个例子</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">add</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">a</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">b</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">arr</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">arr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="n">arr</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]))</span>
+</span></span></code></pre></div><p>输出</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">3
+</span></span><span class="line"><span class="cl">15
+</span></span></code></pre></div><p>当然 python 不需要重载还有部分鸭子类型的原因。c 语言虽然没有，但是依旧可以使用参数表模拟多态的方式更加灵活地调用函数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">AddParam</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">b</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="o">*</span><span class="n">arr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">add</span><span class="p">(</span><span class="k">struct</span> <span class="n">AddParam</span> <span class="o">*</span><span class="n">param</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">param</span><span class="o">-&gt;</span><span class="n">arr</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">param</span><span class="o">-&gt;</span><span class="n">a</span> <span class="o">+</span> <span class="n">param</span><span class="o">-&gt;</span><span class="n">b</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">param</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">sum</span> <span class="o">+=</span> <span class="n">param</span><span class="o">-&gt;</span><span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">sum</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">AddParam</span> <span class="n">param1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">param1</span><span class="p">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">param1</span><span class="p">.</span><span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">param1</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">AddParam</span> <span class="n">param2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">arr</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="n">param2</span><span class="p">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">param2</span><span class="p">.</span><span class="n">size</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">param2</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+      <li><a href="https://wokron.github.io/tags/c&#43;&#43;/">C&#43;&#43;</a></li>
+      <li><a href="https://wokron.github.io/tags/c">C#</a></li>
+      <li><a href="https://wokron.github.io/tags/java/">Java</a></li>
+      <li><a href="https://wokron.github.io/tags/python/">Python</a></li>
+      <li><a href="https://wokron.github.io/tags/golang/">Golang</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/play-with-zsh/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>不务正业：玩个 zsh</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/practical-cmake-tutorial/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>CMake 实用语法教程</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 面向对象的 C 语言 on x"
+            href="https://x.com/intent/tweet/?text=%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e7%9a%84%20C%20%e8%af%ad%e8%a8%80&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f&amp;hashtags=C%2cC%2b%2b%2cC%23%2cJava%2cPython%2cGolang">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 面向对象的 C 语言 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f&amp;title=%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e7%9a%84%20C%20%e8%af%ad%e8%a8%80&amp;summary=%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e7%9a%84%20C%20%e8%af%ad%e8%a8%80&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 面向对象的 C 语言 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f&title=%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e7%9a%84%20C%20%e8%af%ad%e8%a8%80">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 面向对象的 C 语言 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 面向对象的 C 语言 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e7%9a%84%20C%20%e8%af%ad%e8%a8%80%20-%20https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 面向对象的 C 语言 on telegram"
+            href="https://telegram.me/share/url?text=%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e7%9a%84%20C%20%e8%af%ad%e8%a8%80&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 面向对象的 C 语言 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e9%9d%a2%e5%90%91%e5%af%b9%e8%b1%a1%e7%9a%84%20C%20%e8%af%ad%e8%a8%80&u=https%3a%2f%2fwokron.github.io%2fposts%2foop-by-c%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

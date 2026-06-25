@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>汇编 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/%E6%B1%87%E7%BC%96/</link>
+    <description>Recent content in 汇编 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Fri, 03 Nov 2023 21:56:13 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/%E6%B1%87%E7%BC%96/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>了解 LLVM IR，从手写开始</title>
+      <link>https://wokron.github.io/posts/introduction-of-llvm/</link>
+      <pubDate>Fri, 03 Nov 2023 21:56:13 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/introduction-of-llvm/</guid>
+      <description>一、总览 如果你想要了解 LLVM，那么有几种可能呢？你或许是想要创造一门新的编程语言的技术爱好者；或是陷入编译课的泥沼不能自拔的大学生，但不管怎么样，你都只希望使用 LLVM 做一件事：生成目标代码。
+但是这一过程并不容易。你大概率经过了编译前端的艰辛历程，但是现在在你面前的是另一座大山，LLVM IR。在最开始就看到什么基本块、虚拟寄存器、phi 节点之类的概念使你心烦意乱；各种各样的代码示例中充满了和重点并不相关的细节。这些都使你无从下手……
+或许一个更好的学习方式是将 LLVM IR 视为一种特殊的编程语言，而非编译器的 “中间表示”。这种语言站在了高级与低级语言之间，既具备了一定的抽象能力，又反映了底层汇编的工作原理。
+本篇文章，就将以编程语言的视角粗略介绍 LLVM IR。通过直接手写 LLVM IR，逐步分析其特点和原理。希望能够有所帮助。
+（1）准备工作 LLVM IR 虽然是中间代码，但是 LLVM 也提供了 lli 工具用于解释/即时编译执行 LLVM IR 文件。这样 LLVM IR 又与 Java 字节码有了一些相似之处。使用 lli 可以直接运行我们手写的中间代码，很是方便。使用 lli 这需要安装 LLVM。
+sudo apt-get install llvm 另外，LLVM 中是没有内建输入输出的，因为 LLVM 的工作在操作系统之下。这就导致了一个问题，我们不能得知程序的执行结果。一种方法是可以用函数的返回值来输出，但是这样输出只能是单个数值。为了方便起见，可以先用 c 语言编写一个输出库。并使用 clang 将其编译成 LLVM IR。为此需要安装 clang
+sudo apt-get install clang 对于输出库，这里只简单定义 putint 函数。
+// lib.c #include &amp;lt;stdio.h&amp;gt; void putint(int i) { printf(&amp;#34;%d\n&amp;#34;, i); } 使用 clang 将其翻译成中间代码。不要担心，我们并不需要关心生成的 lib.</description>
+    </item>
+  </channel>
+</rss>

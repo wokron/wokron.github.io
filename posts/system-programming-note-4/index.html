@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>系统编程之信号及信号处理 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="C, Linux, Shell">
+<meta name="description" content="一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl&#43;c ctrl&#43;\ ctrl&#43;Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &lt;signal.h&gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/system-programming-note-4/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/system-programming-note-4/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="系统编程之信号及信号处理" />
+<meta property="og:description" content="一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl&#43;c ctrl&#43;\ ctrl&#43;Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &lt;signal.h&gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/system-programming-note-4/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-11-13T15:30:11+08:00" />
+<meta property="article:modified_time" content="2022-11-13T15:30:11+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="系统编程之信号及信号处理"/>
+<meta name="twitter:description" content="一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl&#43;c ctrl&#43;\ ctrl&#43;Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &lt;signal.h&gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "系统编程之信号及信号处理",
+      "item": "https://wokron.github.io/posts/system-programming-note-4/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "系统编程之信号及信号处理",
+  "name": "系统编程之信号及信号处理",
+  "description": "一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。\n（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：\n信号值小于 SIGRTMIN（\u0026lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。\n（3）信号的产生 信号可以由一下几种方式产生：\n键盘事件：ctrl+c ctrl+\\ ctrl+Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：\n接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。\nkill() 函数 #include \u0026lt;signal.h\u0026gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况\n若 pid\u0026gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid\u0026lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。",
+  "keywords": [
+    "C", "Linux", "Shell"
+  ],
+  "articleBody": "一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。\n（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：\n信号值小于 SIGRTMIN（\u003c=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。\n（3）信号的产生 信号可以由一下几种方式产生：\n键盘事件：ctrl+c ctrl+\\ ctrl+Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：\n接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。\nkill() 函数 #include int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况\n若 pid\u003e0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid\u003c-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。\n#include int sigqueue(pid_t pid, int sig, const union sigval value); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号，第三个参数于指定传递的数据 参数 value 用于指定伴随信号传递的数据，为 sigval 联合体，该联合体的定义如下：\nunion sigval { int sival_int; void *sival_ptr; }; 如下的代码使用 segqueue 函数实现了数据的进程间传输\n./B \u0026 # 此时，输出进程 B 的 PID 号。 ./A processB_PID 123456 # 第一个参数表示进程 B 的 PID，第二个参数为要传输的（数字） //code of A #include #include #include #include #include int main(int argc, char *argv[]) { pid_t pid = atoi(argv[1]); int stuID = atoi(argv[2]); union sigval v; v.sival_int = stuID; sigqueue(pid, SIGINT, v); return 0; } //code of B #include #include #include #include #include void handler(int, siginfo_t *, void*); int main(int argc, char *argv[]) { struct sigaction act; act.sa_sigaction = handler; sigemptyset(\u0026act.sa_mask); act.sa_flags = SA_SIGINFO; sigaction(SIGINT, \u0026act, NULL); for(; ;) pause(); return 0; } void handler(int sig, siginfo_t *info, void *ctx) { printf(\"num received:%d\\n\", info-\u003esi_value.sival_int); } （2）信号捕捉 若进程捕捉某信号后，想要让其执行非默认的处理函数，则需要为该信号注册信号处理函数。进程的信号是在内核态下处理的，内核为每个进程准备了一个信号向量表，其中记录了每个信号所对应的信号处理函数。Linux 系统为用户提供了两个捕捉信号的函数，即 signal() 和 sigaction() 两个函数。\n#include typedef void (*sighandler_t)(int); sighandler_t signal(int signum,sighandler_t handler); //第一个参数表示信号编号，第二个参数一般表示信号处理函数的函数指针，除此之外还可以为SIG_IGN和SIG_DEL #include int sigaction(int signum,const struct sigaction* act,const struct sigaction* oldact); //第一个参数表示信号编号，第二个为传入参数，包含自定义处理函数和其他信息，第三个参数为传出参数，包含旧处理函数等信息 如下的代码通过信号实现了异步回收子进程。避免了 wait() 函数回收子进程时对父进程的阻塞。\n#include #include #include #include #include void collect(int sig); int main() { signal(SIGCHLD, collect); pid_t pid; for (int i = 1; i \u003c= 5; i++) { pid = fork(); if (pid == 0) // child { printf(\"child pid:%d\\n\", getpid()); fflush(stdout); exit(i); } } // 模拟父进程继续执行 int time = 10; while ((time = sleep(time)) != 0); } void collect(int sig) { signal(SIGCHLD, collect); int status; pid_t pid; while ((pid = waitpid(-1, \u0026status, WNOHANG)) \u003e 0) { printf(\"child collected, pid:%d, status:%d\\n\", pid, WEXITSTATUS(status)); fflush(stdout); } } （3）信号屏蔽 信号屏蔽机制是用于解决常规信号不可靠这一问题。在进程的 PCB 中存在两个信号集，分别为信号掩码和未决信号集。两个信号集实质上都是位图，其中每一位对应一个信号，若信号掩码某一位为 1，则其对应的信号会被屏蔽，进入阻塞状态，此时内核会修改未决信号集中该信号对应的位为 1，表示信号处于未决状态，之后除非信号被解除屏蔽，否则内核不会再向该进程发送该信号。\n信号集设定函数：\nsigemptyset()——将指定信号集清 0\nsigfillset()——将指定信号集置 1\nsigaddset()——将某信号加入指定信号集\nsigdelset()——将某信号从信号集中删除\nsigismember()——判断某信号是否已被加入指定信号集\n信号集函数：\n#include int sigprocmask(int how,const sigset_t* set,sigset_t* oldset); //第一个参数用于设置位操作方式，第二个参数一般为用户指定信号集，第三个参数用于保存原信号集 //how=SIG_BLOCK：mask=mask|set //how=SIG_UNBLOCK：mask=mask\u0026~set //how=SIG_SETMASK：mask=set 如下的代码展示了信号遮蔽的使用方式。通过阻塞所有信号，避免了 printf() 函数因使用全局缓冲区而产生的异步信号不安全问题。\nvoid print_safe() { sigset_t set; // 1~64 为所有信号的编号 for (int i = 1; i \u003c= 64; i++) sigaddset(\u0026set, i); // 阻塞所有信号 sigprocmask(SIG_BLOCK, \u0026set, NULL); printf(\"safe print!\\n\"); // 恢复所有信号 sigprocmask(SIG_UNBLOCK, \u0026set, NULL); } （4）定时信号 Linux 下的 alarm() 函数可以用来设置闹钟，该函数的原型为：\n#include unsigned int alarm(unsigned int seconds); //第一个参数seconds用来指明时间，经过seconds秒后发送SIGALRM信号给当前进程，当参数为0则取消之前的闹钟 返回值：\n如果本次调用前已有正在运行的闹钟，alarm()函数返回前一个闹钟的剩余秒数 如果本次调用前无正在运行的闹钟，alarm()函数返回 0 Linux 系统中 sleep()函数内部使用 nanosleep()函数实现，该函数与信号无关；而其他系统中可能使用 alarm()和 pause()函数实现，此时不应该混用 alarm()和 sleep()。\n如下的代码实现了这样的功能：程序每间隔 1 秒输出信息，当按下 ctrl+c 后，程序询问是否退出程序（此时停止输出学号），输入 Y 或 5 秒未进行任何输入则退出程序，输入 N 程序恢复运行，继续输出信息\n#include #include #include #include void chooseIfExit(int signal); void doExit(int signal); int main() { signal(SIGINT, chooseIfExit); while(1) { printf(\"21371326\\n\"); sleep(1); } return 0; } void chooseIfExit(int sig) { signal(SIGINT, chooseIfExit); signal(SIGALRM, doExit); alarm(5); printf(\"want to exit? (Y/N)\\n\"); char choose; scanf(\" %c\", \u0026choose); if (choose == 'N') { alarm(0); } else { doExit(SIGINT); } } void doExit(int signal) { printf(\"exit...\\n\"); exit(0); } （5）计时器 Linux 下的 setitimer() 和 getitimer() 系统调用可以用于访问和设置计时器，计时器在初次经过设定的时间后发出信号，也可以设置为每间隔相同的时间发出信号，该函数的原型为：\n#include int getitimer(int which, struct itimerval *curr_value); int setitimer(int which, const struct itimerval *restrict new_value, struct itimerval *restrict old_value); 通过指定 which 参数，可以设置不同的计时器，不同的计时器触发后也会发出不同的信号，一个进程同时只能有一种计时器：\nITIMER_REAL：真实计时器，计算程序运行的真实时间（墙钟时间），产生 SIGALRM 信号 ITIMER_VIRTUAL：虚拟计时器，计算当前进程处于用户态的 cpu 时间，产生 SIGVTALRM 信号 ITIMER_PROF：使用计时器，计算当前进程处于用户态和内核态的 cpu 时间，产生 SIGPROF 信号 计时器的值有以下结构体定义：\nstruct itimerval { struct timeval it_interval; //定期触发的间隔 struct timeval it_value; //初次触发时间 }; struct timeval { time_t tv_sec; //秒 suseconds_t tv_usec; //微秒 }; 若 new_value.it_value 的两个字段不全为 0，则定时器初次将会在设定的时间后触发；若 new_value.it_value 的两个字段全为 0，则计时器不工作。\n若 new_value.it_interval 的两个字段不全为 0，则定时器将会在初次触发后按设定的时间间隔触发；若 new_value.it_interval 的两个字段全为 0，则计时器仅初次触发一次。\nsetitimer()函数和 alarm()函数共享同一个计时器，因此不应同时使用。\n",
+  "wordCount" : "584",
+  "inLanguage": "zh",
+  "datePublished": "2022-11-13T15:30:11+08:00",
+  "dateModified": "2022-11-13T15:30:11+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/system-programming-note-4/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      系统编程之信号及信号处理
+    </h1>
+    <div class="post-meta"><span title='2022-11-13 15:30:11 +0800 CST'>十一月 13, 2022</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;584 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/system-programming-note-4.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e4%bf%a1%e5%8f%b7%e7%ae%80%e4%bb%8b" aria-label="一、信号简介">一、信号简介</a><ul>
+                        
+                <li>
+                    <a href="#1%e4%bf%a1%e5%8f%b7%e5%90%ab%e4%b9%89" aria-label="（1）信号含义">（1）信号含义</a></li>
+                <li>
+                    <a href="#2%e4%bf%a1%e5%8f%b7%e5%88%86%e7%b1%bb" aria-label="（2）信号分类">（2）信号分类</a></li>
+                <li>
+                    <a href="#3%e4%bf%a1%e5%8f%b7%e7%9a%84%e4%ba%a7%e7%94%9f" aria-label="（3）信号的产生">（3）信号的产生</a></li>
+                <li>
+                    <a href="#4%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86" aria-label="（4）信号处理">（4）信号处理</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%ba%8c%e4%bf%a1%e5%8f%b7%e6%93%8d%e4%bd%9c" aria-label="二、信号操作">二、信号操作</a><ul>
+                        
+                <li>
+                    <a href="#1%e4%bf%a1%e5%8f%b7%e5%8f%91%e9%80%81" aria-label="（1）信号发送">（1）信号发送</a><ul>
+                        
+                <li>
+                    <a href="#kill-%e5%87%bd%e6%95%b0" aria-label="kill() 函数">kill() 函数</a></li>
+                <li>
+                    <a href="#segqueue-%e5%87%bd%e6%95%b0" aria-label="segqueue() 函数">segqueue() 函数</a></li></ul>
+                </li>
+                <li>
+                    <a href="#2%e4%bf%a1%e5%8f%b7%e6%8d%95%e6%8d%89" aria-label="（2）信号捕捉">（2）信号捕捉</a></li>
+                <li>
+                    <a href="#3%e4%bf%a1%e5%8f%b7%e5%b1%8f%e8%94%bd" aria-label="（3）信号屏蔽">（3）信号屏蔽</a></li>
+                <li>
+                    <a href="#4%e5%ae%9a%e6%97%b6%e4%bf%a1%e5%8f%b7" aria-label="（4）定时信号">（4）定时信号</a></li>
+                <li>
+                    <a href="#5%e8%ae%a1%e6%97%b6%e5%99%a8" aria-label="（5）计时器">（5）计时器</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一信号简介">一、信号简介<a hidden class="anchor" aria-hidden="true" href="#一信号简介">#</a></h2>
+<h3 id="1信号含义">（1）信号含义<a hidden class="anchor" aria-hidden="true" href="#1信号含义">#</a></h3>
+<p>软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。</p>
+<h3 id="2信号分类">（2）信号分类<a hidden class="anchor" aria-hidden="true" href="#2信号分类">#</a></h3>
+<p>可以使用<code>kill -l</code>命令查看当前系统支持的所有信号：</p>
+<p><img loading="lazy" src="signal.png" alt="signal"  />
+</p>
+<p>信号值小于 SIGRTMIN（&lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。</p>
+<h3 id="3信号的产生">（3）信号的产生<a hidden class="anchor" aria-hidden="true" href="#3信号的产生">#</a></h3>
+<p>信号可以由一下几种方式产生：</p>
+<ul>
+<li>键盘事件：ctrl+c ctrl+\ ctrl+Z 等</li>
+<li>非法内存：如果内存管理出错，系统就会发送一个信号进行处理</li>
+<li>硬件检测到异常：如段错误，除 0，总线错误等</li>
+<li>环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统</li>
+<li>系统调用：如调用<code>kill</code>，<code>raise</code>，<code>sigsend</code> ，<code>sigqueue</code>函数等</li>
+</ul>
+<h3 id="4信号处理">（4）信号处理<a hidden class="anchor" aria-hidden="true" href="#4信号处理">#</a></h3>
+<p>进程可以通过三种方式响应信号：</p>
+<ul>
+<li>接受默认处理</li>
+<li>忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP）</li>
+<li>捕捉信号并执行信号处理程序</li>
+</ul>
+<h2 id="二信号操作">二、信号操作<a hidden class="anchor" aria-hidden="true" href="#二信号操作">#</a></h2>
+<h3 id="1信号发送">（1）信号发送<a hidden class="anchor" aria-hidden="true" href="#1信号发送">#</a></h3>
+<p>系统调用中用于发送信号的函数有 <code>kill()</code> <code>raise()</code> <code>abort()</code> 等。</p>
+<h4 id="kill-函数"><code>kill()</code> 函数<a hidden class="anchor" aria-hidden="true" href="#kill-函数">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">kill</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">sig</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号
+</span></span></span></code></pre></div><p>参数 pid 会影响 kill()函数的作用，取值分为以下四种情况</p>
+<ol>
+<li>若 pid&gt;0，则发送信号 sig 给进程号为 pid 的进程。</li>
+<li>若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。</li>
+<li>若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。</li>
+<li>若 pid&lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。</li>
+</ol>
+<h4 id="segqueue-函数"><code>segqueue()</code> 函数<a hidden class="anchor" aria-hidden="true" href="#segqueue-函数">#</a></h4>
+<p>sigqueue()函数支持发送信号的同时传递参数，需要配合 <code>sigaction()</code> 函数一起使用。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">sigqueue</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">sig</span><span class="p">,</span> <span class="k">const</span> <span class="k">union</span> <span class="n">sigval</span> <span class="n">value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号，第三个参数于指定传递的数据
+</span></span></span></code></pre></div><p>参数 value 用于指定伴随信号传递的数据，为 sigval 联合体，该联合体的定义如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">union</span> <span class="n">sigval</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span>   <span class="n">sival_int</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="o">*</span><span class="n">sival_ptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><blockquote>
+<p>如下的代码使用 <code>segqueue</code> 函数实现了数据的进程间传输</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">./B <span class="p">&amp;</span> <span class="c1"># 此时，输出进程 B 的 PID 号。</span>
+</span></span><span class="line"><span class="cl">./A processB_PID <span class="m">123456</span> <span class="c1"># 第一个参数表示进程 B 的 PID，第二个参数为要传输的（数字）</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">//code of A
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span> 
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">pid</span> <span class="o">=</span> <span class="nf">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">int</span> <span class="n">stuID</span> <span class="o">=</span> <span class="nf">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">union</span> <span class="n">sigval</span> <span class="n">v</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">v</span><span class="p">.</span><span class="n">sival_int</span> <span class="o">=</span> <span class="n">stuID</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sigqueue</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">//code of B
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span> 
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handler</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">siginfo_t</span> <span class="o">*</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sigaction</span> <span class="n">act</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">act</span><span class="p">.</span><span class="n">sa_sigaction</span> <span class="o">=</span> <span class="n">handler</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">act</span><span class="p">.</span><span class="n">sa_flags</span> <span class="o">=</span> <span class="n">SA_SIGINFO</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nf">sigaction</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">act</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span><span class="p">(;</span> <span class="p">;)</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handler</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">,</span> <span class="kt">siginfo_t</span> <span class="o">*</span><span class="n">info</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">ctx</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;num received:%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">info</span><span class="o">-&gt;</span><span class="n">si_value</span><span class="p">.</span><span class="n">sival_int</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="2信号捕捉">（2）信号捕捉<a hidden class="anchor" aria-hidden="true" href="#2信号捕捉">#</a></h3>
+<p>若进程捕捉某信号后，想要让其执行非默认的处理函数，则需要为该信号注册信号处理函数。进程的信号是在内核态下处理的，内核为每个进程准备了一个信号向量表，其中记录了每个信号所对应的信号处理函数。Linux 系统为用户提供了两个捕捉信号的函数，即 <code>signal()</code> 和 <code>sigaction()</code> 两个函数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="k">typedef</span> <span class="nf">void</span> <span class="p">(</span><span class="o">*</span><span class="kt">sighandler_t</span><span class="p">)(</span><span class="kt">int</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">sighandler_t</span> <span class="nf">signal</span><span class="p">(</span><span class="kt">int</span> <span class="n">signum</span><span class="p">,</span><span class="kt">sighandler_t</span> <span class="n">handler</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//第一个参数表示信号编号，第二个参数一般表示信号处理函数的函数指针，除此之外还可以为SIG_IGN和SIG_DEL
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">sigaction</span><span class="p">(</span><span class="kt">int</span> <span class="n">signum</span><span class="p">,</span><span class="k">const</span> <span class="k">struct</span> <span class="n">sigaction</span><span class="o">*</span> <span class="n">act</span><span class="p">,</span><span class="k">const</span> <span class="k">struct</span> <span class="n">sigaction</span><span class="o">*</span> <span class="n">oldact</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//第一个参数表示信号编号，第二个为传入参数，包含自定义处理函数和其他信息，第三个参数为传出参数，包含旧处理函数等信息
+</span></span></span></code></pre></div><blockquote>
+<p>如下的代码通过信号实现了异步回收子进程。避免了 <code>wait()</code> 函数回收子进程时对父进程的阻塞。</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/wait.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">void</span> <span class="nf">collect</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGCHLD</span><span class="p">,</span> <span class="n">collect</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">pid</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">5</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pid</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="c1">// child
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;child pid:%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">getpid</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">exit</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// 模拟父进程继续执行
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">int</span> <span class="n">time</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">((</span><span class="n">time</span> <span class="o">=</span> <span class="nf">sleep</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">collect</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="nf">signal</span><span class="p">(</span><span class="n">SIGCHLD</span><span class="p">,</span> <span class="n">collect</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">   <span class="kt">int</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">   <span class="kt">pid_t</span> <span class="n">pid</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">   <span class="k">while</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span> <span class="nf">waitpid</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">,</span> <span class="n">WNOHANG</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;child collected, pid:%d, status:%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">         <span class="n">pid</span><span class="p">,</span> <span class="nf">WEXITSTATUS</span><span class="p">(</span><span class="n">status</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">   <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="3信号屏蔽">（3）信号屏蔽<a hidden class="anchor" aria-hidden="true" href="#3信号屏蔽">#</a></h3>
+<p>信号屏蔽机制是用于解决常规信号不可靠这一问题。在进程的 PCB 中存在两个信号集，分别为信号掩码和未决信号集。两个信号集实质上都是位图，其中每一位对应一个信号，若信号掩码某一位为 1，则其对应的信号会被屏蔽，进入阻塞状态，此时内核会修改未决信号集中该信号对应的位为 1，表示信号处于未决状态，之后除非信号被解除屏蔽，否则内核不会再向该进程发送该信号。</p>
+<p>信号集设定函数：</p>
+<ul>
+<li>
+<p><code>sigemptyset()</code>——将指定信号集清 0</p>
+</li>
+<li>
+<p><code>sigfillset()</code>——将指定信号集置 1</p>
+</li>
+<li>
+<p><code>sigaddset()</code>——将某信号加入指定信号集</p>
+</li>
+<li>
+<p><code>sigdelset()</code>——将某信号从信号集中删除</p>
+</li>
+<li>
+<p><code>sigismember()</code>——判断某信号是否已被加入指定信号集</p>
+</li>
+</ul>
+<p>信号集函数：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">sigprocmask</span><span class="p">(</span><span class="kt">int</span> <span class="n">how</span><span class="p">,</span><span class="k">const</span> <span class="kt">sigset_t</span><span class="o">*</span> <span class="n">set</span><span class="p">,</span><span class="kt">sigset_t</span><span class="o">*</span> <span class="n">oldset</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//第一个参数用于设置位操作方式，第二个参数一般为用户指定信号集，第三个参数用于保存原信号集
+</span></span></span><span class="line"><span class="cl"><span class="c1">//how=SIG_BLOCK：mask=mask|set
+</span></span></span><span class="line"><span class="cl"><span class="c1">//how=SIG_UNBLOCK：mask=mask&amp;~set
+</span></span></span><span class="line"><span class="cl"><span class="c1">//how=SIG_SETMASK：mask=set
+</span></span></span></code></pre></div><blockquote>
+<p>如下的代码展示了信号遮蔽的使用方式。通过阻塞所有信号，避免了 printf() 函数因使用全局缓冲区而产生的异步信号不安全问题。</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print_safe</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">sigset_t</span> <span class="n">set</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 1~64 为所有信号的编号
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">64</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">set</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 阻塞所有信号
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">sigprocmask</span><span class="p">(</span><span class="n">SIG_BLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">set</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;safe print!</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1">// 恢复所有信号
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">sigprocmask</span><span class="p">(</span><span class="n">SIG_UNBLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">set</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="4定时信号">（4）定时信号<a hidden class="anchor" aria-hidden="true" href="#4定时信号">#</a></h3>
+<p>Linux 下的 <code>alarm()</code> 函数可以用来设置闹钟，该函数的原型为：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span><span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">alarm</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">seconds</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//第一个参数seconds用来指明时间，经过seconds秒后发送SIGALRM信号给当前进程，当参数为0则取消之前的闹钟
+</span></span></span></code></pre></div><p>返回值：</p>
+<ul>
+<li>如果本次调用前已有正在运行的闹钟，alarm()函数返回前一个闹钟的剩余秒数</li>
+<li>如果本次调用前无正在运行的闹钟，alarm()函数返回 0</li>
+</ul>
+<p>Linux 系统中 sleep()函数内部使用 nanosleep()函数实现，该函数与信号无关；而其他系统中可能使用 alarm()和 pause()函数实现，此时不应该混用 alarm()和 sleep()。</p>
+<blockquote>
+<p>如下的代码实现了这样的功能：程序每间隔 1 秒输出信息，当按下 ctrl+c 后，程序询问是否退出程序（此时停止输出学号），输入 Y 或 5 秒未进行任何输入则退出程序，输入 N 程序恢复运行，继续输出信息</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">chooseIfExit</span><span class="p">(</span><span class="kt">int</span> <span class="n">signal</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">doExit</span><span class="p">(</span><span class="kt">int</span> <span class="n">signal</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">signal</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">chooseIfExit</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">printf</span><span class="p">(</span><span class="s">&#34;21371326</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">chooseIfExit</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">signal</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">chooseIfExit</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">signal</span><span class="p">(</span><span class="n">SIGALRM</span><span class="p">,</span> <span class="n">doExit</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">alarm</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printf</span><span class="p">(</span><span class="s">&#34;want to exit? (Y/N)</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">char</span> <span class="n">choose</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">scanf</span><span class="p">(</span><span class="s">&#34; %c&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">choose</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">choose</span> <span class="o">==</span> <span class="sc">&#39;N&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">alarm</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">else</span>
+</span></span><span class="line"><span class="cl">	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">doExit</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">doExit</span><span class="p">(</span><span class="kt">int</span> <span class="n">signal</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printf</span><span class="p">(</span><span class="s">&#34;exit...</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="5计时器">（5）计时器<a hidden class="anchor" aria-hidden="true" href="#5计时器">#</a></h3>
+<p>Linux 下的 <code>setitimer()</code> 和 <code>getitimer()</code> 系统调用可以用于访问和设置计时器，计时器在初次经过设定的时间后发出信号，也可以设置为每间隔相同的时间发出信号，该函数的原型为：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/time.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getitimer</span><span class="p">(</span><span class="kt">int</span> <span class="n">which</span><span class="p">,</span> <span class="k">struct</span> <span class="n">itimerval</span> <span class="o">*</span><span class="n">curr_value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">setitimer</span><span class="p">(</span><span class="kt">int</span> <span class="n">which</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">itimerval</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">new_value</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                     <span class="k">struct</span> <span class="n">itimerval</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">old_value</span><span class="p">);</span>
+</span></span></code></pre></div><p>通过指定 which 参数，可以设置不同的计时器，不同的计时器触发后也会发出不同的信号，一个进程同时只能有一种计时器：</p>
+<ul>
+<li>ITIMER_REAL：真实计时器，计算程序运行的真实时间（墙钟时间），产生 SIGALRM 信号</li>
+<li>ITIMER_VIRTUAL：虚拟计时器，计算当前进程处于用户态的 cpu 时间，产生 SIGVTALRM 信号</li>
+<li>ITIMER_PROF：使用计时器，计算当前进程处于用户态和内核态的 cpu 时间，产生 SIGPROF 信号</li>
+</ul>
+<p>计时器的值有以下结构体定义：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">itimerval</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="n">timeval</span> <span class="n">it_interval</span><span class="p">;</span> <span class="c1">//定期触发的间隔
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">struct</span> <span class="n">timeval</span> <span class="n">it_value</span><span class="p">;</span> <span class="c1">//初次触发时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">timeval</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">time_t</span> <span class="n">tv_sec</span><span class="p">;</span> <span class="c1">//秒
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">suseconds_t</span> <span class="n">tv_usec</span><span class="p">;</span> <span class="c1">//微秒
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span></code></pre></div><p>若 new_value.it_value 的两个字段不全为 0，则定时器初次将会在设定的时间后触发；若 new_value.it_value 的两个字段全为 0，则计时器不工作。</p>
+<p>若 new_value.it_interval 的两个字段不全为 0，则定时器将会在初次触发后按设定的时间间隔触发；若 new_value.it_interval 的两个字段全为 0，则计时器仅初次触发一次。</p>
+<p>setitimer()函数和 alarm()函数共享同一个计时器，因此不应同时使用。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+      <li><a href="https://wokron.github.io/tags/linux/">Linux</a></li>
+      <li><a href="https://wokron.github.io/tags/shell/">Shell</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/analysis-of-non-repeat-random-nums/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>对不重复随机数的数学分析</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/system-programming-note-3/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>系统编程之进程管理</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之信号及信号处理 on x"
+            href="https://x.com/intent/tweet/?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e4%bf%a1%e5%8f%b7%e5%8f%8a%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f&amp;hashtags=C%2cLinux%2cShell">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之信号及信号处理 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f&amp;title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e4%bf%a1%e5%8f%b7%e5%8f%8a%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86&amp;summary=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e4%bf%a1%e5%8f%b7%e5%8f%8a%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之信号及信号处理 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f&title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e4%bf%a1%e5%8f%b7%e5%8f%8a%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之信号及信号处理 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之信号及信号处理 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e4%bf%a1%e5%8f%b7%e5%8f%8a%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之信号及信号处理 on telegram"
+            href="https://telegram.me/share/url?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e4%bf%a1%e5%8f%b7%e5%8f%8a%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之信号及信号处理 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e4%bf%a1%e5%8f%b7%e5%8f%8a%e4%bf%a1%e5%8f%b7%e5%a4%84%e7%90%86&u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-4%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

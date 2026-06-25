@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>编程语言 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/</link>
+    <description>Recent content in 编程语言 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 11 Sep 2025 22:37:42 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>C&#43;&#43; 踩坑记录（持续更新！）</title>
+      <link>https://wokron.github.io/posts/cpp-pitfalls/</link>
+      <pubDate>Thu, 11 Sep 2025 22:37:42 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/cpp-pitfalls/</guid>
+      <description>有人说你永远不能自称精通 C++，本文试图为这个观点提供一个例证。下面列出了一些从去年（2024）开始我编写 C++ 代码时犯过的错误。当然，有些可能看上去很蠢，不过谁又能在未知全貌的时候保证自己不会犯错呢？我认为这些错误至少初看上去是反直觉的。
+std 集合操作只能用于有序容器 你要表示两个整数集合，所以你用了 std::unordered_set&amp;lt;int&amp;gt;。之后你想要求两个集合的交集，你搜了一下 STL，发现 std::set_intersection 似乎正合适。于是你写了一个简单的程序
+// test_set.cpp std::unordered_set&amp;lt;int&amp;gt; set1 = {1, 2, 3, 4, 5}; std::unordered_set&amp;lt;int&amp;gt; set2 = {4, 5, 6, 7, 8}; std::unordered_set&amp;lt;int&amp;gt; result; std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(result, result.begin())); for (const auto &amp;amp;elem : result) { std::cout &amp;lt;&amp;lt; elem &amp;lt;&amp;lt; &amp;#34; &amp;#34;; } std::cout &amp;lt;&amp;lt; std::endl; 然后运行，你期望输出的结果是 4 5 或是 5 4（毕竟你很严谨）。可是实际结果呢
+$ clang++ test_set.cpp -o test_set $ ./test_set 什么都没有输出。
+正如 std::set 实际上表示的是有序集合一样，std::set_intersection 实际上也是 ordered_set_intersection，只不过函数签名并不告诉你。</description>
+    </item>
+    <item>
+      <title>我该用什么参数类型？</title>
+      <link>https://wokron.github.io/posts/cpp-parameter-types/</link>
+      <pubDate>Fri, 01 Aug 2025 13:29:24 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/cpp-parameter-types/</guid>
+      <description>本文我们讨论一个很小的问题：不同的函数参数类型都在什么情况下使用？
+参数分类 比如我们有一个类型 T（让问题先简单点，此处 T 并非范型），那么要在函数中传入一个该类型的参数，共有几种可能？我们可以分一下类：
+修饰符：有 const 修饰、无 const 修饰 是否引用：值、左值引用、右值引用 按照这个分类，我们总共能得出 5 种参数类型
+const修饰 是否引用 参数类型 有 值 const T 有 左值引用 const T&amp;amp; 无 值 T 无 左值引用 T&amp;amp; 无 右值引用 T&amp;amp;&amp;amp; const T&amp;amp;&amp;amp; 是没有意义的
+接下来介绍这些参数类型的应用场景
+转移所有权的情况 假设需要将参数的生命周期转移到函数内，那么大多数情况下，直接使用 T 作为参数类型即可。
+例如我们有类型 A，其构造时会接受并持有一个 std::vector&amp;lt;int&amp;gt; 参数。那么参数类型应当为 std::vector&amp;lt;int&amp;gt;。
+class A { public: A(std::vector&amp;lt;int&amp;gt; v) : v_(std::move(v)) {} private: std::vector_&amp;lt;int&amp;gt; v_; }; 我们考虑两种构造类型 A 对象的情况。其一是我们在传入 std::vector&amp;lt;int&amp;gt; 对象后不会再使用该对象。这时我们可以采取移动语义。
+std::vector&amp;lt;int&amp;gt; v; // ... A a(std::move(v)); 其二是我们在传入 std::vector&amp;lt;int&amp;gt; 对象后还会使用该对象。这是我们需要采取复制语义。</description>
+    </item>
+    <item>
+      <title>写个编译期排序</title>
+      <link>https://wokron.github.io/posts/compile-time-sort/</link>
+      <pubDate>Fri, 07 Mar 2025 16:17:03 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compile-time-sort/</guid>
+      <description>这回摆弄一下模板。
+C++ 里有一个 std::integer_sequence。可以定义编译期整数序列。比如说
+#include &amp;lt;utility&amp;gt; using my_seq = std::integer_sequence&amp;lt;int, 1, 2, 3, 4, 5&amp;gt;; 接下来写一个 trait seq_sort_t，实现编译期排序。类似于：
+using my_seq = std::integer_sequence&amp;lt;int, 2, 5, 3, 1, 4&amp;gt;; using sorted_my_seq = seq_sort_t&amp;lt;my_seq&amp;gt;; // std::integer_sequence&amp;lt;int, 1, 2, 3, 4, 5&amp;gt; 首先做一些准备工作。
+运行时输出 通过类型萃取，将 std::integer_sequence 转换为运行时的 std::initializer_list。方便输出结果。
+template &amp;lt;typename S&amp;gt; struct seq_to_init_list; template &amp;lt;typename T, T... Is&amp;gt; struct seq_to_init_list&amp;lt;std::integer_sequence&amp;lt;T, Is...&amp;gt;&amp;gt; { static constexpr std::initializer_list&amp;lt;T&amp;gt; value = {Is...}; }; template &amp;lt;typename S&amp;gt; constexpr auto seq_to_init_list_v = seq_to_init_list&amp;lt;S&amp;gt;::value; 用法如下：</description>
+    </item>
+    <item>
+      <title>讨论一下环境变量</title>
+      <link>https://wokron.github.io/posts/shell-env-var/</link>
+      <pubDate>Sat, 02 Nov 2024 15:01:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/shell-env-var/</guid>
+      <description>这里所说的环境变量并不仅仅指 Shell 中的变量，而是每一个进程各自拥有的，能够通过系统 API 获取的变量。当然，Shell 通常会提供环境变量的操作方法，我们也经常通过在 Shell 中管理环境变量。但是 Shell 中的变量和环境变量实际上并不完全相同，在使用 Shell 时可能会混淆这两种概念，这里便稍微分辨一下。
+一、环境变量 从程序的角度来看，环境变量很简单。环境变量是每个进程各自拥有的键值对集合。进程可以从其环境变量中读取已有变量，修改已有变量或创建新的变量。当进程创建其子进程时，子进程会继承父进程的环境变量，但子进程的环境变量的修改并不会影响父进程的环境变量。
+为了方便，这里以 python 为例。
+进程可以读取已有环境变量：
+# inherit.py import os print(os.environ[&amp;#34;HOME&amp;#34;]) 也可以写入或创建环境变量：
+os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;my_value&amp;#34; 子进程会继承父进程的环境变量：
+# env.py import os import sys assert len(sys.argv) == 2 father_proc = bool(int(sys.argv[1])) print_my_var = lambda: print( f&amp;#34;process={&amp;#39;father&amp;#39; if father_proc else &amp;#39;child&amp;#39;}, &amp;#34; f&amp;#34;MY_VAR={os.environ.get(&amp;#39;MY_VAR&amp;#39;, None)}&amp;#34; ) print_my_var() if father_proc: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;1&amp;#34; print_my_var() os.system(f&amp;#34;{sys.executable} {sys.argv[0]} 0&amp;#34;) print_my_var() else: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;2&amp;#34; print_my_var() $ python inherit.</description>
+    </item>
+    <item>
+      <title>面向对象的 C 语言</title>
+      <link>https://wokron.github.io/posts/oop-by-c/</link>
+      <pubDate>Sun, 01 Oct 2023 22:53:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/oop-by-c/</guid>
+      <description>一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang
+c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 + 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。
+了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。
+二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。
+让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。
+明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。
+此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。
+这样也可以理解为什么 c++ 中只能使用指针实现多态（引用本质还是指针）。
+Child c; Father *f = &amp;amp;c; // 正确 Father f2 = c; // 错误 而 c++ 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别</description>
+    </item>
+    <item>
+      <title>CMake 实用语法教程</title>
+      <link>https://wokron.github.io/posts/practical-cmake-tutorial/</link>
+      <pubDate>Sun, 03 Sep 2023 11:00:23 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/practical-cmake-tutorial/</guid>
+      <description>一、前言 最近一段时间在用 c++ 写一个项目，因此学了学 cmake。说实话，cmake 奇怪的语法在一开始实在容易让人望而生畏。但是上手使用的话就会发现平常会用到的不过是其中的一小部分，并且通常有规律可循。掌握这一部分的内容，大概率就可以组织起一个规模较大的项目了。因此本文也就旨在讲述 cmake 的这一部分的内容。
+当然，阅读本教程之前需要了解代码编译、链接的相关知识。关于编译相关的命令，可见我的文章系统编程之命令行编译。
+本文的所有代码保存在仓库 practical-cmake 中，欢迎 star :)。
+cmake 下载方式如下（apt）
+sudo apt-get install build-essential sudo apt-get install cmake 二、第一步 说到第一个程序，那当然要请出经典的 hello, world 了。
+#include &amp;lt;stdio.h&amp;gt; int main() { printf(&amp;#34;hello, world\n&amp;#34;); return 0; } 在本文中我会首先给出使用 gcc 编译的命令，之后再使用 cmake 做同样的事情。那么对于第一步，我们的 gcc 命令如下
+gcc main.cpp -o main 当然很简单，而对于 cmake 也类似。要使用 cmake，我们需要添加一个配置文件 CMakeLists.txt，其中包含要执行的操作。本小节中，CMakeLists.txt 的内容是
+cmake_minimum_required(VERSION 3.10) project(main) add_executable(main main.cpp) 其中第一条指定了 cmake 版本要求，第二条指定了当前项目名，而第三条 add_executable 则实现了和 gcc 命令相同的操作：指定源文件 main.cpp 和输出文件名 main，生成一个可执行文件。</description>
+    </item>
+    <item>
+      <title>Pybind11 实现 Python 与 C&#43;&#43; 混合编程</title>
+      <link>https://wokron.github.io/posts/pybind11-tutorial/</link>
+      <pubDate>Thu, 17 Aug 2023 10:42:38 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/pybind11-tutorial/</guid>
+      <description>一、前言 最近在尝试写一个简单的游戏引擎，我决定用 python 作为脚本，所以了解了一些混合编程的知识。
+（1）python api 从原理来说，根据文档所述，python 提供了 Python.h 头文件，能够将 c 或 c++ 代码编译成可供 python 引入的动态链接库。该库中定义的可供 python 调用的函数中所有的入参都是名为 PyObject 结构体的指针。在代码中可以通过一系列函数对 PyObject 进行操作。
+举一个简单的例子，我们希望 python 调用一个由 c 编写的简单的加法函数
+int add(int a, int b) { return a + b; } 我们期望在 python 中这样调用
+# test_mymodule.py from mymodule import add a = 10 b = 20 c = add(a, b) assert c == 30 那么我们首先需要对该函数进行包装，包装函数 _add 的参数和返回值都应该是 PyObject *。在包装函数中调用了 PyArg_ParseTuple 将传入的参数转换为 int 类型，调用原本的 add 函数得到返回值，之后又通过 PyLong_FromLong 将 int 转换为 PyObject。</description>
+    </item>
+    <item>
+      <title>利用 ASM 库实现 Java 反射</title>
+      <link>https://wokron.github.io/posts/java-asm-lib/</link>
+      <pubDate>Tue, 21 Feb 2023 18:10:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/java-asm-lib/</guid>
+      <description>一、ASM库简介 ASM 库是一款基于 Java 字节码层面的代码分析和修改工具。它能分析二进制的 class 文件并对其进行动态修改。ASM 库侧重性能，设计和实现尽可能小和快。
+通过 ASM 库，我们可以方便地获取类信息，并实现类似于反射的功能。ASM 库处理字节码，因此能得到仅仅使用反射无法获取的信息，如方法内的结构。
+ASM 库同样具有动态修改和创建类文件的功能，但本篇文章主要使用 ASM 库的字节码读取功能。
+本篇文章假设读者能自行通过Maven或其他方式添加ASM库依赖。
+二、利用ASM库访问类文件 ASM 库的核心库提供了读取和修改字节码的基本 API。核心库包含如下几个工具类：
+ClassReader ClassReader 类用于从 class 文件中加载字节码。这样，这一 ClassReader 对象就拥有了关于某一类的所有信息。
+ClassVisitor ClassVisitor 类可以从 ClassReader 中获取想要的信息。
+ClassVisitor 是访问者模式的访问类。简单解释访问者模式，就是被访问的对象调用访问者类的方法，从而使得访问者获取希望得到的数据。
+还是通过 ASM 的例子来理解吧，ClassVisitor 实际是一个抽象类，其中定义了一个方法 visit。该方法的签名为：
+visit(int version, int access, String name, String signature, String superName, String[] interfaces) 假设我们继承 ClassVisitor 创建了一个新的访问类，那么获取信息的方式如下：
+ClassReader cr = new ClassReader(&amp;#34;className&amp;#34;); ClassVisitor cv = new ClassVisitor(Opcodes.ASM5) { // this is an anonymous class }; cr.</description>
+    </item>
+    <item>
+      <title>Java 注解与 C# 特性</title>
+      <link>https://wokron.github.io/posts/java-annotation-and-csharp-attribute/</link>
+      <pubDate>Mon, 20 Feb 2023 12:45:30 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/java-annotation-and-csharp-attribute/</guid>
+      <description>一、元数据简介 元数据是指用来描述数据的数据。对编程语言来说，元数据可以为程序中元素添加额外的信息。这一功能可以被用于描述代码间关系，以及代码与其他资源的联系。
+元数据可以被用于框架中。通过元数据可以实现在代码上对类的直接配置，避免编写如 xml 的配置文件。
+Java 和 C# 都具有为程序中元素，如类、方法等等，添加元数据的方式。Java中称为注解，而C#中称为特性。注解和特性都通过反射获取，关于两者的获取方式，已经在前一篇文章中有所记述。本篇只讨论注解和特性的定义和使用。
+二、Java注解 注解的定义 如果想要自定义注解，需要继承 Annotation 类。
+public class MyAnnotation extends Annotation { } 同时还有另一种写法，由此可知注释本质上是接口
+public @interface MyAnnotation2 { } 和接口一样，注解可以添加静态变量
+我们可以为注解添加“参数”，比如 Spring 中的注解 @Profile(value = &amp;quot;dev&amp;quot;)。我们为其设置了 value 属性。
+但是注解本是接口，不可能有保存数据的能力，要如何设置注解的属性呢？实际上，注解的属性在编写 Annotation 时是一个方法。即
+public @interface MyProfile { String value(); } 还可以为参数添加默认值
+public @interface MyAnnotation3 { String value(); int number() default 8; // set default number } 注解经常和枚举一起使用。
+public @interface MyAnnotation4 { enum SELECT_TYPE {TYPE_A, TYPE_B} SELECT_TYPE selectType() default TYPE_A; } 元注解 元注解是注解的元数据，也就是对注解的注解。元注解为注解设置额外的信息，如设置注解的作用对象等等。</description>
+    </item>
+    <item>
+      <title>Java 和 C# 中的反射机制</title>
+      <link>https://wokron.github.io/posts/reflection-in-java-and-csharp/</link>
+      <pubDate>Sun, 19 Feb 2023 13:59:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/reflection-in-java-and-csharp/</guid>
+      <description>一、反射简介 反射是一种程序动态访问修改其状态或行为的机制。具体来说，反射提供了在程序运行时对代码进行操作的手段。
+反射提高了程序的灵活性和扩展性，能使程序员通过字符串动态地实现程序的修改。它降低了代码间的耦合度，可以避免硬编码，实现代码的组件化。反射的这些特点在对灵活性和扩展性要求很高的框架上有巨大的作用。
+当然，也需要注意到，反射通过字符串进行操作的方式是解释性的，这将导致性能的降低。
+二、反射的原理 对于拥有虚拟机（或者类似的东西，虚拟机只是一个不正规的名词）的语言，都存在加载字节码（同样不正规的名词）到虚拟机的过程。在这个过程中，虚拟机获取了有关类的信息，包括继承关系、包含的字段和方法等等。对于java来说，局部变量放在栈中，类实例放在堆中，程序方法放在方法区中。
+对不使用反射的一般情况来说，方法调用更加直接。调用时虚拟机将根据编译时即确定的方法地址进行跳转。而对于反射，则需要根据字符串查找对应的类或方法。这样查找而非硬编码的过程就会影响性能。
+二、java中的反射 通过反射我们能获取java语言中的如下组成部分：包、类（和接口）、方法（一般/构造）、字段、注解。反射不能操作方法中的内容。
+类是面向对象的基本单元，我们通过获取类来实现对程序的动态操作。
+（1）类和包 “类” Class&amp;lt;?&amp;gt; 是一个用于表示类的类型。它有三种获取方式
+ClassName.class // 类型名.class obj.getClass(); // 对象.getClass Class.forName(String className); // Class.forName(&amp;#34;包含包路径的类型全称&amp;#34;) 前两种较好理解，相当于获取一个类型，我们可以用这编写一个类似于 instanceof 的函数。
+boolean typeof(Object obj, Class&amp;lt;?&amp;gt; cls) { return obj.getClass() == cls; } 当然这无法将子类也判断为真。值得注意的是这里我们直接使用了 == 而不是 equals。因为对于每一个类，Class只用一个实例。
+但第三种才最为重要，它通过字符串获取了一个类型。这就为程序提供了灵活性。
+获取了一个 Class 对象后，我们可以进一步获取其父类和实现的接口
+Class&amp;lt;?&amp;gt; cls = Class.forName(&amp;#34;somepackages.someClass&amp;#34;); Class&amp;lt;?&amp;gt; superCls = cls.getSuperclass(); Class&amp;lt;?&amp;gt;[] interfaces = cls.getInterfaces(); 值得注意的是获取接口方法返回的是一个 Class 数组。这说明对于虚拟机来说本没有类和接口之分。
+调用 getPackage 可以获取包
+Package p = cls.getPackage(); Package 类型保存了该包的一些信息，如名称、版本等等，不一一列举。</description>
+    </item>
+  </channel>
+</rss>

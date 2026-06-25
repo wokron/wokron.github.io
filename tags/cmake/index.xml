@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>CMake on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/cmake/</link>
+    <description>Recent content in CMake on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sun, 03 Sep 2023 11:00:23 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/cmake/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CMake 实用语法教程</title>
+      <link>https://wokron.github.io/posts/practical-cmake-tutorial/</link>
+      <pubDate>Sun, 03 Sep 2023 11:00:23 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/practical-cmake-tutorial/</guid>
+      <description>一、前言 最近一段时间在用 c++ 写一个项目，因此学了学 cmake。说实话，cmake 奇怪的语法在一开始实在容易让人望而生畏。但是上手使用的话就会发现平常会用到的不过是其中的一小部分，并且通常有规律可循。掌握这一部分的内容，大概率就可以组织起一个规模较大的项目了。因此本文也就旨在讲述 cmake 的这一部分的内容。
+当然，阅读本教程之前需要了解代码编译、链接的相关知识。关于编译相关的命令，可见我的文章系统编程之命令行编译。
+本文的所有代码保存在仓库 practical-cmake 中，欢迎 star :)。
+cmake 下载方式如下（apt）
+sudo apt-get install build-essential sudo apt-get install cmake 二、第一步 说到第一个程序，那当然要请出经典的 hello, world 了。
+#include &amp;lt;stdio.h&amp;gt; int main() { printf(&amp;#34;hello, world\n&amp;#34;); return 0; } 在本文中我会首先给出使用 gcc 编译的命令，之后再使用 cmake 做同样的事情。那么对于第一步，我们的 gcc 命令如下
+gcc main.cpp -o main 当然很简单，而对于 cmake 也类似。要使用 cmake，我们需要添加一个配置文件 CMakeLists.txt，其中包含要执行的操作。本小节中，CMakeLists.txt 的内容是
+cmake_minimum_required(VERSION 3.10) project(main) add_executable(main main.cpp) 其中第一条指定了 cmake 版本要求，第二条指定了当前项目名，而第三条 add_executable 则实现了和 gcc 命令相同的操作：指定源文件 main.cpp 和输出文件名 main，生成一个可执行文件。</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>QEMU on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/qemu/</link>
+    <description>Recent content in QEMU on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 22 Jan 2026 17:24:05 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/qemu/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>构建最简 Linux 文件系统</title>
+      <link>https://wokron.github.io/posts/custom-linux-kernel-in-qemu-2/</link>
+      <pubDate>Thu, 22 Jan 2026 17:24:05 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/custom-linux-kernel-in-qemu-2/</guid>
+      <description>上回说到了我们如何用 QEMU 搭建一个包含最新内核的开发环境。但试过一段时间后，我却感觉这样并不方便。
+更多时候，我只需要运行单个程序（比如，单元测试）即可，而上文中所构建的完整环境却让这个过程便复杂了。本文介绍了一个更简单的方法。只需要一个简单的脚本即可构建完整运行环境。
+initrd 上一篇文章中已经提到了使用 initrd 启动操作系统的方法。initrd 是一个只读文件系统镜像，内核启动时，会将镜像内容加载到内存中。程序可以像普通文件系统一样访问。
+加载文件系统之后，内核会从其中寻找可用的 init 程序。因此我们只要编写合理的 init 程序，将其打包到一个 initrd 中即可。
+busybox 在这种从零开始构建文件系统的场景下，使用动态库太过繁琐。因此我们直接用宿主机上的 busybox 来提供基本的程序。
+准备阶段 首先创建一个 WORK_DIR 目录。此路径下的文件会被打包成文件系统镜像。
+WORK_DIR=$(mktemp -d) trap &amp;#34;rm -rf $WORK_DIR&amp;#34; EXIT 之后寻找宿主机上的 busybox，将其复制到 $WORK_DIR/bin/busybox。
+mkdir -p &amp;#34;$WORK_DIR/bin&amp;#34; # Copy busybox into the work directory BUSYBOX_PATH=$(which busybox) if [ -z &amp;#34;$BUSYBOX_PATH&amp;#34; ]; then echo &amp;#34;Error: busybox not found in PATH.&amp;#34; exit 1 fi cp &amp;#34;$BUSYBOX_PATH&amp;#34; &amp;#34;$WORK_DIR/bin/busybox&amp;#34; 创建 $WORK_DIR/init 脚本，赋予其可执行权限。内核在启动中会识别并执行该脚本。
+# Create init script cat &amp;lt;&amp;lt; &amp;#39;EOF&amp;#39; &amp;gt; &amp;#34;$WORK_DIR/init&amp;#34; #!</description>
+    </item>
+    <item>
+      <title>在 QEMU 上运行最新内核</title>
+      <link>https://wokron.github.io/posts/custom-linux-kernel-in-qemu/</link>
+      <pubDate>Sat, 29 Nov 2025 23:03:46 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/custom-linux-kernel-in-qemu/</guid>
+      <description>最近，我的业余时间都花在了一个和系统编程有关的项目上。不久之后我遇到了一个问题：想要使用最新版本内核的特性并不是一件十分容易的事。发行版大多滞后于最新的内核版本，而我又不是那样激进的人，想要冒险在自己唯一的这台 Linux 电脑上升级内核（使用 installkernel 命令）。所以我需要一个办法，在保证我的系统安全的情况下，搭建一个具有新版本内核的开发环境。
+这种情况容器帮不了我，虚拟机则是一个好选择。
+我曾经写过一个简单的 QEMU 介绍。但实际上我对 QEMU 的了解也仅限于那篇文章的内容了。探索本文的内容花了我一些时间。在这个过程中，我也发现网上的相关内容要么包含了未充分说明的脚本，要么存在许多冗余选项。我觉得在此处以一个简单、充分解释的方式记录这一过程似乎是有意义的。
+当然，从编译内核开始 如果你只需要一个能在虚拟机里运行的内核，不需要深度定制的话，那么编译内核其实很简单。这里有一个简单的教程，不过我们接下来要做的还要更简单。
+首先，你要下载内核源码。如果不需要修改源码的话，从 kernel.org 下载是最方便的。这里下载了编写本文时的 stable 版本（6.17.9）。
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.9.tar.xz tar -xf linux-6.17.9.tar.xz cd ./linux-6.17.9 之后，配置编译选项。这将创建编译配置文件 .config
+make defconfig make kvm_guest.config 前一条命令选择使用默认编译配置。第二条命令在默认配置基础上设置编译选项，使编译后的镜像可以作为 kvm 上的虚拟机运行。如果有其他需求，可以在此基础上继续配置。
+之后直接编译即可。由于只包含了作为虚拟机运行的最小配置，不需要编译驱动程序，这一过程应该很快。在我的笔记本上只用了一分钟。
+make -j $(nproc) 编译后的内核镜像位于 arch/x86/boot/bzImage。当然，是 x86 架构。
+file arch/x86/boot/bzImage # arch/x86/boot/bzImage: Linux kernel x86 boot executable bzImage, version 6.17.9 (wokron@wokron-navi) #2 SMP PREEMPT_DYNAMIC Sun Nov 30 12:34:56 CST 2025, RO-rootFS, swap_dev 0XD, Normal VGA 准备根文件系统 简易根文件系统 这一点和我之前有关容器的文章中的内容类似。如果不考虑实际可用性，我们现在就可以运行一个内核了。</description>
+    </item>
+    <item>
+      <title>QEMU 模拟器介绍</title>
+      <link>https://wokron.github.io/posts/qemu-introduction/</link>
+      <pubDate>Sun, 21 Jan 2024 14:33:21 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/qemu-introduction/</guid>
+      <description>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。
+然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。
+本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
+什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard&amp;rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。
+QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。
+QEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。
+在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。
+通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。
+根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。
+第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。
+图片来自 Andrew S.</description>
+    </item>
+  </channel>
+</rss>

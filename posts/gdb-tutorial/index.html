@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>GDB：程序的解剖术 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="GDB, C">
+<meta name="description" content="本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。
+为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。
+GDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。
+GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。
+GDB 是一个功能十分强大的调试器，它适用于 C、C&#43;&#43;、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：
+启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。
+准备工作 在开始之前需要说明两点：
+接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/gdb-tutorial/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/gdb-tutorial/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="GDB：程序的解剖术" />
+<meta property="og:description" content="本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。
+为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。
+GDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。
+GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。
+GDB 是一个功能十分强大的调试器，它适用于 C、C&#43;&#43;、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：
+启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。
+准备工作 在开始之前需要说明两点：
+接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/gdb-tutorial/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-01-18T19:44:35+08:00" />
+<meta property="article:modified_time" content="2024-01-18T19:44:35+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="GDB：程序的解剖术"/>
+<meta name="twitter:description" content="本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。
+为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。
+GDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。
+GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。
+GDB 是一个功能十分强大的调试器，它适用于 C、C&#43;&#43;、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：
+启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。
+准备工作 在开始之前需要说明两点：
+接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "GDB：程序的解剖术",
+      "item": "https://wokron.github.io/posts/gdb-tutorial/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "GDB：程序的解剖术",
+  "name": "GDB：程序的解剖术",
+  "description": "本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。\n2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。\n回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。\n为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。\nGDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。\nGDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。\nGDB 是一个功能十分强大的调试器，它适用于 C、C++、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：\n启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。\n准备工作 在开始之前需要说明两点：\n接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。",
+  "keywords": [
+    "GDB", "C"
+  ],
+  "articleBody": " 本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。\n2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。\n回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。\n为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。\nGDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。\nGDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。\nGDB 是一个功能十分强大的调试器，它适用于 C、C++、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：\n启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。\n准备工作 在开始之前需要说明两点：\n接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。\nGDB 的安装 在 Ubuntu 下应该预装了 GDB。可以通过查看版本命令 gdb -v 检查是否安装。\n$ gdb -v GNU gdb (Ubuntu 12.1-0ubuntu1~22.04) 12.1 Copyright (C) 2022 Free Software Foundation, Inc. License GPLv3+: GNU GPL version 3 or later This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law. 如果没有，通过以下命令安装\n$ apt-get update $ apt-get install gdb 加载程序 接下来我们以一个简单的程序作为例子\n// adds.c #include int main() { int n; scanf(\"%d\", \u0026n); int c = 0; for (int i = 1; i \u003c= n; i++) { c += i; printf(\"%d, \", c); } printf(\"\\n\"); return 0; } 经过前面教程对编译部分的补充，我们知道编译这个代码可以使用如下命令，生成名为 adds 的可执行文件。\n$ gcc adds.c -o adds 但是此种方法产生的目标程序会去掉许多在运行时不需要的信息，导致无法进行调试。因此我们还需要为命令加上 -g 选项。启用该选项将保留许多额外的信息以供调试器使用。不启用和启用 -g 产生的编译产物分别是目标程序的 Release 版本和 Debug 版本。\n$ gcc -g adds.c -o adds 因此使用调试器也需要对程序产生改动，但是与 printf 方法需要修改源代码不同，调试版本不改变原有的代码逻辑，不需要开发者关注。也即调试模式对开发者 “透明” 。\n之后我们就可以使用 GDB 对目标程序进行操作了。为 GDB 指定要运行的程序有两种方式。\n其一是直接在命令中指定。这样会进入 GDB 的交互界面，并将 adds 可执行文件作为将要 Debug 的程序。\n$ gdb adds 其二是直接运行 GDB 进入交互界面，并通过 GDB 的 file 指令加载可执行文件\n$ gdb (gdb) file adds 如果你看到如下内容，则说明 GDB 成功加载了 adds 程序。\nReading symbols from adds... 现在我们不考虑追踪程序运行，直接让程序运行直至完成。这需要用到 GDB 中的 run 指令。对于我们的程序，GDB 的执行结果如下：\nReading symbols from adds... (gdb) run Starting program: /your/path/to/program/adds [Thread debugging using libthread_db enabled] Using host libthread_db library \"/lib/x86_64-linux-gnu/libthread_db.so.1\". 10 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, [Inferior 1 (process 85435) exited normally] 在 GDB 环境下也可以进行标准输入输出。\n最后输入 quit 指令即可退出 GDB\n传入额外参数 上面是最简单的情况，许多时候还需要在执行程序的时候传入参数，以下面 echo 程序的实现为例。\n// echo.c #include #include void usage() { printf(\"usage: echo \\n\"); exit(-1); } int main(int argc, char *argv[]) { if (argc != 2) { usage(); } printf(\"%s\\n\", argv[1]); return 0; } 注意需要使用 ./echo 而不是 echo。\n$ gcc -g echo.c -o echo $ ./echo 'hello, world!' hello, world! 我们编写的 echo 程序需要传入一个参数。和加载程序有两种方法相同，传入参数也有两种方法。\n第一种方法是在命令行中传入参数。对于上述命令 ./echo 'hello, world!'，对应的 GDB 命令为。\n$ gdb --args ./echo 'hello, world!' 注意 --args 选项中包括了要运行的程序 ./echo。\n第二种方法是在 GDB 交互界面中使用 set args [arg]... 指令设置参数。\n$ gdb (gdb) file ./echo (gdb) set args 'hello, world!' 经过如上步骤后，我们的程序就正式加载到 GDB 环境中。我们同样使用 run 指令直接运行程序。对于命令 ./echo 'hello, world!'，GDB 的执行结果如下：\n(gdb) run Starting program: /your/path/to/program/echo 'hello, world!' [Thread debugging using libthread_db enabled] Using host libthread_db library \"/lib/x86_64-linux-gnu/libthread_db.so.1\". hello, world! [Inferior 1 (process 84663) exited normally] 可以发现现在运行的程序正确地带上了参数 /your/path/to/program/echo 'hello, world!'，并输出了 hello, world! 的结果。\n实际上 set args [arg]... 和 run 两条指令可以合为一条，即 run [arg]...。\n让我们总结一下本节用到的指令：\n指令 用途 file 加载程序 run 运行程序 set args [arg]... 设置程序的参数 run [arg]... 以设定的参数运行程序 quit 退出 GDB Step by Step：追踪程序运行 如果我们使用 GDB 的目的仅仅是使运行程序的过程更加繁琐，那还不如不用。所以接下来我们就正式介绍 GDB 的第一个功能：追踪程序运行。\n追踪程序运行，意味着我们要看到程序执行每一条指令的过程。接下来我们以这个计算斐波那契数列的程序为例。探索这个程序的运行过程。\n// fibo.c #include #include int fibo(int n) { assert(n \u003e 0); if (n \u003c= 2) { return 1; } else { return fibo(n - 1) + fibo(n - 2); } } int main(int argc, char *argv[]) { int n = 10; int fibo_n = fibo(n); printf(\"fibo(%d) = %d\\n\", n, fibo_n); return 0; } 我们编译源代码，并使用 GDB 执行程序 ./fibo。\n$ gcc -g fibo.c -o fibo $ gdb ./fibo 进入 GDB 环境后，这次我们不再使用 run 指令，而是使用 start 指令。start 指令会使程序停在 main 函数的起始处。执行该指令得到的输出应该类似如下内容。\n(gdb) start Temporary breakpoint 1 at 0x11eb: file fibo.c, line 16. Starting program: /your/path/to/program/fibo [Thread debugging using libthread_db enabled] Using host libthread_db library \"/lib/x86_64-linux-gnu/libthread_db.so.1\". Temporary breakpoint 1, main (argc=1, argv=0x7fffffffd9a8) at fibo.c:15 15 int n = 10; (gdb) 类似于 run 指令，start 指令也可以添加参数：start [arg]...。\n我们可以看到，在上述内容中出现了 15 int n = 10; 的内容。这表示程序接下来将要执行的是第 15 行的条件判断。我们查看源代码，发现这确实是程序进入 main 函数时的第一条代码。\n想要一步步执行程序，我们需要使用指令 step。\n(gdb) step 16 int fibo_n = fibo(n); (gdb) 之后如果需要执行下一步，不需要重复输入 step，只需要按回车即可。这时我们会发现 GDB 直接进入到了 fibo 函数中，并指出此时的参数 n = 10。这符合 step 指令的功能，那就是一步步地执行程序。\n(gdb) fibo (n=10) at fibo.c:6 6 assert(n \u003e 0); (gdb) 再敲击两次回车，下一步将要执行的就是 return fibo(n - 1) + fibo(n - 2); 这条语句。\n(gdb) 7 if (n \u003c= 2) { (gdb) 10 return fibo(n - 1) + fibo(n - 2); (gdb) 这时再敲击一次回车会发生什么情况？如果再敲击一次回车，我们就调用了 fibo(n - 1)。因此递归进入 fibo 函数，并且此时的参数 n = 9。\n(gdb) fibo (n=9) at fibo.c:6 6 assert(n \u003e 0); (gdb) 这样可不行，如果我们真的一步步执行程序，就会一次次地进入被调用的函数中，看到许多不必要的运行细节。因此我们还需要跳过函数内部的机制。\n我们先要从 fibo(9) 中退出。在函数内部跳出当前函数的指令是 finish。通过执行该指令后产生的信息可以得知，我们并没有陷入 fibo(9) -\u003e fibo(8) -\u003e fibo(7)... 的递归调用中，而是相当于直接执行完成了 fibo(9)，并得到了其返回值 $1 = 34。\n(gdb) finish Run till exit from #0 fibo (n=9) at fibo.c:6 0x00005555555551c1 in fibo (n=10) at fibo.c:10 10 return fibo(n - 1) + fibo(n - 2); Value returned is $1 = 34 (gdb) 我们跳出了 fibo(9)，但之后如果我们还是使用 step 指令，就又会进入 fibo(8)。因此这里还要引入另一条指令 next。该指令用于执行当前所在的行，而跳过当前行中的任何函数调用。\n输入 next 指令后 GDB 显示 “接下来将要执行的行” 是第 12 行，即函数末尾的右括号，这是什么意思？\n(gdb) next 12 } (gdb) 这实际上表示的是位于函数中最后一条指令执行后和函数返回前的时刻。因为我们知道 GDB 显示的行是将要执行的行，因此前一条指令的执行结果只有到下一行时才能知道。但执行完函数最后一条指令后就应该从函数中返回，此时本函数的状态就不可以得知了。所以为了能表示 “执行完函数最后一条指令” 这样的状态，GDB 使用了函数的右括号所在的行。\n之后，我们再使用一次 next 指令或 step 指令就可以真正的跳出 fibo(10) 函数。这里本人直接使用回车，表示沿用 next 指令。这一点和 step 类似。\n(gdb) main (argc=1, argv=0x7fffffffd9a8) at fibo.c:17 17 printf(\"fibo(%d) = %d\\n\", n, fibo_n); (gdb) 为了不进入 printf 函数，我们同样使用回车。发现程序正确输出了 fibo(10) = 55。\n(gdb) fibo(10) = 55 19 return 0; (gdb) 实际上我们并不能进入到 printf 函数中，因为我们并没有 printf 的实现代码。\n此后的程序运行我们就不需要关注了，有如下处理方法：\n可以使用 continue 指令继续程序的正常运行。程序会继续运行直至退出。\n(gdb) continue Continuing. [Inferior 1 (process 102673) exited normally] 或者也可以使用 kill 指令直接杀死程序进程。\n(gdb) kill Kill the program being debugged? (y or n) y [Inferior 1 (process 108565) killed] 又或者使用 start 指令重新运行程序\n(gdb) start The program being debugged has been started already. Start it from the beginning? (y or n) y Temporary breakpoint 2 at 0x5555555551eb: file /your/path/to/program/fibo.c, line 15. Starting program: /your/path/to/program/fibo [Thread debugging using libthread_db enabled] Using host libthread_db library \"/lib/x86_64-linux-gnu/libthread_db.so.1\". Temporary breakpoint 2, main (argc=1, argv=0x7fffffffd9a8) at /your/path/to/program/fibo.c:15 15 int n = 10; (gdb) 顺便一提，如果各位使用过编辑器或 IDE 的调试功能，应该不会忘记那几个不同编辑器和 IDE 通用的按钮设计。这几个按钮实际上就对应了在本节中介绍的几个指令。这里以 vscode 中的按钮为例，从左向右分别为： 继续：对应 GDB 中的 continue 指令 步过：对应 GDB 中的 next 指令 步入：对应 GDB 中的 step 指令 步出：对应 GDB 中的 finish 指令 重启：对应 GDB 中的 start 指令（在程序运行中使用） 停止：对应 GDB 中的 kill 指令 让我们总结一下本节用到的指令：\n指令 用途 start 启动程序并使其停在 main 函数起始处 start [arg]... 以设定的参数启动程序并使其停在 main 函数起始处 step 执行下一步程序，包括进入函数 finish 跳出当前函数 next 执行单行程序，不进入函数 continue 继续执行函数 kill 杀死程序进程 重剑无锋：设置断点 逐步运行虽然能看到所有细节，但是 Debug 时我们常常只关心某几个可能出错的模块，因此需要让程序在我们不关心的地方自行运行。但是自行运行的程序要怎么得知哪里就是开发者所关心的地方呢？这就需要使用断点。断点是对程序中某些行的标记，当程序执行到断点所在位置，并满足一些条件时，就将程序由自行执行转换为通过 GDB 的指令控制执行。断点看似简单，实则变化万千，是调试器最为重要的功能。\n普通断点 这么说可能有些抽象，接下来我们对 fibo.c 的代码做一些修改，并以此为例子。\n// fibo.c #include #include #include int fibo(int n) { assert(n \u003e 0); if (n \u003c= 2) { return 1; } else { return fibo(n - 1) + fibo(n - 2); } } void usage() { printf(\"usage: fibo \"); exit(-1); } int main(int argc, char *argv[]) { if (argc != 2) { usage(); } int n = atoi(argv[1]); for (int i = 1; i \u003c= n; i++) { int fibo_i = fibo(i); printf(\"fibo(%d) = %d\\n\", i, fibo_i); } return 0; } 我们编译源代码，并进入 GDB 中。\n$ gcc -g fibo.c -o fibo $ gdb fibo 现在考虑这样一个问题，如果我们想要忽略之前的过程，直接跳到 fibo 函数第一次调用的地方，并进入 fibo 函数中。应该如何操作？\n此时我们就需要将一个断点设置在 int fibo_i = fibo(i); 这条语句处。但是目前在 GDB 中我们可能不清楚这条语句具体的位置，因此我们首先要使用 list [position] 指令查看源代码。\nlist [position] 指令的使用形式包括 list（显示当前运行位置的源代码）、list 、list :、list 和 list :。同时在使用一次 list 之后也可以再通过回车查看源代码的后续内容。\n这里我们可以使用 list main 并敲击一次回车得知 int fibo_i = fibo(i); 这条语句的行号为 28。\n(gdb) list main 15 void usage() { 16 printf(\"usage: fibo \"); 17 exit(-1); 18 } 19 20 int main(int argc, char *argv[]) { 21 if (argc != 2) { 22 usage(); 23 } 24 (gdb) 25 int n = atoi(argv[1]); 26 27 for (int i = 1; i \u003c= n; i++) { 28 int fibo_i = fibo(i); 29 printf(\"fibo(%d) = %d\\n\", i, fibo_i); 30 } 31 32 return 0; 33 } (gdb) 我们知道了这条语句所在的行号，现在可以设置断点了。设置断点的指令为 break。与 list 指令一样，有五种使用形式。这里我们使用 break 28 设置断点。\n(gdb) break 28 Breakpoint 1 at 0x1280: file fibo.c, line 28. 之后我们使用 run 10 运行程序 ./fibo 10。在未设置断点的情况下，我们知道 run 指令会直接完成程序的执行。但是这一次程序会在断点处停下。\n(gdb) run 10 Starting program: /your/path/to/program/fibo 10 [Thread debugging using libthread_db enabled] Using host libthread_db library \"/lib/x86_64-linux-gnu/libthread_db.so.1\". Breakpoint 1, main (argc=2, argv=0x7fffffffd988) at fibo.c:28 28 int fibo_i = fibo(i); (gdb) 之后我们输入 step 指令，就进入了 fibo 函数中。\n(gdb) step fibo (n=1) at fibo.c:7 7 assert(n \u003e 0); (gdb) 这时让我们输入 continue 再次让程序自行执行，会发生什么？因为在循环中有断点的存在。所以会在经过一次循环后在断点处重新停下。同时可以看到程序在自行运行时产生了输出 fibo(1) = 1。\n(gdb) continue Continuing. fibo(1) = 1 Breakpoint 1, main (argc=2, argv=0x7fffffffd988) at fibo.c:28 28 int fibo_i = fibo(i); (gdb) 为了避免重复在这一断点处暂停，我们可以删除或者暂时禁用断点。首先我们使用 info breakpoints 查看所有断点信息。其中各列的信息分别是断点编号（Num）、断点类型（Type）、是临时断点还是永久断点（Disp）、目前是启用状态还是禁用状态（Enb）、断点的位置（Address）、断点当前的状态（What，作用的行号、已经命中的次数等）。\n(gdb) info breakpoints Num Type Disp Enb Address What 1 breakpoint keep y 0x0000555555555280 in main at fibo.c:28 breakpoint already hit 2 times 我们需要得知断点的编号。目前这唯一的断点编号为 1。我们可以使用 disable breakpoints [num]... 暂时禁用断点。之后再次查看断点信息，发现 Enb 列由 y 变为了 n。如果想要重新启用断点，则需要使用 enable breakpoints [num]...。\n(gdb) disable breakpoints 1 (gdb) info breakpoints Num Type Disp Enb Address What 1 breakpoint keep n 0x0000555555555280 in main at fibo.c:28 breakpoint already hit 2 times 如果这个断点不再需要，那么也可以直接删除。需要使用 delete breakpoints [num]... 指令。\n(gdb) delete breakpoints 1 (gdb) info breakpoints No breakpoints or watchpoints. 删除了断点之后，我们重新执行 continue 指令。这一次没有任何断点的阻挡，程序顺利完成。\n(gdb) continue Continuing. fibo(2) = 1 fibo(3) = 2 fibo(4) = 3 fibo(5) = 5 fibo(6) = 8 fibo(7) = 13 fibo(8) = 21 fibo(9) = 34 fibo(10) = 55 [Inferior 1 (process 109274) exited normally] (gdb) 临时断点 但是本章的内容并没有结束。这一回我们使用 start 10 指令重新运行 ./fibo 10 程序。不知你有没有发现，输出的信息中出现了 “breakpoint”。这是因为 start 指令本质上就是在 main 函数处添加一个断点，并运行程序。\n(gdb) start 10 Temporary breakpoint 2 at 0x555555555251: file fibo.c, line 21. Starting program: /your/path/to/program/fibo 10 [Thread debugging using libthread_db enabled] Using host libthread_db library \"/lib/x86_64-linux-gnu/libthread_db.so.1\". Temporary breakpoint 2, main (argc=2, argv=0x7fffffffd988) at fibo.c:21 21 if (argc != 2) { (gdb) 但是这里的断点还是有些不同，因为这是 “Temporary“ breakpoint 而非普通的 Breakpoint。设置临时断点后，程序只在此处暂停运行一次，之后断点就自动删除。\n设置临时断点的指令是 tbreak，使用方法和 break 一致。我们在程序的循环处（27 行）设置一个临时断点。之后使用 continue 指令运行程序。可以发现程序暂停在了循环处。\n(gdb) tbreak 27 Temporary breakpoint 3 at 0x555555555277: file fibo.c, line 27. (gdb) continue Continuing. Temporary breakpoint 3, main (argc=2, argv=0x7fffffffd988) at fibo.c:27 27 for (int i = 1; i \u003c= n; i++) { 因此 start [arg]... 就等价于 tbreak main 和 run [arg]... 两条指令。\n而如果此时使用 info breakpoints 查看断点信息，就会发现这一临时断点已不存在\n(gdb) info breakpoints No breakpoints or watchpoints. 条件断点 虽然就目前介绍的内容来看，断点已经足够强大，但是对于追踪程序运行来说还是有所不足。比如说如果我们希望程序在运行第 9 次循环内语句时终止，要怎么设置断点呢？如果是普通断点，那么每次循环程序都会暂停；如果是临时断点，那么程序就只会暂停一次。这两种断点走向了两个极端，而我们需要的断点类型则位于这两者中间，那就是条件断点。\n条件断点指只有满足一定条件才中断程序运行的断点。创建条件断点的指令是 break [position] if 。其中 [position] 部分和 break 一致。而 部分应该是一个在当前上下文中符合语义的表达式，如 a \u003e= b + 1，其中 a 和 b 均已定义。一个比较简单的判断方法是如果在代码中添加 if (){}，不会出现编译或运行时错误，则该表达式就可以使用。\n同样的，也可以设置条件临时断点。指令为 tbreak if 。\n回到我们的 GDB 调试环境。这次我们使用指令 break 28 if i == 9 在循环中创建一个第 9 次进入循环时暂停程序的断点。之后执行 continue 指令，根据程序的输出可知确实在第 9 次循环时触发了断点。\n(gdb) break 28 if i == 9 Breakpoint 4 at 0x555555555280: file fibo.c, line 28. (gdb) continue Continuing. fibo(1) = 1 fibo(2) = 1 fibo(3) = 2 fibo(4) = 3 fibo(5) = 5 fibo(6) = 8 fibo(7) = 13 fibo(8) = 21 Breakpoint 4, main (argc=2, argv=0x7fffffffd988) at fibo.c:28 28 int fibo_i = fibo(i); 另外我们也可以修改断点的条件。需要使用 condition 指令，该指令也可以将普通断点变为条件断点。这里我们将断点的条件修改为 i == 10。\n首先使用 info breakpoints 指令查看断点编号。\n(gdb) info breakpoints Num Type Disp Enb Address What 4 breakpoint keep y 0x0000555555555280 in main at fibo.c:28 stop only if i == 9 breakpoint already hit 1 time 随后即可使用 condition 4 i == 10 指令修改断点的条件。之后使用 continue 指令继续运行程序，结果程序在循环内再一次暂停。\n(gdb) condition 4 i == 10 (gdb) continue Continuing. fibo(9) = 34 Breakpoint 4, main (argc=2, argv=0x7fffffffd988) at fibo.c:28 28 int fibo_i = fibo(i); 如果出现了遍历链表或者使用迭代器这类没有显式计数的循环，又要如何设置 “在进行第 K 次循环时暂停” 这样的断点呢？可以使用 ignore 指令。该指令表示忽略某一断点前 次的访问。同时也可用上临时断点。因此指令为 tbreak 和 ignore 。\n因为引入了条件断点，所以现在在程序的同一位置可以出现多个断点。GDB 也提供了一个删除某一位置所有断点的指令。使用 clear 即可。如果此位置只有一个断点，则该指令也等同于 delete breakpoints ，甚至更为方便。\n观察点 为断点添加条件使得我们能够更加灵活地设置程序中断的时机。然而，就算是条件断点也需要设定具体的位置，这意味着我们需要在设置断点前就定位 Bug 的大致范围和发生时机。对于功能较少的程序来说，这是可以做到的；但是对于规模较大、涉及到大量内存操作的程序，程序出错的时机常常并和 Bug 产生的位置不同，仅仅使用普通的条件断点难以处理这种情况。\n于是 GDB 引入了一类特殊的断点，称为观察点（Watchpoint）。设定观察点时需要指定一个表达式而不需要指定位置，程序运行时 GDB 会持续监视该表达式的取值，当其取值发生变化时，程序就会停止。可以这样认为，观察点是只设定了条件而没有设定位置的特殊的条件断点，而其条件就是表达式的取值发生了变化。\n在讲解条件断点时我们举了一个 “如何让程序在运行第 9 次循环内语句时终止” 的例子。现在我们也可以使用观察点来实现这一效果。还以 fibo 程序为例。\n设置观察点的指令为 watch ，其中 为在当前上下文中合法的表达式。因此要设置和 i 相关的观察点，我们需要先进入到循环中。\n$ gdb fibo ... (gdb) tbreak 27 (gdb) run 10 ... Temporary breakpoint 1, main (argc=2, argv=0x7fffffffda68) at fibo.c:27 27 for (int i = 1; i \u003c= n; i++) { 这时我们希望程序在第 9 次循环时停下，只需要设置 watch i \u003e= 9 的观察点即可。这样在进入第 9 次循环时，i \u003e= 9 的取值就会发生变化，从而中断程序运行。\n之后我们输入 continue 指令，查看运行结果。发现程序正常暂停。\n(gdb) watch i \u003e= 9 Hardware watchpoint 2: i \u003e= 9 (gdb) continue Continuing. fibo(1) = 1 fibo(2) = 1 fibo(3) = 2 fibo(4) = 3 fibo(5) = 5 fibo(6) = 8 fibo(7) = 13 fibo(8) = 21 Hardware watchpoint 2: i \u003e= 9 Old value = 0 New value = 1 0x00005555555552ad in main (argc=2, argv=0x7fffffffda68) at fibo.c:27 27 for (int i = 1; i \u003c= n; i++) { (gdb) 随后我们可以使用两次 step 指令进入 fibo 函数内，可以发现此时确为第 9 次循环。\n(gdb) step 28 int fibo_i = fibo(i); (gdb) fibo (n=9) at fibo.c:7 7 assert(n \u003e 0); 我们也可以使用 info breakpoints 指令查看观察点的信息。\n(gdb) info breakpoints Num Type Disp Enb Address What 2 hw watchpoint keep y i \u003e= 9 breakpoint already hit 1 time 因为观察点同属于断点，所以也可以使用 disable breakpoints、enable breakpoints、delete breakpoints 等指令。\n除了观察点，GDB 中还可以设置读观察点（Read Watchpoint）和访问观察点（Access Watchpoint）。设置读观察点需要使用指令 rwatch ，当程序中出现读取目标表达式的值的操作，就会停止程序运行；设置访问观察点需要使用指令 awatch ，当程序中出现读取或写入目标表达式的值的操作，就会停止程序运行。因为这两类观察点的使用和普通观察点类似，所以就不再重复介绍了。\n注意分别观察点的取值改变和访问观察点的写入的区别。\n最后还需要强调一遍，设置观察点时的表达式并不需要是条件表达式。另外观察点常用于调试内存问题，这时表达式通常和指针或地址有关。为了加深各位同学的认识，我们可以再举一些例子。\n如下的代码中，mysterious_func 函数调用 free 释放了内存，但没有将指针值置为 NULL。\n// watch.c #include #include void mysterious_func(int **pptr) { free(*pptr); // *pptr = NULL; } int main() { int *ptr = NULL; ptr = malloc(sizeof(int)); *ptr = 10; printf(\"value is %d\\n\", *ptr); mysterious_func(\u0026ptr); if (ptr != NULL) { printf(\"value is %d\\n\", *ptr); } return 0; } 这导致程序访问了野指针，可能产生不可预期的后果。我们可以编译并执行该程序，结果如下。对本程序来说，只是取得了一个没有意义的数据；但如果在操作系统中发生，则可能产生内核错误（Panic）等严重的问题。\n$ gcc -g ./watch.c -o watch $ ./watch value is 10 value is 1648141505 而通过观察点就可以轻易定位问题所在。我们使用如下一系列指令，在程序运行时监视 *ptr 的取值，最终找到异常值产生的位置。\n$ gdb watch (gdb) start (gdb) watch *ptr (gdb) continue (gdb) continue (gdb) continue Continuing. value is 10 Hardware watchpoint 2: *ptr Old value = 10 New value = 1431655769 tcache_put (tc_idx=0, chunk=0x555555559290) at ./malloc/malloc.c:3160 3160 ./malloc/malloc.c: 没有那个文件或目录. 当然现在我们只能得知异常值出自 malloc.c 的实现中。通过下一节的学习，我们可以查看程序运行时的调用栈信息，进而将问题定位在 mysterious_func 函数中。\n除了野指针，另一类可能在实验中经常遇到的 Bug 是数组越界。我们可以以如下代码为例：\n// watch2.c #include int careless_sum(int arr[], int n) { int i = 0, total = 0; while (i \u003c n) { total += arr[++i]; // total += arr[i++]; } return total; } int main() { int arr[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}; printf(\"total = %d\\n\", careless_sum(arr, 10)); return 0; } 各位同学应该可以看得出来，使用 ++i 而非 i++ 导致了数组越界。我们编译并运行，“成功” 得到错误的结果。\n$ gcc -g ./watch2.c -o watch2 $ ./watch2 total = -3779795 调试数组越界问题，我们只需要监视程序何时访问了数组之后的地址即可。根据我们上面的介绍，可以使用访问观察点。我们首先在 GDB 中运行程序，之后使用 awatch arr[10] 设置访问观察点。arr[10] 是数组 arr 之后的第一个 4 字节地址空间。如果该空间被访问，说明发生了数组越界问题。\n$ gdb watch2 (gdb) start (gdb) next (gdb) awatch arr[10] Hardware access (read/write) watchpoint 2: arr[10] 接着，我们使用 continue 指令继续程序运行。结果发现程序确实发生了中断。这样我们就定位到了数组越界发生的位置。\n(gdb) continue Continuing. Hardware access (read/write) watchpoint 4: arr[10] Value = 1896377344 careless_sum (arr=0x7fffffffd910, n=10) at ./watch2.c:7 7 total += arr[++i]; 让我们总结一下本节用到的指令：\n指令 用途 list [position] 显示指定位置源代码 break [position] 在指定位置设置断点 info breakpoints 显示所有断点信息 disable breakpoints [num]... 禁用指定断点 enable breakpoints [num]... 启用指定断点 delete breakpoints [num]... 删除指定断点 tbreak [position] 在指定位置设置临时断点 break [position] if 在指定位置设置条件断点 tbreak [position] if 在指定位置设置条件临时断点 condition 修改断点的条件 ignore 忽略断点前指定次数的访问 clear 删除指定位置的所有断点 watch 为指定表达式设置观察点 rwatch 为指定表达式设置读观察点 awatch 为指定表达式设置访问观察点 程序的机理：查看运行时数据 经过之前那么多节内容的学习，我们知道了如何追踪程序的执行过程、如何让程序在特定条件下暂停，但是这些内容我们都只是在程序流中漫游。在这些之外程序还有一个重要的组成部分，那就是数据。\n这回就让我们沿用上一节中用到的 fibo 程序。应用之前学过的内容，我们直接进入到 fibo 函数调用的最深处。\n$ gdb fibo (gdb) start 10 (gdb) break 28 if i == 10 (gdb) continue (gdb) tbreak fibo if n == 1 (gdb) continue Continuing. Temporary breakpoint 3, fibo (n=1) at fibo.c:7 7 assert(n \u003e 0); 我们知道程序到达现在所处的位置，需要从 fibo(10) 一路递归到 fibo(1)。可是目前我们只能得知现在位于 fibo(0) 函数内。如果能得知程序运行中的数据信息呢？\n这里要介绍本节第一个指令 backtrace。该指令用于查看到目前位置的函数调用信息。我们输入该指令，可以发现经历了十分漫长的调用过程。\n(gdb) backtrace #0 fibo (n=1) at fibo.c:7 #1 0x0000555555555210 in fibo (n=3) at fibo.c:11 #2 0x0000555555555201 in fibo (n=4) at fibo.c:11 #3 0x0000555555555201 in fibo (n=5) at fibo.c:11 #4 0x0000555555555201 in fibo (n=6) at fibo.c:11 #5 0x0000555555555201 in fibo (n=7) at fibo.c:11 #6 0x0000555555555201 in fibo (n=8) at fibo.c:11 #7 0x0000555555555201 in fibo (n=9) at fibo.c:11 #8 0x0000555555555201 in fibo (n=10) at fibo.c:11 #9 0x000055555555528a in main (argc=2, argv=0x7fffffffd988) at fibo.c:28 但是这样还不够，调用栈信息中只包括了函数的参数信息，我们希望得知任意变量的取值。这可以通过 print 指令实现。其中 应当符合当前的上下文，这与条件断点的 类似。\n表达式不一定仅仅是变量。比如下面的例子。\n(gdb) print 1 + 2 * 3 $1 = 7 我们可以通过使用 print n 查看当前函数中参数 n 的值。\n(gdb) print n $1 = 1 不过 n 的取值本就在函数调用信息中显示了。可不可以获取其他的参数，比如说此时循环中 i 的值？\n答案当然是可以。但我们首先需要移动到调用栈的不同位置。这通过一组指令进行控制，包括 up [steps]、down [steps] 和 frame [level]。\nup [steps] 和 down [steps] 用于控制在栈帧间移动，而 [steps] 指示移动多少次。需要注意的是，这里的 up 是向调用者的方向移动，而 down 是向被调用者的方向移动。这或许是由于程序的栈空间向低地址增长，被调用者的栈帧位于调用者 “之下“。这里我们先执行 up 再执行 down，可以看出栈帧的移动。\n(gdb) up #1 0x0000555555555210 in fibo (n=3) at fibo.c:11 11 return fibo(n - 1) + fibo(n - 2); (gdb) down #0 fibo (n=1) at fibo.c:7 7 assert(n \u003e 0); 而 frame [level] 指令则是直接根据层次跳转到指定的栈帧。其中层次指的是 backtrace 指令的输出中位于各栈帧左侧的标号。\n现在我们想要到达 main 函数所在的栈帧，只需要使用 frame 9 即可。\n(gdb) frame 9 #9 0x000055555555528a in main (argc=2, argv=0x7fffffffd988) at fibo.c:28 28 int fibo_i = fibo(i); 之后就可以使用 print 得到 i 的值了。\n(gdb) print i $2 = 10 需要注意的是移动栈帧位置并不改变程序当前执行的语句。程序当前执行的语句只有 step、next、finish 等等函数才可改变。\n另外我们也可以打印数组中的值。不过由于 C 中并不记录数组的长度，所以还需自行指定。这里我们以 main 函数中的 argv 为例。获取数组中指定范围内的值需要使用形如 arr[]@ 的语法规则。表示显示数组中从 处开始长度为 的范围内各元素的值。\n(gdb) print argv[0] $3 = 0x7fffffffddbf \"/your/path/to/fibo\" (gdb) print *argv $4 = 0x7fffffffddbf \"/your/path/to/fibo\" (gdb) print argv[0]@2 $5 = {0x7fffffffddbf \"/your/path/to/fibo\", 0x7fffffffddf8 \"10\"} 最后，学过计算机组成的同学都知道，其实指令也是数据。所以在 GDB 中我们也可以将代码显示出来，不过是将机器码转换到了汇编码。使用的指令也是 disassemble [position]，“反汇编”。其具体形式包括 disassemble、disassemble 、disassemble 、disassemble , 等等，这里就不详述了。需要注意的是汇编中出现的箭头表示 PC 寄存器所在的位置（或者函数返回的地址，就如下面对 main 函数栈帧的反汇编部分）。\n0x000055555555527e \u003c+64\u003e: jmp 0x5555555552ad 0x0000555555555280 \u003c+66\u003e: mov -0xc(%rbp),%eax 0x0000555555555283 \u003c+69\u003e: mov %eax,%edi 0x0000555555555285 \u003c+71\u003e: call 0x5555555551a9 =\u003e 0x000055555555528a \u003c+76\u003e: mov %eax,-0x4(%rbp) 0x000055555555528d \u003c+79\u003e: mov -0x4(%rbp),%edx 0x0000555555555290 \u003c+82\u003e: mov -0xc(%rbp),%eax 0x0000555555555293 \u003c+85\u003e: mov %eax,%esi 0x0000555555555295 \u003c+87\u003e: lea 0xd8a(%rip),%rax # 0x555555556026 0x000055555555529c \u003c+94\u003e: mov %rax,%rdi 0x000055555555529f \u003c+97\u003e: mov $0x0,%eax 0x00005555555552a4 \u003c+102\u003e: call 0x555555555080 让我们总结一下本节用到的指令：\n指令 用途 backtrace 查看调用栈信息 up [steps] 向调用者方向移动栈帧 down [steps] 向被调用者方向移动栈帧 frame [level] 移动到指定的栈帧 print 查看表达式的值 disassemble [position] 查看对应位置的汇编码 高级调试：修改运行时程序 在计算机科学的远古时期，为了充分利用有限的资源，一些开发者会将程序设计为可以在运行时修改自身，这称为自修改代码。我们的 GDB 虽然没有这么厉害，但也可以在调试时动态修改程序的数据或运行，从而让程序偏离原本的执行路径。这一功能可用于在调试时修正程序错误，从而验证 Bug 修复的可行性；或者跳过当前 Bug，查看后续程序的执行情况。\n为此我们需要一个有 Bug 的程序作为例子。但是 Bug 有种特点，无意间可能就会写出，但自行构造却又很是麻烦。所以恕本人能力有限，只能用拙劣的手法生生造出一个 Bug 了。\n下面的代码中，讨厌的全局变量 dangerous_global 会使函数 add 产生副作用，当调用第 5 次 add 函数时就会产生错误的计算结果。\n// bug.c #include #include int dangerous_global = 0; int add(int a, int b) { if (++dangerous_global == 5) { return a; } else { return a + b; } } int main() { int test_cases[6][3] = { {1, 2, 3}, {1, -1, 0}, {3, 0, 3}, {-2, 5, 3}, {-2, -5, -7}, {-10, 0, -10}, }; for (int i = 0; i \u003c 6; i++) { int a = test_cases[i][0]; int b = test_cases[i][1]; int expect = test_cases[i][2]; int result = add(a, b); assert(result == expect); } return 0; } 我们编译并运行该程序，确实我们的断言出现了失败。\n$ gcc -g bug.c -o bug $ ./bug bug: bug.c:26: main: Assertion `result == expect' failed. 已放弃 (核心已转储) 从上面的信息中我们并不能得知到底哪个测试样例出现了错误。这个问题有两个解决方法。一是使用更加完善的单元测试框架，不过在这里不会进一步介绍；二是使用 GDB 重新运行，GDB 会在断言出错时产生中断。\n$ gdb ./bug (gdb) run ... bug: bug.c:26: main: Assertion `result == expect' failed. Program received signal SIGABRT, Aborted. ... (gdb) 此时使用 backtrace 查看调用栈信息。因为调用栈可能较长，这里可以使用 backtrace -2 只显示调用栈底两个栈帧的信息。从中我们得知 main 函数的层次为 7。\n(gdb) backtrace -2 #6 0x00007ffff7dd7b86 in __assert_fail ( assertion=0x55555555600a \"result == expect\", file=0x555555556004 \"bug.c\", line=26, function=0x55555555601b \u003c__PRETTY_FUNCTION__.0\u003e \"main\") at ./assert/assert.c:101 #7 0x00005555555552e4 in main () at bug.c:26 随后移动到 main 函数所在的栈帧，需要使用指令 frame 7。接着查看 result 和 expect 的值即可。\n(gdb) frame 7 #7 0x00005555555552e4 in main () at bug.c:26 26 assert(result == expect); (gdb) print result $1 = -2 (gdb) print expect $2 = -7 我们得知了出错的测试用例后进入此时的 add 函数（具体过程省略），查看 dangerous_global 的值为 4。之后 ++dangerous_global == 5 的结果将为真，进入 if 所在分支，得到错误的结果。\n... (gdb) step add (a=-2, b=-5) at bug.c:8 8 if (++dangerous_global == 5) { (gdb) print dangerous_global $3 = 4 我们可以如何修改代码使得程序正常运行呢？首先，是 dangerous_global 产生的 Bug，因此可以选择修改该变量的值。这需要用到 set variable = 指令。这里我们就将 dangerous_global 的值改为 5，从而跳过了错误的情况。接着使用 continue 指令，结果显示程序正常退出，断言没有失败。\n(gdb) set variable dangerous_global = 5 (gdb) print dangerous_global $4 = 5 (gdb) continue Continuing. [Inferior 1 (process 25507) exited normally] 让我们回到刚进入 add 函数的时候。假设现在没有修改 dangerous_global，而是已经进入到了 if 分支的代码块中，但我们还希望 add 的返回值正确，又要如何操作呢？\n(gdb) step add (a=-2, b=-5) at bug.c:8 8 if (++dangerous_global == 5) { (gdb) step 9 return a; 对于这种情况，我们可以使用 return [expression] 指令。在函数中的任意位置使用该指令都会立即从函数返回，同时将返回值设置为 [expression] 的结果。这里我们就可以使用 return a + b 指令，此时返回的结果为 a + b 而不是 a。\n(gdb) return a + b Make add return now? (y or n) y #0 0x00005555555552b1 in main () at bug.c:25 25 int result = add(a, b); (gdb) next 26 assert(result == expect); (gdb) print result $1 = -7 return 指令和 finish 指令看似相同，但是不要混淆。return 是直接从函数中返回，而 finish 是让程序继续执行，直到函数返回。\n更多的时候我们并不希望直接从函数中返回，只是想要跳到正确的执行路径上。这时 return 指令就无法胜任了。我们还要引入一个十分强大的指令，那就是 jump 指令。其中 可以是行号或指令地址。jump 指令可以允许在随意地跳转到任意代码位置，当然 GDB 并不保证进行跳转后程序可以正常运行。\n现在我们回到 return a; 所在的位置。我们想要跳到 return a + b;，只需要执行 jump 11（else 分支的代码块的行号）即可。\n(gdb) step 9 return a; (gdb) jump 11 Continuing at 0x555555555196. [Inferior 1 (process 29198) exited normally] 执行完 jump 指令后发生了什么？我们的程序直接退出了，不过幸好是正常退出，我们正确修复了 Bug。实际上使用 jump 指令后程序会自动从跳到的地方自动执行，而我们并没有设置断点，所以程序就自动执行直到退出了。\n如果想要 jump 后暂停，可以使用临时断点。只需要 tbreak [positon] 和 jump [position] 这两条指令。\njump 指令没有任何限制。因此可以实现诸如跳出循环、切换不同分支、跨过代码段等功能。基本上可以将其视为在代码中插入一条 goto 语句加上对应位置的标签。不过 jump 甚至比 goto 更强大，因为它可以直接跳到不同函数，而 goto 的标签的作用范围只在函数内。\n让我们总结一下本节用到的指令：\n指令 用途 set variable = 修改变量的值 return [expression] 立即从函数中以指定的返回值返回 jump 无条件跳转到程序的指定位置 总结 以上就是本篇文章的主要内容了，看似内容繁多，实际上也只是 GDB 所有功能中较为主要的部分而已。不过这些内容已经足够应对大部分的调试场景，包括各位同学将要挑战的操作系统实验。调试是一门技术，也是一门艺术，它需要长久的练习，但在重要时刻也能助你一臂之力。因此希望各位同学能好好学习 GDB 的知识点和背后的调试思想，不止是在本门课上，在未来的编码生涯中也将受益无穷。\n在总结的最后，列出我们介绍的所有指令。另外其实大部分 GDB 指令都有其缩写，但是在教程当中为了便于理解指令作用，且限于篇幅，并没有一一说明。所以在这里进行补充。\n指令 缩写 用途 file 加载程序 run r 运行程序 set args [arg]... 设置程序的参数 run [arg]... r 以设定的参数运行程序 quit q 退出 GDB start 启动程序并使其停在 main 函数起始处 start [arg]... 以设定的参数启动程序并使其停在 main 函数起始处 step s 执行下一步程序，包括进入函数 finish fin 跳出当前函数 next n 执行单行程序，不进入函数 continue c 继续执行函数 kill k 杀死程序进程 list [position] l 显示指定位置源代码 break [position] b 在指定位置设置断点 info breakpoints i b 显示所有断点信息 disable breakpoints [num]... disable b 禁用指定断点 enable breakpoints [num]... enable b 启用指定断点 delete breakpoints [num]... d 删除指定断点 tbreak [position] tb 在指定位置设置临时断点 break [position] if b..if 在指定位置设置条件断点 tbreak [position] if tb...if 在指定位置设置条件临时断点 condition cond 修改断点的条件 ignore ig 忽略断点前指定次数的访问 clear cl 删除指定位置的所有断点 watch wa 为指定表达式设置观察点 rwatch rw 为指定表达式设置读观察点 awatch aw 为指定表达式设置访问观察点 backtrace bt 查看调用栈信息 up [steps] 向调用者方向移动栈帧 down [steps] 向被调用者方向移动栈帧 frame [level] f 移动到指定的栈帧 print p 查看表达式的值 disassemble [position] disas 查看对应位置的汇编码 set variable = set var 修改变量的值 return [expression] ret 立即从函数中以指定的返回值返回 jump j 无条件跳转到程序的指定位置 下面是彩蛋：\n感谢能看到这里的同学，最后我再分享一个可能会有帮助的信息。\n调试时看不到源代码总归是感觉不直观，有没有一种方法能一边调试一边看到源代码呢？有人可能会说可以使用 vscode，但是我们的上机环境并不能使用 vscode，只能使用模拟终端，似乎只有纯粹的 CLI 一个选择。\n其实在 GUI 和 CLI 之间还有一种界面，叫做 TUI（Terminal User Interface/Text-based User Interface）。这种界面只需要文本环境即可显示。古早的 BIOS 如 AMIBIOS 和操作系统如 DOS 都使用了 TUI 界面。\n而幸运的是 GDB 也提供这种界面。只需要在运行 GDB 时加上参数 -tui 即可。\n用 GDB TUI 调试我们的 fibo 程序只需要使用 gdb -tui ./fibo。最终显示的界面如上图所示，实在是太 Geek 了。\n至于如何在我们的 MOS 实验环境中启用 TUI，这就需要同学们自行发挥了。\n",
+  "wordCount" : "3244",
+  "inLanguage": "zh",
+  "datePublished": "2024-01-18T19:44:35+08:00",
+  "dateModified": "2024-01-18T19:44:35+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/gdb-tutorial/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      GDB：程序的解剖术
+    </h1>
+    <div class="post-meta"><span title='2024-01-18 19:44:35 +0800 CST'>一月 18, 2024</span>&nbsp;·&nbsp;16 分钟&nbsp;·&nbsp;3244 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/gdb-tutorial.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#gdb-%e7%ae%80%e4%bb%8b" aria-label="GDB 简介">GDB 简介</a></li>
+                <li>
+                    <a href="#%e5%87%86%e5%a4%87%e5%b7%a5%e4%bd%9c" aria-label="准备工作">准备工作</a><ul>
+                        
+                <li>
+                    <a href="#gdb-%e7%9a%84%e5%ae%89%e8%a3%85" aria-label="GDB 的安装">GDB 的安装</a></li>
+                <li>
+                    <a href="#%e5%8a%a0%e8%bd%bd%e7%a8%8b%e5%ba%8f" aria-label="加载程序">加载程序</a></li>
+                <li>
+                    <a href="#%e4%bc%a0%e5%85%a5%e9%a2%9d%e5%a4%96%e5%8f%82%e6%95%b0" aria-label="传入额外参数">传入额外参数</a></li></ul>
+                </li>
+                <li>
+                    <a href="#step-by-step%e8%bf%bd%e8%b8%aa%e7%a8%8b%e5%ba%8f%e8%bf%90%e8%a1%8c" aria-label="Step by Step：追踪程序运行">Step by Step：追踪程序运行</a></li>
+                <li>
+                    <a href="#%e9%87%8d%e5%89%91%e6%97%a0%e9%94%8b%e8%ae%be%e7%bd%ae%e6%96%ad%e7%82%b9" aria-label="重剑无锋：设置断点">重剑无锋：设置断点</a><ul>
+                        
+                <li>
+                    <a href="#%e6%99%ae%e9%80%9a%e6%96%ad%e7%82%b9" aria-label="普通断点">普通断点</a></li>
+                <li>
+                    <a href="#%e4%b8%b4%e6%97%b6%e6%96%ad%e7%82%b9" aria-label="临时断点">临时断点</a></li>
+                <li>
+                    <a href="#%e6%9d%a1%e4%bb%b6%e6%96%ad%e7%82%b9" aria-label="条件断点">条件断点</a></li>
+                <li>
+                    <a href="#%e8%a7%82%e5%af%9f%e7%82%b9" aria-label="观察点">观察点</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e7%a8%8b%e5%ba%8f%e7%9a%84%e6%9c%ba%e7%90%86%e6%9f%a5%e7%9c%8b%e8%bf%90%e8%a1%8c%e6%97%b6%e6%95%b0%e6%8d%ae" aria-label="程序的机理：查看运行时数据">程序的机理：查看运行时数据</a></li>
+                <li>
+                    <a href="#%e9%ab%98%e7%ba%a7%e8%b0%83%e8%af%95%e4%bf%ae%e6%94%b9%e8%bf%90%e8%a1%8c%e6%97%b6%e7%a8%8b%e5%ba%8f" aria-label="高级调试：修改运行时程序">高级调试：修改运行时程序</a></li>
+                <li>
+                    <a href="#%e6%80%bb%e7%bb%93" aria-label="总结">总结</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><blockquote>
+<p>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。</p>
+<p>2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《<a href="../gdb-tutorial">GDB：程序的解剖术</a>》和《<a href="../qemu-introduction">QEMU 模拟器介绍</a>》两篇文章。</p>
+</blockquote>
+<p>回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。</p>
+<p>为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “<code>printf</code>” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在<strong>不侵入代码原有逻辑</strong>的前提下，<strong>追踪程序的运行情况</strong>，从而<strong>发现程序运行中出现的错误</strong>。</p>
+<h2 id="gdb-简介">GDB 简介<a hidden class="anchor" aria-hidden="true" href="#gdb-简介">#</a></h2>
+<p>能够实现追踪并控制程序运行功能的程序称为 <strong>Debugger</strong>，中文称其为<strong>调试器</strong>。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “<strong>G</strong>NU <strong>D</strong>e<strong>b</strong>ugger“。</p>
+<p><img loading="lazy" src="gdb-logo.svg" alt="gdb-logo"  />
+</p>
+<blockquote>
+<p>GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。</p>
+</blockquote>
+<p>GDB 是一个功能十分强大的调试器，它适用于 C、C++、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 <a href="https://sourceware.org/gdb/">GDB 官网</a>的描述，GDB 的主要功能包括：</p>
+<ul>
+<li>启动程序并指定可能影响其行为的任何内容。</li>
+<li>使程序在指定条件下停止。</li>
+<li>当程序停止时，检查发生了什么。</li>
+<li>更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。</li>
+</ul>
+<p>接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。</p>
+<h2 id="准备工作">准备工作<a hidden class="anchor" aria-hidden="true" href="#准备工作">#</a></h2>
+<p>在开始之前需要说明两点：</p>
+<ol>
+<li>接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。</li>
+<li>为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。</li>
+</ol>
+<blockquote>
+<p>实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 <code>address space randomization</code> 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 <code>set disable-randomization off</code> 指令解决。</p>
+</blockquote>
+<h3 id="gdb-的安装">GDB 的安装<a hidden class="anchor" aria-hidden="true" href="#gdb-的安装">#</a></h3>
+<p>在 Ubuntu 下应该预装了 GDB。可以通过查看版本命令 <code>gdb -v</code> 检查是否安装。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb -v       
+</span></span><span class="line"><span class="cl"><span class="go">GNU gdb (Ubuntu 12.1-0ubuntu1~22.04) 12.1
+</span></span></span><span class="line"><span class="cl"><span class="go">Copyright (C) 2022 Free Software Foundation, Inc.
+</span></span></span><span class="line"><span class="cl"><span class="go">License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+</span></span></span><span class="line"><span class="cl"><span class="go">This is free software: you are free to change and redistribute it.
+</span></span></span><span class="line"><span class="cl"><span class="go">There is NO WARRANTY, to the extent permitted by law.
+</span></span></span></code></pre></div><p>如果没有，通过以下命令安装</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> apt-get update
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> apt-get install gdb
+</span></span></code></pre></div><h3 id="加载程序">加载程序<a hidden class="anchor" aria-hidden="true" href="#加载程序">#</a></h3>
+<p>接下来我们以一个简单的程序作为例子</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// adds.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">n</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">scanf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">c</span> <span class="o">+=</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d, &#34;</span><span class="p">,</span> <span class="n">c</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>经过前面教程对编译部分的补充，我们知道编译这个代码可以使用如下命令，生成名为 <code>adds</code> 的可执行文件。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc adds.c -o adds
+</span></span></code></pre></div><p>但是此种方法产生的目标程序会去掉许多在运行时不需要的信息，导致无法进行调试。因此我们还需要为命令加上 <code>-g</code> 选项。启用该选项将保留许多额外的信息以供调试器使用。不启用和启用 <code>-g</code> 产生的编译产物分别是目标程序的 <strong>Release 版本</strong>和 <strong>Debug 版本</strong>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc -g adds.c -o adds
+</span></span></code></pre></div><blockquote>
+<p>因此使用调试器也需要对程序产生改动，但是与 <code>printf</code> 方法需要修改源代码不同，调试版本不改变原有的代码逻辑，不需要开发者关注。也即调试模式对开发者 “透明” 。</p>
+</blockquote>
+<p>之后我们就可以使用 GDB 对目标程序进行操作了。为 GDB 指定要运行的程序有两种方式。</p>
+<ul>
+<li>
+<p>其一是直接在命令中指定。这样会进入 GDB 的交互界面，并将 <code>adds</code> 可执行文件作为将要 Debug 的程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb adds
+</span></span></code></pre></div></li>
+<li>
+<p>其二是直接运行 GDB 进入交互界面，并通过 GDB 的 <code>file &lt;executable&gt;</code> 指令加载可执行文件</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) file adds
+</span></span></span></code></pre></div></li>
+</ul>
+<p>如果你看到如下内容，则说明 GDB 成功加载了 <code>adds</code> 程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-plaintext" data-lang="plaintext"><span class="line"><span class="cl">Reading symbols from adds...
+</span></span></code></pre></div><p>现在我们不考虑追踪程序运行，直接让程序运行直至完成。这需要用到 GDB 中的 <code>run</code> 指令。对于我们的程序，GDB 的执行结果如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">Reading symbols from adds...
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) run
+</span></span></span><span class="line"><span class="cl"><span class="go">Starting program: /your/path/to/program/adds 
+</span></span></span><span class="line"><span class="cl"><span class="go">[Thread debugging using libthread_db enabled]
+</span></span></span><span class="line"><span class="cl"><span class="go">Using host libthread_db library &#34;/lib/x86_64-linux-gnu/libthread_db.so.1&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="go">10
+</span></span></span><span class="line"><span class="cl"><span class="go">1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 
+</span></span></span><span class="line"><span class="cl"><span class="go">[Inferior 1 (process 85435) exited normally]
+</span></span></span></code></pre></div><blockquote>
+<p>在 GDB 环境下也可以进行标准输入输出。</p>
+</blockquote>
+<p>最后输入 <code>quit</code> 指令即可退出 GDB</p>
+<h3 id="传入额外参数">传入额外参数<a hidden class="anchor" aria-hidden="true" href="#传入额外参数">#</a></h3>
+<p>上面是最简单的情况，许多时候还需要在执行程序的时候传入参数，以下面 <code>echo</code> 程序的实现为例。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// echo.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">usage</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;usage: echo &lt;string&gt;</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">usage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>注意需要使用 <code>./echo</code> 而不是 <code>echo</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc -g echo.c -o <span class="nb">echo</span> 
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ./echo <span class="s1">&#39;hello, world!&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="go">hello, world!
+</span></span></span></code></pre></div><p>我们编写的 <code>echo</code> 程序需要传入一个参数。和加载程序有两种方法相同，传入参数也有两种方法。</p>
+<ul>
+<li>
+<p>第一种方法是在命令行中传入参数。对于上述命令 <code>./echo 'hello, world!'</code>，对应的 GDB 命令为。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb --args ./echo <span class="s1">&#39;hello, world!&#39;</span>
+</span></span></code></pre></div><p>注意 <code>--args</code> 选项中包括了要运行的程序 <code>./echo</code>。</p>
+</li>
+<li>
+<p>第二种方法是在 GDB 交互界面中使用 <code>set args [arg]...</code> 指令设置参数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) file ./echo
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) set args &#39;hello, world!&#39;
+</span></span></span></code></pre></div></li>
+</ul>
+<p>经过如上步骤后，我们的程序就正式加载到 GDB 环境中。我们同样使用 <code>run</code> 指令直接运行程序。对于命令 <code>./echo 'hello, world!'</code>，GDB 的执行结果如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) run
+</span></span></span><span class="line"><span class="cl"><span class="go">Starting program: /your/path/to/program/echo &#39;hello, world!&#39;
+</span></span></span><span class="line"><span class="cl"><span class="go">[Thread debugging using libthread_db enabled]
+</span></span></span><span class="line"><span class="cl"><span class="go">Using host libthread_db library &#34;/lib/x86_64-linux-gnu/libthread_db.so.1&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="go">hello, world!
+</span></span></span><span class="line"><span class="cl"><span class="go">[Inferior 1 (process 84663) exited normally]
+</span></span></span></code></pre></div><p>可以发现现在运行的程序正确地带上了参数 <code>/your/path/to/program/echo 'hello, world!'</code>，并输出了 <code>hello, world!</code> 的结果。</p>
+<blockquote>
+<p>实际上 <code>set args [arg]...</code> 和 <code>run</code> 两条指令可以合为一条，即 <code>run [arg]...</code>。</p>
+</blockquote>
+<p>让我们总结一下本节用到的指令：</p>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file &lt;executable&gt;</code></td>
+<td>加载程序</td>
+</tr>
+<tr>
+<td><code>run</code></td>
+<td>运行程序</td>
+</tr>
+<tr>
+<td><code>set args [arg]...</code></td>
+<td>设置程序的参数</td>
+</tr>
+<tr>
+<td><code>run [arg]...</code></td>
+<td>以设定的参数运行程序</td>
+</tr>
+<tr>
+<td><code>quit</code></td>
+<td>退出 GDB</td>
+</tr>
+</tbody>
+</table>
+<h2 id="step-by-step追踪程序运行">Step by Step：追踪程序运行<a hidden class="anchor" aria-hidden="true" href="#step-by-step追踪程序运行">#</a></h2>
+<p>如果我们使用 GDB 的目的仅仅是使运行程序的过程更加繁琐，那还不如不用。所以接下来我们就正式介绍 GDB 的第一个功能：<strong>追踪程序运行</strong>。</p>
+<p>追踪程序运行，意味着我们要看到程序执行每一条指令的过程。接下来我们以这个计算斐波那契数列的程序为例。探索这个程序的运行过程。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// fibo.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;assert.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">fibo</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">assert</span><span class="p">(</span><span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">fibo</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="nf">fibo</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">fibo_n</span> <span class="o">=</span> <span class="nf">fibo</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;fibo(%d) = %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">fibo_n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们编译源代码，并使用 GDB 执行程序 <code>./fibo</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc -g fibo.c -o fibo
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> gdb ./fibo
+</span></span></code></pre></div><p>进入 GDB 环境后，这次我们不再使用 <code>run</code> 指令，而是使用 <code>start</code> 指令。<code>start</code> 指令会使程序<strong>停在 <code>main</code> 函数的起始处</strong>。执行该指令得到的输出应该类似如下内容。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) start
+</span></span></span><span class="line"><span class="cl"><span class="go">Temporary breakpoint 1 at 0x11eb: file fibo.c, line 16.
+</span></span></span><span class="line"><span class="cl"><span class="go">Starting program: /your/path/to/program/fibo 
+</span></span></span><span class="line"><span class="cl"><span class="go">[Thread debugging using libthread_db enabled]
+</span></span></span><span class="line"><span class="cl"><span class="go">Using host libthread_db library &#34;/lib/x86_64-linux-gnu/libthread_db.so.1&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Temporary breakpoint 1, main (argc=1, argv=0x7fffffffd9a8) at fibo.c:15
+</span></span></span><span class="line"><span class="cl"><span class="go">15          int n = 10;
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb)
+</span></span></span></code></pre></div><blockquote>
+<p>类似于 <code>run</code> 指令，<code>start</code> 指令也可以添加参数：<code>start [arg]...</code>。</p>
+</blockquote>
+<p>我们可以看到，在上述内容中出现了 <code>15          int n = 10;</code> 的内容。这表示程序<strong>接下来将要执行的</strong>是第 15 行的条件判断。我们查看源代码，发现这确实是程序进入 <code>main</code> 函数时的第一条代码。</p>
+<p>想要<strong>一步步执行程序</strong>，我们需要使用指令 <code>step</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) step
+</span></span></span><span class="line"><span class="cl"><span class="go">16          int fibo_n = fibo(n);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>之后如果需要执行下一步，不需要重复输入 <code>step</code>，只需要按回车即可。这时我们会发现 GDB 直接进入到了 <code>fibo</code> 函数中，并指出此时的参数 <code>n = 10</code>。这符合 <code>step</code> 指令的功能，那就是一步步地执行程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo (n=10) at fibo.c:6
+</span></span></span><span class="line"><span class="cl"><span class="go">6           assert(n &gt; 0);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>再敲击两次回车，下一步将要执行的就是 <code>return fibo(n - 1) + fibo(n - 2);</code> 这条语句。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">7           if (n &lt;= 2) {
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">10              return fibo(n - 1) + fibo(n - 2);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb)
+</span></span></span></code></pre></div><p>这时再敲击一次回车会发生什么情况？如果再敲击一次回车，我们就调用了 <code>fibo(n - 1)</code>。因此递归进入 <code>fibo</code> 函数，并且此时的参数 <code>n = 9</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo (n=9) at fibo.c:6
+</span></span></span><span class="line"><span class="cl"><span class="go">6           assert(n &gt; 0);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>这样可不行，如果我们真的一步步执行程序，就会一次次地进入被调用的函数中，看到许多不必要的运行细节。因此我们还需要<strong>跳过函数内部的机制</strong>。</p>
+<p>我们先要从 <code>fibo(9)</code> 中退出。在<strong>函数内部跳出当前函数</strong>的指令是 <code>finish</code>。通过执行该指令后产生的信息可以得知，我们并没有陷入 <code>fibo(9) -&gt; fibo(8) -&gt; fibo(7)...</code> 的递归调用中，而是相当于直接执行完成了 <code>fibo(9)</code>，并得到了其返回值 <code>$1 = 34</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) finish
+</span></span></span><span class="line"><span class="cl"><span class="go">Run till exit from #0  fibo (n=9) at fibo.c:6
+</span></span></span><span class="line"><span class="cl"><span class="go">0x00005555555551c1 in fibo (n=10) at fibo.c:10
+</span></span></span><span class="line"><span class="cl"><span class="go">10              return fibo(n - 1) + fibo(n - 2);
+</span></span></span><span class="line"><span class="cl"><span class="go">Value returned is $1 = 34
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb)
+</span></span></span></code></pre></div><p>我们跳出了 <code>fibo(9)</code>，但之后如果我们还是使用 <code>step</code> 指令，就又会进入 <code>fibo(8)</code>。因此这里还要引入另一条指令 <code>next</code>。该指令用于执行当前所在的行，而<strong>跳过当前行中的任何函数调用</strong>。</p>
+<p>输入 <code>next</code> 指令后 GDB 显示 “<strong>接下来将要执行的行</strong>” 是第 12 行，即函数末尾的右括号，这是什么意思？</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) next
+</span></span></span><span class="line"><span class="cl"><span class="go">12      }
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>这实际上表示的是位于<strong>函数中最后一条指令执行后</strong>和<strong>函数返回前</strong>的时刻。因为我们知道 GDB 显示的行是将要执行的行，因此前一条指令的执行结果只有到下一行时才能知道。但执行完函数最后一条指令后就应该从函数中返回，此时本函数的状态就不可以得知了。所以为了能表示 “执行完函数最后一条指令” 这样的状态，GDB 使用了函数的右括号所在的行。</p>
+<p>之后，我们再使用一次 <code>next</code> 指令或 <code>step</code> 指令就可以真正的跳出 <code>fibo(10)</code> 函数。这里本人直接使用回车，表示沿用 <code>next</code> 指令。这一点和 <code>step</code> 类似。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">main (argc=1, argv=0x7fffffffd9a8) at fibo.c:17
+</span></span></span><span class="line"><span class="cl"><span class="go">17          printf(&#34;fibo(%d) = %d\n&#34;, n, fibo_n);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>为了不进入 <code>printf</code> 函数，我们同样使用回车。发现程序正确输出了 <code>fibo(10) = 55</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(10) = 55
+</span></span></span><span class="line"><span class="cl"><span class="go">19          return 0;
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><blockquote>
+<p>实际上我们并不能进入到 <code>printf</code> 函数中，因为我们并没有 printf 的实现代码。</p>
+</blockquote>
+<p>此后的程序运行我们就不需要关注了，有如下处理方法：</p>
+<ul>
+<li>
+<p>可以使用 <code>continue</code> 指令继续程序的正常运行。程序会继续运行直至退出。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">[Inferior 1 (process 102673) exited normally]
+</span></span></span></code></pre></div></li>
+<li>
+<p>或者也可以使用 <code>kill</code> 指令直接杀死程序进程。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) kill
+</span></span></span><span class="line"><span class="cl"><span class="go">Kill the program being debugged? (y or n) y
+</span></span></span><span class="line"><span class="cl"><span class="go">[Inferior 1 (process 108565) killed]
+</span></span></span></code></pre></div></li>
+<li>
+<p>又或者使用 <code>start</code> 指令重新运行程序</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) start
+</span></span></span><span class="line"><span class="cl"><span class="go">The program being debugged has been started already.
+</span></span></span><span class="line"><span class="cl"><span class="go">Start it from the beginning? (y or n) y
+</span></span></span><span class="line"><span class="cl"><span class="go">Temporary breakpoint 2 at 0x5555555551eb: file /your/path/to/program/fibo.c, line 15.
+</span></span></span><span class="line"><span class="cl"><span class="go">Starting program: /your/path/to/program/fibo 
+</span></span></span><span class="line"><span class="cl"><span class="go">[Thread debugging using libthread_db enabled]
+</span></span></span><span class="line"><span class="cl"><span class="go">Using host libthread_db library &#34;/lib/x86_64-linux-gnu/libthread_db.so.1&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Temporary breakpoint 2, main (argc=1, argv=0x7fffffffd9a8) at /your/path/to/program/fibo.c:15
+</span></span></span><span class="line"><span class="cl"><span class="go">15          int n = 10;
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div></li>
+</ul>
+<blockquote>
+<p>顺便一提，如果各位使用过编辑器或 IDE 的调试功能，应该不会忘记那几个不同编辑器和 IDE 通用的按钮设计。这几个按钮实际上就对应了在本节中介绍的几个指令。这里以 vscode 中的按钮为例，从左向右分别为：
+<img loading="lazy" src="gdb-vscode-debugger-button.png" alt="gdb-vscode-debugger-button"  />
+</p>
+<ol>
+<li><strong>继续</strong>：对应 GDB 中的 <code>continue</code> 指令</li>
+<li><strong>步过</strong>：对应 GDB 中的 <code>next</code> 指令</li>
+<li><strong>步入</strong>：对应 GDB 中的 <code>step</code> 指令</li>
+<li><strong>步出</strong>：对应 GDB 中的 <code>finish</code> 指令</li>
+<li><strong>重启</strong>：对应 GDB 中的 <code>start</code> 指令（在程序运行中使用）</li>
+<li><strong>停止</strong>：对应 GDB 中的 <code>kill</code> 指令</li>
+</ol>
+</blockquote>
+<p>让我们总结一下本节用到的指令：</p>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>start</code></td>
+<td>启动程序并使其停在 <code>main</code> 函数起始处</td>
+</tr>
+<tr>
+<td><code>start [arg]...</code></td>
+<td>以设定的参数启动程序并使其停在 <code>main</code> 函数起始处</td>
+</tr>
+<tr>
+<td><code>step</code></td>
+<td>执行下一步程序，包括进入函数</td>
+</tr>
+<tr>
+<td><code>finish</code></td>
+<td>跳出当前函数</td>
+</tr>
+<tr>
+<td><code>next</code></td>
+<td>执行单行程序，不进入函数</td>
+</tr>
+<tr>
+<td><code>continue</code></td>
+<td>继续执行函数</td>
+</tr>
+<tr>
+<td><code>kill</code></td>
+<td>杀死程序进程</td>
+</tr>
+</tbody>
+</table>
+<h2 id="重剑无锋设置断点">重剑无锋：设置断点<a hidden class="anchor" aria-hidden="true" href="#重剑无锋设置断点">#</a></h2>
+<p>逐步运行虽然能看到所有细节，但是 Debug 时我们常常只关心某几个可能出错的模块，因此需要让程序在我们不关心的地方自行运行。但是自行运行的程序要怎么得知哪里就是开发者所关心的地方呢？这就需要使用断点。<strong>断点</strong>是对程序中某些行的标记，当程序执行到断点所在位置，并满足一些条件时，就将程序由自行执行转换为通过 GDB 的指令控制执行。断点看似简单，实则变化万千，是调试器最为重要的功能。</p>
+<h3 id="普通断点">普通断点<a hidden class="anchor" aria-hidden="true" href="#普通断点">#</a></h3>
+<p>这么说可能有些抽象，接下来我们对 <code>fibo.c</code> 的代码做一些修改，并以此为例子。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// fibo.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;assert.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">fibo</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">assert</span><span class="p">(</span><span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">fibo</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="nf">fibo</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">usage</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;usage: fibo &lt;number&gt;&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">usage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="nf">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">fibo_i</span> <span class="o">=</span> <span class="nf">fibo</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;fibo(%d) = %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">fibo_i</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们编译源代码，并进入 GDB 中。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc -g fibo.c -o fibo 
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> gdb fibo
+</span></span></code></pre></div><p>现在考虑这样一个问题，如果我们想要忽略之前的过程，直接跳到 <code>fibo</code> 函数第一次调用的地方，并进入 <code>fibo</code> 函数中。应该如何操作？</p>
+<p>此时我们就需要将一个断点设置在 <code>int fibo_i = fibo(i);</code> 这条语句处。但是目前在 GDB 中我们可能不清楚这条语句具体的位置，因此我们首先要使用 <code>list [position]</code> 指令查看源代码。</p>
+<p><code>list [position]</code> 指令的使用形式包括 <code>list</code>（显示当前运行位置的源代码）、<code>list &lt;line nunmber&gt;</code>、<code>list &lt;file&gt;:&lt;line number&gt;</code>、<code>list &lt;function name&gt;</code> 和 <code>list &lt;file&gt;:&lt;function name&gt;</code>。同时在使用一次 <code>list</code> 之后也可以再通过回车查看源代码的后续内容。</p>
+<p>这里我们可以使用 <code>list main</code> 并敲击一次回车得知 <code>int fibo_i = fibo(i);</code> 这条语句的行号为 28。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) list main
+</span></span></span><span class="line"><span class="cl"><span class="go">15      void usage() {
+</span></span></span><span class="line"><span class="cl"><span class="go">16          printf(&#34;usage: fibo &lt;number&gt;&#34;);
+</span></span></span><span class="line"><span class="cl"><span class="go">17          exit(-1);
+</span></span></span><span class="line"><span class="cl"><span class="go">18      }
+</span></span></span><span class="line"><span class="cl"><span class="go">19
+</span></span></span><span class="line"><span class="cl"><span class="go">20      int main(int argc, char *argv[]) {
+</span></span></span><span class="line"><span class="cl"><span class="go">21          if (argc != 2) {
+</span></span></span><span class="line"><span class="cl"><span class="go">22              usage();
+</span></span></span><span class="line"><span class="cl"><span class="go">23          }
+</span></span></span><span class="line"><span class="cl"><span class="go">24
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">25          int n = atoi(argv[1]);
+</span></span></span><span class="line"><span class="cl"><span class="go">26
+</span></span></span><span class="line"><span class="cl"><span class="go">27          for (int i = 1; i &lt;= n; i++) {
+</span></span></span><span class="line"><span class="cl"><span class="go">28              int fibo_i = fibo(i);
+</span></span></span><span class="line"><span class="cl"><span class="go">29              printf(&#34;fibo(%d) = %d\n&#34;, i, fibo_i);
+</span></span></span><span class="line"><span class="cl"><span class="go">30          }
+</span></span></span><span class="line"><span class="cl"><span class="go">31
+</span></span></span><span class="line"><span class="cl"><span class="go">32          return 0;
+</span></span></span><span class="line"><span class="cl"><span class="go">33      }
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb)
+</span></span></span></code></pre></div><p>我们知道了这条语句所在的行号，现在可以设置断点了。设置断点的指令为 <code>break</code>。与 <code>list</code> 指令一样，有五种使用形式。这里我们使用 <code>break 28</code> 设置断点。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) break 28
+</span></span></span><span class="line"><span class="cl"><span class="go">Breakpoint 1 at 0x1280: file fibo.c, line 28.
+</span></span></span></code></pre></div><p>之后我们使用 <code>run 10</code> 运行程序 <code>./fibo 10</code>。在未设置断点的情况下，我们知道 <code>run</code> 指令会直接完成程序的执行。但是这一次程序会在断点处停下。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) run 10
+</span></span></span><span class="line"><span class="cl"><span class="go">Starting program: /your/path/to/program/fibo 10
+</span></span></span><span class="line"><span class="cl"><span class="go">[Thread debugging using libthread_db enabled]
+</span></span></span><span class="line"><span class="cl"><span class="go">Using host libthread_db library &#34;/lib/x86_64-linux-gnu/libthread_db.so.1&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Breakpoint 1, main (argc=2, argv=0x7fffffffd988) at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">28              int fibo_i = fibo(i);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>之后我们输入 <code>step</code> 指令，就进入了 <code>fibo</code> 函数中。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) step
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo (n=1) at fibo.c:7
+</span></span></span><span class="line"><span class="cl"><span class="go">7           assert(n &gt; 0);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>这时让我们输入 <code>continue</code> 再次让程序自行执行，会发生什么？因为在循环中有断点的存在。所以会在经过一次循环后在断点处重新停下。同时可以看到程序在自行运行时产生了输出 <code>fibo(1) = 1</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(1) = 1
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Breakpoint 1, main (argc=2, argv=0x7fffffffd988) at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">28              int fibo_i = fibo(i);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>为了避免重复在这一断点处暂停，我们可以<strong>删除</strong>或者<strong>暂时禁用</strong>断点。首先我们使用 <code>info breakpoints</code> 查看所有断点信息。其中各列的信息分别是断点编号（Num）、断点类型（Type）、是临时断点还是永久断点（Disp）、目前是启用状态还是禁用状态（Enb）、断点的位置（Address）、断点当前的状态（What，作用的行号、已经命中的次数等）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) info breakpoints 
+</span></span></span><span class="line"><span class="cl"><span class="go">Num     Type           Disp Enb Address            What
+</span></span></span><span class="line"><span class="cl"><span class="go">1       breakpoint     keep y   0x0000555555555280 in main at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">        breakpoint already hit 2 times
+</span></span></span></code></pre></div><p>我们需要得知断点的编号。目前这唯一的断点编号为 1。我们可以使用 <code>disable breakpoints [num]...</code> 暂时禁用断点。之后再次查看断点信息，发现 <code>Enb</code> 列由 <code>y</code> 变为了 <code>n</code>。如果想要重新启用断点，则需要使用 <code>enable breakpoints [num]...</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) disable breakpoints 1
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) info breakpoints 
+</span></span></span><span class="line"><span class="cl"><span class="go">Num     Type           Disp Enb Address            What
+</span></span></span><span class="line"><span class="cl"><span class="go">1       breakpoint     keep n   0x0000555555555280 in main at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">        breakpoint already hit 2 times
+</span></span></span></code></pre></div><p>如果这个断点不再需要，那么也可以直接删除。需要使用 <code>delete breakpoints [num]...</code> 指令。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) delete breakpoints 1
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) info breakpoints 
+</span></span></span><span class="line"><span class="cl"><span class="go">No breakpoints or watchpoints.
+</span></span></span></code></pre></div><p>删除了断点之后，我们重新执行 <code>continue</code> 指令。这一次没有任何断点的阻挡，程序顺利完成。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(2) = 1
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(3) = 2
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(4) = 3
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(5) = 5
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(6) = 8
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(7) = 13
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(8) = 21
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(9) = 34
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(10) = 55
+</span></span></span><span class="line"><span class="cl"><span class="go">[Inferior 1 (process 109274) exited normally]
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><h3 id="临时断点">临时断点<a hidden class="anchor" aria-hidden="true" href="#临时断点">#</a></h3>
+<p>但是本章的内容并没有结束。这一回我们使用 <code>start 10</code> 指令重新运行 <code>./fibo 10</code> 程序。不知你有没有发现，输出的信息中出现了 “breakpoint”。这是因为 <code>start</code> 指令本质上就是在 <code>main</code> 函数处添加一个断点，并运行程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) start 10
+</span></span></span><span class="line"><span class="cl"><span class="go">Temporary breakpoint 2 at 0x555555555251: file fibo.c, line 21.
+</span></span></span><span class="line"><span class="cl"><span class="go">Starting program: /your/path/to/program/fibo 10
+</span></span></span><span class="line"><span class="cl"><span class="go">[Thread debugging using libthread_db enabled]
+</span></span></span><span class="line"><span class="cl"><span class="go">Using host libthread_db library &#34;/lib/x86_64-linux-gnu/libthread_db.so.1&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Temporary breakpoint 2, main (argc=2, argv=0x7fffffffd988) at fibo.c:21
+</span></span></span><span class="line"><span class="cl"><span class="go">21          if (argc != 2) {
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>但是这里的断点还是有些不同，因为这是 “Temporary“ breakpoint 而非普通的 Breakpoint。设置<strong>临时断点</strong>后，程序只在此处暂停运行一次，之后断点就自动删除。</p>
+<p>设置临时断点的指令是 <code>tbreak</code>，使用方法和 <code>break</code> 一致。我们在程序的循环处（27 行）设置一个临时断点。之后使用 <code>continue</code> 指令运行程序。可以发现程序暂停在了循环处。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) tbreak 27
+</span></span></span><span class="line"><span class="cl"><span class="go">Temporary breakpoint 3 at 0x555555555277: file fibo.c, line 27.
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Temporary breakpoint 3, main (argc=2, argv=0x7fffffffd988) at fibo.c:27
+</span></span></span><span class="line"><span class="cl"><span class="go">27          for (int i = 1; i &lt;= n; i++) {
+</span></span></span></code></pre></div><blockquote>
+<p>因此 <code>start [arg]...</code> 就等价于 <code>tbreak main</code> 和 <code>run [arg]...</code> 两条指令。</p>
+</blockquote>
+<p>而如果此时使用 <code>info breakpoints</code> 查看断点信息，就会发现这一临时断点已不存在</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) info breakpoints 
+</span></span></span><span class="line"><span class="cl"><span class="go">No breakpoints or watchpoints.
+</span></span></span></code></pre></div><h3 id="条件断点">条件断点<a hidden class="anchor" aria-hidden="true" href="#条件断点">#</a></h3>
+<p>虽然就目前介绍的内容来看，断点已经足够强大，但是对于追踪程序运行来说还是有所不足。比如说如果我们希望程序在运行第 9 次循环内语句时终止，要怎么设置断点呢？如果是普通断点，那么每次循环程序都会暂停；如果是临时断点，那么程序就只会暂停一次。这两种断点走向了两个极端，而我们需要的断点类型则位于这两者中间，那就是<strong>条件断点</strong>。</p>
+<p>条件断点指只有满足一定条件才中断程序运行的断点。创建条件断点的指令是 <code>break [position] if &lt;condition&gt;</code>。其中 <code>[position]</code> 部分和 <code>break</code> 一致。而 <code>&lt;condition&gt;</code> 部分应该是一个在当前上下文中符合语义的表达式，如 <code>a &gt;= b + 1</code>，其中 <code>a</code> 和 <code>b</code> 均已定义。一个比较简单的判断方法是如果在代码中添加 <code>if (&lt;condition&gt;){}</code>，不会出现编译或运行时错误，则该表达式就可以使用。</p>
+<blockquote>
+<p>同样的，也可以设置条件临时断点。指令为 <code>tbreak &lt;position&gt; if &lt;condition&gt;</code>。</p>
+</blockquote>
+<p>回到我们的 GDB 调试环境。这次我们使用指令 <code>break 28 if i == 9</code> 在循环中创建一个第 9 次进入循环时暂停程序的断点。之后执行 <code>continue</code> 指令，根据程序的输出可知确实在第 9 次循环时触发了断点。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) break 28 if i == 9
+</span></span></span><span class="line"><span class="cl"><span class="go">Breakpoint 4 at 0x555555555280: file fibo.c, line 28.
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(1) = 1
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(2) = 1
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(3) = 2
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(4) = 3
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(5) = 5
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(6) = 8
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(7) = 13
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(8) = 21
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Breakpoint 4, main (argc=2, argv=0x7fffffffd988) at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">28              int fibo_i = fibo(i);
+</span></span></span></code></pre></div><p>另外我们也可以修改断点的条件。需要使用 <code>condition &lt;num&gt; &lt;condition&gt;</code> 指令，该指令也可以将普通断点变为条件断点。这里我们将断点的条件修改为 <code>i == 10</code>。</p>
+<p>首先使用 <code>info breakpoints</code> 指令查看断点编号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) info breakpoints 
+</span></span></span><span class="line"><span class="cl"><span class="go">Num     Type           Disp Enb Address            What
+</span></span></span><span class="line"><span class="cl"><span class="go">4       breakpoint     keep y   0x0000555555555280 in main at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">        stop only if i == 9
+</span></span></span><span class="line"><span class="cl"><span class="go">        breakpoint already hit 1 time
+</span></span></span></code></pre></div><p>随后即可使用 <code>condition 4 i == 10</code> 指令修改断点的条件。之后使用 <code>continue</code> 指令继续运行程序，结果程序在循环内再一次暂停。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) condition 4 i == 10
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(9) = 34
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Breakpoint 4, main (argc=2, argv=0x7fffffffd988) at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">28              int fibo_i = fibo(i);
+</span></span></span></code></pre></div><blockquote>
+<p>如果出现了遍历链表或者使用迭代器这类没有显式计数的循环，又要如何设置 “在进行第 K 次循环时暂停” 这样的断点呢？可以使用 <code>ignore &lt;num&gt; &lt;times&gt;</code> 指令。该指令表示忽略某一断点前 <code>&lt;times&gt;</code> 次的访问。同时也可用上临时断点。因此指令为 <code>tbreak &lt;position&gt;</code> 和 <code>ignore &lt;num&gt; &lt;K-1&gt;</code>。</p>
+</blockquote>
+<p>因为引入了条件断点，所以现在在程序的同一位置可以出现多个断点。GDB 也提供了一个删除某一位置所有断点的指令。使用 <code>clear &lt;position&gt;</code> 即可。如果此位置只有一个断点，则该指令也等同于 <code>delete breakpoints &lt;num&gt;</code>，甚至更为方便。</p>
+<h3 id="观察点">观察点<a hidden class="anchor" aria-hidden="true" href="#观察点">#</a></h3>
+<p>为断点添加条件使得我们能够更加灵活地设置程序中断的时机。然而，就算是条件断点也需要设定具体的位置，这意味着我们需要在设置断点前就定位 Bug 的大致范围和发生时机。对于功能较少的程序来说，这是可以做到的；但是对于规模较大、涉及到大量内存操作的程序，程序出错的时机常常并和 Bug 产生的位置不同，仅仅使用普通的条件断点难以处理这种情况。</p>
+<p>于是 GDB 引入了一类特殊的断点，称为<strong>观察点</strong>（Watchpoint）。设定观察点时需要指定一个表达式而不需要指定位置，程序运行时 GDB 会持续监视该表达式的取值，<strong>当其取值发生变化时</strong>，程序就会停止。可以这样认为，观察点是只设定了条件而没有设定位置的<strong>特殊的条件断点</strong>，而其条件就是表达式的取值发生了变化。</p>
+<p>在讲解条件断点时我们举了一个 “如何让程序在运行第 9 次循环内语句时终止” 的例子。现在我们也可以使用观察点来实现这一效果。还以 <code>fibo</code> 程序为例。</p>
+<p>设置观察点的指令为 <code>watch &lt;expression&gt;</code>，其中 <code>&lt;expression&gt;</code> 为在当前上下文中合法的表达式。因此要设置和 <code>i</code> 相关的观察点，我们需要先进入到循环中。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb fibo
+</span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) tbreak 27
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) run 10
+</span></span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">Temporary breakpoint 1, main (argc=2, argv=0x7fffffffda68) at fibo.c:27
+</span></span></span><span class="line"><span class="cl"><span class="go">27          for (int i = 1; i &lt;= n; i++) {
+</span></span></span></code></pre></div><p>这时我们希望程序在第 9 次循环时停下，只需要设置 <code>watch i &gt;= 9</code> 的观察点即可。这样在进入第 9 次循环时，<code>i &gt;= 9</code> 的取值就会<strong>发生变化</strong>，从而中断程序运行。</p>
+<p>之后我们输入 <code>continue</code> 指令，查看运行结果。发现程序正常暂停。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) watch i &gt;= 9
+</span></span></span><span class="line"><span class="cl"><span class="go">Hardware watchpoint 2: i &gt;= 9
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(1) = 1
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(2) = 1
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(3) = 2
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(4) = 3
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(5) = 5
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(6) = 8
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(7) = 13
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo(8) = 21
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Hardware watchpoint 2: i &gt;= 9
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Old value = 0
+</span></span></span><span class="line"><span class="cl"><span class="go">New value = 1
+</span></span></span><span class="line"><span class="cl"><span class="go">0x00005555555552ad in main (argc=2, argv=0x7fffffffda68) at fibo.c:27
+</span></span></span><span class="line"><span class="cl"><span class="go">27          for (int i = 1; i &lt;= n; i++) {
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>随后我们可以使用两次 <code>step</code> 指令进入 <code>fibo</code> 函数内，可以发现此时确为第 9 次循环。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) step
+</span></span></span><span class="line"><span class="cl"><span class="go">28              int fibo_i = fibo(i);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span><span class="line"><span class="cl"><span class="go">fibo (n=9) at fibo.c:7
+</span></span></span><span class="line"><span class="cl"><span class="go">7           assert(n &gt; 0);
+</span></span></span></code></pre></div><p>我们也可以使用 <code>info breakpoints</code> 指令查看观察点的信息。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) info breakpoints 
+</span></span></span><span class="line"><span class="cl"><span class="go">Num     Type           Disp Enb Address            What
+</span></span></span><span class="line"><span class="cl"><span class="go">2       hw watchpoint  keep y                      i &gt;= 9
+</span></span></span><span class="line"><span class="cl"><span class="go">        breakpoint already hit 1 time
+</span></span></span></code></pre></div><blockquote>
+<p>因为观察点同属于断点，所以也可以使用 <code>disable breakpoints</code>、<code>enable breakpoints</code>、<code>delete breakpoints</code> 等指令。</p>
+</blockquote>
+<p>除了观察点，GDB 中还可以设置<strong>读观察点</strong>（Read Watchpoint）和<strong>访问观察点</strong>（Access Watchpoint）。设置读观察点需要使用指令 <code>rwatch &lt;expression&gt;</code>，当程序中出现<strong>读取</strong>目标表达式的值的操作，就会停止程序运行；设置访问观察点需要使用指令 <code>awatch &lt;expression&gt;</code>，当程序中出现<strong>读取</strong>或<strong>写入</strong>目标表达式的值的操作，就会停止程序运行。因为这两类观察点的使用和普通观察点类似，所以就不再重复介绍了。</p>
+<blockquote>
+<p>注意分别观察点的<strong>取值改变</strong>和访问观察点的<strong>写入</strong>的区别。</p>
+</blockquote>
+<p>最后还需要强调一遍，设置观察点时的表达式并不需要是条件表达式。另外观察点常用于调试内存问题，这时表达式通常和指针或地址有关。为了加深各位同学的认识，我们可以再举一些例子。</p>
+<p>如下的代码中，<code>mysterious_func</code> 函数调用 <code>free</code> 释放了内存，但没有将指针值置为 <code>NULL</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// watch.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">mysterious_func</span><span class="p">(</span><span class="kt">int</span> <span class="o">**</span><span class="n">pptr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">free</span><span class="p">(</span><span class="o">*</span><span class="n">pptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// *pptr = NULL;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">ptr</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;value is %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="o">*</span><span class="n">ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">mysterious_func</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">ptr</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;value is %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="o">*</span><span class="n">ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这导致程序访问了<strong>野指针</strong>，可能产生不可预期的后果。我们可以编译并执行该程序，结果如下。对本程序来说，只是取得了一个没有意义的数据；但如果在操作系统中发生，则可能产生内核错误（Panic）等严重的问题。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc -g ./watch.c -o watch
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ./watch 
+</span></span><span class="line"><span class="cl"><span class="go">value is 10
+</span></span></span><span class="line"><span class="cl"><span class="go">value is 1648141505
+</span></span></span></code></pre></div><p>而通过观察点就可以轻易定位问题所在。我们使用如下一系列指令，在程序运行时监视 <code>*ptr</code> 的取值，最终找到异常值产生的位置。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb watch
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) start
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) watch *ptr
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">value is 10
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Hardware watchpoint 2: *ptr
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Old value = 10
+</span></span></span><span class="line"><span class="cl"><span class="go">New value = 1431655769
+</span></span></span><span class="line"><span class="cl"><span class="go">tcache_put (tc_idx=0, chunk=0x555555559290) at ./malloc/malloc.c:3160
+</span></span></span><span class="line"><span class="cl"><span class="go">3160    ./malloc/malloc.c: 没有那个文件或目录.
+</span></span></span></code></pre></div><p>当然现在我们只能得知异常值出自 <code>malloc.c</code> 的实现中。通过下一节的学习，我们可以查看程序运行时的调用栈信息，进而将问题定位在 <code>mysterious_func</code> 函数中。</p>
+<p>除了野指针，另一类可能在实验中经常遇到的 Bug 是<strong>数组越界</strong>。我们可以以如下代码为例：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// watch2.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">careless_sum</span><span class="p">(</span><span class="kt">int</span> <span class="n">arr</span><span class="p">[],</span> <span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">total</span> <span class="o">+=</span> <span class="n">arr</span><span class="p">[</span><span class="o">++</span><span class="n">i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// total += arr[i++];
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">total</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">arr</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;total = %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">careless_sum</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="mi">10</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>各位同学应该可以看得出来，使用 <code>++i</code> 而非 <code>i++</code> 导致了数组越界。我们编译并运行，“成功” 得到错误的结果。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc -g ./watch2.c -o watch2
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ./watch2
+</span></span><span class="line"><span class="cl"><span class="go">total = -3779795
+</span></span></span></code></pre></div><p>调试数组越界问题，我们只需要监视程序何时访问了数组之后的地址即可。根据我们上面的介绍，可以使用访问观察点。我们首先在 GDB 中运行程序，之后使用 <code>awatch arr[10]</code> 设置访问观察点。<code>arr[10]</code> 是数组 <code>arr</code> 之后的第一个 4 字节地址空间。如果该空间被访问，说明发生了数组越界问题。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb watch2
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) start
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) next
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) awatch arr[10]
+</span></span></span><span class="line"><span class="cl"><span class="go">Hardware access (read/write) watchpoint 2: arr[10]
+</span></span></span></code></pre></div><p>接着，我们使用 <code>continue</code> 指令继续程序运行。结果发现程序确实发生了中断。这样我们就定位到了数组越界发生的位置。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Hardware access (read/write) watchpoint 4: arr[10]
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Value = 1896377344
+</span></span></span><span class="line"><span class="cl"><span class="go">careless_sum (arr=0x7fffffffd910, n=10) at ./watch2.c:7
+</span></span></span><span class="line"><span class="cl"><span class="go">7               total += arr[++i];
+</span></span></span></code></pre></div><p>让我们总结一下本节用到的指令：</p>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list [position]</code></td>
+<td>显示指定位置源代码</td>
+</tr>
+<tr>
+<td><code>break [position]</code></td>
+<td>在指定位置设置断点</td>
+</tr>
+<tr>
+<td><code>info breakpoints</code></td>
+<td>显示所有断点信息</td>
+</tr>
+<tr>
+<td><code>disable breakpoints [num]...</code></td>
+<td>禁用指定断点</td>
+</tr>
+<tr>
+<td><code>enable breakpoints [num]...</code></td>
+<td>启用指定断点</td>
+</tr>
+<tr>
+<td><code>delete breakpoints [num]...</code></td>
+<td>删除指定断点</td>
+</tr>
+<tr>
+<td><code>tbreak [position]</code></td>
+<td>在指定位置设置临时断点</td>
+</tr>
+<tr>
+<td><code>break [position] if &lt;condition&gt;</code></td>
+<td>在指定位置设置条件断点</td>
+</tr>
+<tr>
+<td><code>tbreak [position] if &lt;condition&gt;</code></td>
+<td>在指定位置设置条件临时断点</td>
+</tr>
+<tr>
+<td><code>condition &lt;num&gt; &lt;condition&gt;</code></td>
+<td>修改断点的条件</td>
+</tr>
+<tr>
+<td><code>ignore &lt;num&gt; &lt;times&gt;</code></td>
+<td>忽略断点前指定次数的访问</td>
+</tr>
+<tr>
+<td><code>clear &lt;position&gt;</code></td>
+<td>删除指定位置的所有断点</td>
+</tr>
+<tr>
+<td><code>watch &lt;expression&gt;</code></td>
+<td>为指定表达式设置观察点</td>
+</tr>
+<tr>
+<td><code>rwatch &lt;expression&gt;</code></td>
+<td>为指定表达式设置读观察点</td>
+</tr>
+<tr>
+<td><code>awatch &lt;expression&gt;</code></td>
+<td>为指定表达式设置访问观察点</td>
+</tr>
+</tbody>
+</table>
+<h2 id="程序的机理查看运行时数据">程序的机理：查看运行时数据<a hidden class="anchor" aria-hidden="true" href="#程序的机理查看运行时数据">#</a></h2>
+<p>经过之前那么多节内容的学习，我们知道了如何追踪程序的执行过程、如何让程序在特定条件下暂停，但是这些内容我们都只是在程序流中漫游。在这些之外程序还有一个重要的组成部分，那就是数据。</p>
+<p>这回就让我们沿用上一节中用到的 <code>fibo</code> 程序。应用之前学过的内容，我们直接进入到 <code>fibo</code> 函数调用的最深处。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb fibo
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) start 10
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) break 28 if i == 10
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) tbreak fibo if n == 1
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Temporary breakpoint 3, fibo (n=1) at fibo.c:7
+</span></span></span><span class="line"><span class="cl"><span class="go">7           assert(n &gt; 0);
+</span></span></span></code></pre></div><p>我们知道程序到达现在所处的位置，需要从 <code>fibo(10)</code> 一路递归到 <code>fibo(1)</code>。可是目前我们只能得知现在位于 <code>fibo(0)</code> 函数内。如果能得知程序运行中的数据信息呢？</p>
+<p>这里要介绍本节第一个指令 <code>backtrace</code>。该指令用于查看到目前位置的函数调用信息。我们输入该指令，可以发现经历了十分漫长的调用过程。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) backtrace 
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">0</span>  fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>1<span class="o">)</span> at fibo.c:7
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">1</span>  0x0000555555555210 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>3<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">2</span>  0x0000555555555201 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>4<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">3</span>  0x0000555555555201 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>5<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">4</span>  0x0000555555555201 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>6<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">5</span>  0x0000555555555201 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>7<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">6</span>  0x0000555555555201 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>8<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">7</span>  0x0000555555555201 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>9<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">8</span>  0x0000555555555201 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>10<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="gp">#</span><span class="m">9</span>  0x000055555555528a in main <span class="o">(</span><span class="nv">argc</span><span class="o">=</span>2, <span class="nv">argv</span><span class="o">=</span>0x7fffffffd988<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="go">    at fibo.c:28
+</span></span></span></code></pre></div><p>但是这样还不够，调用栈信息中只包括了函数的参数信息，我们希望得知任意变量的取值。这可以通过 <code>print &lt;expression&gt;</code> 指令实现。其中 <code>&lt;expression&gt;</code> 应当符合当前的上下文，这与条件断点的 <code>&lt;condition&gt;</code> 类似。</p>
+<blockquote>
+<p>表达式不一定仅仅是变量。比如下面的例子。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) print 1 + 2 * 3
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">1</span> <span class="o">=</span> <span class="m">7</span>
+</span></span></code></pre></div></blockquote>
+<p>我们可以通过使用 <code>print n</code> 查看当前函数中参数 <code>n</code> 的值。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) print n
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">1</span> <span class="o">=</span> <span class="m">1</span>
+</span></span></code></pre></div><p>不过 <code>n</code> 的取值本就在函数调用信息中显示了。可不可以获取其他的参数，比如说此时循环中 <code>i</code> 的值？</p>
+<p>答案当然是可以。但我们首先需要移动到调用栈的不同位置。这通过一组指令进行控制，包括 <code>up [steps]</code>、<code>down [steps]</code> 和 <code>frame [level]</code>。</p>
+<p><code>up [steps]</code> 和 <code>down [steps]</code> 用于控制在栈帧间移动，而 <code>[steps]</code> 指示移动多少次。需要注意的是，这里的 <code>up</code> 是向<strong>调用者</strong>的方向移动，而 <code>down</code> 是向<strong>被调用者</strong>的方向移动。这或许是由于程序的栈空间向低地址增长，被调用者的栈帧位于调用者 “之下“。这里我们先执行 <code>up</code> 再执行 <code>down</code>，可以看出栈帧的移动。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) up
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">1</span>  0x0000555555555210 in fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>3<span class="o">)</span> at fibo.c:11
+</span></span><span class="line"><span class="cl"><span class="go">11              return fibo(n - 1) + fibo(n - 2);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) down
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">0</span>  fibo <span class="o">(</span><span class="nv">n</span><span class="o">=</span>1<span class="o">)</span> at fibo.c:7
+</span></span><span class="line"><span class="cl"><span class="go">7           assert(n &gt; 0);
+</span></span></span></code></pre></div><p>而 <code>frame [level]</code> 指令则是直接根据层次跳转到指定的栈帧。其中层次指的是 <code>backtrace</code> 指令的输出中位于各栈帧左侧的标号。</p>
+<p>现在我们想要到达 <code>main</code> 函数所在的栈帧，只需要使用 <code>frame 9</code> 即可。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) frame 9
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">9</span>  0x000055555555528a in main <span class="o">(</span><span class="nv">argc</span><span class="o">=</span>2, <span class="nv">argv</span><span class="o">=</span>0x7fffffffd988<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="go">    at fibo.c:28
+</span></span></span><span class="line"><span class="cl"><span class="go">28              int fibo_i = fibo(i);
+</span></span></span></code></pre></div><p>之后就可以使用 <code>print</code> 得到 <code>i</code> 的值了。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) print i
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">2</span> <span class="o">=</span> <span class="m">10</span>
+</span></span></code></pre></div><blockquote>
+<p>需要注意的是移动栈帧位置并不改变程序当前执行的语句。程序当前执行的语句只有 <code>step</code>、<code>next</code>、<code>finish</code> 等等函数才可改变。</p>
+</blockquote>
+<blockquote>
+<p>另外我们也可以打印数组中的值。不过由于 C 中并不记录数组的长度，所以还需自行指定。这里我们以 <code>main</code> 函数中的 <code>argv</code> 为例。获取数组中指定范围内的值需要使用形如 <code>arr[&lt;index&gt;]@&lt;len&gt;</code> 的语法规则。表示显示数组中从 <code>&lt;index&gt;</code> 处开始长度为 <code>&lt;len&gt;</code> 的范围内各元素的值。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) print argv[0]
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">3</span> <span class="o">=</span> 0x7fffffffddbf <span class="s2">&#34;/your/path/to/fibo&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) print *argv
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">4</span> <span class="o">=</span> 0x7fffffffddbf <span class="s2">&#34;/your/path/to/fibo&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) print argv[0]@2
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">5</span> <span class="o">=</span> <span class="o">{</span>0x7fffffffddbf <span class="s2">&#34;/your/path/to/fibo&#34;</span>, 0x7fffffffddf8 <span class="s2">&#34;10&#34;</span><span class="o">}</span>
+</span></span></code></pre></div></blockquote>
+<p>最后，学过计算机组成的同学都知道，其实指令也是数据。所以在 GDB 中我们也可以将代码显示出来，不过是将机器码转换到了汇编码。使用的指令也是 <code>disassemble [position]</code>，“反汇编”。其具体形式包括 <code>disassemble</code>、<code>disassemble &lt;function&gt;</code>、<code>disassemble &lt;address&gt;</code>、<code>disassemble &lt;start&gt;,&lt;end&gt;</code> 等等，这里就不详述了。需要注意的是汇编中出现的箭头表示 PC 寄存器所在的位置（或者函数返回的地址，就如下面对 <code>main</code> 函数栈帧的反汇编部分）。</p>
+<pre tabindex="0"><code class="language-obj" data-lang="obj">   0x000055555555527e &lt;+64&gt;:    jmp    0x5555555552ad &lt;main+111&gt;
+   0x0000555555555280 &lt;+66&gt;:    mov    -0xc(%rbp),%eax
+   0x0000555555555283 &lt;+69&gt;:    mov    %eax,%edi
+   0x0000555555555285 &lt;+71&gt;:    call   0x5555555551a9 &lt;fibo&gt;
+=&gt; 0x000055555555528a &lt;+76&gt;:    mov    %eax,-0x4(%rbp)
+   0x000055555555528d &lt;+79&gt;:    mov    -0x4(%rbp),%edx
+   0x0000555555555290 &lt;+82&gt;:    mov    -0xc(%rbp),%eax
+   0x0000555555555293 &lt;+85&gt;:    mov    %eax,%esi
+   0x0000555555555295 &lt;+87&gt;:    lea    0xd8a(%rip),%rax        # 0x555555556026
+   0x000055555555529c &lt;+94&gt;:    mov    %rax,%rdi
+   0x000055555555529f &lt;+97&gt;:    mov    $0x0,%eax
+   0x00005555555552a4 &lt;+102&gt;:   call   0x555555555080 &lt;printf@plt&gt;
+</code></pre><p>让我们总结一下本节用到的指令：</p>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>backtrace</code></td>
+<td>查看调用栈信息</td>
+</tr>
+<tr>
+<td><code>up [steps]</code></td>
+<td>向调用者方向移动栈帧</td>
+</tr>
+<tr>
+<td><code>down [steps]</code></td>
+<td>向被调用者方向移动栈帧</td>
+</tr>
+<tr>
+<td><code>frame [level]</code></td>
+<td>移动到指定的栈帧</td>
+</tr>
+<tr>
+<td><code>print &lt;expression&gt;</code></td>
+<td>查看表达式的值</td>
+</tr>
+<tr>
+<td><code>disassemble [position]</code></td>
+<td>查看对应位置的汇编码</td>
+</tr>
+</tbody>
+</table>
+<h2 id="高级调试修改运行时程序">高级调试：修改运行时程序<a hidden class="anchor" aria-hidden="true" href="#高级调试修改运行时程序">#</a></h2>
+<p>在计算机科学的远古时期，为了充分利用有限的资源，一些开发者会将程序设计为可以在运行时修改自身，这称为自修改代码。我们的 GDB 虽然没有这么厉害，但也可以在调试时动态修改程序的数据或运行，从而让程序偏离原本的执行路径。这一功能可用于在调试时修正程序错误，从而验证 Bug 修复的可行性；或者跳过当前 Bug，查看后续程序的执行情况。</p>
+<p>为此我们需要一个有 Bug 的程序作为例子。但是 Bug 有种特点，无意间可能就会写出，但自行构造却又很是麻烦。所以恕本人能力有限，只能用拙劣的手法生生造出一个 Bug 了。</p>
+<p>下面的代码中，讨厌的全局变量 <code>dangerous_global</code> 会使函数 <code>add</code> 产生副作用，当调用第 5 次 <code>add</code> 函数时就会产生错误的计算结果。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// bug.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;assert.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">dangerous_global</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">add</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">,</span> <span class="kt">int</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="o">++</span><span class="n">dangerous_global</span> <span class="o">==</span> <span class="mi">5</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">test_cases</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">},</span>  <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">},</span>   <span class="p">{</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">},</span> <span class="p">{</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">},</span> <span class="p">{</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">6</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="n">test_cases</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="n">test_cases</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">expect</span> <span class="o">=</span> <span class="n">test_cases</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">assert</span><span class="p">(</span><span class="n">result</span> <span class="o">==</span> <span class="n">expect</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们编译并运行该程序，确实我们的断言出现了失败。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gcc -g bug.c -o bug
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ./bug 
+</span></span><span class="line"><span class="cl"><span class="go">bug: bug.c:26: main: Assertion `result == expect&#39; failed.
+</span></span></span><span class="line"><span class="cl"><span class="go">已放弃 (核心已转储)
+</span></span></span></code></pre></div><blockquote>
+<p>从上面的信息中我们并不能得知到底哪个测试样例出现了错误。这个问题有两个解决方法。一是使用更加完善的单元测试框架，不过在这里不会进一步介绍；二是使用 GDB 重新运行，GDB 会在断言出错时产生中断。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> gdb ./bug
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) run
+</span></span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">bug: bug.c:26: main: Assertion `result == expect&#39; failed.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Program received signal SIGABRT, Aborted.
+</span></span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><p>此时使用 <code>backtrace</code> 查看调用栈信息。因为调用栈可能较长，这里可以使用 <code>backtrace -2</code> 只显示调用栈底两个栈帧的信息。从中我们得知 <code>main</code> 函数的层次为 7。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) backtrace -2
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">6</span>  0x00007ffff7dd7b86 in __assert_fail <span class="o">(</span>
+</span></span><span class="line"><span class="cl"><span class="go">    assertion=0x55555555600a &#34;result == expect&#34;, file=0x555555556004 &#34;bug.c&#34;, 
+</span></span></span><span class="line"><span class="cl"><span class="go">    line=26, function=0x55555555601b &lt;__PRETTY_FUNCTION__.0&gt; &#34;main&#34;)
+</span></span></span><span class="line"><span class="cl"><span class="go">    at ./assert/assert.c:101
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">7</span>  0x00005555555552e4 in main <span class="o">()</span> at bug.c:26
+</span></span></code></pre></div><p>随后移动到 <code>main</code> 函数所在的栈帧，需要使用指令 <code>frame 7</code>。接着查看 <code>result</code> 和 <code>expect</code> 的值即可。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) frame 7
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">7</span>  0x00005555555552e4 in main <span class="o">()</span> at bug.c:26
+</span></span><span class="line"><span class="cl"><span class="go">26              assert(result == expect);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) print result
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">1</span> <span class="o">=</span> -2
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) print expect
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">2</span> <span class="o">=</span> -7
+</span></span></code></pre></div></blockquote>
+<p>我们得知了出错的测试用例后进入此时的 <code>add</code> 函数（具体过程省略），查看 <code>dangerous_global</code> 的值为 4。之后 <code>++dangerous_global == 5</code> 的结果将为真，进入 <code>if</code> 所在分支，得到错误的结果。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) step
+</span></span></span><span class="line"><span class="cl"><span class="go">add (a=-2, b=-5) at bug.c:8
+</span></span></span><span class="line"><span class="cl"><span class="go">8           if (++dangerous_global == 5) {
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) print dangerous_global 
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">3</span> <span class="o">=</span> <span class="m">4</span>
+</span></span></code></pre></div><p>我们可以如何修改代码使得程序正常运行呢？首先，是 <code>dangerous_global</code> 产生的 Bug，因此可以选择<strong>修改该变量的值</strong>。这需要用到 <code>set variable &lt;variable&gt; = &lt;expression&gt;</code> 指令。这里我们就将 <code>dangerous_global</code> 的值改为 5，从而跳过了错误的情况。接着使用 <code>continue</code> 指令，结果显示程序正常退出，断言没有失败。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) set variable dangerous_global = 5
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) print dangerous_global 
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">4</span> <span class="o">=</span> <span class="m">5</span>
+</span></span><span class="line"><span class="cl"><span class="go">(gdb) continue
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing.
+</span></span></span><span class="line"><span class="cl"><span class="go">[Inferior 1 (process 25507) exited normally]
+</span></span></span></code></pre></div><p>让我们回到刚进入 <code>add</code> 函数的时候。假设现在没有修改 <code>dangerous_global</code>，而是已经进入到了 <code>if</code> 分支的代码块中，但我们还希望 <code>add</code> 的返回值正确，又要如何操作呢？</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) step
+</span></span></span><span class="line"><span class="cl"><span class="go">add (a=-2, b=-5) at bug.c:8
+</span></span></span><span class="line"><span class="cl"><span class="go">8           if (++dangerous_global == 5) {
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) step
+</span></span></span><span class="line"><span class="cl"><span class="go">9               return a;
+</span></span></span></code></pre></div><p>对于这种情况，我们可以使用 <code>return [expression]</code> 指令。在函数中的任意位置使用该指令都会<strong>立即从函数返回</strong>，同时将返回值设置为 <code>[expression]</code> 的结果。这里我们就可以使用 <code>return a + b</code> 指令，此时返回的结果为 <code>a + b</code> 而不是 <code>a</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) return a + b
+</span></span></span><span class="line"><span class="cl"><span class="go">Make add return now? (y or n) y
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">0</span>  0x00005555555552b1 in main <span class="o">()</span> at bug.c:25
+</span></span><span class="line"><span class="cl"><span class="go">25              int result = add(a, b);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) next
+</span></span></span><span class="line"><span class="cl"><span class="go">26              assert(result == expect);
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) print result
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span><span class="nv">1</span> <span class="o">=</span> -7
+</span></span></code></pre></div><blockquote>
+<p><code>return</code> 指令和 <code>finish</code> 指令看似相同，但是不要混淆。<code>return</code> 是直接从函数中返回，而 <code>finish</code> 是让程序继续执行，直到函数返回。</p>
+</blockquote>
+<p>更多的时候我们并不希望直接从函数中返回，只是想要跳到正确的执行路径上。这时 <code>return</code> 指令就无法胜任了。我们还要引入一个十分强大的指令，那就是 <code>jump &lt;position&gt;</code> 指令。其中 <code>&lt;position&gt;</code> 可以是行号或指令地址。<code>jump</code> 指令可以允许在随意地跳转到<strong>任意代码位置</strong>，当然 GDB 并不保证进行跳转后程序可以正常运行。</p>
+<p>现在我们回到 <code>return a;</code> 所在的位置。我们想要跳到 <code>return a + b;</code>，只需要执行 <code>jump 11</code>（<code>else</code> 分支的代码块的行号）即可。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">(gdb) step
+</span></span></span><span class="line"><span class="cl"><span class="go">9               return a;
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) jump 11
+</span></span></span><span class="line"><span class="cl"><span class="go">Continuing at 0x555555555196.
+</span></span></span><span class="line"><span class="cl"><span class="go">[Inferior 1 (process 29198) exited normally]
+</span></span></span></code></pre></div><p>执行完 <code>jump</code> 指令后发生了什么？我们的程序直接退出了，不过幸好是正常退出，我们正确修复了 Bug。实际上使用 <code>jump</code> 指令后程序会自动从跳到的地方自动执行，而我们并没有设置断点，所以程序就自动执行直到退出了。</p>
+<blockquote>
+<p>如果想要 <code>jump</code> 后暂停，可以使用临时断点。只需要 <code>tbreak [positon]</code> 和 <code>jump [position]</code> 这两条指令。</p>
+</blockquote>
+<p><code>jump</code> 指令没有任何限制。因此可以实现诸如跳出循环、切换不同分支、跨过代码段等功能。基本上可以将其视为在代码中插入一条 <code>goto</code> 语句加上对应位置的标签。不过 <code>jump</code> 甚至比 <code>goto</code> 更强大，因为它可以直接跳到不同函数，而 <code>goto</code> 的标签的作用范围只在函数内。</p>
+<p>让我们总结一下本节用到的指令：</p>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>set variable &lt;variable&gt; = &lt;expression&gt;</code></td>
+<td>修改变量的值</td>
+</tr>
+<tr>
+<td><code>return [expression]</code></td>
+<td>立即从函数中以指定的返回值返回</td>
+</tr>
+<tr>
+<td><code>jump &lt;position&gt;</code></td>
+<td>无条件跳转到程序的指定位置</td>
+</tr>
+</tbody>
+</table>
+<h2 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h2>
+<p>以上就是本篇文章的主要内容了，看似内容繁多，实际上也只是 GDB 所有功能中较为主要的部分而已。不过这些内容已经足够应对大部分的调试场景，包括各位同学将要挑战的操作系统实验。调试是一门技术，也是一门艺术，它需要长久的练习，但在重要时刻也能助你一臂之力。因此希望各位同学能好好学习 GDB 的知识点和背后的调试思想，不止是在本门课上，在未来的编码生涯中也将受益无穷。</p>
+<p>在总结的最后，列出我们介绍的所有指令。另外其实大部分 GDB 指令都有其缩写，但是在教程当中为了便于理解指令作用，且限于篇幅，并没有一一说明。所以在这里进行补充。</p>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>缩写</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file &lt;executable&gt;</code></td>
+<td></td>
+<td>加载程序</td>
+</tr>
+<tr>
+<td><code>run</code></td>
+<td><code>r</code></td>
+<td>运行程序</td>
+</tr>
+<tr>
+<td><code>set args [arg]...</code></td>
+<td></td>
+<td>设置程序的参数</td>
+</tr>
+<tr>
+<td><code>run [arg]...</code></td>
+<td><code>r</code></td>
+<td>以设定的参数运行程序</td>
+</tr>
+<tr>
+<td><code>quit</code></td>
+<td><code>q</code></td>
+<td>退出 GDB</td>
+</tr>
+<tr>
+<td><code>start</code></td>
+<td></td>
+<td>启动程序并使其停在 <code>main</code> 函数起始处</td>
+</tr>
+<tr>
+<td><code>start [arg]...</code></td>
+<td></td>
+<td>以设定的参数启动程序并使其停在 <code>main</code> 函数起始处</td>
+</tr>
+<tr>
+<td><code>step</code></td>
+<td><code>s</code></td>
+<td>执行下一步程序，包括进入函数</td>
+</tr>
+<tr>
+<td><code>finish</code></td>
+<td><code>fin</code></td>
+<td>跳出当前函数</td>
+</tr>
+<tr>
+<td><code>next</code></td>
+<td><code>n</code></td>
+<td>执行单行程序，不进入函数</td>
+</tr>
+<tr>
+<td><code>continue</code></td>
+<td><code>c</code></td>
+<td>继续执行函数</td>
+</tr>
+<tr>
+<td><code>kill</code></td>
+<td><code>k</code></td>
+<td>杀死程序进程</td>
+</tr>
+<tr>
+<td><code>list [position]</code></td>
+<td><code>l</code></td>
+<td>显示指定位置源代码</td>
+</tr>
+<tr>
+<td><code>break [position]</code></td>
+<td><code>b</code></td>
+<td>在指定位置设置断点</td>
+</tr>
+<tr>
+<td><code>info breakpoints</code></td>
+<td><code>i b</code></td>
+<td>显示所有断点信息</td>
+</tr>
+<tr>
+<td><code>disable breakpoints [num]...</code></td>
+<td><code>disable b</code></td>
+<td>禁用指定断点</td>
+</tr>
+<tr>
+<td><code>enable breakpoints [num]...</code></td>
+<td><code>enable b</code></td>
+<td>启用指定断点</td>
+</tr>
+<tr>
+<td><code>delete breakpoints [num]...</code></td>
+<td><code>d</code></td>
+<td>删除指定断点</td>
+</tr>
+<tr>
+<td><code>tbreak [position]</code></td>
+<td><code>tb</code></td>
+<td>在指定位置设置临时断点</td>
+</tr>
+<tr>
+<td><code>break [position] if &lt;condition&gt;</code></td>
+<td><code>b..if</code></td>
+<td>在指定位置设置条件断点</td>
+</tr>
+<tr>
+<td><code>tbreak [position] if &lt;condition&gt;</code></td>
+<td><code>tb...if</code></td>
+<td>在指定位置设置条件临时断点</td>
+</tr>
+<tr>
+<td><code>condition &lt;num&gt; &lt;condition&gt;</code></td>
+<td><code>cond</code></td>
+<td>修改断点的条件</td>
+</tr>
+<tr>
+<td><code>ignore &lt;num&gt; &lt;times&gt;</code></td>
+<td><code>ig</code></td>
+<td>忽略断点前指定次数的访问</td>
+</tr>
+<tr>
+<td><code>clear &lt;position&gt;</code></td>
+<td><code>cl</code></td>
+<td>删除指定位置的所有断点</td>
+</tr>
+<tr>
+<td><code>watch &lt;expression&gt;</code></td>
+<td><code>wa</code></td>
+<td>为指定表达式设置观察点</td>
+</tr>
+<tr>
+<td><code>rwatch &lt;expression&gt;</code></td>
+<td><code>rw</code></td>
+<td>为指定表达式设置读观察点</td>
+</tr>
+<tr>
+<td><code>awatch &lt;expression&gt;</code></td>
+<td><code>aw</code></td>
+<td>为指定表达式设置访问观察点</td>
+</tr>
+<tr>
+<td><code>backtrace</code></td>
+<td><code>bt</code></td>
+<td>查看调用栈信息</td>
+</tr>
+<tr>
+<td><code>up [steps]</code></td>
+<td></td>
+<td>向调用者方向移动栈帧</td>
+</tr>
+<tr>
+<td><code>down [steps]</code></td>
+<td></td>
+<td>向被调用者方向移动栈帧</td>
+</tr>
+<tr>
+<td><code>frame [level]</code></td>
+<td><code>f</code></td>
+<td>移动到指定的栈帧</td>
+</tr>
+<tr>
+<td><code>print &lt;expression&gt;</code></td>
+<td><code>p</code></td>
+<td>查看表达式的值</td>
+</tr>
+<tr>
+<td><code>disassemble [position]</code></td>
+<td><code>disas</code></td>
+<td>查看对应位置的汇编码</td>
+</tr>
+<tr>
+<td><code>set variable &lt;variable&gt; = &lt;expression&gt;</code></td>
+<td><code>set var</code></td>
+<td>修改变量的值</td>
+</tr>
+<tr>
+<td><code>return [expression]</code></td>
+<td><code>ret</code></td>
+<td>立即从函数中以指定的返回值返回</td>
+</tr>
+<tr>
+<td><code>jump &lt;position&gt;</code></td>
+<td><code>j</code></td>
+<td>无条件跳转到程序的指定位置</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>下面是彩蛋</strong>：</p>
+<p>感谢能看到这里的同学，最后我再分享一个可能会有帮助的信息。</p>
+<p>调试时看不到源代码总归是感觉不直观，有没有一种方法能一边调试一边看到源代码呢？有人可能会说可以使用 vscode，但是我们的上机环境并不能使用 vscode，只能使用模拟终端，似乎只有纯粹的 CLI 一个选择。</p>
+<p>其实在 GUI 和 CLI 之间还有一种界面，叫做 TUI（Terminal User Interface/Text-based User Interface）。这种界面只需要文本环境即可显示。古早的 BIOS 如 AMIBIOS 和操作系统如 DOS 都使用了 TUI 界面。</p>
+<p>而幸运的是 GDB 也提供这种界面。只需要在运行 GDB 时加上参数 <code>-tui</code> 即可。</p>
+<p><img loading="lazy" src="gdb-tui.png" alt="gdb-tui"  />
+</p>
+<p>用 GDB TUI 调试我们的 <code>fibo</code> 程序只需要使用 <code>gdb -tui ./fibo</code>。最终显示的界面如上图所示，实在是太 Geek 了。</p>
+<p>至于如何在我们的 MOS 实验环境中启用 TUI，这就需要同学们自行发挥了。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/gdb/">GDB</a></li>
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/qemu-introduction/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>QEMU 模拟器介绍</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/compiling-tech-from-zero-3/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>从零开始的编译原理（3）：词法分析与有穷自动机</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share GDB：程序的解剖术 on x"
+            href="https://x.com/intent/tweet/?text=GDB%ef%bc%9a%e7%a8%8b%e5%ba%8f%e7%9a%84%e8%a7%a3%e5%89%96%e6%9c%af&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f&amp;hashtags=GDB%2cC">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share GDB：程序的解剖术 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f&amp;title=GDB%ef%bc%9a%e7%a8%8b%e5%ba%8f%e7%9a%84%e8%a7%a3%e5%89%96%e6%9c%af&amp;summary=GDB%ef%bc%9a%e7%a8%8b%e5%ba%8f%e7%9a%84%e8%a7%a3%e5%89%96%e6%9c%af&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share GDB：程序的解剖术 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f&title=GDB%ef%bc%9a%e7%a8%8b%e5%ba%8f%e7%9a%84%e8%a7%a3%e5%89%96%e6%9c%af">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share GDB：程序的解剖术 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share GDB：程序的解剖术 on whatsapp"
+            href="https://api.whatsapp.com/send?text=GDB%ef%bc%9a%e7%a8%8b%e5%ba%8f%e7%9a%84%e8%a7%a3%e5%89%96%e6%9c%af%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share GDB：程序的解剖术 on telegram"
+            href="https://telegram.me/share/url?text=GDB%ef%bc%9a%e7%a8%8b%e5%ba%8f%e7%9a%84%e8%a7%a3%e5%89%96%e6%9c%af&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share GDB：程序的解剖术 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=GDB%ef%bc%9a%e7%a8%8b%e5%ba%8f%e7%9a%84%e8%a7%a3%e5%89%96%e6%9c%af&u=https%3a%2f%2fwokron.github.io%2fposts%2fgdb-tutorial%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

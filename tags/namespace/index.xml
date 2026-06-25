@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Namespace on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/namespace/</link>
+    <description>Recent content in Namespace on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Mon, 13 Oct 2025 10:24:54 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/namespace/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>用 Namespace 手搓一个容器</title>
+      <link>https://wokron.github.io/posts/simple-container/</link>
+      <pubDate>Mon, 13 Oct 2025 10:24:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/simple-container/</guid>
+      <description>容器技术由 Linux 下三项技术构成。这三项技术分别是 Namespace、Cgroups 和 Unionfs。他们分别实现了系统逻辑资源的隔离、物理资源的限制以及容器的文件系统。
+在这之中最为关键的是 Namespace。因为 Namespace 实现了虚拟化中最重要的隔离的功能。在 Namespace 之外即使不使用 Cgroups，用其他文件系统替代 Unionfs，依然能够实现一个容器的许多功能。
+所以本文我们尝试用 Namespace 构建一个简单的容器。让我们首先想想，一个容器中的环境究竟需要与 host 隔离哪些资源。（请把容器想象成 host 之外的另一台机器。）
+文件系统：容器中的进程不能访问 host 的文件系统。这意味着挂载点的隔离 &amp;ndash; Mount Namespace 进程空间：容器中的进程无法查看容器外的进程信息。这意味着进程号的隔离 &amp;ndash; PID Namespace 网络接口：容器中的进程拥有自己的网络接口，不使用 host 上的网络接口。这意味着网络的隔离 &amp;ndash; Network Namespace 用户：容器中的用户和容器外的用户无关，例如容器内的 root 和容器外的 root 并不相同。这意味着用户的隔离 &amp;ndash; User Namespace 物理资源：容器能够看到和管理的物理资源和容器外的资源不同。这意味着 Cgroups 视图的隔离 &amp;ndash; Cgroups Namespace 时间：容器中的时间系统和容器外的时间不一定相同 &amp;ndash; Time Namespace 主机名：容器中的主机名和容器外的主机名不一定相同 &amp;ndash; UTS Namespace IPC：IPC，例如 Posix 消息队列，使用类似文件名的标识符，但是又并不真正存在于文件系统中。容器中的这些标识符和容器外的相同标识无关 &amp;ndash; IPC Namespace 虽然种类很多，但是想要形成虚拟化的错觉只需要用到其中的一部分即可。为了构建我们的容器，我们选择只使用 Mount、PID 和 User。
+隔离文件系统 容器化最重要的是隔离文件系统。所谓的程序运行环境，本质上就是文件系统中的各类库和应用程序。同一主机上的不同发行版的容器都运行在相同的内核上，他们只是在库和应用程序上存在不同。</description>
+    </item>
+  </channel>
+</rss>

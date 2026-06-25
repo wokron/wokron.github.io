@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Pybind11 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/pybind11/</link>
+    <description>Recent content in Pybind11 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 17 Aug 2023 10:42:38 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/pybind11/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Pybind11 实现 Python 与 C&#43;&#43; 混合编程</title>
+      <link>https://wokron.github.io/posts/pybind11-tutorial/</link>
+      <pubDate>Thu, 17 Aug 2023 10:42:38 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/pybind11-tutorial/</guid>
+      <description>一、前言 最近在尝试写一个简单的游戏引擎，我决定用 python 作为脚本，所以了解了一些混合编程的知识。
+（1）python api 从原理来说，根据文档所述，python 提供了 Python.h 头文件，能够将 c 或 c++ 代码编译成可供 python 引入的动态链接库。该库中定义的可供 python 调用的函数中所有的入参都是名为 PyObject 结构体的指针。在代码中可以通过一系列函数对 PyObject 进行操作。
+举一个简单的例子，我们希望 python 调用一个由 c 编写的简单的加法函数
+int add(int a, int b) { return a + b; } 我们期望在 python 中这样调用
+# test_mymodule.py from mymodule import add a = 10 b = 20 c = add(a, b) assert c == 30 那么我们首先需要对该函数进行包装，包装函数 _add 的参数和返回值都应该是 PyObject *。在包装函数中调用了 PyArg_ParseTuple 将传入的参数转换为 int 类型，调用原本的 add 函数得到返回值，之后又通过 PyLong_FromLong 将 int 转换为 PyObject。</description>
+    </item>
+  </channel>
+</rss>

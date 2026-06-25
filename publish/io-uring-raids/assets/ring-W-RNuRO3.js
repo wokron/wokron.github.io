@@ -1,0 +1,1 @@
+var e=`/assets/ring-BNQqh068.webp`;export{e as t};

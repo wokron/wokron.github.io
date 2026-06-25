@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Pytorch | Wokron&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/tags/pytorch/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/tags/pytorch/index.xml">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/tags/pytorch/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Pytorch" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/tags/pytorch/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Pytorch"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/tags/">Tags</a></div>
+  <h1>
+    Pytorch
+    <a href="/tags/pytorch/index.xml" title="RSS" aria-label="RSS">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" height="23">
+        <path d="M4 11a9 9 0 0 1 9 9" />
+        <path d="M4 4a16 16 0 0 1 16 16" />
+        <circle cx="5" cy="19" r="1" />
+      </svg>
+    </a>
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">使用 Transformer 进行机器翻译
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、transformer 简介 transformer 是 Google 在 2017 年发表的文章 Attention Is All You Need 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。
+对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗忘；使用 CNN，我们必须通过增加层数来扩大获取信息的范围。这两种方法都有很大的局限。
+注意力方法则可以直接获得全局信息。方法是对一条序列，求其对于本身的注意力，这被称为自注意力。
+transformer 的原理和模型较为复杂，在这里只是简单说明。
+二、数据集 此为训练模型所用的数据集。设定英文为源语言，中文为要翻译成的语言。
+（1）Dataset 类编写 我们根据路径打开文件，获取中英文序列和单词表。并将序列直接转化为 tensor，方便读取。
+class TranslateDataset(Dataset): def __init__(self, en_path, zh_path): en_seqs, self.en_vocab = get_seq_and_vocab(en_path, get_tokenizer(&#34;basic_english&#34;)) zh_seqs, self.zh_vocab = get_seq_and_vocab(zh_path, zh_simple_tokenizer) self.items = [] for i in range(len(en_seqs)): en_seq = en_seqs[i] zh_seq = zh_seqs[i] src = en_seq tgt = zh_seq[:-1] pdt = zh_seq[1:] self....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-03-12 13:25:50 +0800 CST'>三月 12, 2023</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;667 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 使用 Transformer 进行机器翻译" href="https://wokron.github.io/posts/translate-using-transformer/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">ESIM 网络的搭建和训练
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。
+因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的NLP入门练习搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。
+因为使用了Colab，本次模型的构建和训练比较成功，因而做此记录。
+二、任务 本次任务是输入两个句子，判断它们之间的关系。具体来说，我们需要实现论文中提出的 ESIM 网络，并通过 SNLI数据集 进行训练，以学习预测两个句子间的关系。
+三、数据集 SNLI数据集包含57万行英文句子对，并被标注了句子间的关系，包括蕴含（Entailment），矛盾（Contradiction），中立/不冲突（Neutral），未知（-）。
+例如
+输入文本： A man inspects the uniform of a figure in some East Asian country. 输入假设： The man is sleeping. 输出： 矛盾（C）
+输入文本： A smiling costumed woman is holding an umbrella. 输入假设：A happy woman in a fairy costume holds an umbrella. 输出： 中立（N）
+输入文本： A soccer game with multiple males playing. 输入假设： Some men are playing a sport....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-03-05 10:30:20 +0800 CST'>三月 5, 2023</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;755 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to ESIM 网络的搭建和训练" href="https://wokron.github.io/posts/traning-esim-network/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">用 Pytorch 实现简单循环神经网络
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、歌词生成项目 想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 最浅显易懂的 PyTorch 深度学习入门 的启发，并利用 up 主提供的 源码 中的数据集。
+相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。
+二、数据的获取 （1）编写数据集 原作者用爬虫获取的歌词数据被保存在 lyrics.txt 文件中。我们要将数据按可供训练的模型加载。具体来说
+我们希望每一次获取数据，都能得到输入和目标输出（对本项目来说就是两段有一个文字偏差的序列） 并且将文字数字化，即 nlp 的 tokenize 为了实现批量训练，需要每次获取定长的序列 为了实现第一点，我们要继承 dataset；实现第二点，需要根据数据建立字符表；实现第三点，需要定长截取歌词句子的一部分。
+另外，为了减少每次加载数据所用的时间，还需要将数据集的信息持久化。
+我们的 LyricsDataset 具体实现如下。首先，我们在构造函数中通过传入的路径加载数据，判断是否已经存在处理过后的数据，如存在则加载；如不存在则读入原始数据并处理
+class LyricsDataset(Dataset): def __init__(self, root_path, seq_size): self.seq_size = seq_size processed_name = &#34;/processed/lyrics.pth&#34; raw_name = &#34;/raw/lyrics.txt&#34; if os.path.exists(root_path &#43; processed_name): print(&#34;find processed data&#34;) self.__load_processed_data(root_path &#43; processed_name) else: print(&#34;processed data not found, will process raw data&#34;) self....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-17 21:02:34 +0800 CST'>一月 17, 2023</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;642 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 用 Pytorch 实现简单循环神经网络" href="https://wokron.github.io/posts/pytorch-rnn/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">用 Pytorch 搭建神经网络
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。
+本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。
+本文所使用的例子是自己写的第一个神经网路，如下：
+import os.path import torch.utils.data from torch.utils.data import DataLoader from torch import nn from torch.utils.tensorboard import SummaryWriter from torchvision import transforms, datasets device = torch.device(&#34;cpu&#34;) if torch.cuda.is_available(): print(&#34;cuda available, use cuda to train module&#34;) device = torch.device(&#34;cuda&#34;) train_set = datasets.CIFAR10(&#34;./CIFAR10&#34;, transform=transforms.ToTensor(), download=True) test_set = datasets.CIFAR10(&#34;./CIFAR10&#34;, transform=transforms.ToTensor(), train=False, download=True) train_set_size = len(train_set) test_set_size = len(test_set) print(f&#34;train set size: {train_set_size}&#34;) print(f&#34;test set size: {test_set_size}&#34;) train_dataloader = DataLoader(train_set, 64, shuffle=True, drop_last=True) test_dataloader = DataLoader(test_set, 64) class MyModule(nn....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-02 15:52:55 +0800 CST'>一月 2, 2023</span>&nbsp;·&nbsp;5 分钟&nbsp;·&nbsp;884 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 用 Pytorch 搭建神经网络" href="https://wokron.github.io/posts/pytorch-basics/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

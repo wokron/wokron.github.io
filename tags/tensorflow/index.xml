@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Tensorflow on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/tensorflow/</link>
+    <description>Recent content in Tensorflow on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Mon, 20 Jan 2025 21:31:16 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/tensorflow/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>编译 Tensorflow 踩坑</title>
+      <link>https://wokron.github.io/posts/build-tensorflow-from-source/</link>
+      <pubDate>Mon, 20 Jan 2025 21:31:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/build-tensorflow-from-source/</guid>
+      <description>前段时间发现了 Tensorflow 里的一处小 Bug，现在有空正好提一个 PR。Bug 很快就修好了，不过之后进行本地编译时我却踩了不少坑。现在记录一下。
+一、各种版本傻傻分不清 在开始编译之前，需要介绍一下相关的 Nvidia GPU 依赖项。
+Nvidia 有不同架构的各型显卡。为了区分硬件上的区别，Nvidia 使用计算能力（Compute Capability）加以区分。计算能力版本分为两部分 x.y。大版本号表示计算架构（如 Pascal、Volta、Ampere 等等）上的变化，之间不可兼容；小版本号则表示同一架构内部的差别，更高版本可以兼容更低版本。
+GPU 驱动（GPU Driver）为操作系统提供硬件驱动。其版本可以通过 nvidia-smi --query-gpu=driver_version --format=csv 找到。同一版本的驱动支持一系列不同计算能力、不同架构的显卡。
+CUDA 驱动（CUDA Driver）在 GPU 驱动之上提供了 CUDA 接口。与 GPU 驱动属于内核态设备驱动不同，CUDA 驱动是一用户态的动态链接库（DSO）。CUDA 驱动的版本一般应当随着 GPU 驱动版本的更新而更新。
+CUDA Toolkit 提供了构建 CUDA 程序所需的编译器、运行时和库。构建后的 CUDA 应用程序依赖于 CUDA 驱动所提供的接口。又由于 CUDA 是向后兼容（Backward Compatibility）的，所以旧的 CUDA 应用程序可以运行在新的 CUDA 驱动上；换句话说，要运行某一 CUDA 程序，需要高于特定版本的 CUDA 驱动。
+向后兼容中的 Backward 指的是与时间上在前的进行兼容。这似乎是中英文导致的思维差异。
+二、构建配置 在构建 Tensorflow 时添加 CUDA 支持后，Tensorflow 需要满足 CUDA Toolkit 和 CUDA 驱动之间的兼容性要求。如前所述，为了更强的兼容性，我们希望 CUDA Toolkit 的版本较低。但更高的 Tensorflow 版本又会需要更高版本的 CUDA 特性。因此在编译时需要在这两方面进行权衡。</description>
+    </item>
+  </channel>
+</rss>

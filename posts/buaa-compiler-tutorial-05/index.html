@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>编译技术教程：语义分析 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Tolang, BUAA">
+<meta name="description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。
+根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。
+一、遍历语法树 树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 Node 类表示树的节点：
+struct Node { int val; std::vector&lt;Node*&gt; children; } 那么我们很容易想到两种遍历的方式。第一种便是在 Node 中增加一个方法 visit。
+struct Node { int val; std::vector&lt;Node&gt; children; void visit() { // do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;` for (auto child : children) { child.visit(); } } }; 而第二种方式则是将 Node 作为参数。为了避免使用全局变量，我们需要创建一个新的类 Visitor。
+struct Visitor { void visit(Node &amp;node) { // do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;` for (auto child : children) { visit(child); } } }; 那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 Visitor 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 visit 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能跨越语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/buaa-compiler-tutorial-05/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/buaa-compiler-tutorial-05/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="编译技术教程：语义分析" />
+<meta property="og:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。
+根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。
+一、遍历语法树 树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 Node 类表示树的节点：
+struct Node { int val; std::vector&lt;Node*&gt; children; } 那么我们很容易想到两种遍历的方式。第一种便是在 Node 中增加一个方法 visit。
+struct Node { int val; std::vector&lt;Node&gt; children; void visit() { // do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;` for (auto child : children) { child.visit(); } } }; 而第二种方式则是将 Node 作为参数。为了避免使用全局变量，我们需要创建一个新的类 Visitor。
+struct Visitor { void visit(Node &amp;node) { // do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;` for (auto child : children) { visit(child); } } }; 那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 Visitor 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 visit 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能跨越语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/buaa-compiler-tutorial-05/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-09-10T16:05:08+08:00" />
+<meta property="article:modified_time" content="2024-09-10T16:05:08+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="编译技术教程：语义分析"/>
+<meta name="twitter:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。
+根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。
+一、遍历语法树 树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 Node 类表示树的节点：
+struct Node { int val; std::vector&lt;Node*&gt; children; } 那么我们很容易想到两种遍历的方式。第一种便是在 Node 中增加一个方法 visit。
+struct Node { int val; std::vector&lt;Node&gt; children; void visit() { // do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;` for (auto child : children) { child.visit(); } } }; 而第二种方式则是将 Node 作为参数。为了避免使用全局变量，我们需要创建一个新的类 Visitor。
+struct Visitor { void visit(Node &amp;node) { // do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;` for (auto child : children) { visit(child); } } }; 那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 Visitor 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 visit 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能跨越语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "编译技术教程：语义分析",
+      "item": "https://wokron.github.io/posts/buaa-compiler-tutorial-05/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "编译技术教程：语义分析",
+  "name": "编译技术教程：语义分析",
+  "description": "系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。\n根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。\n一、遍历语法树 树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 Node 类表示树的节点：\nstruct Node { int val; std::vector\u0026lt;Node*\u0026gt; children; } 那么我们很容易想到两种遍历的方式。第一种便是在 Node 中增加一个方法 visit。\nstruct Node { int val; std::vector\u0026lt;Node\u0026gt; children; void visit() { // do something, like `std::cout \u0026lt;\u0026lt; val \u0026lt;\u0026lt; std::endl;` for (auto child : children) { child.visit(); } } }; 而第二种方式则是将 Node 作为参数。为了避免使用全局变量，我们需要创建一个新的类 Visitor。\nstruct Visitor { void visit(Node \u0026amp;node) { // do something, like `std::cout \u0026lt;\u0026lt; val \u0026lt;\u0026lt; std::endl;` for (auto child : children) { visit(child); } } }; 那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 Visitor 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 visit 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能跨越语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。",
+  "keywords": [
+    "Tolang", "BUAA"
+  ],
+  "articleBody": " 系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。\n根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。\n一、遍历语法树 树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 Node 类表示树的节点：\nstruct Node { int val; std::vector\u003cNode*\u003e children; } 那么我们很容易想到两种遍历的方式。第一种便是在 Node 中增加一个方法 visit。\nstruct Node { int val; std::vector\u003cNode\u003e children; void visit() { // do something, like `std::cout \u003c\u003c val \u003c\u003c std::endl;` for (auto child : children) { child.visit(); } } }; 而第二种方式则是将 Node 作为参数。为了避免使用全局变量，我们需要创建一个新的类 Visitor。\nstruct Visitor { void visit(Node \u0026node) { // do something, like `std::cout \u003c\u003c val \u003c\u003c std::endl;` for (auto child : children) { visit(child); } } }; 那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 Visitor 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 visit 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能跨越语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。\n由于上面的例子只有 Node 一个类型，所以并没有完全展示第二种方法。接下来让我们以 tolangc 的代码为例。在 tolangc 中，语法分析部分定义在 visitor.h 中。其中对于每一个语法树节点，我们都定义了对应的访问函数。例如对 FuncDef，我们定义了 void _visit_func_def(const FuncDef \u0026node)。另外对于语法树的根节点类型 CompUnit，我们对外暴露了 void visit(const CompUnit \u0026node) 函数，由于外部调用进行语义分析。\n由于所有的节点访问函数都处在同一个作用域中，因此我们可以将符号表设定为 Visitor 的成员。另外我们总是保存当前作用域的符号表，因此这里字段名设为 _cur_scope。\n// include/visitor.h class Visitor { public: // ... void visit(const CompUnit \u0026node); private: void _visit_func_def(const FuncDef \u0026node); void _visit_var_decl(const VarDecl \u0026node); // ... ValuePtr _visit_ident_exp(const IdentExp \u0026node); // ... std::shared_ptr\u003cSymbolTable\u003e _cur_scope; // ... }; 通过共享类作用域，符号的定义和使用都可以方便地实现。我们只需要在访问函数变量或标签定义时调用 _cur_scope-\u003eadd_symbol，在访问表达式中符号时调用 _cur_scope-\u003eget_symbol 即可。而如果我们使用第一种遍历方法，则不得不将 _cur_scope 顺着调用链条不断传递。除了符号之外，类似的需要跨越语法树分支的信息还包括 continue 和 break 的跳转位置、函数的返回值类型等等。\n定义 Visitor 类之后，我们考虑访问函数的调用关系。在某一节点的访问函数 _visit_xxx 中，我们会递归地调用所有子节点的访问函数 _visit_yyy1、_visit_yyy2…。而调用的顺序则视情况而定，其基本原则是，按照中间代码生成的顺序不断访问对应子树。这一点将在后面部分详细介绍。\n很容易观察到 Parser 和 Visitor 的相似之处。既然构建语法树和遍历语法树都采用递归调用的方式实现，那么我们也可以想象一个建立语法树和遍历语法树在同一次调用中实现的编译器。不过这需要更加精心的设计，同时并不利于理解。所以这里我们选择将语法分析与语义分析分为两个不同的阶段。\n以 Visitor 中的 _visit_func_def 为例。FuncDef 节点中包括 exp 字段，而对于函数定义来说，我们只需要获取 exp 解析之后的返回值，因此我们应当将 Exp 的语义分析过程定义在另一个访问函数 _visit_exp 中，并通过函数返回获取函数定义所需要的信息。\nstruct FuncDef : public Node { std::unique_ptr\u003cIdent\u003e ident; std::vector\u003cstd::unique_ptr\u003cIdent\u003e\u003e func_f_params; std::unique_ptr\u003cExp\u003e exp; }; void Visitor::_visit_func_def(const FuncDef \u0026node) { // ... // get return val from _visit_exp auto val = _visit_exp(*node.exp); // ... } 这里还有一点值得关注。让我们查看一下 _visit_exp 的定义。\nValuePtr Visitor::_visit_exp(const Exp \u0026node) { return std::visit( overloaded{ [this](const BinaryExp \u0026node) { return _visit_binary_exp(node); }, [this](const CallExp \u0026node) { return _visit_call_exp(node); }, [this](const UnaryExp \u0026node) { return _visit_unary_exp(node); }, [this](const IdentExp \u0026node) { return _visit_ident_exp(node); }, [this](const Number \u0026node) { return _visit_number(node); }, }, node); } 此处我们使用了 C++17 中的 std::visit。其主要作用是根据 std::variant 的类型，选择调用对应参数类型函数。这一功能称为模式匹配。从这里我们也可以看出，在抽象语法树中，我们将具有共性的类型抽象为统一的节点。\n当然，一些语言并不具有模式匹配这样的功能（比如说 Java），那又要如何实现 _visit_exp 这样的函数呢？如果是面向对象语言，则你的语法树一定会通过继承实现，因此有：\nstruct Exp { virtual ~Exp() = default; }; struct BianryExp : public Exp {/* ... */}; struct CallExp : public Exp {/* ... */}; struct UnaryExp : public Exp {/* ... */}; // ... 这时可以通过父类转子类判断具体的子类类型。在这种情况下，_visit_exp 可以被重写为：\nValuePtr Visitor::_visit_exp(const Exp \u0026node) { if (auto n = dynamic_cast\u003cconst BinaryExp*\u003e(\u0026node)) { return _visit_binary_exp(*n); } else if (auto n = dynamic_cast\u003cconst CallExp*\u003e(\u0026node)) { return _visit_call_exp(*n); } else if (auto n = dynamic_cast\u003cconst UnaryExp*\u003e(\u0026node)) { return _visit_unary_exp(*n); } // ... else { throw std::runtime_error(\"invalid type\"); } } 另一方面，如果你使用的是 C 这样底层的语言的话，也存在实现的方法。那就是利用 enum + union。通过 enum 区分不同子类，通过 union 选择数据解释方式。此时 _visit_exp 可以被重写为：\nenum ExpType { EXP_BINARY, EXP_CALL, EXP_UNARY, }; struct Exp { enum ExpType type; union { struct BianryExp biany; struct CallExp call; struct UnaryExp unary; } data; }; static int visit_exp(const struct Exp *node) { switch (node-\u003etype) { case EXP_BINARY: return visit_biany_exp(\u0026node-\u003edata.biany); case EXP_CALL: return visit_call_exp(\u0026node-\u003edata.call); case EXP_UNARY: return visit_unary_exp(\u0026node-\u003edata.biany); //... } } 二、维护符号表 （1）添加符号的时机 在之前的章节中我们定义了符号表。符号表主要包含如下四个操作：新增作用域、删除作用域、添加符号、查询符号。\n对于 tolang 来说，几乎不存在作用域的概念。因为 tolang 不存在控制流结构，同时函数之外也不存在全局变量。不过我们还是在定义函数时为函数参数创建了作用域，以便区分不同函数的参数。\n这里需要注意的是函数名与其参数名处于不同的作用域中。然而为了获取函数签名，我们却又需要在新增作用域之前访问函数参数。不过这一问题并不困难，可以选择不同的处理方式。包括：\n先遍历参数并创建参数符号。构建函数符号并插入后，之后新增作用域并插入之前创建的参数符号。 先创建函数符号并插入，新增作用域，遍历参数并插入参数符号，最后再根据遍历结果将函数符号补充完整。 在创建函数符号时遍历一次参数，新增作用域，并在插入参数符号时再遍历一次参数。 … 对于 tolangc 来说，我们使用的是第一种方法。当然由于在 tolang 中只有一种类型，所以函数签名可以简化为参数的个数。\nvoid Visitor::_visit_func_def(const FuncDef \u0026node) { // ... std::vector\u003cstd::shared_ptr\u003cVariableSymbol\u003e\u003e param_symbols; for (auto \u0026ident : node.func_f_params) { // here we don't create ir argument, just create symbol param_symbols.push_back(std::make_shared\u003cVariableSymbol\u003e( ident-\u003evalue, nullptr, ident-\u003elineno)); } //... auto symbol = std::make_shared\u003cFunctionSymbol\u003e( node.ident-\u003evalue, _cur_func, node.lineno, param_symbols.size()); if (!_cur_scope-\u003eadd_symbol(symbol)) { // .... } // .. for (auto \u0026param_symbol : param_symbols) { if (!_cur_scope-\u003eadd_symbol(param_symbol)) { // ... } // ... } // ... } 这些方法并无绝对的对错之分，只需选择合适的处理方法即可。不过从中我们可以体会到一些编译器设计时的技巧：一些信息并非在一开始就能够得知，可以选择先创建符号（占位），之后再补充具体信息（回填）。这一点在处理分支跳转时十分重要，也将在之后进行具体说明。\n（2）符号类型的构建 虽然在 tolang 中没有类型的概念，但是编译实验中却要求各位同学的编译器支持 int 和 char 两种类型。因此在语义分析部分我们有必要讨论一下类型的构建。\n类型系统本身也是程序设计语言中十分重要的组成部分。在之前的一些章节中，我们讨论过类型在语法树中的表示，以及应当用什么样的数据结构表示类型。而在语义分析中，对于类型我们同样用之前的访问函数进行处理。假设现在有一子语法树表示源代码中的一处类型的定义，那么我们便需要定义一访问函数（例如 _visit_type），该函数接受子语法树的根作为参数，并应当以具体的类型作为返回值。\n如果是基本类型，如 int、float，则这一过程十分简单。我们只需要进行一个语法树中类型到目标类型的映射即可。更为复杂的是复合类型的处理，包括数组、指针、结构体等等。\n复合类型是类型的组合，能够形成复杂的嵌套结构。但是这种结构又是容易处理的，因为类型总是递归地定义，正和语义分析的解析过程相符。例如 int[2][3]，其准确含义并部署一个 2 x 3 的二维数组，而是一个长度为 2 的数组，其类型为 int[3]。因此我们在解析的时候，应当先解析 int[3] 的类型，而后将其结果与 [2] 组合，最终构成 int[2][3]。另一个容易产生误区的是数组作为参数的情况，例如 int[][3]。我们应当将其视为 int(*)[3]。即一个指针，其所指向的类型是 int[3]。\n可惜的是 C 的类型的设计十分复杂。如果我们能稍微修改一下类型表达式的结构，那么这些内容会变得更加容易理解。这一点类似于将中缀表达式转为前缀表达式。我们将 int[2][3] 转换为 [2][3]int，而将 int[][3] 转换为 [][3]int 或 *[3]int。在这种情况下，[2][3]int 表示为（一个长度为 2 的数组，其类型是（一个长度为 3 的数组，其类型是 int））。而 *[3]int 则表示为（一个指针，指向（一个长度为 3 的数组，其类型是 int））。\n接触过 Golang 的同学会发现这是 Golang 的类型表示方法。\n由于 C 语言中关于数组定义的语法并不利于语义分析阶段的解析，所以我们这里再额外进行说明。为了方便考虑类型的嵌套结构，我们使用标准的 BNF 范式描述 SysY 中这部分的语法；\nVarDecl: BType VarDefs ';' BType: 'int' | 'char' VarDefs: VarDef | VarDefs ',' VarDef VarDef: Ident Dims Dims: ε | '[' ConstExp ']' Dims 这样便可以看出，数组类型的定义是分为两个不同部分的。其一是标识符左侧的基本类型，如 int、char，其二则是标识符右侧的维度定义，如 [2]、[2][3]。这样就意味着为了得知标识符的类型，我们不得不先访问定义最左侧的基本类型，并在访问变量定义以及维度时将基本类型信息传递到此处。考虑 int a, b[2][3]。当我们得知基本类型是 int 后，我们需要将该信息传递到 a 和 b[2][3]。而对于 b[2][3]，我们需要先将 int 传递到维度定义的最深层，之后逐层返回。这一过程可以用如下伪代码表示：\ndef visit_dims(node: Dims, base: Type) -\u003e Type: if node is None: return base size = 根据 node.exp 获取当前维长度 return ArrayType(size, visit_dims(node.dims, base)) （3）传递中间代码信息 语义分析的最终目的是生成中间代码，而符号表也会为了这一目的服务。符号表在传递语法信息的同时，也会传递中间代码的信息。例如，一个变量符号可能存储了其在中间代码中的位置信息，一个函数符号可能保存了其在中间代码中对应的函数对象，等等。因此在创建符号时，我们还会进行中间代码的构建，并将构建后的信息附加到符号中。\n在 tolangc 中，我们使用统一的 ValuePtr value 字段存储中间代码信息。这得益于 LLVM 对中间代码数据结构的设计，具体内容已经在上一章节中有所说明。举个例子，在定义变量时我们也会创建对应的中间代码，之后，我们将中间代码中变量所在地址信息（即 alloca 指令）附加到其符号当中。\nvoid Visitor::_visit_var_decl(const VarDecl \u0026node) { // ... auto alloca = AllocaInst::New(context-\u003eGetFloatTy()); auto symbol = std::make_shared\u003cVariableSymbol\u003e(node.ident-\u003evalue, alloca, node.ident-\u003elineno); _cur_scope-\u003eadd_symbol(symbol) // ... } 而当需要在表达式中使用符号的时候，我们便查找符号表得到对应符号，据此得知变量在中间代码中的存储位置，进而生成后续的中间代码。\nValuePtr Visitor::_visit_ident_exp(const IdentExp \u0026node) { auto symbol = _cur_scope-\u003eget_symbol(node.ident-\u003evalue); if (symbol-\u003etype != SymbolType::VAR) { // ... return nullptr; } // load value from addr auto var_symbol = std::static_pointer_cast\u003cVariableSymbol\u003e(symbol); auto addr = var_symbol-\u003evalue; auto val = LoadInst::New(addr); _cur_block-\u003eInsertInstruction(val); return val; } 三、构建中间代码 通过遍历语法树并维护符号表，我们能够获取源代码的所有信息。在这个基础上，我们实现中间代码的生成。对于实验中各位需要实现的 SysY 语言来说，你可能会感觉源代码与中间代码的差别并不甚大，这主要是由于 C 语言实在过于底层，其只包含了高级语言必备的一些基本概念（结构化控制流、函数、栈等等），在此之外则将所有细节都暴露给程序员操作。但实际上源代码可以和中间代码相去甚远，在这种情况下，语义分析所需要处理的问题将复杂的多。\n我们的 tolang 也在语法上做了一些小小的变动，比如说顶级语句，从而与中间代码有所区别。但是这种改动也只是形式上的，因为我们只需将全部顶级语句放在 main 函数中即可。\n（1）函数的创建 接下来我们讲解一下 tolangc 中中间代码的构建过程。首先，对于函数，tolang 中只有两种函数，一是 fn 定义的函数，二就是顶级语句定义的 main 函数。因此，当我们访问 FuncDef 节点以及开始访问 VarDecl 和 Stmt 节点时，就需要创建对应的函数。新创建的函数 _cur_func 相当于当前子语法树节点的上下文环境，因此也作为 Visitor 类的属性。当函数定义结束后，我们将 _cur_func 重新置为 nullptr。\nvoid Visitor::visit(const CompUnit \u0026node) { for (auto \u0026elm : node.func_defs) { _visit_func_def(*elm); } // create main function auto context = _ir_module-\u003eContext(); _cur_func = Function::New(context-\u003eGetInt32Ty(), \"main\"); _ir_module-\u003eAddMainFunction(_cur_func); // ... _cur_func = nullptr; } void Visitor::_visit_func_def(const FuncDef \u0026node) { // ... // create ir function auto context = _ir_module-\u003eContext(); std::vector\u003cArgumentPtr\u003e args; for (auto \u0026param_symbol : param_symbols) { auto arg = Argument::New(context-\u003eGetFloatTy(), param_symbol-\u003ename); args.push_back(arg); param_symbol-\u003evalue = arg; } _cur_func = Function::New(context-\u003eGetFloatTy(), node.ident-\u003evalue, args); // ... _cur_func = nullptr; } （2）表达式的转换 tolang 中的一系列语句，则可以转换为不同的中间代码指令。由于 tolang 本身十分简单，所以大多数语句到中间代码都是一对一的转换，唯一较为复杂的便是表达式的转换。\n我们在设计抽象语法树时特地不完全按照原始的 EBNF 定义，将表达式节点设定为单目或双目运算。在构建中间代码时，这将提供很大便利。因为我们的中间代码为四元式，或称三地址码，如果表达式语法树的节点都为单目或双目运算，则我们只需先分别访问左子树和右子树，就可以得到三地址码中的两个地址。而第三个地址，则是当前节点中创建的新的指令。我们将这第三个地址返回，便实现了这一递归的过程。例如 tolangc 中的 _visit_binary_exp，只是简单的访问左子树和右子树，并返回一个新创建的指令而已。\nValuePtr Visitor::_visit_binary_exp(const BinaryExp \u0026node) { auto left_val = _visit_exp(*node.lhs); auto right_val = _visit_exp(*node.rhs); // get ir binary op type, just map from ast to ir BinaryOpType ir_op = // ... auto val = BinaryOperator::New(ir_op, left_val, right_val); _cur_block-\u003eInsertInstruction(val); return val; } （3）控制流语句 在 tolang 中我们只有非结构化的，通过标签实现的控制流。这也就是被 Dijkstra 称为 “有害” 的 goto 语句。但是这种方法实现起来十分方便，所以我们先了解一下 tolangc 对 goto 的实现。而之后我们将在此基础上介绍结构化控制流，即 if、if-else 以及 while 的实现方法。\ngoto 反映了汇编语言中控制流语句的实现方式。goto 语句可以直接翻译为对应的汇编指令。\n# tolang tag tag1; # do something if a0 \u003c 1 to tag2; to tag1; tag2; // mips tag1: // do something li a1, 1 blt a0, a1, tag2 j tag1 tag2: 由于 LLVM 的一个基本块对应一个标签，所以对于 tolangc，在遇到 tag 语句时，我们需要创建一个基本块，并将该基本块附加到标签符号的 value 字段中。\n不过各位同学很容易可以发现，标签是可能在定义之前使用的，并且这一用法十分普遍，主要的作用是实现分支执行。比如说下面的 tolang 代码，实现了简单的 if-else 逻辑。\n需要注意，if... to 的条件与结构化 if 的条件相反。因此后续在实现控制流时我们并非是当条件为真时跳转，而是条件为假时跳转。\nif a \u003e= b to else; # do if a \u003c b is true to fi; tag else; # do if a \u003c b is false tag fi; 在这种情况下，我们同样采用占位 - 回填的思想。如果需要创建跳转指令，但跳转的目标还未确定，则可以只创建跳转指令而不设定跳转目标，并将该跳转指令保存在适当位置，当真正创建跳转目标后，再将该目标回填到之前保存的跳转指令中。对于 tolangc 来说，我们在标签符号中增加一个字段 jump_insts 用来保存标签定义之前引用的跳转指令，并在第一次遇到跳转指令时便创建对应的标签。这样当标签真正定义时，我们就可以从 jump_insts 中取出指令，将标签对应的基本块填入指令当中。\n上述思想在分析结构化控制流的语义时同样十分重要。尤其是在需要进行短路求值的时候。接下来我们重点讲解这部分内容。\n结构化控制流的关键是其中的条件判断。也就是语法树中的 Cond 子树。在语义分析遍历 Cond 子树的过程中，我们会构建一系列的跳转语句，而此时我们还不知道跳转的目标。因此我们应当保留这些跳转语句，即我们需要将这些跳转语句作为解析 Cond 之后的返回值。为方便解释，我们考虑由下面 BNF 定义的条件语法：\nCond: LOrExp LOrExp: LAndExp | LOrExp \"||\" LAndExp LAndExp: CmpExp | LAndExp \"\u0026\u0026\" CmpExp CmpExp: '(' Cond ')' | Exp ('==' | '!=' | '\u003c' | '\u003c=' | '\u003e' | '\u003e=') Exp 在这种情况下，我们可以定义如下抽象语法树：\nstruct LogicExp; struct CompareExp; using Cond = std::variant\u003cLogicExp, CompareExp\u003e; struct LogicExp { enum { AND, OR, } op; std::unique_ptr\u003cCond\u003e lhs; std::unique_ptr\u003cCond\u003e rhs; }; struct CompareExp { enum { EQ, NE, LT, LE, GT, GE } op; std::unique_ptr\u003cExp\u003e lhs; std::unique_ptr\u003cExp\u003e rhs; }; 那么，当我们访问 CompareExp 时，我们会在中间代码中创建一条比较指令和一条分支指令。但是该指令的条件为真和为假时的目标基本块还未确定，因此我们应当将该指令返回，且需要将跳转到真的指令和跳转到假的指令分开。不过由于此处只有一条指令，所以返回的结果相同。其伪代码如下：\ndef visit_compare_exp(node: CompareExp) -\u003e tuple[list[JumpInst], list[JumpInst]]: left_val = visit_exp(node.lhs) right_val = visit_exp(node.rhs) cmp = 根据 left_val 和 right_val 创建比较指令 br = 根据 cmp 创建分支指令 jump_to_true = [br] jump_to_false = [br] return jump_to_true, jump_to_false 而对于 LogicExp 来说，情况有所不同。由于短路求值的存在，我们需要保证如下规则：\n对于 \u0026\u0026： 如果左侧的条件为真，则还需跳转到右侧判断 如果左侧的条件为假，则整体为假 如果右侧的条件为真，则整体为真 如果右侧的条件为假，则整体为假 对于 ||： 如果左侧的条件为真，则整体为真 如果左侧的条件为假，则还需跳转到右侧判断 如果右侧的条件为真，则整体为真 如果右侧的条件为假，则整体为假 这样，我们就可以给出 LogicExp 中 jump_to_true 和 jump_to_false 的求得规则了。其伪代码如下：\ndef visit_logic_exp(node: LogicExp) -\u003e tuple[list[JumpInst], list[JumpInst]]: left_true, left_false = visit_cond(node.lhs) label = 在中间代码中添加一个标签 right_true, right_false = visit_cond(node.rhs) if node.op == AND: # 左侧或右侧为假则为假 jump_to_false = left_false + right_false # 左侧为真则判断右侧 for left_true_inst in left_true: left_true_inst.true_target = label # 右侧为真则为真 jump_to_true = right_true else: # 左侧或右侧为真则为真 jump_to_true = left_true + right_true # 左侧为假则判断右侧 for left_false_inst in left_false: left_false_inst.false_target = label # 右侧为假则为假 jump_to_false = right_false return jump_to_true, jump_to_false 在最后，if 以及 while 同样可以调用 visit_cond 获取对应的 jump_to_true 和 jump_to_false。此时只需在创建基本块后将其填入到跳转指令中即可。\n最后我们给出 if、if-else、while 和 for 的 tolang 表示。同学们可以参照下面例子实现控制流语句的构建。\nif if (a \u003c b) { // do something } if a \u003e= b to if_join; # do something tag if_join; if-else if (a \u003c b) { // do if true } else { // do if false } if a \u003e= b to if_false; # do if true to if_join; tag if_false; # do if false tag if_join; while while (a \u003c b) { continue; break; } tag while_cond; if a \u003e= b to while_join; to while_cond; # continue to while_join; # break to while_cond; tag while_join; for for (i = 0; i \u003c n; i = i + 1) { continue; break; } let i = 0; tag for_cond; if i \u003e= n to for_join; to for_continue; # continue to for_join; # break tag for_continue; let i = i + 1; to for_cond; tag for_join （4）访存操作 构建中间代码的最后一部分，我们讨论一下访存操作的生成。在 tolangc 中，由于不具有复合类型，所以访存操作十分简单。对于 let 语句，我们需要获取等号左侧符号的 value 字段取值，该值即变量的地址，因此直接生成 store 指令即可。而对于 IdentExp，情况类似，我们只需直接生成 store 指令。但如果存在数组和指针的话，情况会复杂许多。因为这涉及到地址的计算。\n这里特别要提到 “左值” 的概念。“左值” 指的是可以在赋值符号左侧的值。左值本质上指的是具有内存地址的值。因而其可被赋值。很明显，基本类型的变量是左值，但是数组则有所不同。下面我们给出与数组 int a[2][3][4] 有关的一系列表达式的值。假定数组起始地址为 a。\n表达式 值类型 值 左值地址 a *[3][4]int a 非左值 a[1] *[4]int a + 3 * 4 非左值 a[1][1] *int a + 3 * 4 + 4 非左值 a[1][1][1] int *(a + 3 * 4 + 4 + 1) a + 3 * 4 + 4 + 1 如果我们也考虑一下指针，会发现问题更加复杂。面我们给出与指针 int b[][3][4] 有关的一系列表达式的值。假定指针地址为 b，指针值为 a。\n表达式 值类型 值 左值地址 b *[3][4]int a b *b *[4]int a 非左值 **b *int a 非左值 ***b int *(a) a \u0026b **[3][4]int b 非左值 b[1] *[4]int a + 3 * 4 非左值 b[1][1] *int a + 3 * 4 + 4 非左值 b[1][1][1] int *(a + 3 * 4 + 4 + 1) a + 3 * 4 + 4 + 1 看起来十分混乱，不过幸好的是我们的实验不涉及指针本身的操作，同时数组也只有一个维度。各位只需要记住只有基本类型为左值，指针取索引时需要先取指针中地址再计算地址偏移即可。也就是说：\n",
+  "wordCount" : "1474",
+  "inLanguage": "zh",
+  "datePublished": "2024-09-10T16:05:08+08:00",
+  "dateModified": "2024-09-10T16:05:08+08:00",
+  "author":[{
+    "@type": "Person",
+    "name": "Wokron"
+  }],
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/buaa-compiler-tutorial-05/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      编译技术教程：语义分析
+    </h1>
+    <div class="post-meta"><span title='2024-09-10 16:05:08 +0800 CST'>九月 10, 2024</span>&nbsp;·&nbsp;7 分钟&nbsp;·&nbsp;1474 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/buaa-compiler-tutorial-05.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e9%81%8d%e5%8e%86%e8%af%ad%e6%b3%95%e6%a0%91" aria-label="一、遍历语法树">一、遍历语法树</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e7%bb%b4%e6%8a%a4%e7%ac%a6%e5%8f%b7%e8%a1%a8" aria-label="二、维护符号表">二、维护符号表</a><ul>
+                        
+                <li>
+                    <a href="#1%e6%b7%bb%e5%8a%a0%e7%ac%a6%e5%8f%b7%e7%9a%84%e6%97%b6%e6%9c%ba" aria-label="（1）添加符号的时机">（1）添加符号的时机</a></li>
+                <li>
+                    <a href="#2%e7%ac%a6%e5%8f%b7%e7%b1%bb%e5%9e%8b%e7%9a%84%e6%9e%84%e5%bb%ba" aria-label="（2）符号类型的构建">（2）符号类型的构建</a></li>
+                <li>
+                    <a href="#3%e4%bc%a0%e9%80%92%e4%b8%ad%e9%97%b4%e4%bb%a3%e7%a0%81%e4%bf%a1%e6%81%af" aria-label="（3）传递中间代码信息">（3）传递中间代码信息</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%89%e6%9e%84%e5%bb%ba%e4%b8%ad%e9%97%b4%e4%bb%a3%e7%a0%81" aria-label="三、构建中间代码">三、构建中间代码</a><ul>
+                        
+                <li>
+                    <a href="#1%e5%87%bd%e6%95%b0%e7%9a%84%e5%88%9b%e5%bb%ba" aria-label="（1）函数的创建">（1）函数的创建</a></li>
+                <li>
+                    <a href="#2%e8%a1%a8%e8%be%be%e5%bc%8f%e7%9a%84%e8%bd%ac%e6%8d%a2" aria-label="（2）表达式的转换">（2）表达式的转换</a></li>
+                <li>
+                    <a href="#3%e6%8e%a7%e5%88%b6%e6%b5%81%e8%af%ad%e5%8f%a5" aria-label="（3）控制流语句">（3）控制流语句</a></li>
+                <li>
+                    <a href="#4%e8%ae%bf%e5%ad%98%e6%93%8d%e4%bd%9c" aria-label="（4）访存操作">（4）访存操作</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><blockquote>
+<p>系列导航：</p>
+<ul>
+<li>《<a href="../buaa-compiler-tutorial-00">编译技术教程：前言</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-01">编译技术教程：词法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-02">编译技术教程：抽象语法树</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-03">编译技术教程：语法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-04">编译技术教程：符号表与类型系统</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-05">编译技术教程：语义分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-06">编译技术教程：附录 - 项目测试</a>》</li>
+</ul>
+</blockquote>
+<p>在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。</p>
+<p>根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。</p>
+<h2 id="一遍历语法树">一、遍历语法树<a hidden class="anchor" aria-hidden="true" href="#一遍历语法树">#</a></h2>
+<p>树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 <code>Node</code> 类表示树的节点：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">Node</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">*&gt;</span> <span class="n">children</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>那么我们很容易想到两种遍历的方式。第一种便是在 <code>Node</code> 中增加一个方法 <code>visit</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">Node</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span> <span class="n">children</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="nf">visit</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;`
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="nl">child</span> <span class="p">:</span> <span class="n">children</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">child</span><span class="p">.</span><span class="n">visit</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>而第二种方式则是将 <code>Node</code> 作为参数。为了避免使用全局变量，我们需要创建一个新的类 <code>Visitor</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">Visitor</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="nf">visit</span><span class="p">(</span><span class="n">Node</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// do something, like `std::cout &lt;&lt; val &lt;&lt; std::endl;`
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="nl">child</span> <span class="p">:</span> <span class="n">children</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">visit</span><span class="p">(</span><span class="n">child</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 <code>Visitor</code> 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 <code>visit</code> 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能<strong>跨越</strong>语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。</p>
+<p>由于上面的例子只有 <code>Node</code> 一个类型，所以并没有完全展示第二种方法。接下来让我们以 tolangc 的代码为例。在 tolangc 中，语法分析部分定义在 <code>visitor.h</code> 中。其中对于每一个语法树节点，我们都定义了对应的访问函数。例如对 <code>FuncDef</code>，我们定义了 <code>void _visit_func_def(const FuncDef &amp;node)</code>。另外对于语法树的根节点类型 <code>CompUnit</code>，我们对外暴露了 <code>void visit(const CompUnit &amp;node)</code> 函数，由于外部调用进行语义分析。</p>
+<p>由于所有的节点访问函数都处在同一个作用域中，因此我们可以将符号表设定为 <code>Visitor</code> 的成员。另外我们总是保存当前作用域的符号表，因此这里字段名设为 <code>_cur_scope</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// include/visitor.h
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Visitor</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">void</span> <span class="n">visit</span><span class="p">(</span><span class="k">const</span> <span class="n">CompUnit</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="n">_visit_func_def</span><span class="p">(</span><span class="k">const</span> <span class="n">FuncDef</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="nf">_visit_var_decl</span><span class="p">(</span><span class="k">const</span> <span class="n">VarDecl</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">ValuePtr</span> <span class="nf">_visit_ident_exp</span><span class="p">(</span><span class="k">const</span> <span class="n">IdentExp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">SymbolTable</span><span class="o">&gt;</span> <span class="n">_cur_scope</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span></code></pre></div><p>通过共享类作用域，符号的定义和使用都可以方便地实现。我们只需要在访问函数变量或标签定义时调用 <code>_cur_scope-&gt;add_symbol</code>，在访问表达式中符号时调用 <code>_cur_scope-&gt;get_symbol</code> 即可。而如果我们使用第一种遍历方法，则不得不将 <code>_cur_scope</code> 顺着调用链条不断传递。除了符号之外，类似的需要跨越语法树分支的信息还包括 <code>continue</code> 和 <code>break</code> 的跳转位置、函数的返回值类型等等。</p>
+<p>定义 <code>Visitor</code> 类之后，我们考虑访问函数的调用关系。在某一节点的访问函数 <code>_visit_xxx</code> 中，我们会递归地调用所有子节点的访问函数 <code>_visit_yyy1</code>、<code>_visit_yyy2</code>&hellip;。而调用的顺序则视情况而定，其基本原则是，按照中间代码生成的顺序不断访问对应子树。这一点将在后面部分详细介绍。</p>
+<blockquote>
+<p>很容易观察到 <code>Parser</code> 和 <code>Visitor</code> 的相似之处。既然构建语法树和遍历语法树都采用递归调用的方式实现，那么我们也可以想象一个建立语法树和遍历语法树在同一次调用中实现的编译器。不过这需要更加精心的设计，同时并不利于理解。所以这里我们选择将语法分析与语义分析分为两个不同的阶段。</p>
+</blockquote>
+<p>以 <code>Visitor</code> 中的 <code>_visit_func_def</code> 为例。<code>FuncDef</code> 节点中包括 <code>exp</code> 字段，而对于函数定义来说，我们只需要获取 <code>exp</code> 解析之后的返回值，因此我们应当将 <code>Exp</code> 的语义分析过程定义在另一个访问函数 <code>_visit_exp</code> 中，并通过函数返回获取函数定义所需要的信息。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">FuncDef</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Node</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Ident</span><span class="o">&gt;</span> <span class="n">ident</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Ident</span><span class="o">&gt;&gt;</span> <span class="n">func_f_params</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">exp</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_func_def</span><span class="p">(</span><span class="k">const</span> <span class="n">FuncDef</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// get return val from _visit_exp
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">auto</span> <span class="n">val</span> <span class="o">=</span> <span class="n">_visit_exp</span><span class="p">(</span><span class="o">*</span><span class="n">node</span><span class="p">.</span><span class="n">exp</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>这里还有一点值得关注。让我们查看一下 <code>_visit_exp</code> 的定义。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">ValuePtr</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_exp</span><span class="p">(</span><span class="k">const</span> <span class="n">Exp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">overloaded</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="k">this</span><span class="p">](</span><span class="k">const</span> <span class="n">BinaryExp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">_visit_binary_exp</span><span class="p">(</span><span class="n">node</span><span class="p">);</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="k">this</span><span class="p">](</span><span class="k">const</span> <span class="n">CallExp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">_visit_call_exp</span><span class="p">(</span><span class="n">node</span><span class="p">);</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="k">this</span><span class="p">](</span><span class="k">const</span> <span class="n">UnaryExp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">_visit_unary_exp</span><span class="p">(</span><span class="n">node</span><span class="p">);</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="k">this</span><span class="p">](</span><span class="k">const</span> <span class="n">IdentExp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">_visit_ident_exp</span><span class="p">(</span><span class="n">node</span><span class="p">);</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="k">this</span><span class="p">](</span><span class="k">const</span> <span class="n">Number</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">_visit_number</span><span class="p">(</span><span class="n">node</span><span class="p">);</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="n">node</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>此处我们使用了 C++17 中的 <code>std::visit</code>。其主要作用是根据 <code>std::variant</code> 的类型，选择调用对应参数类型函数。这一功能称为模式匹配。从这里我们也可以看出，在抽象语法树中，我们将具有共性的类型抽象为统一的节点。</p>
+<p>当然，一些语言并不具有模式匹配这样的功能（比如说 Java），那又要如何实现 <code>_visit_exp</code> 这样的函数呢？如果是面向对象语言，则你的语法树一定会通过继承实现，因此有：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">Exp</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">virtual</span> <span class="o">~</span><span class="n">Exp</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">BianryExp</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Exp</span> <span class="p">{</span><span class="cm">/* ... */</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">CallExp</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Exp</span> <span class="p">{</span><span class="cm">/* ... */</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">UnaryExp</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Exp</span> <span class="p">{</span><span class="cm">/* ... */</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// ...
+</span></span></span></code></pre></div><p>这时可以通过父类转子类判断具体的子类类型。在这种情况下，<code>_visit_exp</code> 可以被重写为：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">ValuePtr</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_exp</span><span class="p">(</span><span class="k">const</span> <span class="n">Exp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">n</span> <span class="o">=</span> <span class="k">dynamic_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">BinaryExp</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">node</span><span class="p">))</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">_visit_binary_exp</span><span class="p">(</span><span class="o">*</span><span class="n">n</span><span class="p">);</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">n</span> <span class="o">=</span> <span class="k">dynamic_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">CallExp</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">node</span><span class="p">))</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_visit_call_exp</span><span class="p">(</span><span class="o">*</span><span class="n">n</span><span class="p">);</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">n</span> <span class="o">=</span> <span class="k">dynamic_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">UnaryExp</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">node</span><span class="p">))</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_visit_unary_exp</span><span class="p">(</span><span class="o">*</span><span class="n">n</span><span class="p">);</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&#34;invalid type&#34;</span><span class="p">);</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>另一方面，如果你使用的是 C 这样底层的语言的话，也存在实现的方法。那就是利用 <code>enum</code> + <code>union</code>。通过 <code>enum</code> 区分不同子类，通过 <code>union</code> 选择数据解释方式。此时 <code>_visit_exp</code> 可以被重写为：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">enum</span> <span class="n">ExpType</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">EXP_BINARY</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">EXP_CALL</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">EXP_UNARY</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">Exp</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">enum</span> <span class="n">ExpType</span> <span class="n">type</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">union</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">struct</span> <span class="n">BianryExp</span> <span class="n">biany</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">struct</span> <span class="n">CallExp</span> <span class="n">call</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">struct</span> <span class="n">UnaryExp</span> <span class="n">unary</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="n">data</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">visit_exp</span><span class="p">(</span><span class="k">const</span> <span class="k">struct</span> <span class="n">Exp</span> <span class="o">*</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">switch</span> <span class="p">(</span><span class="n">node</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nl">EXP_BINARY</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">visit_biany_exp</span><span class="p">(</span><span class="o">&amp;</span><span class="n">node</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">biany</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nl">EXP_CALL</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">visit_call_exp</span><span class="p">(</span><span class="o">&amp;</span><span class="n">node</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">call</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nl">EXP_UNARY</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">visit_unary_exp</span><span class="p">(</span><span class="o">&amp;</span><span class="n">node</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">biany</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="二维护符号表">二、维护符号表<a hidden class="anchor" aria-hidden="true" href="#二维护符号表">#</a></h2>
+<h3 id="1添加符号的时机">（1）添加符号的时机<a hidden class="anchor" aria-hidden="true" href="#1添加符号的时机">#</a></h3>
+<p>在之前的章节中我们定义了符号表。符号表主要包含如下四个操作：新增作用域、删除作用域、添加符号、查询符号。</p>
+<p>对于 tolang 来说，几乎不存在作用域的概念。因为 tolang 不存在控制流结构，同时函数之外也不存在全局变量。不过我们还是在定义函数时为函数参数创建了作用域，以便区分不同函数的参数。</p>
+<p>这里需要注意的是函数名与其参数名处于不同的作用域中。然而为了获取函数签名，我们却又需要在新增作用域之前访问函数参数。不过这一问题并不困难，可以选择不同的处理方式。包括：</p>
+<ul>
+<li>先遍历参数并创建参数符号。构建函数符号并插入后，之后新增作用域并插入之前创建的参数符号。</li>
+<li>先创建函数符号并插入，新增作用域，遍历参数并插入参数符号，最后再根据遍历结果将函数符号补充完整。</li>
+<li>在创建函数符号时遍历一次参数，新增作用域，并在插入参数符号时再遍历一次参数。</li>
+<li>&hellip;</li>
+</ul>
+<p>对于 tolangc 来说，我们使用的是第一种方法。当然由于在 tolang 中只有一种类型，所以函数签名可以简化为参数的个数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_func_def</span><span class="p">(</span><span class="k">const</span> <span class="n">FuncDef</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">VariableSymbol</span><span class="o">&gt;&gt;</span> <span class="n">param_symbols</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="o">&amp;</span><span class="nl">ident</span> <span class="p">:</span> <span class="n">node</span><span class="p">.</span><span class="n">func_f_params</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// here we don&#39;t create ir argument, just create symbol
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">param_symbols</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">VariableSymbol</span><span class="o">&gt;</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ident</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">,</span> <span class="n">ident</span><span class="o">-&gt;</span><span class="n">lineno</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">symbol</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">FunctionSymbol</span><span class="o">&gt;</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">node</span><span class="p">.</span><span class="n">ident</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">,</span> <span class="n">_cur_func</span><span class="p">,</span> <span class="n">node</span><span class="p">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">param_symbols</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_cur_scope</span><span class="o">-&gt;</span><span class="n">add_symbol</span><span class="p">(</span><span class="n">symbol</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ....
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ..
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="o">&amp;</span><span class="nl">param_symbol</span> <span class="p">:</span> <span class="n">param_symbols</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_cur_scope</span><span class="o">-&gt;</span><span class="n">add_symbol</span><span class="p">(</span><span class="n">param_symbol</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>这些方法并无绝对的对错之分，只需选择合适的处理方法即可。不过从中我们可以体会到一些编译器设计时的技巧：一些信息并非在一开始就能够得知，可以选择先创建符号（<strong>占位</strong>），之后再补充具体信息（<strong>回填</strong>）。这一点在处理分支跳转时十分重要，也将在之后进行具体说明。</p>
+<h3 id="2符号类型的构建">（2）符号类型的构建<a hidden class="anchor" aria-hidden="true" href="#2符号类型的构建">#</a></h3>
+<p>虽然在 tolang 中没有类型的概念，但是编译实验中却要求各位同学的编译器支持 int 和 char 两种类型。因此在语义分析部分我们有必要讨论一下类型的构建。</p>
+<p>类型系统本身也是程序设计语言中十分重要的组成部分。在之前的一些章节中，我们讨论过类型在语法树中的表示，以及应当用什么样的数据结构表示类型。而在语义分析中，对于类型我们同样用之前的访问函数进行处理。假设现在有一子语法树表示源代码中的一处类型的定义，那么我们便需要定义一访问函数（例如 <code>_visit_type</code>），该函数接受子语法树的根作为参数，并应当以具体的类型作为返回值。</p>
+<p>如果是基本类型，如 <code>int</code>、<code>float</code>，则这一过程十分简单。我们只需要进行一个语法树中类型到目标类型的映射即可。更为复杂的是复合类型的处理，包括数组、指针、结构体等等。</p>
+<p>复合类型是类型的组合，能够形成复杂的嵌套结构。但是这种结构又是容易处理的，因为类型总是递归地定义，正和语义分析的解析过程相符。例如 <code>int[2][3]</code>，其准确含义并部署一个 <code>2 x 3</code> 的二维数组，而是一个长度为 <code>2</code> 的数组，其类型为 <code>int[3]</code>。因此我们在解析的时候，应当先解析 <code>int[3]</code> 的类型，而后将其结果与 <code>[2]</code> 组合，最终构成 <code>int[2][3]</code>。另一个容易产生误区的是数组作为参数的情况，例如 <code>int[][3]</code>。我们应当将其视为 <code>int(*)[3]</code>。即一个指针，其所指向的类型是 <code>int[3]</code>。</p>
+<blockquote>
+<p>可惜的是 C 的类型的设计十分复杂。如果我们能稍微修改一下类型表达式的结构，那么这些内容会变得更加容易理解。这一点类似于将中缀表达式转为前缀表达式。我们将 <code>int[2][3]</code> 转换为 <code>[2][3]int</code>，而将 <code>int[][3]</code> 转换为 <code>[][3]int</code> 或 <code>*[3]int</code>。在这种情况下，<code>[2][3]int</code> 表示为（一个长度为 2 的数组，其类型是（一个长度为 3 的数组，其类型是 int））。而 <code>*[3]int</code> 则表示为（一个指针，指向（一个长度为 3 的数组，其类型是 int））。</p>
+<blockquote>
+<p>接触过 Golang 的同学会发现这是 Golang 的类型表示方法。</p>
+</blockquote>
+</blockquote>
+<p>由于 C 语言中关于数组定义的语法并不利于语义分析阶段的解析，所以我们这里再额外进行说明。为了方便考虑类型的嵌套结构，我们使用标准的 BNF 范式描述 SysY 中这部分的语法；</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">VarDecl: BType VarDefs &#39;;&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">BType:
+</span></span><span class="line"><span class="cl">    &#39;int&#39;
+</span></span><span class="line"><span class="cl">    | &#39;char&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">VarDefs:
+</span></span><span class="line"><span class="cl">    VarDef
+</span></span><span class="line"><span class="cl">    | VarDefs &#39;,&#39; VarDef
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">VarDef: Ident Dims
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Dims:
+</span></span><span class="line"><span class="cl">    ε
+</span></span><span class="line"><span class="cl">    | &#39;[&#39; ConstExp &#39;]&#39; Dims
+</span></span></code></pre></div><p>这样便可以看出，数组类型的定义是分为两个不同部分的。其一是标识符左侧的基本类型，如 <code>int</code>、<code>char</code>，其二则是标识符右侧的维度定义，如 <code>[2]</code>、<code>[2][3]</code>。这样就意味着为了得知标识符的类型，我们不得不先访问定义最左侧的基本类型，并在访问变量定义以及维度时将基本类型信息传递到此处。考虑 <code>int a, b[2][3]</code>。当我们得知基本类型是 <code>int</code> 后，我们需要将该信息传递到 <code>a</code> 和 <code>b[2][3]</code>。而对于 <code>b[2][3]</code>，我们需要先将 <code>int</code> 传递到维度定义的最深层，之后逐层返回。这一过程可以用如下伪代码表示：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">visit_dims</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Dims</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="n">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">base</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size</span> <span class="o">=</span> <span class="n">根据</span> <span class="n">node</span><span class="o">.</span><span class="n">exp</span> <span class="n">获取当前维长度</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">ArrayType</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">visit_dims</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span> <span class="n">base</span><span class="p">))</span>
+</span></span></code></pre></div><h3 id="3传递中间代码信息">（3）传递中间代码信息<a hidden class="anchor" aria-hidden="true" href="#3传递中间代码信息">#</a></h3>
+<p>语义分析的最终目的是生成中间代码，而符号表也会为了这一目的服务。符号表在传递语法信息的同时，也会传递中间代码的信息。例如，一个变量符号可能存储了其在中间代码中的位置信息，一个函数符号可能保存了其在中间代码中对应的函数对象，等等。因此在创建符号时，我们还会进行中间代码的构建，并将构建后的信息附加到符号中。</p>
+<p>在 tolangc 中，我们使用统一的 <code>ValuePtr value</code> 字段存储中间代码信息。这得益于 LLVM 对中间代码数据结构的设计，具体内容已经在上一章节中有所说明。举个例子，在定义变量时我们也会创建对应的中间代码，之后，我们将中间代码中变量所在地址信息（即 <code>alloca</code> 指令）附加到其符号当中。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_var_decl</span><span class="p">(</span><span class="k">const</span> <span class="n">VarDecl</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">alloca</span> <span class="o">=</span> <span class="n">AllocaInst</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">GetFloatTy</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">symbol</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">VariableSymbol</span><span class="o">&gt;</span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="n">ident</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">,</span> <span class="n">alloca</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                   <span class="n">node</span><span class="p">.</span><span class="n">ident</span><span class="o">-&gt;</span><span class="n">lineno</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">_cur_scope</span><span class="o">-&gt;</span><span class="n">add_symbol</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>而当需要在表达式中使用符号的时候，我们便查找符号表得到对应符号，据此得知变量在中间代码中的存储位置，进而生成后续的中间代码。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">ValuePtr</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_ident_exp</span><span class="p">(</span><span class="k">const</span> <span class="n">IdentExp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">symbol</span> <span class="o">=</span> <span class="n">_cur_scope</span><span class="o">-&gt;</span><span class="n">get_symbol</span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="n">ident</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">symbol</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">!=</span> <span class="n">SymbolType</span><span class="o">::</span><span class="n">VAR</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// load value from addr
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">auto</span> <span class="n">var_symbol</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">static_pointer_cast</span><span class="o">&lt;</span><span class="n">VariableSymbol</span><span class="o">&gt;</span><span class="p">(</span><span class="n">symbol</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">addr</span> <span class="o">=</span> <span class="n">var_symbol</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">val</span> <span class="o">=</span> <span class="n">LoadInst</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">addr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">_cur_block</span><span class="o">-&gt;</span><span class="n">InsertInstruction</span><span class="p">(</span><span class="n">val</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="三构建中间代码">三、构建中间代码<a hidden class="anchor" aria-hidden="true" href="#三构建中间代码">#</a></h2>
+<p>通过遍历语法树并维护符号表，我们能够获取源代码的所有信息。在这个基础上，我们实现中间代码的生成。对于实验中各位需要实现的 SysY 语言来说，你可能会感觉源代码与中间代码的差别并不甚大，这主要是由于 C 语言实在过于底层，其只包含了高级语言必备的一些基本概念（结构化控制流、函数、栈等等），在此之外则将所有细节都暴露给程序员操作。但实际上源代码可以和中间代码相去甚远，在这种情况下，语义分析所需要处理的问题将复杂的多。</p>
+<blockquote>
+<p>我们的 tolang 也在语法上做了一些小小的变动，比如说顶级语句，从而与中间代码有所区别。但是这种改动也只是形式上的，因为我们只需将全部顶级语句放在 <code>main</code> 函数中即可。</p>
+</blockquote>
+<h3 id="1函数的创建">（1）函数的创建<a hidden class="anchor" aria-hidden="true" href="#1函数的创建">#</a></h3>
+<p>接下来我们讲解一下 tolangc 中中间代码的构建过程。首先，对于<strong>函数</strong>，tolang 中只有两种函数，一是 <code>fn</code> 定义的函数，二就是顶级语句定义的 <code>main</code> 函数。因此，当我们访问 <code>FuncDef</code> 节点以及开始访问 <code>VarDecl</code> 和 <code>Stmt</code> 节点时，就需要创建对应的函数。新创建的函数 <code>_cur_func</code> 相当于当前子语法树节点的上下文环境，因此也作为 <code>Visitor</code> 类的属性。当函数定义结束后，我们将 <code>_cur_func</code> 重新置为 <code>nullptr</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span><span class="k">const</span> <span class="n">CompUnit</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="o">&amp;</span><span class="nl">elm</span> <span class="p">:</span> <span class="n">node</span><span class="p">.</span><span class="n">func_defs</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_visit_func_def</span><span class="p">(</span><span class="o">*</span><span class="n">elm</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// create main function
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">auto</span> <span class="n">context</span> <span class="o">=</span> <span class="n">_ir_module</span><span class="o">-&gt;</span><span class="n">Context</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">_cur_func</span> <span class="o">=</span> <span class="n">Function</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">GetInt32Ty</span><span class="p">(),</span> <span class="s">&#34;main&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">_ir_module</span><span class="o">-&gt;</span><span class="n">AddMainFunction</span><span class="p">(</span><span class="n">_cur_func</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="n">_cur_func</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_func_def</span><span class="p">(</span><span class="k">const</span> <span class="n">FuncDef</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// create ir function
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">auto</span> <span class="n">context</span> <span class="o">=</span> <span class="n">_ir_module</span><span class="o">-&gt;</span><span class="n">Context</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ArgumentPtr</span><span class="o">&gt;</span> <span class="n">args</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="o">&amp;</span><span class="nl">param_symbol</span> <span class="p">:</span> <span class="n">param_symbols</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">auto</span> <span class="n">arg</span> <span class="o">=</span> <span class="n">Argument</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">GetFloatTy</span><span class="p">(),</span> <span class="n">param_symbol</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">args</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">arg</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">param_symbol</span><span class="o">-&gt;</span><span class="n">value</span> <span class="o">=</span> <span class="n">arg</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">_cur_func</span> <span class="o">=</span> <span class="n">Function</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">GetFloatTy</span><span class="p">(),</span> <span class="n">node</span><span class="p">.</span><span class="n">ident</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">,</span> <span class="n">args</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="n">_cur_func</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="2表达式的转换">（2）表达式的转换<a hidden class="anchor" aria-hidden="true" href="#2表达式的转换">#</a></h3>
+<p>tolang 中的一系列<strong>语句</strong>，则可以转换为不同的中间代码指令。由于 tolang 本身十分简单，所以大多数语句到中间代码都是一对一的转换，唯一较为复杂的便是<strong>表达式</strong>的转换。</p>
+<p>我们在设计抽象语法树时特地不完全按照原始的 EBNF 定义，将表达式节点设定为单目或双目运算。在构建中间代码时，这将提供很大便利。因为我们的中间代码为四元式，或称<strong>三地址码</strong>，如果表达式语法树的节点都为单目或双目运算，则我们只需先分别访问左子树和右子树，就可以得到三地址码中的两个地址。而第三个地址，则是当前节点中创建的新的指令。我们将这第三个地址返回，便实现了这一递归的过程。例如 tolangc 中的 <code>_visit_binary_exp</code>，只是简单的访问左子树和右子树，并返回一个新创建的指令而已。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">ValuePtr</span> <span class="n">Visitor</span><span class="o">::</span><span class="n">_visit_binary_exp</span><span class="p">(</span><span class="k">const</span> <span class="n">BinaryExp</span> <span class="o">&amp;</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">left_val</span> <span class="o">=</span> <span class="n">_visit_exp</span><span class="p">(</span><span class="o">*</span><span class="n">node</span><span class="p">.</span><span class="n">lhs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">right_val</span> <span class="o">=</span> <span class="n">_visit_exp</span><span class="p">(</span><span class="o">*</span><span class="n">node</span><span class="p">.</span><span class="n">rhs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// get ir binary op type, just map from ast to ir
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">BinaryOpType</span> <span class="n">ir_op</span> <span class="o">=</span> <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">val</span> <span class="o">=</span> <span class="n">BinaryOperator</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">ir_op</span><span class="p">,</span> <span class="n">left_val</span><span class="p">,</span> <span class="n">right_val</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">_cur_block</span><span class="o">-&gt;</span><span class="n">InsertInstruction</span><span class="p">(</span><span class="n">val</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="3控制流语句">（3）控制流语句<a hidden class="anchor" aria-hidden="true" href="#3控制流语句">#</a></h3>
+<p>在 tolang 中我们只有非结构化的，通过标签实现的控制流。这也就是被 Dijkstra 称为 “有害” 的 goto 语句。但是这种方法实现起来十分方便，所以我们先了解一下 tolangc 对 goto 的实现。而之后我们将在此基础上介绍结构化控制流，即 <code>if</code>、<code>if-else</code> 以及 <code>while</code> 的实现方法。</p>
+<p>goto 反映了汇编语言中控制流语句的实现方式。goto 语句可以直接翻译为对应的汇编指令。</p>
+<pre tabindex="0"><code class="language-tolang" data-lang="tolang"># tolang
+tag tag1;
+    # do something
+    if a0 &lt; 1 to tag2;
+    to tag1;
+tag2;
+</code></pre><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="c1">// mips
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nl">tag1:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do something
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">li</span> <span class="no">a1</span><span class="p">,</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">blt</span> <span class="no">a0</span><span class="p">,</span> <span class="no">a1</span><span class="p">,</span> <span class="no">tag2</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">j</span> <span class="no">tag1</span>
+</span></span><span class="line"><span class="cl"><span class="nl">tag2:</span>
+</span></span></code></pre></div><p>由于 LLVM 的一个基本块对应一个标签，所以对于 tolangc，在遇到 <code>tag</code> 语句时，我们需要创建一个基本块，并将该基本块附加到标签符号的 <code>value</code> 字段中。</p>
+<p>不过各位同学很容易可以发现，标签是可能在定义之前使用的，并且这一用法十分普遍，主要的作用是实现分支执行。比如说下面的 tolang 代码，实现了简单的 <code>if-else</code> 逻辑。</p>
+<blockquote>
+<p>需要注意，<code>if... to</code> 的条件与结构化 <code>if</code> 的条件相反。因此后续在实现控制流时我们并非是当条件为真时跳转，而是条件为假时跳转。</p>
+</blockquote>
+<pre tabindex="0"><code class="language-tolang" data-lang="tolang">if a &gt;= b to else;
+    # do if a &lt; b is true
+to fi;
+tag else;
+    # do if a &lt; b is false
+tag fi;
+</code></pre><p>在这种情况下，我们同样采用占位 - 回填的思想。如果需要创建跳转指令，但跳转的目标还未确定，则可以只创建跳转指令而不设定跳转目标，并将该跳转指令保存在适当位置，当真正创建跳转目标后，再将该目标回填到之前保存的跳转指令中。对于 tolangc 来说，我们在标签符号中增加一个字段 <code>jump_insts</code> 用来保存标签定义之前引用的跳转指令，并在第一次遇到跳转指令时便创建对应的标签。这样当标签真正定义时，我们就可以从 <code>jump_insts</code> 中取出指令，将标签对应的基本块填入指令当中。</p>
+<p>上述思想在分析结构化控制流的语义时同样十分重要。尤其是在需要进行<strong>短路求值</strong>的时候。接下来我们重点讲解这部分内容。</p>
+<p>结构化控制流的关键是其中的条件判断。也就是语法树中的 <code>Cond</code> 子树。在语义分析遍历 <code>Cond</code> 子树的过程中，我们会构建一系列的跳转语句，而此时我们还不知道跳转的目标。因此我们应当保留这些跳转语句，即我们需要将这些跳转语句作为解析 <code>Cond</code> 之后的返回值。为方便解释，我们考虑由下面 BNF 定义的条件语法：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Cond: LOrExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">LOrExp:
+</span></span><span class="line"><span class="cl">    LAndExp
+</span></span><span class="line"><span class="cl">    | LOrExp &#34;||&#34; LAndExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">LAndExp:
+</span></span><span class="line"><span class="cl">    CmpExp
+</span></span><span class="line"><span class="cl">    | LAndExp &#34;&amp;&amp;&#34; CmpExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">CmpExp:
+</span></span><span class="line"><span class="cl">    &#39;(&#39; Cond &#39;)&#39;
+</span></span><span class="line"><span class="cl">    | Exp (&#39;==&#39; | &#39;!=&#39; | &#39;&lt;&#39; | &#39;&lt;=&#39; | &#39;&gt;&#39; | &#39;&gt;=&#39;) Exp
+</span></span></code></pre></div><p>在这种情况下，我们可以定义如下抽象语法树：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">LogicExp</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">CompareExp</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">using</span> <span class="n">Cond</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">LogicExp</span><span class="p">,</span> <span class="n">CompareExp</span><span class="o">&gt;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">LogicExp</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">enum</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">AND</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">OR</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="n">op</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Cond</span><span class="o">&gt;</span> <span class="n">lhs</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Cond</span><span class="o">&gt;</span> <span class="n">rhs</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">CompareExp</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">enum</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">EQ</span><span class="p">,</span> <span class="n">NE</span><span class="p">,</span> <span class="n">LT</span><span class="p">,</span> <span class="n">LE</span><span class="p">,</span> <span class="n">GT</span><span class="p">,</span> <span class="n">GE</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="n">op</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">lhs</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">rhs</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>那么，当我们访问 <code>CompareExp</code> 时，我们会在中间代码中创建一条比较指令和一条分支指令。但是该指令的条件为真和为假时的目标基本块还未确定，因此我们应当将该指令返回，且需要将跳转到真的指令和跳转到假的指令分开。不过由于此处只有一条指令，所以返回的结果相同。其伪代码如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">visit_compare_exp</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">CompareExp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">JumpInst</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">JumpInst</span><span class="p">]]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">left_val</span> <span class="o">=</span> <span class="n">visit_exp</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">lhs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">right_val</span> <span class="o">=</span> <span class="n">visit_exp</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">rhs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cmp</span> <span class="o">=</span> <span class="n">根据</span> <span class="n">left_val</span> <span class="n">和</span> <span class="n">right_val</span> <span class="n">创建比较指令</span>
+</span></span><span class="line"><span class="cl">    <span class="n">br</span> <span class="o">=</span> <span class="n">根据</span> <span class="n">cmp</span> <span class="n">创建分支指令</span>
+</span></span><span class="line"><span class="cl">    <span class="n">jump_to_true</span> <span class="o">=</span> <span class="p">[</span><span class="n">br</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">jump_to_false</span> <span class="o">=</span> <span class="p">[</span><span class="n">br</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">jump_to_true</span><span class="p">,</span> <span class="n">jump_to_false</span>
+</span></span></code></pre></div><p>而对于 <code>LogicExp</code> 来说，情况有所不同。由于短路求值的存在，我们需要保证如下规则：</p>
+<ul>
+<li>对于 <code>&amp;&amp;</code>：
+<ul>
+<li>如果左侧的条件为真，则还需跳转到右侧判断</li>
+<li>如果左侧的条件为假，则整体为假</li>
+<li>如果右侧的条件为真，则整体为真</li>
+<li>如果右侧的条件为假，则整体为假</li>
+</ul>
+</li>
+<li>对于 <code>||</code>：
+<ul>
+<li>如果左侧的条件为真，则整体为真</li>
+<li>如果左侧的条件为假，则还需跳转到右侧判断</li>
+<li>如果右侧的条件为真，则整体为真</li>
+<li>如果右侧的条件为假，则整体为假</li>
+</ul>
+</li>
+</ul>
+<p>这样，我们就可以给出 <code>LogicExp</code> 中 <code>jump_to_true</code> 和 <code>jump_to_false</code> 的求得规则了。其伪代码如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">visit_logic_exp</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">LogicExp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">JumpInst</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">JumpInst</span><span class="p">]]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">left_true</span><span class="p">,</span> <span class="n">left_false</span> <span class="o">=</span> <span class="n">visit_cond</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">lhs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">label</span> <span class="o">=</span> <span class="n">在中间代码中添加一个标签</span>
+</span></span><span class="line"><span class="cl">    <span class="n">right_true</span><span class="p">,</span> <span class="n">right_false</span> <span class="o">=</span> <span class="n">visit_cond</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">rhs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="n">AND</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># 左侧或右侧为假则为假</span>
+</span></span><span class="line"><span class="cl">        <span class="n">jump_to_false</span> <span class="o">=</span> <span class="n">left_false</span> <span class="o">+</span> <span class="n">right_false</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 左侧为真则判断右侧</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">left_true_inst</span> <span class="ow">in</span> <span class="n">left_true</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">left_true_inst</span><span class="o">.</span><span class="n">true_target</span> <span class="o">=</span> <span class="n">label</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 右侧为真则为真</span>
+</span></span><span class="line"><span class="cl">        <span class="n">jump_to_true</span> <span class="o">=</span> <span class="n">right_true</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># 左侧或右侧为真则为真</span>
+</span></span><span class="line"><span class="cl">        <span class="n">jump_to_true</span> <span class="o">=</span> <span class="n">left_true</span> <span class="o">+</span> <span class="n">right_true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 左侧为假则判断右侧</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">left_false_inst</span> <span class="ow">in</span> <span class="n">left_false</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">left_false_inst</span><span class="o">.</span><span class="n">false_target</span> <span class="o">=</span> <span class="n">label</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 右侧为假则为假</span>
+</span></span><span class="line"><span class="cl">        <span class="n">jump_to_false</span> <span class="o">=</span> <span class="n">right_false</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">jump_to_true</span><span class="p">,</span> <span class="n">jump_to_false</span>
+</span></span></code></pre></div><p>在最后，<code>if</code> 以及 <code>while</code> 同样可以调用 <code>visit_cond</code> 获取对应的 <code>jump_to_true</code> 和 <code>jump_to_false</code>。此时只需在创建基本块后将其填入到跳转指令中即可。</p>
+<p>最后我们给出 <code>if</code>、<code>if-else</code>、<code>while</code> 和 <code>for</code> 的 tolang 表示。同学们可以参照下面例子实现控制流语句的构建。</p>
+<ul>
+<li><strong>if</strong>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do something
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">if a &gt;= b to if_join;
+</span></span><span class="line"><span class="cl">    # do something
+</span></span><span class="line"><span class="cl">tag if_join;
+</span></span></code></pre></div></li>
+<li><strong>if-else</strong>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do if true
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do if false
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">if a &gt;= b to if_false;
+</span></span><span class="line"><span class="cl">    # do if true
+</span></span><span class="line"><span class="cl">to if_join;
+</span></span><span class="line"><span class="cl">tag if_false;
+</span></span><span class="line"><span class="cl">    # do if false
+</span></span><span class="line"><span class="cl">tag if_join;
+</span></span></code></pre></div></li>
+<li><strong>while</strong>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">while</span> <span class="p">(</span><span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">tag while_cond;
+</span></span><span class="line"><span class="cl">if a &gt;= b to while_join;
+</span></span><span class="line"><span class="cl">    to while_cond; # continue
+</span></span><span class="line"><span class="cl">    to while_join; # break
+</span></span><span class="line"><span class="cl">to while_cond;
+</span></span><span class="line"><span class="cl">tag while_join;
+</span></span></code></pre></div></li>
+<li><strong>for</strong>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">let i = 0;
+</span></span><span class="line"><span class="cl">tag for_cond;
+</span></span><span class="line"><span class="cl">if i &gt;= n to for_join;
+</span></span><span class="line"><span class="cl">    to for_continue; # continue
+</span></span><span class="line"><span class="cl">    to for_join; # break
+</span></span><span class="line"><span class="cl">tag for_continue;
+</span></span><span class="line"><span class="cl">    let i = i + 1;
+</span></span><span class="line"><span class="cl">to for_cond;
+</span></span><span class="line"><span class="cl">tag for_join
+</span></span></code></pre></div></li>
+</ul>
+<h3 id="4访存操作">（4）访存操作<a hidden class="anchor" aria-hidden="true" href="#4访存操作">#</a></h3>
+<p>构建中间代码的最后一部分，我们讨论一下访存操作的生成。在 tolangc 中，由于不具有复合类型，所以访存操作十分简单。对于 <code>let</code> 语句，我们需要获取等号左侧符号的 <code>value</code> 字段取值，该值即变量的地址，因此直接生成 <code>store</code> 指令即可。而对于 <code>IdentExp</code>，情况类似，我们只需直接生成 <code>store</code> 指令。但如果存在数组和指针的话，情况会复杂许多。因为这涉及到地址的计算。</p>
+<p>这里特别要提到 “左值” 的概念。“左值” 指的是<strong>可以在赋值符号左侧</strong>的值。左值本质上指的是具有内存地址的值。因而其可被赋值。很明显，基本类型的变量是左值，但是数组则有所不同。下面我们给出与数组 <code>int a[2][3][4]</code> 有关的一系列表达式的值。假定数组起始地址为 a。</p>
+<table>
+<thead>
+<tr>
+<th>表达式</th>
+<th>值类型</th>
+<th>值</th>
+<th>左值地址</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>*[3][4]int</td>
+<td>a</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>a[1]</td>
+<td>*[4]int</td>
+<td>a + 3 * 4</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>a[1][1]</td>
+<td>*int</td>
+<td>a + 3 * 4 + 4</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>a[1][1][1]</td>
+<td>int</td>
+<td>*(a + 3 * 4 + 4 + 1)</td>
+<td>a + 3 * 4 + 4 + 1</td>
+</tr>
+</tbody>
+</table>
+<p>如果我们也考虑一下指针，会发现问题更加复杂。面我们给出与指针 <code>int b[][3][4]</code> 有关的一系列表达式的值。假定指针地址为 b，指针值为 a。</p>
+<table>
+<thead>
+<tr>
+<th>表达式</th>
+<th>值类型</th>
+<th>值</th>
+<th>左值地址</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>b</td>
+<td>*[3][4]int</td>
+<td>a</td>
+<td>b</td>
+</tr>
+<tr>
+<td>*b</td>
+<td>*[4]int</td>
+<td>a</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>**b</td>
+<td>*int</td>
+<td>a</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>***b</td>
+<td>int</td>
+<td>*(a)</td>
+<td>a</td>
+</tr>
+<tr>
+<td>&amp;b</td>
+<td>**[3][4]int</td>
+<td>b</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>b[1]</td>
+<td>*[4]int</td>
+<td>a + 3 * 4</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>b[1][1]</td>
+<td>*int</td>
+<td>a + 3 * 4 + 4</td>
+<td>非左值</td>
+</tr>
+<tr>
+<td>b[1][1][1]</td>
+<td>int</td>
+<td>*(a + 3 * 4 + 4 + 1)</td>
+<td>a + 3 * 4 + 4 + 1</td>
+</tr>
+</tbody>
+</table>
+<p>看起来十分混乱，不过幸好的是我们的实验不涉及指针本身的操作，同时数组也只有一个维度。各位只需要记住只有基本类型为左值，指针取索引时需要先取指针中地址再计算地址偏移即可。也就是说：</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/tolang/">Tolang</a></li>
+      <li><a href="https://wokron.github.io/tags/buaa/">BUAA</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/buaa-compiler-tutorial-06/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>编译技术教程：附录 - 项目测试</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/buaa-compiler-tutorial-04/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>编译技术教程：符号表与类型系统</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语义分析 on x"
+            href="https://x.com/intent/tweet/?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e4%b9%89%e5%88%86%e6%9e%90&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f&amp;hashtags=Tolang%2cBUAA">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语义分析 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f&amp;title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e4%b9%89%e5%88%86%e6%9e%90&amp;summary=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e4%b9%89%e5%88%86%e6%9e%90&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语义分析 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f&title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e4%b9%89%e5%88%86%e6%9e%90">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语义分析 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语义分析 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e4%b9%89%e5%88%86%e6%9e%90%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语义分析 on telegram"
+            href="https://telegram.me/share/url?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e4%b9%89%e5%88%86%e6%9e%90&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语义分析 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e4%b9%89%e5%88%86%e6%9e%90&u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-05%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

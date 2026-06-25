@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Colab on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/colab/</link>
+    <description>Recent content in Colab on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sun, 05 Mar 2023 10:30:20 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/colab/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ESIM 网络的搭建和训练</title>
+      <link>https://wokron.github.io/posts/traning-esim-network/</link>
+      <pubDate>Sun, 05 Mar 2023 10:30:20 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/traning-esim-network/</guid>
+      <description>一、前言 最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。
+因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的NLP入门练习搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。
+因为使用了Colab，本次模型的构建和训练比较成功，因而做此记录。
+二、任务 本次任务是输入两个句子，判断它们之间的关系。具体来说，我们需要实现论文中提出的 ESIM 网络，并通过 SNLI数据集 进行训练，以学习预测两个句子间的关系。
+三、数据集 SNLI数据集包含57万行英文句子对，并被标注了句子间的关系，包括蕴含（Entailment），矛盾（Contradiction），中立/不冲突（Neutral），未知（-）。
+例如
+输入文本： A man inspects the uniform of a figure in some East Asian country. 输入假设： The man is sleeping. 输出： 矛盾（C）
+输入文本： A smiling costumed woman is holding an umbrella. 输入假设：A happy woman in a fairy costume holds an umbrella. 输出： 中立（N）
+输入文本： A soccer game with multiple males playing. 输入假设： Some men are playing a sport.</description>
+    </item>
+    <item>
+      <title>利用 Colab 训练神经网络</title>
+      <link>https://wokron.github.io/posts/training-on-colab/</link>
+      <pubDate>Sat, 04 Mar 2023 16:44:22 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/training-on-colab/</guid>
+      <description>一、算力从哪里来？ 曾听到过这样一种说法，深度学习 “自学 + 没经费 = 天坑”。不幸的是我似乎正处于这种状态中。自学的方面还比较好克服，可没有 gpu 进行训练就 “难为无米之炊” 了。就算理论学得再好，自己构建的模型电脑带不动，没有实践的机会，也是难以学好这门学科的。
+最近我正开始学着实现更大的模型，我的笔记本此前的小模型还可以勉强撑住，可现在却完全带不动了。一方面，训练的时间太长，挤占了我使用笔记本做其他事的时间；另一方面，我的 gpu 显存太小，不能调大参数，可参数较小时又无法收敛。这就是我面临的双重两难问题。
+我希望找到一处租用算力的平台。它应该同时满足如下的条件
+算力丰富，能快速训练模型 对用户友好，和本机环境差别不大，能够迅速上手训练模型 费用便宜，最好有免费的算力 综合以上各点，通过搜索，我找到了 Colab。Colab(oratory) 是一个 Google 研究项目，旨在帮助传播机器学习培训和研究成果。它是一个 Jupyter 笔记本环境，不需要进行任何设置就可以使用，并且完全在云端运行。Colab 笔记本存储在 Google 云端硬盘中，并且可以共享。利用Colaboratory ，可以方便的使用Keras, TensorFlow, PyTorch, OpenCV 等框架进行深度学习应用的开发。最重要的是，Colab 可免费使用。
+二、Colab基本操作 （1）创建笔记本 在正式介绍 Colab 之前需要说明一点，使用 Colab 需要科学上网。
+要新建 Colab 需要创建笔记，笔记是 Colab 编辑文本、代码和运行程序的地方。使用过 jupyter notebook 的人应该很了解。不同笔记之间内容互不相通，可以把每一个笔记看做一台独立运行的虚拟机。
+Colab 是谷歌的产品，因此需要实现注册好一个谷歌账号。
+通过 Google Drive 创建笔记本 Google Drive 是 Google 的一款云端硬盘，操作与其他云盘，如百度网盘、阿里云盘，类似。
+通过 Google Drive 可以创建 Colab 笔记。方式是：点击左上角的“新建”按钮或右击背景 =&amp;gt; 在弹出的窗口中选择“更多” =&amp;gt; 选择 “Google Colaboratory” 选项。</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Linux on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/linux/</link>
+    <description>Recent content in Linux on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 25 Jun 2026 16:03:51 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/linux/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>io_uring Internals</title>
+      <link>https://wokron.github.io/posts/io-uring-raids/</link>
+      <pubDate>Thu, 25 Jun 2026 16:03:51 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/io-uring-raids/</guid>
+      <description>最近做的一份幻灯片，介绍了 io_uring 的一些内部实现。
+点击上方幻灯片以控制播放，或点此直接打开。</description>
+    </item>
+    <item>
+      <title>构建最简 Linux 文件系统</title>
+      <link>https://wokron.github.io/posts/custom-linux-kernel-in-qemu-2/</link>
+      <pubDate>Thu, 22 Jan 2026 17:24:05 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/custom-linux-kernel-in-qemu-2/</guid>
+      <description>上回说到了我们如何用 QEMU 搭建一个包含最新内核的开发环境。但试过一段时间后，我却感觉这样并不方便。
+更多时候，我只需要运行单个程序（比如，单元测试）即可，而上文中所构建的完整环境却让这个过程便复杂了。本文介绍了一个更简单的方法。只需要一个简单的脚本即可构建完整运行环境。
+initrd 上一篇文章中已经提到了使用 initrd 启动操作系统的方法。initrd 是一个只读文件系统镜像，内核启动时，会将镜像内容加载到内存中。程序可以像普通文件系统一样访问。
+加载文件系统之后，内核会从其中寻找可用的 init 程序。因此我们只要编写合理的 init 程序，将其打包到一个 initrd 中即可。
+busybox 在这种从零开始构建文件系统的场景下，使用动态库太过繁琐。因此我们直接用宿主机上的 busybox 来提供基本的程序。
+准备阶段 首先创建一个 WORK_DIR 目录。此路径下的文件会被打包成文件系统镜像。
+WORK_DIR=$(mktemp -d) trap &amp;#34;rm -rf $WORK_DIR&amp;#34; EXIT 之后寻找宿主机上的 busybox，将其复制到 $WORK_DIR/bin/busybox。
+mkdir -p &amp;#34;$WORK_DIR/bin&amp;#34; # Copy busybox into the work directory BUSYBOX_PATH=$(which busybox) if [ -z &amp;#34;$BUSYBOX_PATH&amp;#34; ]; then echo &amp;#34;Error: busybox not found in PATH.&amp;#34; exit 1 fi cp &amp;#34;$BUSYBOX_PATH&amp;#34; &amp;#34;$WORK_DIR/bin/busybox&amp;#34; 创建 $WORK_DIR/init 脚本，赋予其可执行权限。内核在启动中会识别并执行该脚本。
+# Create init script cat &amp;lt;&amp;lt; &amp;#39;EOF&amp;#39; &amp;gt; &amp;#34;$WORK_DIR/init&amp;#34; #!</description>
+    </item>
+    <item>
+      <title>在 QEMU 上运行最新内核</title>
+      <link>https://wokron.github.io/posts/custom-linux-kernel-in-qemu/</link>
+      <pubDate>Sat, 29 Nov 2025 23:03:46 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/custom-linux-kernel-in-qemu/</guid>
+      <description>最近，我的业余时间都花在了一个和系统编程有关的项目上。不久之后我遇到了一个问题：想要使用最新版本内核的特性并不是一件十分容易的事。发行版大多滞后于最新的内核版本，而我又不是那样激进的人，想要冒险在自己唯一的这台 Linux 电脑上升级内核（使用 installkernel 命令）。所以我需要一个办法，在保证我的系统安全的情况下，搭建一个具有新版本内核的开发环境。
+这种情况容器帮不了我，虚拟机则是一个好选择。
+我曾经写过一个简单的 QEMU 介绍。但实际上我对 QEMU 的了解也仅限于那篇文章的内容了。探索本文的内容花了我一些时间。在这个过程中，我也发现网上的相关内容要么包含了未充分说明的脚本，要么存在许多冗余选项。我觉得在此处以一个简单、充分解释的方式记录这一过程似乎是有意义的。
+当然，从编译内核开始 如果你只需要一个能在虚拟机里运行的内核，不需要深度定制的话，那么编译内核其实很简单。这里有一个简单的教程，不过我们接下来要做的还要更简单。
+首先，你要下载内核源码。如果不需要修改源码的话，从 kernel.org 下载是最方便的。这里下载了编写本文时的 stable 版本（6.17.9）。
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.9.tar.xz tar -xf linux-6.17.9.tar.xz cd ./linux-6.17.9 之后，配置编译选项。这将创建编译配置文件 .config
+make defconfig make kvm_guest.config 前一条命令选择使用默认编译配置。第二条命令在默认配置基础上设置编译选项，使编译后的镜像可以作为 kvm 上的虚拟机运行。如果有其他需求，可以在此基础上继续配置。
+之后直接编译即可。由于只包含了作为虚拟机运行的最小配置，不需要编译驱动程序，这一过程应该很快。在我的笔记本上只用了一分钟。
+make -j $(nproc) 编译后的内核镜像位于 arch/x86/boot/bzImage。当然，是 x86 架构。
+file arch/x86/boot/bzImage # arch/x86/boot/bzImage: Linux kernel x86 boot executable bzImage, version 6.17.9 (wokron@wokron-navi) #2 SMP PREEMPT_DYNAMIC Sun Nov 30 12:34:56 CST 2025, RO-rootFS, swap_dev 0XD, Normal VGA 准备根文件系统 简易根文件系统 这一点和我之前有关容器的文章中的内容类似。如果不考虑实际可用性，我们现在就可以运行一个内核了。</description>
+    </item>
+    <item>
+      <title>用 Namespace 手搓一个容器</title>
+      <link>https://wokron.github.io/posts/simple-container/</link>
+      <pubDate>Mon, 13 Oct 2025 10:24:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/simple-container/</guid>
+      <description>容器技术由 Linux 下三项技术构成。这三项技术分别是 Namespace、Cgroups 和 Unionfs。他们分别实现了系统逻辑资源的隔离、物理资源的限制以及容器的文件系统。
+在这之中最为关键的是 Namespace。因为 Namespace 实现了虚拟化中最重要的隔离的功能。在 Namespace 之外即使不使用 Cgroups，用其他文件系统替代 Unionfs，依然能够实现一个容器的许多功能。
+所以本文我们尝试用 Namespace 构建一个简单的容器。让我们首先想想，一个容器中的环境究竟需要与 host 隔离哪些资源。（请把容器想象成 host 之外的另一台机器。）
+文件系统：容器中的进程不能访问 host 的文件系统。这意味着挂载点的隔离 &amp;ndash; Mount Namespace 进程空间：容器中的进程无法查看容器外的进程信息。这意味着进程号的隔离 &amp;ndash; PID Namespace 网络接口：容器中的进程拥有自己的网络接口，不使用 host 上的网络接口。这意味着网络的隔离 &amp;ndash; Network Namespace 用户：容器中的用户和容器外的用户无关，例如容器内的 root 和容器外的 root 并不相同。这意味着用户的隔离 &amp;ndash; User Namespace 物理资源：容器能够看到和管理的物理资源和容器外的资源不同。这意味着 Cgroups 视图的隔离 &amp;ndash; Cgroups Namespace 时间：容器中的时间系统和容器外的时间不一定相同 &amp;ndash; Time Namespace 主机名：容器中的主机名和容器外的主机名不一定相同 &amp;ndash; UTS Namespace IPC：IPC，例如 Posix 消息队列，使用类似文件名的标识符，但是又并不真正存在于文件系统中。容器中的这些标识符和容器外的相同标识无关 &amp;ndash; IPC Namespace 虽然种类很多，但是想要形成虚拟化的错觉只需要用到其中的一部分即可。为了构建我们的容器，我们选择只使用 Mount、PID 和 User。
+隔离文件系统 容器化最重要的是隔离文件系统。所谓的程序运行环境，本质上就是文件系统中的各类库和应用程序。同一主机上的不同发行版的容器都运行在相同的内核上，他们只是在库和应用程序上存在不同。</description>
+    </item>
+    <item>
+      <title>Linux 下的用户和容器中的用户</title>
+      <link>https://wokron.github.io/posts/user-perm-and-container/</link>
+      <pubDate>Sun, 12 Oct 2025 16:11:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/user-perm-and-container/</guid>
+      <description>多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。
+不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。
+用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。
+操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。
+$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。
+$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。
+当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。
+子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。
+超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。
+超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。
+利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。
+$ sleep 1 &amp;amp; ps -o user,group,uid,gid -p $!</description>
+    </item>
+    <item>
+      <title>试试触发（几乎）所有信号</title>
+      <link>https://wokron.github.io/posts/raise-signals/</link>
+      <pubDate>Fri, 23 May 2025 17:22:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/raise-signals/</guid>
+      <description>输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。</description>
+    </item>
+    <item>
+      <title>Linux 进程的内存管理</title>
+      <link>https://wokron.github.io/posts/program-memory-management/</link>
+      <pubDate>Sat, 17 May 2025 09:33:11 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/program-memory-management/</guid>
+      <description>虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。
+堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。
+在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。
+在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。
+下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。
+#include &amp;lt;stdio.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; extern char end; int main() { printf(&amp;#34;Address of end symbol: %p\n&amp;#34;, (void *)&amp;amp;end); printf(&amp;#34;Current program break: %p\n&amp;#34;, sbrk(0)); printf(&amp;#34;New program break: %p\n&amp;#34;, sbrk(1024) + 1024); printf(&amp;#34;After deallocation: %p\n&amp;#34;, sbrk(-512) - 512); } 运行结果如下</description>
+    </item>
+    <item>
+      <title>讨论一下环境变量</title>
+      <link>https://wokron.github.io/posts/shell-env-var/</link>
+      <pubDate>Sat, 02 Nov 2024 15:01:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/shell-env-var/</guid>
+      <description>这里所说的环境变量并不仅仅指 Shell 中的变量，而是每一个进程各自拥有的，能够通过系统 API 获取的变量。当然，Shell 通常会提供环境变量的操作方法，我们也经常通过在 Shell 中管理环境变量。但是 Shell 中的变量和环境变量实际上并不完全相同，在使用 Shell 时可能会混淆这两种概念，这里便稍微分辨一下。
+一、环境变量 从程序的角度来看，环境变量很简单。环境变量是每个进程各自拥有的键值对集合。进程可以从其环境变量中读取已有变量，修改已有变量或创建新的变量。当进程创建其子进程时，子进程会继承父进程的环境变量，但子进程的环境变量的修改并不会影响父进程的环境变量。
+为了方便，这里以 python 为例。
+进程可以读取已有环境变量：
+# inherit.py import os print(os.environ[&amp;#34;HOME&amp;#34;]) 也可以写入或创建环境变量：
+os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;my_value&amp;#34; 子进程会继承父进程的环境变量：
+# env.py import os import sys assert len(sys.argv) == 2 father_proc = bool(int(sys.argv[1])) print_my_var = lambda: print( f&amp;#34;process={&amp;#39;father&amp;#39; if father_proc else &amp;#39;child&amp;#39;}, &amp;#34; f&amp;#34;MY_VAR={os.environ.get(&amp;#39;MY_VAR&amp;#39;, None)}&amp;#34; ) print_my_var() if father_proc: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;1&amp;#34; print_my_var() os.system(f&amp;#34;{sys.executable} {sys.argv[0]} 0&amp;#34;) print_my_var() else: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;2&amp;#34; print_my_var() $ python inherit.</description>
+    </item>
+    <item>
+      <title>浅谈字体</title>
+      <link>https://wokron.github.io/posts/talk-about-font/</link>
+      <pubDate>Sun, 05 May 2024 14:08:59 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/talk-about-font/</guid>
+      <description>之前使用 Matplotlib 画图的时候发现不能正常显示中文。在解决问题的过程中了解了一下字体显示的一些知识，在这里记录一下。
+一、编码与字体 我们知道，为了让字符能够存储在计算机中，我们为每个字符分配对应的数码。这种人为约定称为字符编码。常见的编码包括 ASCII、GBK、Unicode 等等。字符编码是字符的数据表示。
+然而，仅有编码依然不能在计算机中显示字符。因为符号是一种图形，若我们不能确定字符所对应的图形的样式，那么我们就无法在屏幕中看到字符。同样的，这种字符到对应图形的约定称为字形，字形的集合即字体。字体是字符的图像表示。
+于是，这里我们就有了两种不同的映射关系。一种是字符到字符编码的映射关系，这一关系确定了字符的存储方式；另一种是字符到字体的映射关系，这一关系确定了字符的显示方式。
+因此，简单来说，计算机显示字符的过程就是将编码数据转换为字形图像的过程。
+二、编码的分裂和统一 然而这一过程并不真的那么简单。原因之一便是从计算机技术早期遗留下来的一系列互不兼容的编码方式。
+在互联网还未诞生的时候，各个国家和地区为了在计算机中显示自己的文字，各自开发出自己的字符编码方式，例如简体中文的 GB2312、繁体中文的 Big5、日文的 Shift_JIS 等等。然而在互联网的国际化场景下，不同的编码方式带来了交流上的困难。
+所以这时候 Unicode 标准应运而生。Unicode 由统一码联盟推动，旨在使用 Unicode 取代现存的字符编码。该标准整理并编码了世界上大部分的文字系统，使得电脑能以通用划一的字符集来处理和显示文字。
+然而 windows 下的默认编码方式还是 gbk。
+Unicode 编码空间区间为 $[0, 17 \times 2^{16})$，但目前只使用了其中很少一部分。该编码空间被划分为了 17 个平面，其中 4-13 号均未使用。其他平面的主要内容为：
+0 号平面（0x0000-0x​FFFF）称为基本多文种平面，包含了几乎所有现代语言的字符。 1 号平面（0x10000-0x1FFFF）称为多文种补充平面，包括了绝大多数古代文字，现时已不再使用或很少使用的符号等。 2、3 号平面（0x20000-0x​2FFFF、0x30000-0x​3FFFF）称为补充表意文字平面，用于中日韩统一表意文字中未被包含在早期编码标准中的文字。 14 号平面（0xE0000-0xEFFFF）为特别用途补充平面。 15、16 号平面（0xF0000-0x​10FFFF）为私人使用平面。（例如苹果公司的图标字符） Unicode 虽然制定了统一的字符编码方式，但是直接使用 Unicode 编码进行存储的效率并不高。因此需要对 Unicode 进行进一步编码，这就带来了 UTF（Unicode Transformation Format），包括 UTF-32、UTF-16 和 UTF-8。
+UTF-32 使用定长的 32 位对 Unicode 进行编码。根据 Unicode 的编码空间我们知道，最多只需要 21 位即可表示所有编码。因此 UTF-32 中的 11 位始终为 0。这使得 UTF-32 的空间效率很低。所以这种编码方式主要用在系统的内部 API 中。</description>
+    </item>
+    <item>
+      <title>不务正业：玩个 zsh</title>
+      <link>https://wokron.github.io/posts/play-with-zsh/</link>
+      <pubDate>Sat, 21 Oct 2023 17:13:03 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/play-with-zsh/</guid>
+      <description>一、前言 不知道为什么，这学期看到好几个人都用 zsh。最近恰好有时间，我也是时候换一个 shell 了。
+不过嘛，shell 毕竟是用来工作的，不是一件艺术品，所以这里的配置也是以实用为主了。本文也没有用到 oh-my-zsh，用一个专门的框架来管理 shell 的配置在我看来还是太过沉重了。
+本篇文章所用的环境当然是 linux。更加具体来说是 debian 系的发行版。
+二、zsh 的安装 这里当然不会仔细介绍 zsh，将网上许多其他文章都重复过的内容再重复一遍。zsh 只是一个 shell，只不过这个 shell 有较强的可扩展性，同时具有一些比较有用的特性，仅此而已。
+安装 zsh，只需要一条命令
+apt-get install zsh 之后可以查看 /etc/shells 文件的内容，该文件记录了系统中已有的所有 shell，此时应当也有 zsh。
+cat /etc/shells 本人的输出结果是这样的
+# /etc/shells: valid login shells /bin/sh /bin/bash /usr/bin/bash /bin/rbash /usr/bin/rbash /usr/bin/sh /bin/dash /usr/bin/dash /bin/zsh /usr/bin/zsh 之后首次运行 zsh
+zsh 应该会出现如下内容，因为此时我们并未创建 zsh 的配置文件。正如 bash 的 .bashrc。这里只需要选择 0 即可。之后会在用户目录创建一个空的 .zshrc，该文件将在下一小节中详细说明。选择后重新输入命令 zsh 进入 zsh，此时应该可以看到输入提示符等内容。
+This is the Z Shell configuration function for new users, zsh-newuser-install.</description>
+    </item>
+    <item>
+      <title>Linux-Mint双系统的安装及美化</title>
+      <link>https://wokron.github.io/posts/linuxmint-install-and-beautify/</link>
+      <pubDate>Sat, 24 Jun 2023 21:50:32 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/linuxmint-install-and-beautify/</guid>
+      <description>一、前言 我的笔记本现在用起来很慢了。每次听到它嗡嗡的风扇声却又看不到它跑不出来结果的时候，就感觉它好似一头老驴，使劲却又力不从心，腿打着颤却也拉不动身后的货。所以我谋划着新买一台，就让之前的那台好好休息吧。
+一想到买台新的笔记本，我的思绪就沿着这条道一直走下去：“要买什么样的配置呢？买了新的电脑要做些什么项目呢？要玩什么游戏呢？” 诸如此类。装一个 linux 系统也是这时产生的想法。有人可能会想，“这有什么用呢？难道 windows 就不能用吗？如果不得不用 linux，wsl 也是很好地办法，或者用虚拟机，甚至直接用 docker，都可以解决。” 确实，如果就满足当下的使用而言，将 linux 作为一个个人使用的真正的系统，相对于 windows 似乎并没有什么优点。
+不过呢，我选择折腾这么一阵也并没有什么经过考量的理由，而仅仅是因为自己在主观上更加喜欢 linux 罢了。在我不算太长的接触并学习 linux 的时间里，我从这个系统中感受到了设计的一致性，这是我在更长时间的对 windows 的接触和学习中所没有体会到的。当然，或许在之后看来，我现在的理解也不过是浅薄的认识罢了。但是现在，我还是决定安装一个 linux 系统。
+如果有读者的话，希望不要嫌弃我太过啰嗦（笑）。
+二、为什么是薄荷 众所周知，linux 是内核，许多不同的组织在 linux 内核的基础上增加了其他必要的软件和应用，开发了不同的发行版。发行版的江湖中帮派林立，主要有三大派系，debian 系、redhat 系和 suse 系。各个派系中又有无数相互关联却又相互区分的发行版。如 debian 的 ubuntu、deepin；redhat 的 fedora、suse 的 opensuse。只需要把这些发行版的大名亮出来，就足以让人眼花缭乱了。
+本人也在这些发行版中漂移不定了一段时间，但最终选择了 debian 系的 mint（薄荷）。主要有一下几个原因
+debian 系有着 apt 的超级牛力加持，.deb 格式的软件包使用作为广泛 mint 基于 ubuntu，ubuntu 是使用最为广泛的 linux 发行版 mint 精简了 ubuntu 下的一些功能，如 snap；并对初学者较为友好 三、安装操作系统 我新买的电脑是联想拯救者 R9000P，配置如下
+设备 配置 处理器 AMD Ryzen 9 7945HX 内存 16G 硬盘 1T 显卡 Nvidia 4060 要安装的操作系统配置</description>
+    </item>
+    <item>
+      <title>系统编程之线程管理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-6/</link>
+      <pubDate>Thu, 22 Dec 2022 22:07:37 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-6/</guid>
+      <description>一、Linux 多线程简述 进程和线程的关系老生常谈。线程是最小的调度单位，进程是最小的资源分配单位。同一进程中的多个线程是在共享的内存空间中并发的多道执行路径，它们共享一个进程的资源。
+对于Linux来说，Linux线程属于用户级线程，即线程的调度是在用户空间执行的。也就是说，Linux线程的实现是在内核之外的，多线程的概念对于内核来说并不是真实存在的，而只是通过线程库中的程序模拟的并发效果。
+Linux线程遵循POSIX线程接口，称为pthread。pthread在其他平台也有对应的实现，如在windows。
+二、线程操作 （1）库的使用 在开始多线程编程之前，需要说明一下 pthread.h 库。在编译使用pthread.h库的代码时，一般需要加-lpthread。pthread在glibc2.34之前是在glibc里面的，之后分出来变成一个单独的库，因此有的情况下，不加-lpthread也能编译成功。
+（2）基本操作 创建线程 int pthread_create(pthread_t _Nullable * _Nonnull __restrict, const pthread_attr_t * _Nullable __restrict, void * _Nullable (* _Nonnull)(void * _Nullable), void * _Nullable __restrict); 该函数中第一个参数为指向一个线程标识变量的指针。第二个参数用来手动设置线程的各项属性，一般可以用NULL选择默认属性。第三个参数为一个函数指针，表示新建线程时需要执行的函数。注意该函数的参数类型和返回值类型，使用时需要进行强制类型转换。第四个参数为传递给函数的参数，也就是线程执行的函数的参数。不传递参数时可设置为NULL。 如下举一个创建线程的例子。
+pthread_t tid; if (pthread_create(&amp;amp;tid, NULL, do_something, NULL)) { // error handler } 线程退出 void pthread_exit(void *ral_ptr); 当某一线程执行该函数时，会导致该线程结束。结束时会将ral_ptr指针传递给pthread_join 函数的 rval_ptr
+线程取消 int pthread_cancel(pthread_t tid); 某一线程调用该函数，可以终止同一进程内的其他线程。 tid 即要终止的线程。
+线程挂起 int pthread_join(pthread_t thread, void **rval_ptr); 某一线程调用该函数会阻塞该线程，直到参数 thread 所指示的线程退出。第二个参数为一个指向 pthread_exit 所设置的 ral_ptr 指针的指针。</description>
+    </item>
+    <item>
+      <title>系统编程之进程间通信</title>
+      <link>https://wokron.github.io/posts/system-programming-note-5/</link>
+      <pubDate>Wed, 16 Nov 2022 09:54:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-5/</guid>
+      <description>一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：
+管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include &amp;lt;sys/types.h&amp;gt; #include &amp;lt;sys/ipc.h&amp;gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。
+注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。
+命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。
+ipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include &amp;lt;sys/types.</description>
+    </item>
+    <item>
+      <title>系统编程之信号及信号处理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-4/</link>
+      <pubDate>Sun, 13 Nov 2022 15:30:11 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-4/</guid>
+      <description>一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&amp;lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl+c ctrl+\ ctrl+Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &amp;lt;signal.h&amp;gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&amp;gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&amp;lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。</description>
+    </item>
+    <item>
+      <title>系统编程之进程管理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-3/</link>
+      <pubDate>Mon, 31 Oct 2022 22:08:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-3/</guid>
+      <description>一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。
+二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。
+在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。
+2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。
+这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。
+进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。
+需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。
+当一个可执行文件被加载到内存时，这个程序就成为进程。
+两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。
+三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。
+1. 使用 fork 创建新进程 #include &amp;lt;unistd.h&amp;gt; pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：
+一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。
+#include &amp;lt;sys/wait.h&amp;gt; pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。</description>
+    </item>
+    <item>
+      <title>系统编程之 Shell 编程</title>
+      <link>https://wokron.github.io/posts/system-programming-note-2/</link>
+      <pubDate>Sat, 08 Oct 2022 19:30:58 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-2/</guid>
+      <description>一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。
+二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。
+而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。
+三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如
+vi c1.sh vim c2.sh &amp;gt; c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。
+创建的shell脚本，一定要在开头第一行加上如下语句：
+#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。
+执行脚本 shell脚本的执行方法有
+sh &amp;lt;scriptname&amp;gt; bash &amp;lt;scriptname&amp;gt; 或者使用chmod命令修改脚本为可执行，再直接使用 ./&amp;lt;scriptname&amp;gt; 运行。
+四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。
+其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。
+声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。
+var=hello_world 注意shell对空格敏感，声明时等号两边不能有空格
+另外可以在变量名前添加 readonly关键字设为只读
+readonly constVar shell中声明数组同样直接写出数组名称
+arr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。
+注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash &amp;lt;scriptname&amp;gt;
+赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。
+var1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。
+并且，为了满足命令处理的需要，shell设计出了引号变量值。
+shell中的引号包括单引号、双引号和倒引号。
+单引号中的字符均作为普通字符出现。（可以包括空格）
+var1=hello_world # var2=hello world # 不合法 var3=&amp;#39;hello world&amp;#39; 双引号中的字符大部分作为普通字符对待。除了$\’和双引号，这些变量依旧用于对字符串内容进行变量替换。</description>
+    </item>
+    <item>
+      <title>系统编程之命令行编译</title>
+      <link>https://wokron.github.io/posts/system-programming-note-1/</link>
+      <pubDate>Mon, 12 Sep 2022 21:18:59 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-1/</guid>
+      <description>一、前言 本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。
+二、GCC 基本操作 编译选项 无选项编译链接 用法：gcc test.c 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。 选项 -o 用法：gcc test.c -o test 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。 选项 -E 用法：gcc -E test.c -o test.i 作用：将 test.c 预处理输出 test.i 文件。 选项 -S 用法：gcc -S test.i 作用：将预处理输出文件 test.i 编译成 test.s 文件。 选项 -c 用法：gcc -c test.s 作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。 无选项链接 用法：gcc test.o -o test 作用：将目标代码文件 test.o 链接成最终可执行文件 test。 选项 -O 用法：gcc -O1 test.c -o test 作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。 官方文档：GCC, the GNU Compiler Collection</description>
+    </item>
+  </channel>
+</rss>

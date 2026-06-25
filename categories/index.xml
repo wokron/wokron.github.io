@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Categories on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/categories/</link>
+    <description>Recent content in Categories on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 25 Jun 2026 17:04:22 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>开发</title>
+      <link>https://wokron.github.io/categories/%E5%BC%80%E5%8F%91/</link>
+      <pubDate>Thu, 25 Jun 2026 17:04:22 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E5%BC%80%E5%8F%91/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>操作系统</title>
+      <link>https://wokron.github.io/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/</link>
+      <pubDate>Thu, 25 Jun 2026 16:03:51 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>网络</title>
+      <link>https://wokron.github.io/categories/%E7%BD%91%E7%BB%9C/</link>
+      <pubDate>Fri, 06 Feb 2026 16:04:33 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E7%BD%91%E7%BB%9C/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>编程语言</title>
+      <link>https://wokron.github.io/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/</link>
+      <pubDate>Thu, 11 Sep 2025 22:37:42 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>MLSys</title>
+      <link>https://wokron.github.io/categories/mlsys/</link>
+      <pubDate>Mon, 20 Jan 2025 21:31:16 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/mlsys/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>并行计算</title>
+      <link>https://wokron.github.io/categories/%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97/</link>
+      <pubDate>Mon, 14 Oct 2024 19:18:09 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>编译</title>
+      <link>https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/</link>
+      <pubDate>Tue, 10 Sep 2024 16:07:58 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>建站</title>
+      <link>https://wokron.github.io/categories/%E5%BB%BA%E7%AB%99/</link>
+      <pubDate>Mon, 26 Jun 2023 14:44:44 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E5%BB%BA%E7%AB%99/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>人工智能</title>
+      <link>https://wokron.github.io/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/</link>
+      <pubDate>Thu, 11 May 2023 22:25:34 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>数学建模</title>
+      <link>https://wokron.github.io/categories/%E6%95%B0%E5%AD%A6%E5%BB%BA%E6%A8%A1/</link>
+      <pubDate>Fri, 17 Mar 2023 16:38:01 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E6%95%B0%E5%AD%A6%E5%BB%BA%E6%A8%A1/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>游戏引擎</title>
+      <link>https://wokron.github.io/categories/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/</link>
+      <pubDate>Fri, 10 Feb 2023 09:47:10 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>算法</title>
+      <link>https://wokron.github.io/categories/%E7%AE%97%E6%B3%95/</link>
+      <pubDate>Sun, 13 Nov 2022 21:03:39 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E7%AE%97%E6%B3%95/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>工具</title>
+      <link>https://wokron.github.io/categories/%E5%B7%A5%E5%85%B7/</link>
+      <pubDate>Sat, 10 Sep 2022 14:40:57 +0800</pubDate>
+      <guid>https://wokron.github.io/categories/%E5%B7%A5%E5%85%B7/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

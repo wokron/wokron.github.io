@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Pytorch on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/pytorch/</link>
+    <description>Recent content in Pytorch on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sun, 12 Mar 2023 13:25:50 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/pytorch/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用 Transformer 进行机器翻译</title>
+      <link>https://wokron.github.io/posts/translate-using-transformer/</link>
+      <pubDate>Sun, 12 Mar 2023 13:25:50 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/translate-using-transformer/</guid>
+      <description>一、transformer 简介 transformer 是 Google 在 2017 年发表的文章 Attention Is All You Need 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。
+对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗忘；使用 CNN，我们必须通过增加层数来扩大获取信息的范围。这两种方法都有很大的局限。
+注意力方法则可以直接获得全局信息。方法是对一条序列，求其对于本身的注意力，这被称为自注意力。
+transformer 的原理和模型较为复杂，在这里只是简单说明。
+二、数据集 此为训练模型所用的数据集。设定英文为源语言，中文为要翻译成的语言。
+（1）Dataset 类编写 我们根据路径打开文件，获取中英文序列和单词表。并将序列直接转化为 tensor，方便读取。
+class TranslateDataset(Dataset): def __init__(self, en_path, zh_path): en_seqs, self.en_vocab = get_seq_and_vocab(en_path, get_tokenizer(&amp;#34;basic_english&amp;#34;)) zh_seqs, self.zh_vocab = get_seq_and_vocab(zh_path, zh_simple_tokenizer) self.items = [] for i in range(len(en_seqs)): en_seq = en_seqs[i] zh_seq = zh_seqs[i] src = en_seq tgt = zh_seq[:-1] pdt = zh_seq[1:] self.</description>
+    </item>
+    <item>
+      <title>ESIM 网络的搭建和训练</title>
+      <link>https://wokron.github.io/posts/traning-esim-network/</link>
+      <pubDate>Sun, 05 Mar 2023 10:30:20 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/traning-esim-network/</guid>
+      <description>一、前言 最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。
+因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的NLP入门练习搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。
+因为使用了Colab，本次模型的构建和训练比较成功，因而做此记录。
+二、任务 本次任务是输入两个句子，判断它们之间的关系。具体来说，我们需要实现论文中提出的 ESIM 网络，并通过 SNLI数据集 进行训练，以学习预测两个句子间的关系。
+三、数据集 SNLI数据集包含57万行英文句子对，并被标注了句子间的关系，包括蕴含（Entailment），矛盾（Contradiction），中立/不冲突（Neutral），未知（-）。
+例如
+输入文本： A man inspects the uniform of a figure in some East Asian country. 输入假设： The man is sleeping. 输出： 矛盾（C）
+输入文本： A smiling costumed woman is holding an umbrella. 输入假设：A happy woman in a fairy costume holds an umbrella. 输出： 中立（N）
+输入文本： A soccer game with multiple males playing. 输入假设： Some men are playing a sport.</description>
+    </item>
+    <item>
+      <title>用 Pytorch 实现简单循环神经网络</title>
+      <link>https://wokron.github.io/posts/pytorch-rnn/</link>
+      <pubDate>Tue, 17 Jan 2023 21:02:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/pytorch-rnn/</guid>
+      <description>一、歌词生成项目 想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 最浅显易懂的 PyTorch 深度学习入门 的启发，并利用 up 主提供的 源码 中的数据集。
+相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。
+二、数据的获取 （1）编写数据集 原作者用爬虫获取的歌词数据被保存在 lyrics.txt 文件中。我们要将数据按可供训练的模型加载。具体来说
+我们希望每一次获取数据，都能得到输入和目标输出（对本项目来说就是两段有一个文字偏差的序列） 并且将文字数字化，即 nlp 的 tokenize 为了实现批量训练，需要每次获取定长的序列 为了实现第一点，我们要继承 dataset；实现第二点，需要根据数据建立字符表；实现第三点，需要定长截取歌词句子的一部分。
+另外，为了减少每次加载数据所用的时间，还需要将数据集的信息持久化。
+我们的 LyricsDataset 具体实现如下。首先，我们在构造函数中通过传入的路径加载数据，判断是否已经存在处理过后的数据，如存在则加载；如不存在则读入原始数据并处理
+class LyricsDataset(Dataset): def __init__(self, root_path, seq_size): self.seq_size = seq_size processed_name = &amp;#34;/processed/lyrics.pth&amp;#34; raw_name = &amp;#34;/raw/lyrics.txt&amp;#34; if os.path.exists(root_path + processed_name): print(&amp;#34;find processed data&amp;#34;) self.__load_processed_data(root_path + processed_name) else: print(&amp;#34;processed data not found, will process raw data&amp;#34;) self.</description>
+    </item>
+    <item>
+      <title>用 Pytorch 搭建神经网络</title>
+      <link>https://wokron.github.io/posts/pytorch-basics/</link>
+      <pubDate>Mon, 02 Jan 2023 15:52:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/pytorch-basics/</guid>
+      <description>一、前言 本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。
+本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。
+本文所使用的例子是自己写的第一个神经网路，如下：
+import os.path import torch.utils.data from torch.utils.data import DataLoader from torch import nn from torch.utils.tensorboard import SummaryWriter from torchvision import transforms, datasets device = torch.device(&amp;#34;cpu&amp;#34;) if torch.cuda.is_available(): print(&amp;#34;cuda available, use cuda to train module&amp;#34;) device = torch.device(&amp;#34;cuda&amp;#34;) train_set = datasets.CIFAR10(&amp;#34;./CIFAR10&amp;#34;, transform=transforms.ToTensor(), download=True) test_set = datasets.CIFAR10(&amp;#34;./CIFAR10&amp;#34;, transform=transforms.ToTensor(), train=False, download=True) train_set_size = len(train_set) test_set_size = len(test_set) print(f&amp;#34;train set size: {train_set_size}&amp;#34;) print(f&amp;#34;test set size: {test_set_size}&amp;#34;) train_dataloader = DataLoader(train_set, 64, shuffle=True, drop_last=True) test_dataloader = DataLoader(test_set, 64) class MyModule(nn.</description>
+    </item>
+  </channel>
+</rss>

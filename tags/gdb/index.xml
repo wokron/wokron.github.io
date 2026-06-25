@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>GDB on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/gdb/</link>
+    <description>Recent content in GDB on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 18 Jan 2024 19:44:35 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/gdb/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>GDB：程序的解剖术</title>
+      <link>https://wokron.github.io/posts/gdb-tutorial/</link>
+      <pubDate>Thu, 18 Jan 2024 19:44:35 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/gdb-tutorial/</guid>
+      <description>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。
+为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。
+GDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。
+GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。
+GDB 是一个功能十分强大的调试器，它适用于 C、C++、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：
+启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。
+准备工作 在开始之前需要说明两点：
+接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。</description>
+    </item>
+  </channel>
+</rss>

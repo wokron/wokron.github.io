@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>系统编程之进程间通信 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="C, Linux">
+<meta name="description" content="一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：
+管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include &lt;sys/types.h&gt; #include &lt;sys/ipc.h&gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。
+注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。
+命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。
+ipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include &lt;sys/types.">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/system-programming-note-5/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/system-programming-note-5/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="系统编程之进程间通信" />
+<meta property="og:description" content="一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：
+管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include &lt;sys/types.h&gt; #include &lt;sys/ipc.h&gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。
+注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。
+命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。
+ipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include &lt;sys/types." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/system-programming-note-5/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-11-16T09:54:43+08:00" />
+<meta property="article:modified_time" content="2022-11-16T09:54:43+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="系统编程之进程间通信"/>
+<meta name="twitter:description" content="一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：
+管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include &lt;sys/types.h&gt; #include &lt;sys/ipc.h&gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。
+注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。
+命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。
+ipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include &lt;sys/types."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "系统编程之进程间通信",
+      "item": "https://wokron.github.io/posts/system-programming-note-5/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "系统编程之进程间通信",
+  "name": "系统编程之进程间通信",
+  "description": "一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：\n管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include \u0026lt;sys/types.h\u0026gt; #include \u0026lt;sys/ipc.h\u0026gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。\n注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。\n命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。\nipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include \u0026lt;sys/types.",
+  "keywords": [
+    "C", "Linux"
+  ],
+  "articleBody": "一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：\n管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include #include key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。\n注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。\n命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。\nipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include #include #include int msgget(key_t, key, int msgflg); msgget 函数返回获得的消息队列的标识符，出错时返回-1，错误内容存于error中。 key 获取消息队列的标识，取 IPC_PRIVATE 时会建立当前进程内的消息队列。 msgflg 设置消息队列的访问权限和模式，如 0666|IPC_CREAT。\n消息队列控制 #include #include #include int msgctl(int msqid, int cmd, struct msqid_ds *buf); msgctl 函数获取和设置消息队列的属性。 msqid 为消息队列标识符；cmd 获取该函数的行为，如 IPC_STAT 获取消息队列的属性，IPC_SET 设置消息队列的属性。 buf 为保存消息队列属性的结构体。\n消息队列消息收发 #include #include #include int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg); ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg); msgp 获取要传递和接收的消息，它必须是一个结构体，包括一个 long 型的 mtype 和一个数组，如下\nstruct msgbuf { long mtype; char mtext[MAX_TEXT_LEN]; } msgsz 是 mtext 的字节数； msgflg 获取发送和接受信息的方法，如 IPC_NOWAIT IPC_EXCEPT IPC_NOERROR，设置为 0 将采取默认阻塞的方式。 msgtyp 设定要接收消息的 mtype。若值等于0则接受在队列首的消息，值大于0则接受类型等于该值的第一个消息，值小于0则接收类型小于等于该值绝对值的第一个消息。\n代码示例 如下程序实现客户端进程和服务器进程，通过消息队列进行通信。客户端进程接受用户从终端的输入，并通过 Up 消息队列将消息传递给服务器进程，然后等待服务器进程从 Down 消息队列传回消息。服务器进程从 Up 接收到消息后将大小写字母转换，并通过 Down 传回给客户端进程，客户端随后输出转换后的消息。（例如：客户端通过 Up 发送’linuX’, 将从 Down 接收到’LINUx’）。\n// server.c #include #include #include #include #define MAXLEN 1000 struct msgbuf { long mtype; char mtext[1000]; }; int main() { key_t upkey = ftok(\".\", 10); key_t downkey = ftok(\".\", 20); int length = sizeof(struct msgbuf) - sizeof(long); int upqid = msgget(upkey, 0666|IPC_CREAT); int downqid = msgget(downkey, 0666|IPC_CREAT); while (1) { struct msgbuf buf; msgrcv(upqid, \u0026buf, length, 0, 0); for (int i = 0; buf.mtext[i] != '\\0'; i++) { if (isupper(buf.mtext[i])) buf.mtext[i] = tolower(buf.mtext[i]); else if (islower(buf.mtext[i])) buf.mtext[i] = toupper(buf.mtext[i]); } msgsnd(downqid, \u0026buf, length, 0); } } // client.c #include #include #include #include #define MAXLEN 1000 struct msgbuf { long mtype; char mtext[MAXLEN]; }; int main() { struct msgbuf buf; key_t upkey = ftok(\".\", 10); key_t downkey = ftok(\".\", 20); int length = sizeof(struct msgbuf) - sizeof(long); int upqid = msgget(upkey, 0666|IPC_CREAT); int downqid = msgget(downkey, 0666|IPC_CREAT); char text[MAXLEN]; while (1) { printf(\"Enter some text:\"); scanf(\"%s\", text); buf.mtype = getpid(); strcpy(buf.mtext, text); msgsnd(upqid, \u0026buf, length, 0); msgrcv(downqid, \u0026buf, length, getpid(), 0); printf(\"Receive converted message:%s\\n\", buf.mtext); } } 效果： （3）信号量 信号量获取 #include #include #include int semget(key_t key, int nsems, int semflg); nsems 指定创建的信号量的个数。也就是单个 semid 对应的信号量个数。\n信号量控制 #include #include #include int semctl(int semid, int semnum, int cmd, union semun arg); semnum 表示第几个信号量，从 0 开始。cmd 设置要进行的操作命令。arg 是命令的参数，不同的命令对应不同的参数类型。\n信息量操作 #include #include #include int semop(int semid, struct sembuf *sops, unsigned nsops); sops 设置需要进行的操作，结构体的内容如下\nstruct sembuf { short sem_num; // 信号量的序号 short sem_op; // 对信号量的操作 short sem_flg; // 操作标识 }; sem_num 设置要进行设置的信息量序号； sem_op 设置对信号量的增减，值大于0表示对信号量增加对应的值，小于0表示对信号量减小对应的值。等于0则信号量阻塞，直到信号量值为0； sem_flg 设置对信号量的操作，如设置 IPC_NOWAIT 设置信号量操作不等待。\n代码示例 如下的程序实现这样的功能：一个进程创建 3 个子进程A、B、C，每个子进程都打印相同的数字串，但要求每个进程都打印完这一位数字后，才能有进程开始下一位数字的打印，并且进程打印顺序按照进程A、B、C依次打印。（在打印的数字前加上A、B、C以便区分）\n//sem.c #include #include #include #include #include #include void print(int num); void P(int semid, int num); void V(int semid, int num); int main() { pid_t pid; for (int i = 0; i \u003c 3; i++) { pid = fork(); if (pid == 0) // child { print(i); return 0; } } key_t key = ftok(\".\", 1); struct sembuf buf; int semid = semget(key, 3, 0666|IPC_CREAT); V(semid, 0); while (wait(NULL) \u003e 0); printf(\"\\n\"); fflush(stdout); return 0; } void P(int semid, int num) { struct sembuf buf; buf.sem_num = num; buf.sem_op = -1; semop(semid, \u0026buf, 1); } void V(int semid, int num) { struct sembuf buf; buf.sem_num = num; buf.sem_op = 1; semop(semid, \u0026buf, 1); } char getAlpha(int num) { if (num == 0) return 'A'; else if (num == 1) return 'B'; else return 'C'; } void print(int num) { char stdID[] = \"21371326\"; key_t key = ftok(\".\", 1); struct sembuf buf; int semid = semget(key, 3, 0666|IPC_CREAT); for (int i = 0; stdID[i] != '\\0'; i++) { P(semid, num); printf(\"%c%c\", getAlpha(num), stdID[i]); fflush(stdout); V(semid, (num+1)%3); } } 效果： （4）共享内存 共享内存获取 #include #include int shmget(key_t key, size_t size, int shmflg); size 设置要获取的内存空间大小。\n共享内存控制 #include #include int shmctl(int shmid, int cmd, struct shmid_ds *buf); 此处类似信号量控制。\n共享内存映射到地址 #include #include void *shmat(int shmid, const void *shmaddr, int shmflg); 该函数获取一个地址，可以使用指针对共享内存进行访问。 shmaddr 指定共享内存的地址位置，通常设为 NULL 来让内核自动选择地址； shmflg 设置内存的读写模式，如 SHM_RDONLY 为只读模式。\n共享内存断开连接 #include #include int shmdt(const void *shmaddr); shmaddr 表示连接的共享内存的起始地址。\n代码示例 如下的代码将使用共享内存和信号量实现两个进程的资源共享。一个进程向共享内存写，然后终止，然后再启动一个进程从共享内存中读。\n// a.c #include #include #include #include #include #include #include void writeNum(); void P(int semid, int num); void V(int semid, int num); int main() { srand(time(0)); int key = ftok(\".\", 1); int semid = semget(key, 2, 0666|IPC_CREAT); pid_t pid = fork(); if (pid \u003e 0) { V(semid, 0); for (int i = 0; i \u003c 10; i++) { P(semid, 0); writeNum(); V(semid, 1); } } else execl(\"./b\", \"b\", NULL); } void writeNum() { key_t key = ftok(\".\", 2); int shmid = shmget(key, sizeof(int), 0666|IPC_CREAT); int* p = shmat(shmid, NULL, 0); *p = rand(); printf(\"write: %d\\n\", *p); fflush(stdout); } void P(int semid, int num) { struct sembuf buf; buf.sem_num = num; buf.sem_op = -1; semop(semid, \u0026buf, 1); } void V(int semid, int num) { struct sembuf buf; buf.sem_num = num; buf.sem_op = 1; semop(semid, \u0026buf, 1); } // b.c #include #include #include #include #include #include #include void readNum(); void P(int semid, int num); void V(int semid, int num); int main() { int key = ftok(\".\", 1); int semid = semget(key, 2, 0666|IPC_CREAT); for (int i = 0; i \u003c 10; i++) { P(semid, 1); readNum(); V(semid, 0); } } void readNum() { key_t key = ftok(\".\", 2); int shmid = shmget(key, sizeof(int), 0666|IPC_CREAT); int* p = shmat(shmid, NULL, 0); printf(\"read: %d\\n\\n\", *p); fflush(stdout); } void P(int semid, int num) { struct sembuf buf; buf.sem_num = num; buf.sem_op = -1; semop(semid, \u0026buf, 1); } void V(int semid, int num) { struct sembuf buf; buf.sem_num = num; buf.sem_op = 1; semop(semid, \u0026buf, 1); } 效果： ",
+  "wordCount" : "962",
+  "inLanguage": "zh",
+  "datePublished": "2022-11-16T09:54:43+08:00",
+  "dateModified": "2022-11-16T09:54:43+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/system-programming-note-5/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      系统编程之进程间通信
+    </h1>
+    <div class="post-meta"><span title='2022-11-16 09:54:43 +0800 CST'>十一月 16, 2022</span>&nbsp;·&nbsp;5 分钟&nbsp;·&nbsp;962 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/system-programming-note-5.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1%e7%ae%80%e8%bf%b0" aria-label="一、进程间通信简述">一、进程间通信简述</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1%e6%93%8d%e4%bd%9c" aria-label="二、进程间通信操作">二、进程间通信操作</a><ul>
+                        
+                <li>
+                    <a href="#1%e5%87%86%e5%a4%87%e6%93%8d%e4%bd%9c" aria-label="（1）准备操作">（1）准备操作</a><ul>
+                        
+                <li>
+                    <a href="#%e8%8e%b7%e5%8f%96-key" aria-label="获取 key">获取 key</a></li>
+                <li>
+                    <a href="#%e5%91%bd%e4%bb%a4%e7%ae%a1%e7%90%86%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1" aria-label="命令管理进程间通信">命令管理进程间通信</a></li></ul>
+                </li>
+                <li>
+                    <a href="#2%e6%b6%88%e6%81%af%e9%98%9f%e5%88%97" aria-label="（2）消息队列">（2）消息队列</a><ul>
+                        
+                <li>
+                    <a href="#%e6%b6%88%e6%81%af%e9%98%9f%e5%88%97%e8%8e%b7%e5%8f%96" aria-label="消息队列获取">消息队列获取</a></li>
+                <li>
+                    <a href="#%e6%b6%88%e6%81%af%e9%98%9f%e5%88%97%e6%8e%a7%e5%88%b6" aria-label="消息队列控制">消息队列控制</a></li>
+                <li>
+                    <a href="#%e6%b6%88%e6%81%af%e9%98%9f%e5%88%97%e6%b6%88%e6%81%af%e6%94%b6%e5%8f%91" aria-label="消息队列消息收发">消息队列消息收发</a></li>
+                <li>
+                    <a href="#%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b" aria-label="代码示例">代码示例</a></li></ul>
+                </li>
+                <li>
+                    <a href="#3%e4%bf%a1%e5%8f%b7%e9%87%8f" aria-label="（3）信号量">（3）信号量</a><ul>
+                        
+                <li>
+                    <a href="#%e4%bf%a1%e5%8f%b7%e9%87%8f%e8%8e%b7%e5%8f%96" aria-label="信号量获取">信号量获取</a></li>
+                <li>
+                    <a href="#%e4%bf%a1%e5%8f%b7%e9%87%8f%e6%8e%a7%e5%88%b6" aria-label="信号量控制">信号量控制</a></li>
+                <li>
+                    <a href="#%e4%bf%a1%e6%81%af%e9%87%8f%e6%93%8d%e4%bd%9c" aria-label="信息量操作">信息量操作</a></li>
+                <li>
+                    <a href="#%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b-1" aria-label="代码示例">代码示例</a></li></ul>
+                </li>
+                <li>
+                    <a href="#4%e5%85%b1%e4%ba%ab%e5%86%85%e5%ad%98" aria-label="（4）共享内存">（4）共享内存</a><ul>
+                        
+                <li>
+                    <a href="#%e5%85%b1%e4%ba%ab%e5%86%85%e5%ad%98%e8%8e%b7%e5%8f%96" aria-label="共享内存获取">共享内存获取</a></li>
+                <li>
+                    <a href="#%e5%85%b1%e4%ba%ab%e5%86%85%e5%ad%98%e6%8e%a7%e5%88%b6" aria-label="共享内存控制">共享内存控制</a></li>
+                <li>
+                    <a href="#%e5%85%b1%e4%ba%ab%e5%86%85%e5%ad%98%e6%98%a0%e5%b0%84%e5%88%b0%e5%9c%b0%e5%9d%80" aria-label="共享内存映射到地址">共享内存映射到地址</a></li>
+                <li>
+                    <a href="#%e5%85%b1%e4%ba%ab%e5%86%85%e5%ad%98%e6%96%ad%e5%bc%80%e8%bf%9e%e6%8e%a5" aria-label="共享内存断开连接">共享内存断开连接</a></li>
+                <li>
+                    <a href="#%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b-2" aria-label="代码示例">代码示例</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一进程间通信简述">一、进程间通信简述<a hidden class="anchor" aria-hidden="true" href="#一进程间通信简述">#</a></h2>
+<p>进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：</p>
+<ol>
+<li>管道：
+管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。</li>
+<li>消息队列：
+消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为<code>123</code>的消息，另一个进程接收 type 为<code>123</code> 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。</li>
+<li>信号量：
+不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。</li>
+<li>共享内存：
+共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。</li>
+</ol>
+<h2 id="二进程间通信操作">二、进程间通信操作<a hidden class="anchor" aria-hidden="true" href="#二进程间通信操作">#</a></h2>
+<h3 id="1准备操作">（1）准备操作<a hidden class="anchor" aria-hidden="true" href="#1准备操作">#</a></h3>
+<h4 id="获取-key">获取 key<a hidden class="anchor" aria-hidden="true" href="#获取-key">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">key_t</span> <span class="nf">ftok</span><span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">fname</span><span class="p">,</span> <span class="kt">int</span> <span class="n">id</span> <span class="p">);</span>
+</span></span></code></pre></div><p>共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。<code>ftok()</code> 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。</p>
+<blockquote>
+<p>注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。</p>
+</blockquote>
+<h4 id="命令管理进程间通信">命令管理进程间通信<a hidden class="anchor" aria-hidden="true" href="#命令管理进程间通信">#</a></h4>
+<p>若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 <code>ipcs</code> 和 <code>ipcrm</code> 命令进行管理。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ipcs <span class="c1"># 显示所有进程间通信信息</span>
+</span></span><span class="line"><span class="cl">ipcrm -q MsgID <span class="c1"># 删除消息队列</span>
+</span></span><span class="line"><span class="cl">ipcrm -s SemID <span class="c1"># 删除信号量</span>
+</span></span><span class="line"><span class="cl">ipcrm -m ShrID <span class="c1"># 删除共享内存</span>
+</span></span></code></pre></div><h3 id="2消息队列">（2）消息队列<a hidden class="anchor" aria-hidden="true" href="#2消息队列">#</a></h3>
+<h4 id="消息队列获取">消息队列获取<a hidden class="anchor" aria-hidden="true" href="#消息队列获取">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/msg.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">msgget</span><span class="p">(</span><span class="kt">key_t</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="kt">int</span> <span class="n">msgflg</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>msgget</code> 函数返回获得的消息队列的标识符，出错时返回-1，错误内容存于error中。
+<code>key</code> 获取消息队列的标识，取 <code>IPC_PRIVATE</code> 时会建立当前进程内的消息队列。
+<code>msgflg</code> 设置消息队列的访问权限和模式，如 <code>0666|IPC_CREAT</code>。</p>
+<h4 id="消息队列控制">消息队列控制<a hidden class="anchor" aria-hidden="true" href="#消息队列控制">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/msg.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">msgctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">msqid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">cmd</span><span class="p">,</span> <span class="k">struct</span> <span class="n">msqid_ds</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>msgctl</code> 函数获取和设置消息队列的属性。
+<code>msqid</code> 为消息队列标识符；<code>cmd</code> 获取该函数的行为，如 <code>IPC_STAT</code> 获取消息队列的属性，<code>IPC_SET</code> 设置消息队列的属性。
+<code>buf</code> 为保存消息队列属性的结构体。</p>
+<h4 id="消息队列消息收发">消息队列消息收发<a hidden class="anchor" aria-hidden="true" href="#消息队列消息收发">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/msg.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">msgsnd</span><span class="p">(</span><span class="kt">int</span> <span class="n">msqid</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">msgp</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">msgsz</span><span class="p">,</span> <span class="kt">int</span> <span class="n">msgflg</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">ssize_t</span> <span class="nf">msgrcv</span><span class="p">(</span><span class="kt">int</span> <span class="n">msqid</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">msgp</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">msgsz</span><span class="p">,</span> <span class="kt">long</span> <span class="n">msgtyp</span><span class="p">,</span> <span class="kt">int</span> <span class="n">msgflg</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>msgp</code> 获取要传递和接收的消息，它必须是一个结构体，包括一个 long 型的 mtype 和一个数组，如下</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">msgbuf</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">long</span> <span class="n">mtype</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">mtext</span><span class="p">[</span><span class="n">MAX_TEXT_LEN</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>msgsz</code> 是 <code>mtext</code> 的字节数；
+<code>msgflg</code> 获取发送和接受信息的方法，如 <code>IPC_NOWAIT</code> <code>IPC_EXCEPT</code> <code>IPC_NOERROR</code>，设置为 0 将采取默认阻塞的方式。
+<code>msgtyp</code> 设定要接收消息的 <code>mtype</code>。若值等于0则接受在队列首的消息，值大于0则接受类型等于该值的第一个消息，值小于0则接收类型小于等于该值绝对值的第一个消息。</p>
+<h4 id="代码示例">代码示例<a hidden class="anchor" aria-hidden="true" href="#代码示例">#</a></h4>
+<p>如下程序实现客户端进程和服务器进程，通过<strong>消息队列</strong>进行通信。客户端进程接受用户从终端的输入，并通过 Up 消息队列将消息传递给服务器进程，然后等待服务器进程从 Down 消息队列传回消息。服务器进程从 Up 接收到消息后<strong>将大小写字母转换</strong>，并通过 Down 传回给客户端进程，客户端随后输出转换后的消息。（例如：客户端通过 Up 发送&rsquo;linuX&rsquo;, 将从 Down 接收到&rsquo;LINUx&rsquo;）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// server.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/msg.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;ctype.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define MAXLEN 1000
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="k">struct</span> <span class="n">msgbuf</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">long</span> <span class="n">mtype</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">mtext</span><span class="p">[</span><span class="mi">1000</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">upkey</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">downkey</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">length</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">msgbuf</span><span class="p">)</span> <span class="o">-</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">long</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">upqid</span> <span class="o">=</span> <span class="nf">msgget</span><span class="p">(</span><span class="n">upkey</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">downqid</span> <span class="o">=</span> <span class="nf">msgget</span><span class="p">(</span><span class="n">downkey</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">struct</span> <span class="n">msgbuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">msgrcv</span><span class="p">(</span><span class="n">upqid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="nf">isupper</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">                <span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nf">tolower</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nf">islower</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">                <span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nf">toupper</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">msgsnd</span><span class="p">(</span><span class="n">downqid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// client.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/msg.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define MAXLEN 1000
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="k">struct</span> <span class="n">msgbuf</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">long</span> <span class="n">mtype</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">mtext</span><span class="p">[</span><span class="n">MAXLEN</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">msgbuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">upkey</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">downkey</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">length</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">msgbuf</span><span class="p">)</span> <span class="o">-</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">long</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">upqid</span> <span class="o">=</span> <span class="nf">msgget</span><span class="p">(</span><span class="n">upkey</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">downqid</span> <span class="o">=</span> <span class="nf">msgget</span><span class="p">(</span><span class="n">downkey</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">text</span><span class="p">[</span><span class="n">MAXLEN</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Enter some text:&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">scanf</span><span class="p">(</span><span class="s">&#34;%s&#34;</span><span class="p">,</span> <span class="n">text</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">buf</span><span class="p">.</span><span class="n">mtype</span> <span class="o">=</span> <span class="nf">getpid</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">strcpy</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">,</span> <span class="n">text</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">msgsnd</span><span class="p">(</span><span class="n">upqid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nf">msgrcv</span><span class="p">(</span><span class="n">downqid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="nf">getpid</span><span class="p">(),</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Receive converted message:%s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">buf</span><span class="p">.</span><span class="n">mtext</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>效果：
+<img loading="lazy" src="msg.png" alt="msg"  />
+</p>
+<h3 id="3信号量">（3）信号量<a hidden class="anchor" aria-hidden="true" href="#3信号量">#</a></h3>
+<h4 id="信号量获取">信号量获取<a hidden class="anchor" aria-hidden="true" href="#信号量获取">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/sem.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">semget</span><span class="p">(</span><span class="kt">key_t</span> <span class="n">key</span><span class="p">,</span> <span class="kt">int</span> <span class="n">nsems</span><span class="p">,</span> <span class="kt">int</span> <span class="n">semflg</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>nsems</code> 指定创建的信号量的个数。也就是单个 <code>semid</code> 对应的信号量个数。</p>
+<h4 id="信号量控制">信号量控制<a hidden class="anchor" aria-hidden="true" href="#信号量控制">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/sem.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">semctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">semnum</span><span class="p">,</span> <span class="kt">int</span> <span class="n">cmd</span><span class="p">,</span> <span class="k">union</span> <span class="n">semun</span> <span class="n">arg</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>semnum</code> 表示第几个信号量，从 0 开始。<code>cmd</code> 设置要进行的操作命令。<code>arg</code> 是命令的参数，不同的命令对应不同的参数类型。</p>
+<h4 id="信息量操作">信息量操作<a hidden class="anchor" aria-hidden="true" href="#信息量操作">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/sem.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">semop</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="k">struct</span> <span class="n">sembuf</span> <span class="o">*</span><span class="n">sops</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">nsops</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>sops</code> 设置需要进行的操作，结构体的内容如下</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">sembuf</span>  
+</span></span><span class="line"><span class="cl"><span class="p">{</span>  
+</span></span><span class="line"><span class="cl">  <span class="kt">short</span> <span class="n">sem_num</span><span class="p">;</span>  <span class="c1">// 信号量的序号
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">short</span> <span class="n">sem_op</span><span class="p">;</span>            <span class="c1">// 对信号量的操作 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">short</span> <span class="n">sem_flg</span><span class="p">;</span>           <span class="c1">// 操作标识
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>  
+</span></span></code></pre></div><p><code>sem_num</code> 设置要进行设置的信息量序号；
+<code>sem_op</code> 设置对信号量的增减，值大于0表示对信号量增加对应的值，小于0表示对信号量减小对应的值。等于0则信号量阻塞，直到信号量值为0；
+<code>sem_flg</code> 设置对信号量的操作，如设置 <code>IPC_NOWAIT</code> 设置信号量操作不等待。</p>
+<h4 id="代码示例-1">代码示例<a hidden class="anchor" aria-hidden="true" href="#代码示例-1">#</a></h4>
+<p>如下的程序实现这样的功能：一个进程创建 3 个子进程A、B、C，每个子进程都打印相同的数字串，但要求每个进程都打印完这一位数字后，才能有进程开始下一位数字的打印，并且进程打印顺序按照进程A、B、C依次打印。（<strong>在打印的数字前加上A、B、C</strong>以便区分）</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">//sem.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/sem.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/wait.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="kt">int</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">P</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">V</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">pid</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pid</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="c1">// child
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">print</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">key</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">semid</span> <span class="o">=</span> <span class="nf">semget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">V</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="nf">wait</span><span class="p">(</span><span class="nb">NULL</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">P</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_num</span> <span class="o">=</span> <span class="n">num</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_op</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">semop</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">V</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_num</span> <span class="o">=</span> <span class="n">num</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_op</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">semop</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">char</span> <span class="nf">getAlpha</span><span class="p">(</span><span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="sc">&#39;A&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">num</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="sc">&#39;B&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="sc">&#39;C&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">stdID</span><span class="p">[]</span> <span class="o">=</span> <span class="s">&#34;21371326&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">key</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">semid</span> <span class="o">=</span> <span class="nf">semget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">stdID</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">P</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%c%c&#34;</span><span class="p">,</span> <span class="nf">getAlpha</span><span class="p">(</span><span class="n">num</span><span class="p">),</span> <span class="n">stdID</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">V</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="p">(</span><span class="n">num</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">3</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>效果：
+<img loading="lazy" src="sem.png" alt="sem"  />
+</p>
+<h3 id="4共享内存">（4）共享内存<a hidden class="anchor" aria-hidden="true" href="#4共享内存">#</a></h3>
+<h4 id="共享内存获取">共享内存获取<a hidden class="anchor" aria-hidden="true" href="#共享内存获取">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/shm.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">shmget</span><span class="p">(</span><span class="kt">key_t</span> <span class="n">key</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">shmflg</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>size</code> 设置要获取的内存空间大小。</p>
+<h4 id="共享内存控制">共享内存控制<a hidden class="anchor" aria-hidden="true" href="#共享内存控制">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/shm.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">shmctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">shmid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">cmd</span><span class="p">,</span> <span class="k">struct</span> <span class="n">shmid_ds</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
+</span></span></code></pre></div><p>此处类似信号量控制。</p>
+<h4 id="共享内存映射到地址">共享内存映射到地址<a hidden class="anchor" aria-hidden="true" href="#共享内存映射到地址">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/shm.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">void</span> <span class="o">*</span><span class="nf">shmat</span><span class="p">(</span><span class="kt">int</span> <span class="n">shmid</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">shmaddr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">shmflg</span><span class="p">);</span>
+</span></span></code></pre></div><p>该函数获取一个地址，可以使用指针对共享内存进行访问。
+<code>shmaddr</code> 指定共享内存的地址位置，通常设为 NULL 来让内核自动选择地址；
+<code>shmflg</code> 设置内存的读写模式，如 <code>SHM_RDONLY</code> 为只读模式。</p>
+<h4 id="共享内存断开连接">共享内存断开连接<a hidden class="anchor" aria-hidden="true" href="#共享内存断开连接">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/shm.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">shmdt</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">shmaddr</span><span class="p">);</span>
+</span></span></code></pre></div><p><code>shmaddr</code> 表示连接的共享内存的起始地址。</p>
+<h4 id="代码示例-2">代码示例<a hidden class="anchor" aria-hidden="true" href="#代码示例-2">#</a></h4>
+<p>如下的代码将使用共享内存和信号量实现两个进程的资源共享。一个进程向共享内存写，然后终止，然后再启动一个进程从共享内存中读。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// a.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/sem.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/shm.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;time.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">writeNum</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">P</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">V</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">srand</span><span class="p">(</span><span class="nf">time</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">key</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">semid</span> <span class="o">=</span> <span class="nf">semget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">pid_t</span> <span class="n">pid</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">V</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">P</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">writeNum</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">V</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">execl</span><span class="p">(</span><span class="s">&#34;./b&#34;</span><span class="p">,</span> <span class="s">&#34;b&#34;</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">writeNum</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">key</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">shmid</span> <span class="o">=</span> <span class="nf">shmget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span><span class="o">*</span> <span class="n">p</span> <span class="o">=</span> <span class="nf">shmat</span><span class="p">(</span><span class="n">shmid</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="nf">rand</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;write:  %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="o">*</span><span class="n">p</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">P</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_num</span> <span class="o">=</span> <span class="n">num</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_op</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">semop</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">V</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_num</span> <span class="o">=</span> <span class="n">num</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_op</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">semop</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// b.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ipc.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/sem.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/shm.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;time.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">readNum</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">P</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">V</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">key</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">semid</span> <span class="o">=</span> <span class="nf">semget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">P</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">readNum</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">V</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">readNum</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">key_t</span> <span class="n">key</span> <span class="o">=</span> <span class="nf">ftok</span><span class="p">(</span><span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">shmid</span> <span class="o">=</span> <span class="nf">shmget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="mo">0666</span><span class="o">|</span><span class="n">IPC_CREAT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span><span class="o">*</span> <span class="n">p</span> <span class="o">=</span> <span class="nf">shmat</span><span class="p">(</span><span class="n">shmid</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;read:   %d</span><span class="se">\n\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="o">*</span><span class="n">p</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">P</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_num</span> <span class="o">=</span> <span class="n">num</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_op</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">semop</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">V</span><span class="p">(</span><span class="kt">int</span> <span class="n">semid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sembuf</span> <span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_num</span> <span class="o">=</span> <span class="n">num</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">buf</span><span class="p">.</span><span class="n">sem_op</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">semop</span><span class="p">(</span><span class="n">semid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>效果：
+<img loading="lazy" src="shm.png" alt="shm"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+      <li><a href="https://wokron.github.io/tags/linux/">Linux</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/system-programming-note-6/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>系统编程之线程管理</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/analysis-of-non-repeat-random-nums/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>对不重复随机数的数学分析</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程间通信 on x"
+            href="https://x.com/intent/tweet/?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f&amp;hashtags=C%2cLinux">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程间通信 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f&amp;title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1&amp;summary=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程间通信 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f&title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程间通信 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程间通信 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程间通信 on telegram"
+            href="https://telegram.me/share/url?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之进程间通信 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e4%bf%a1&u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-5%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

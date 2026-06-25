@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head>
+	<meta name="generator" content="Hugo 0.123.7"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Wokron&#39;s Blog</title>
+<meta name="keywords" content="blog, code, tutorial">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/index.xml">
+<link rel="alternate" type="application/json" href="https://wokron.github.io/index.json">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Wokron&#39;s Blog" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Wokron&#39;s Blog"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Wokron's Blog",
+  "url": "https://wokron.github.io/",
+  "description": "Wokron 的个人博客。记录学习、分享经验",
+  "thumbnailUrl": "https://wokron.github.io/img/favicon/96x96.png",
+  "sameAs": [
+      "https://github.com/wokron", "mailto:yi1tang.yang@gmail.com", "mailto:3160114036@qq.com"
+  ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<article class="first-entry home-info">
+    <header class="entry-header">
+        <h1>Welcome to My Blog</h1>
+    </header>
+    <div class="entry-content">
+        欢迎光临！文章不定期更新，希望能对您有帮助 :)
+    </div>
+    <footer class="entry-footer">
+        <div class="social-icons" >
+    <a href="https://github.com/wokron" target="_blank" rel="noopener noreferrer me"
+        title="My Github Account">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path
+        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+    </path>
+</svg>
+    </a>
+    <a href="mailto:yi1tang.yang@gmail.com" target="_blank" rel="noopener noreferrer me"
+        title="Send Me Email">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+    <polyline points="22,6 12,13 2,6"></polyline>
+</svg>
+    </a>
+    <a href="mailto:3160114036@qq.com" target="_blank" rel="noopener noreferrer me"
+        title="My QQ Account">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path transform="scale(0.04) translate(75 40)" stroke-width="50"
+        d="M433.754 420.445c-11.526 1.393-44.86-52.741-44.86-52.741 0 31.345-16.136 72.247-51.051 101.786 16.842 5.192 54.843 19.167 45.803 34.421-7.316 12.343-125.51 7.881-159.632 4.037-34.122 3.844-152.316 8.306-159.632-4.037-9.045-15.25 28.918-29.214 45.783-34.415-34.92-29.539-51.059-70.445-51.059-101.792 0 0-33.334 54.134-44.859 52.741-5.37-.65-12.424-29.644 9.347-99.704 10.261-33.024 21.995-60.478 40.144-105.779C60.683 98.063 108.982.006 224 0c113.737.006 163.156 96.133 160.264 214.963 18.118 45.223 29.912 72.85 40.144 105.778 21.768 70.06 14.716 99.053 9.346 99.704z">
+    </path>
+</svg>
+    </a>
+</div>
+
+    </footer>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">2ascii：GIF 转 ASCII 动画
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>几个月前，我决定把自己的 github 主页换成 ascii 动画。最初我以为很简单，但找了半天也没找到合适的脚本或网站，所以就自己手搓了个并不通用的脚本，调整了很久终于有了一个比较满意的结果。
+最近我想，为什么不把这个做成一个网页呢？如果有可视化的话，总比那时候慢慢调整更方便一点。所以就有了 2ascii 这个仓库。
+这只是一组静态页面，所以可以在任何地方访问。不过为了方便，我在这里托管了一个页面。
+我对 JS 并不熟悉，但是 LLM Agent 很好的弥补了这一点。作为一个小品级项目，LLM 还是够用的。</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-06-25 17:04:22 +0800 CST'>六月 25, 2026</span>&nbsp;·&nbsp;1 分钟&nbsp;·&nbsp;16 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 2ascii：GIF 转 ASCII 动画" href="https://wokron.github.io/posts/2ascii/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">io_uring Internals
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>最近做的一份幻灯片，介绍了 io_uring 的一些内部实现。
+点击上方幻灯片以控制播放，或点此直接打开。</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-06-25 16:03:51 +0800 CST'>六月 25, 2026</span>&nbsp;·&nbsp;1 分钟&nbsp;·&nbsp;4 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to io_uring Internals" href="https://wokron.github.io/posts/io-uring-raids/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Condy 性能实测：零开销抽象全面释放 io_uring 性能
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Condy 是一款基于 io_uring 的零开销、高性能协程运行时，专为 Linux 系统设计。它持续跟进内核 io_uring 的最新特性，充分发挥底层异步 IO 的极致性能。Condy 采用 C&#43;&#43;20 协程，提供直观易用的异步编程体验，无需回调，代码更简洁、可读性更强。我们已将 Condy 与 libaio、liburing、epoll 等底层接口，以及 Asio、Monoio、Compio 等主流异步框架进行了全面性能对比。展现了 Condy 的性能优势。
+基准测试源码见 condy-bench。
+测试环境：
+CPU：AMD Ryzen 9 7945HX with Radeon Graphics × 16 存储：SK Hynix HFS001TEJ9X115N（NVMe SSD，1TB，PCIe 4.0 x4） 编译器：clang 18.1.3 操作系统：Linux Mint 22 Cinnamon 内核：6.8.0-90-generic 基线框架：
+libaio：Linux 上 io_uring 之前的异步文件 IO 框架。 liburing：io_uring 本身，未与协程封装，使用上略不便。 Asio：C&#43;&#43; 流行的 IO 框架。 Monoio：基于 io_uring 的 Rust 协程框架（GitHub 星数高于 liburing）。 Compio：另一个基于 io_uring 的 Rust 协程框架。 顺序文件读取 我们测试了 Condy 在 8GB 文件上进行 64KB 顺序读取的性能，收集吞吐量数据，并与 libaio 和 liburing 等的基线实现进行对比。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-02-06 16:04:33 +0800 CST'>二月 6, 2026</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;259 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Condy 性能实测：零开销抽象全面释放 io_uring 性能" href="https://wokron.github.io/posts/condy-bench/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">构建最简 Linux 文件系统
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>上回说到了我们如何用 QEMU 搭建一个包含最新内核的开发环境。但试过一段时间后，我却感觉这样并不方便。
+更多时候，我只需要运行单个程序（比如，单元测试）即可，而上文中所构建的完整环境却让这个过程便复杂了。本文介绍了一个更简单的方法。只需要一个简单的脚本即可构建完整运行环境。
+initrd 上一篇文章中已经提到了使用 initrd 启动操作系统的方法。initrd 是一个只读文件系统镜像，内核启动时，会将镜像内容加载到内存中。程序可以像普通文件系统一样访问。
+加载文件系统之后，内核会从其中寻找可用的 init 程序。因此我们只要编写合理的 init 程序，将其打包到一个 initrd 中即可。
+busybox 在这种从零开始构建文件系统的场景下，使用动态库太过繁琐。因此我们直接用宿主机上的 busybox 来提供基本的程序。
+准备阶段 首先创建一个 WORK_DIR 目录。此路径下的文件会被打包成文件系统镜像。
+WORK_DIR=$(mktemp -d) trap &#34;rm -rf $WORK_DIR&#34; EXIT 之后寻找宿主机上的 busybox，将其复制到 $WORK_DIR/bin/busybox。
+mkdir -p &#34;$WORK_DIR/bin&#34; # Copy busybox into the work directory BUSYBOX_PATH=$(which busybox) if [ -z &#34;$BUSYBOX_PATH&#34; ]; then echo &#34;Error: busybox not found in PATH.&#34; exit 1 fi cp &#34;$BUSYBOX_PATH&#34; &#34;$WORK_DIR/bin/busybox&#34; 创建 $WORK_DIR/init 脚本，赋予其可执行权限。内核在启动中会识别并执行该脚本。
+# Create init script cat &lt;&lt; &#39;EOF&#39; &gt; &#34;$WORK_DIR/init&#34; #!...</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-01-22 17:24:05 +0800 CST'>一月 22, 2026</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;287 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 构建最简 Linux 文件系统" href="https://wokron.github.io/posts/custom-linux-kernel-in-qemu-2/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">在 QEMU 上运行最新内核
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>最近，我的业余时间都花在了一个和系统编程有关的项目上。不久之后我遇到了一个问题：想要使用最新版本内核的特性并不是一件十分容易的事。发行版大多滞后于最新的内核版本，而我又不是那样激进的人，想要冒险在自己唯一的这台 Linux 电脑上升级内核（使用 installkernel 命令）。所以我需要一个办法，在保证我的系统安全的情况下，搭建一个具有新版本内核的开发环境。
+这种情况容器帮不了我，虚拟机则是一个好选择。
+我曾经写过一个简单的 QEMU 介绍。但实际上我对 QEMU 的了解也仅限于那篇文章的内容了。探索本文的内容花了我一些时间。在这个过程中，我也发现网上的相关内容要么包含了未充分说明的脚本，要么存在许多冗余选项。我觉得在此处以一个简单、充分解释的方式记录这一过程似乎是有意义的。
+当然，从编译内核开始 如果你只需要一个能在虚拟机里运行的内核，不需要深度定制的话，那么编译内核其实很简单。这里有一个简单的教程，不过我们接下来要做的还要更简单。
+首先，你要下载内核源码。如果不需要修改源码的话，从 kernel.org 下载是最方便的。这里下载了编写本文时的 stable 版本（6.17.9）。
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.9.tar.xz tar -xf linux-6.17.9.tar.xz cd ./linux-6.17.9 之后，配置编译选项。这将创建编译配置文件 .config
+make defconfig make kvm_guest.config 前一条命令选择使用默认编译配置。第二条命令在默认配置基础上设置编译选项，使编译后的镜像可以作为 kvm 上的虚拟机运行。如果有其他需求，可以在此基础上继续配置。
+之后直接编译即可。由于只包含了作为虚拟机运行的最小配置，不需要编译驱动程序，这一过程应该很快。在我的笔记本上只用了一分钟。
+make -j $(nproc) 编译后的内核镜像位于 arch/x86/boot/bzImage。当然，是 x86 架构。
+file arch/x86/boot/bzImage # arch/x86/boot/bzImage: Linux kernel x86 boot executable bzImage, version 6.17.9 (wokron@wokron-navi) #2 SMP PREEMPT_DYNAMIC Sun Nov 30 12:34:56 CST 2025, RO-rootFS, swap_dev 0XD, Normal VGA 准备根文件系统 简易根文件系统 这一点和我之前有关容器的文章中的内容类似。如果不考虑实际可用性，我们现在就可以运行一个内核了。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-11-29 23:03:46 +0800 CST'>十一月 29, 2025</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;655 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 在 QEMU 上运行最新内核" href="https://wokron.github.io/posts/custom-linux-kernel-in-qemu/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">用 Namespace 手搓一个容器
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>容器技术由 Linux 下三项技术构成。这三项技术分别是 Namespace、Cgroups 和 Unionfs。他们分别实现了系统逻辑资源的隔离、物理资源的限制以及容器的文件系统。
+在这之中最为关键的是 Namespace。因为 Namespace 实现了虚拟化中最重要的隔离的功能。在 Namespace 之外即使不使用 Cgroups，用其他文件系统替代 Unionfs，依然能够实现一个容器的许多功能。
+所以本文我们尝试用 Namespace 构建一个简单的容器。让我们首先想想，一个容器中的环境究竟需要与 host 隔离哪些资源。（请把容器想象成 host 之外的另一台机器。）
+文件系统：容器中的进程不能访问 host 的文件系统。这意味着挂载点的隔离 – Mount Namespace 进程空间：容器中的进程无法查看容器外的进程信息。这意味着进程号的隔离 – PID Namespace 网络接口：容器中的进程拥有自己的网络接口，不使用 host 上的网络接口。这意味着网络的隔离 – Network Namespace 用户：容器中的用户和容器外的用户无关，例如容器内的 root 和容器外的 root 并不相同。这意味着用户的隔离 – User Namespace 物理资源：容器能够看到和管理的物理资源和容器外的资源不同。这意味着 Cgroups 视图的隔离 – Cgroups Namespace 时间：容器中的时间系统和容器外的时间不一定相同 – Time Namespace 主机名：容器中的主机名和容器外的主机名不一定相同 – UTS Namespace IPC：IPC，例如 Posix 消息队列，使用类似文件名的标识符，但是又并不真正存在于文件系统中。容器中的这些标识符和容器外的相同标识无关 – IPC Namespace 虽然种类很多，但是想要形成虚拟化的错觉只需要用到其中的一部分即可。为了构建我们的容器，我们选择只使用 Mount、PID 和 User。
+隔离文件系统 容器化最重要的是隔离文件系统。所谓的程序运行环境，本质上就是文件系统中的各类库和应用程序。同一主机上的不同发行版的容器都运行在相同的内核上，他们只是在库和应用程序上存在不同。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-10-13 10:24:54 +0800 CST'>十月 13, 2025</span>&nbsp;·&nbsp;6 分钟&nbsp;·&nbsp;1074 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 用 Namespace 手搓一个容器" href="https://wokron.github.io/posts/simple-container/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="next" href="https://wokron.github.io/page/2/">下一页&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

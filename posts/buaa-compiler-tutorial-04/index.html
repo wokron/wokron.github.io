@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>编译技术教程：符号表与类型系统 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Tolang, BUAA">
+<meta name="description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。
+一、符号表 符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！
+二、符号表的创建 在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 pre，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 next。此外，在编译的过程中，有一个指向当前作用域符号表的指针 cur。
+符号表的生成主要有以下几个操作：
+初始时，创建一个全局变量符号表，也是最外层作用域符号表，cur 指向该符号表。 编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 cur 指向的符号表。 编译时，进入新的作用域（block），生成新的符号表，设置 cur 指向的符号表的 next 指针指向新符号表，新符号表的 pre 设置为 cur，然后将 cur 指向新符号表，后续会在新符号表上填入信息。 编译时，离开作用域（block），通过 cur 指向的符号表的 pre 指针回溯至外层符号表，并对应修改 cur 指针。 不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。
+在 tolangc 中，我们定义了一个栈式符号表。符号表类 SymbolTable 对应某一作用域的符号表。每一个符号表拥有一个 _father 字段，指向更外层作用域的符号表。另有 _symbols 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 Symbol 类对象）作为值。
+class SymbolTable : public std::enable_shared_from_this&lt;SymbolTable&gt; { // ... private: std::unordered_map&lt;std::string, std::shared_ptr&lt;Symbol&gt;&gt; _symbols; std::shared_ptr&lt;SymbolTable&gt; _father; }; 当进入新的作用域时，我们调用 push_scope 函数，创建新的符号表，并将该符号表的 _father 字段设置为当前符号表。">
+<meta name="author" content="Wokron, 北航编译技术课程组">
+<link rel="canonical" href="https://wokron.github.io/posts/buaa-compiler-tutorial-04/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/buaa-compiler-tutorial-04/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="编译技术教程：符号表与类型系统" />
+<meta property="og:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。
+一、符号表 符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！
+二、符号表的创建 在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 pre，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 next。此外，在编译的过程中，有一个指向当前作用域符号表的指针 cur。
+符号表的生成主要有以下几个操作：
+初始时，创建一个全局变量符号表，也是最外层作用域符号表，cur 指向该符号表。 编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 cur 指向的符号表。 编译时，进入新的作用域（block），生成新的符号表，设置 cur 指向的符号表的 next 指针指向新符号表，新符号表的 pre 设置为 cur，然后将 cur 指向新符号表，后续会在新符号表上填入信息。 编译时，离开作用域（block），通过 cur 指向的符号表的 pre 指针回溯至外层符号表，并对应修改 cur 指针。 不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。
+在 tolangc 中，我们定义了一个栈式符号表。符号表类 SymbolTable 对应某一作用域的符号表。每一个符号表拥有一个 _father 字段，指向更外层作用域的符号表。另有 _symbols 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 Symbol 类对象）作为值。
+class SymbolTable : public std::enable_shared_from_this&lt;SymbolTable&gt; { // ... private: std::unordered_map&lt;std::string, std::shared_ptr&lt;Symbol&gt;&gt; _symbols; std::shared_ptr&lt;SymbolTable&gt; _father; }; 当进入新的作用域时，我们调用 push_scope 函数，创建新的符号表，并将该符号表的 _father 字段设置为当前符号表。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/buaa-compiler-tutorial-04/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-09-10T16:04:07+08:00" />
+<meta property="article:modified_time" content="2024-09-10T16:04:07+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="编译技术教程：符号表与类型系统"/>
+<meta name="twitter:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。
+一、符号表 符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！
+二、符号表的创建 在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 pre，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 next。此外，在编译的过程中，有一个指向当前作用域符号表的指针 cur。
+符号表的生成主要有以下几个操作：
+初始时，创建一个全局变量符号表，也是最外层作用域符号表，cur 指向该符号表。 编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 cur 指向的符号表。 编译时，进入新的作用域（block），生成新的符号表，设置 cur 指向的符号表的 next 指针指向新符号表，新符号表的 pre 设置为 cur，然后将 cur 指向新符号表，后续会在新符号表上填入信息。 编译时，离开作用域（block），通过 cur 指向的符号表的 pre 指针回溯至外层符号表，并对应修改 cur 指针。 不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。
+在 tolangc 中，我们定义了一个栈式符号表。符号表类 SymbolTable 对应某一作用域的符号表。每一个符号表拥有一个 _father 字段，指向更外层作用域的符号表。另有 _symbols 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 Symbol 类对象）作为值。
+class SymbolTable : public std::enable_shared_from_this&lt;SymbolTable&gt; { // ... private: std::unordered_map&lt;std::string, std::shared_ptr&lt;Symbol&gt;&gt; _symbols; std::shared_ptr&lt;SymbolTable&gt; _father; }; 当进入新的作用域时，我们调用 push_scope 函数，创建新的符号表，并将该符号表的 _father 字段设置为当前符号表。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "编译技术教程：符号表与类型系统",
+      "item": "https://wokron.github.io/posts/buaa-compiler-tutorial-04/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "编译技术教程：符号表与类型系统",
+  "name": "编译技术教程：符号表与类型系统",
+  "description": "系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。\n一、符号表 符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！\n二、符号表的创建 在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 pre，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 next。此外，在编译的过程中，有一个指向当前作用域符号表的指针 cur。\n符号表的生成主要有以下几个操作：\n初始时，创建一个全局变量符号表，也是最外层作用域符号表，cur 指向该符号表。 编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 cur 指向的符号表。 编译时，进入新的作用域（block），生成新的符号表，设置 cur 指向的符号表的 next 指针指向新符号表，新符号表的 pre 设置为 cur，然后将 cur 指向新符号表，后续会在新符号表上填入信息。 编译时，离开作用域（block），通过 cur 指向的符号表的 pre 指针回溯至外层符号表，并对应修改 cur 指针。 不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。\n在 tolangc 中，我们定义了一个栈式符号表。符号表类 SymbolTable 对应某一作用域的符号表。每一个符号表拥有一个 _father 字段，指向更外层作用域的符号表。另有 _symbols 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 Symbol 类对象）作为值。\nclass SymbolTable : public std::enable_shared_from_this\u0026lt;SymbolTable\u0026gt; { // ... private: std::unordered_map\u0026lt;std::string, std::shared_ptr\u0026lt;Symbol\u0026gt;\u0026gt; _symbols; std::shared_ptr\u0026lt;SymbolTable\u0026gt; _father; }; 当进入新的作用域时，我们调用 push_scope 函数，创建新的符号表，并将该符号表的 _father 字段设置为当前符号表。",
+  "keywords": [
+    "Tolang", "BUAA"
+  ],
+  "articleBody": " 系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。\n一、符号表 符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！\n二、符号表的创建 在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 pre，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 next。此外，在编译的过程中，有一个指向当前作用域符号表的指针 cur。\n符号表的生成主要有以下几个操作：\n初始时，创建一个全局变量符号表，也是最外层作用域符号表，cur 指向该符号表。 编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 cur 指向的符号表。 编译时，进入新的作用域（block），生成新的符号表，设置 cur 指向的符号表的 next 指针指向新符号表，新符号表的 pre 设置为 cur，然后将 cur 指向新符号表，后续会在新符号表上填入信息。 编译时，离开作用域（block），通过 cur 指向的符号表的 pre 指针回溯至外层符号表，并对应修改 cur 指针。 不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。\n在 tolangc 中，我们定义了一个栈式符号表。符号表类 SymbolTable 对应某一作用域的符号表。每一个符号表拥有一个 _father 字段，指向更外层作用域的符号表。另有 _symbols 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 Symbol 类对象）作为值。\nclass SymbolTable : public std::enable_shared_from_this\u003cSymbolTable\u003e { // ... private: std::unordered_map\u003cstd::string, std::shared_ptr\u003cSymbol\u003e\u003e _symbols; std::shared_ptr\u003cSymbolTable\u003e _father; }; 当进入新的作用域时，我们调用 push_scope 函数，创建新的符号表，并将该符号表的 _father 字段设置为当前符号表。\nstd::shared_ptr\u003cSymbolTable\u003e push_scope() { auto new_table = std::make_shared\u003cSymbolTable\u003e(); new_table-\u003e_father = shared_from_this(); return new_table; } 当离开作用域时，我们调用 pop_scope 函数，返回上一层作用域的符号表，即 _father 字段取值。由于我们使用了 std::shared_ptr，所以并不需要手动析构被弹出的符号表。\nstd::shared_ptr\u003cSymbolTable\u003e pop_scope() { return _father; } 此时，假设我们使用变量 cur_scope 保存当前符号表，那么在进入和离开作用域的时候，我们可以采用如下代码操作符号表。\n// enter scope cur_scope = cur_scope-\u003epush_scope(); // do something in scope // exit scope cur_scope = cur_scope-\u003epop_scope(); 三、符号的插入 符号的上下文相关性来自于其在不同位置的定义和使用。在同一作用域中，符号的定义意味着符号信息的创建，符号的使用则将符号信息由程序的一处传递到当前位置。这一过程反映到符号表上，就是符号的插入和查找。\n符号的插入也就是将我们声明的标识符转化为符号单元，添加到当前的符号表中。当我们在语义分析阶段解析到某一符号的定义之时，就需要将该符号插入到符号表中。该符号在定义处所能得知的相关信息，如符号类型、数据类型等等，也应当一同插入到符号表中。另外，同一个作用域下是不允许出现两个同名标识符的，出现这种情况时，应进行错误处理。\n综上，符号的插入操作具体流程如下：\n在标识符声明时，判断该标识符名称在当前作用域下是否重复。若重复则报错，否则执行 2。 将标识符名称作为键，将该定义处的相关信息作为符号信息，插入到当前符号表中。 在 tolangc 中，我们使用 exist_in_scope 和 add_symbol 函数实现上述流程。\nbool exist_in_scope(const std::string \u0026name) { return _symbols.find(name) != _symbols.end(); } bool add_symbol(std::shared_ptr\u003cSymbol\u003e symbol) { if (exist_in_scope(symbol-\u003ename)) { return false; } _symbols[symbol-\u003ename] = symbol; return true; } 四、符号的查找 在编译的过程中，如果遇到一个标识符的引用，就需要确定该标识符是否定义过，以及其相关信息，此时我们需要在符号表内查找该符号。\n关于符号表的查找，各位同学回忆自己平时使用过的常见编程语言，应当能够显然的认识到某一名称所对应的符号是在当前作用域和其上嵌套的所有作用域中，与该名称同名，且定义处于最内层的符号。因此，若当前作用域无待查询符号，我们应当沿符号表树向上递归查找最近的符号，直至最外层的符号表。如果最外层的符号表汇总依旧无法查找到名称所对应的符号，才能判定符号未定义。\n因此，符号的查找操作具体流程如下：\n在使用标识符时，在当前作用域符号表内查询是否有符号记录，有则返回其信息，无则执行 2。 利用当前作用域符号表的 pre 指针，访问外层作用域符号表。如果更外层符号表不存在（pre 指针为空），说明该标识符未定义，报错误；否则在外层作用域符号表中重新执行 1。 在 tolangc 中，我们使用 get_symbol 函数实现上述流程。\nstd::shared_ptr\u003cSymbol\u003e get_symbol(const std::string \u0026name) { auto it = _symbols.find(name); if (it != _symbols.end()) { return it-\u003esecond; } else if (_father != nullptr) { return _father-\u003eget_symbol(name); } else { return nullptr; } } 五、符号与类型的设计 符号表本身的设计并不复杂，我们在之前的小节中已经进行了详尽的说明。但是在符号表当中究竟应当存储哪些信息，却是一个难以回答的问题。将符号表视为一个映射，那么我们已知其键为符号的字面名称，而其值却需要根据后续语义分析阶段的需要来确定。而目前各位同学还未正式接触中间代码生成，对符号表应该存什么内容想必会一头雾水（不用怀疑自己，作者当初也是）。\n因此我们这里给出一些值得参考的思路。符号表中存储的信息应当包括符号定义处的信息，需要尽可能详细但不冗余，以方便后续的查找使用。具体来说，符号信息应当至少包括：符号类型（如变量、函数）、符号的数据类型（int、char、数组、指针等）以及中间代码中和符号相关的信息（例如 LLVM 中符号所对应的数据结构）。\n由于 Java 和 C++ 都支持 OOP，所以很容易通过继承区分不同的符号类型。在 tolangc 中，我们也使用继承区分了不同的符号。\nstruct Symbol { // ... }; struct VariableSymbol : public Symbol { // ... }; struct FunctionSymbol : public Symbol { // ... }; 接下来我们希望重点讨论一下类型系统。这主要是由于今年的实验课程文法中除了 int 类型，又额外加入了 char 类型，当面临更加复杂的类型时，有必要设计更加结构化、可扩展的类型系统。\n类型，一方面决定了数据在内存中的组织方式，另一方面又定义了不同数据的行为和约束。而类型系统就是在编译器中实现程序中类型的定义、转换、验证等等功能的系统。在一些语言中，类型系统可以极其复杂，不过我们实验所采用的类型系统十分简单。只设计两种基本类型：int 和 char，以及两种复合类型：数组和不完整的指针。\n基本类型是类型系统中的基本元素，所有类型要么是基本类型，要么便是类型的组合。对于类型的组合，数组就是一个很好的例子，例如 int[3]，意味着三个 int 类型的顺序组合。这也暗示了其在内存中的存储方式，那就是三个 int 类型按顺序排列而成。\n不同类型的变量或值之间能够进行一系列的运算，并产生新的值，该值同样具有一定的类型。这反映到类型本身，可以认为类型之间同样具有一系列的运算关系。\n例如，int 和 char 类型之间能够进行加法运算，得到的结果为 int 类型（int + char = int）。又例如一个二维数组 int[2][3]，我们能够进行索引运算，第一次索引得到 int[3]，第二次索引得到 int（int[2][3] [] int = int[3]，int[3] [] int = int）。同样的，对于实验文法中的不完整的指针类型，我们也可以进行索引操作（int* [] int = int）。\n这里容易产生的误区是将 int[2][3] 视为一个 2x3 大小的二维数组。但实际上应当视作一个长度为 2 的数组，其元素类型为 int[3]。\n类型系统能够暗示类型间的隐式转换。例如由于 int 与 char 的算术运算结果为 int，因此进行运算时，char 类型需要自动转换为 int 类型（由 8 位符号扩展为 32 位），之后再进行运算；将 int 值赋给 char 类型变量时，需要强制类型转换为 char 类型（将待赋值的 32 位截断至后 8 位）。\n最后，我们给出在代码中表示类型的一些建议。由于类型的嵌套关系，可以考虑定义所有类型的公共父类 Type。所有其他类型类集成自该类。对于不同基本类型，可以考虑将其设计为单例。对于数组和指针，则需在其字段中包含元素类型和引用类型。（另外数组还需额外设定数组长度。）\nclass Type { // ... }; class ArrayType : public Type { // ... private: Type *_elm_type; unsigned int _size; }; class PointerType : public Type { // ... private: Type *_ref_type; } ",
+  "wordCount" : "349",
+  "inLanguage": "zh",
+  "datePublished": "2024-09-10T16:04:07+08:00",
+  "dateModified": "2024-09-10T16:04:07+08:00",
+  "author":[{
+    "@type": "Person",
+    "name": "Wokron"
+  }, {
+    "@type": "Person",
+    "name": "北航编译技术课程组"
+  }],
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/buaa-compiler-tutorial-04/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      编译技术教程：符号表与类型系统
+    </h1>
+    <div class="post-meta"><span title='2024-09-10 16:04:07 +0800 CST'>九月 10, 2024</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;349 字&nbsp;·&nbsp;Wokron, 北航编译技术课程组&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/buaa-compiler-tutorial-04.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e7%ac%a6%e5%8f%b7%e8%a1%a8" aria-label="一、符号表">一、符号表</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e7%ac%a6%e5%8f%b7%e8%a1%a8%e7%9a%84%e5%88%9b%e5%bb%ba" aria-label="二、符号表的创建">二、符号表的创建</a></li>
+                <li>
+                    <a href="#%e4%b8%89%e7%ac%a6%e5%8f%b7%e7%9a%84%e6%8f%92%e5%85%a5" aria-label="三、符号的插入">三、符号的插入</a></li>
+                <li>
+                    <a href="#%e5%9b%9b%e7%ac%a6%e5%8f%b7%e7%9a%84%e6%9f%a5%e6%89%be" aria-label="四、符号的查找">四、符号的查找</a></li>
+                <li>
+                    <a href="#%e4%ba%94%e7%ac%a6%e5%8f%b7%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%9a%84%e8%ae%be%e8%ae%a1" aria-label="五、符号与类型的设计">五、符号与类型的设计</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><blockquote>
+<p>系列导航：</p>
+<ul>
+<li>《<a href="../buaa-compiler-tutorial-00">编译技术教程：前言</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-01">编译技术教程：词法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-02">编译技术教程：抽象语法树</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-03">编译技术教程：语法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-04">编译技术教程：符号表与类型系统</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-05">编译技术教程：语义分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-06">编译技术教程：附录 - 项目测试</a>》</li>
+</ul>
+</blockquote>
+<p>在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。</p>
+<h2 id="一符号表">一、符号表<a hidden class="anchor" aria-hidden="true" href="#一符号表">#</a></h2>
+<p>符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！</p>
+<h2 id="二符号表的创建">二、符号表的创建<a hidden class="anchor" aria-hidden="true" href="#二符号表的创建">#</a></h2>
+<p>在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 <code>pre</code>，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 <code>next</code>。此外，在编译的过程中，有一个指向当前作用域符号表的指针 <code>cur</code>。</p>
+<p><img loading="lazy" src="table.png" alt="符号表"  />
+</p>
+<p>符号表的生成主要有以下几个操作：</p>
+<ol>
+<li>初始时，创建一个全局变量符号表，也是最外层作用域符号表，<code>cur</code> 指向该符号表。</li>
+<li>编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 <code>cur</code> 指向的符号表。</li>
+<li>编译时，进入新的作用域（<code>block</code>），生成新的符号表，设置 <code>cur</code> 指向的符号表的 <code>next</code> 指针指向新符号表，新符号表的 <code>pre</code> 设置为 <code>cur</code>，然后将 <code>cur</code> 指向新符号表，后续会在新符号表上填入信息。</li>
+<li>编译时，离开作用域（<code>block</code>），通过 <code>cur</code> 指向的符号表的 <code>pre</code> 指针回溯至外层符号表，并对应修改 <code>cur</code> 指针。</li>
+</ol>
+<p>不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。</p>
+<p>在 tolangc 中，我们定义了一个栈式符号表。符号表类 <code>SymbolTable</code> 对应某一作用域的符号表。每一个符号表拥有一个 <code>_father</code> 字段，指向更外层作用域的符号表。另有 <code>_symbols</code> 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 <code>Symbol</code> 类对象）作为值。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">SymbolTable</span> <span class="o">:</span> <span class="k">public</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_shared_from_this</span><span class="o">&lt;</span><span class="n">SymbolTable</span><span class="o">&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Symbol</span><span class="o">&gt;&gt;</span> <span class="n">_symbols</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">SymbolTable</span><span class="o">&gt;</span> <span class="n">_father</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>当进入新的作用域时，我们调用 <code>push_scope</code> 函数，创建新的符号表，并将该符号表的 <code>_father</code> 字段设置为当前符号表。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">SymbolTable</span><span class="o">&gt;</span> <span class="n">push_scope</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">new_table</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">SymbolTable</span><span class="o">&gt;</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">new_table</span><span class="o">-&gt;</span><span class="n">_father</span> <span class="o">=</span> <span class="n">shared_from_this</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">new_table</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>当离开作用域时，我们调用 <code>pop_scope</code> 函数，返回上一层作用域的符号表，即 <code>_father</code> 字段取值。由于我们使用了 <code>std::shared_ptr</code>，所以并不需要手动析构被弹出的符号表。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">SymbolTable</span><span class="o">&gt;</span> <span class="n">pop_scope</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_father</span><span class="p">;</span> <span class="p">}</span>
+</span></span></code></pre></div><p>此时，假设我们使用变量 <code>cur_scope</code> 保存当前符号表，那么在进入和离开作用域的时候，我们可以采用如下代码操作符号表。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// enter scope
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">cur_scope</span> <span class="o">=</span> <span class="n">cur_scope</span><span class="o">-&gt;</span><span class="n">push_scope</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// do something in scope
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="c1">// exit scope
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">cur_scope</span> <span class="o">=</span> <span class="n">cur_scope</span><span class="o">-&gt;</span><span class="n">pop_scope</span><span class="p">();</span>
+</span></span></code></pre></div><h2 id="三符号的插入">三、符号的插入<a hidden class="anchor" aria-hidden="true" href="#三符号的插入">#</a></h2>
+<p>符号的上下文相关性来自于其在不同位置的定义和使用。在同一作用域中，符号的定义意味着符号信息的创建，符号的使用则将符号信息由程序的一处传递到当前位置。这一过程反映到符号表上，就是符号的<strong>插入</strong>和<strong>查找</strong>。</p>
+<p>符号的<strong>插入</strong>也就是将我们声明的标识符转化为符号单元，添加到<strong>当前</strong>的符号表中。当我们在语义分析阶段解析到某一符号的定义之时，就需要将该符号插入到符号表中。该符号在定义处所能得知的相关信息，如符号类型、数据类型等等，也应当一同插入到符号表中。另外，同一个作用域下是不允许出现两个同名标识符的，出现这种情况时，应进行错误处理。</p>
+<p>综上，符号的插入操作具体流程如下：</p>
+<ol>
+<li>在标识符声明时，判断该标识符名称在当前作用域下是否重复。若重复则报错，否则执行 2。</li>
+<li>将标识符名称作为键，将该定义处的相关信息作为符号信息，插入到当前符号表中。</li>
+</ol>
+<p>在 tolangc 中，我们使用 <code>exist_in_scope</code> 和 <code>add_symbol</code> 函数实现上述流程。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">bool</span> <span class="nf">exist_in_scope</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">_symbols</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="n">_symbols</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">bool</span> <span class="nf">add_symbol</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Symbol</span><span class="o">&gt;</span> <span class="n">symbol</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">exist_in_scope</span><span class="p">(</span><span class="n">symbol</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">_symbols</span><span class="p">[</span><span class="n">symbol</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">symbol</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="四符号的查找">四、符号的查找<a hidden class="anchor" aria-hidden="true" href="#四符号的查找">#</a></h2>
+<p>在编译的过程中，如果遇到一个标识符的引用，就需要确定该标识符是否定义过，以及其相关信息，此时我们需要在符号表内<strong>查找</strong>该符号。</p>
+<p>关于符号表的查找，各位同学回忆自己平时使用过的常见编程语言，应当能够显然的认识到某一名称所对应的符号是在当前作用域和其上嵌套的所有作用域中，与该名称同名，且定义处于最内层的符号。因此，若当前作用域无待查询符号，我们应当沿符号表树向上递归查找最近的符号，直至最外层的符号表。如果最外层的符号表汇总依旧无法查找到名称所对应的符号，才能判定符号未定义。</p>
+<p>因此，符号的查找操作具体流程如下：</p>
+<ol>
+<li>在使用标识符时，在当前作用域符号表内查询是否有符号记录，有则返回其信息，无则执行 2。</li>
+<li>利用当前作用域符号表的 <code>pre</code> 指针，访问外层作用域符号表。如果更外层符号表不存在（<code>pre</code> 指针为空），说明该标识符未定义，报错误；否则在外层作用域符号表中重新执行 1。</li>
+</ol>
+<p>在 tolangc 中，我们使用 <code>get_symbol</code> 函数实现上述流程。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Symbol</span><span class="o">&gt;</span> <span class="n">get_symbol</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">_symbols</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">it</span> <span class="o">!=</span> <span class="n">_symbols</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">_father</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">_father</span><span class="o">-&gt;</span><span class="n">get_symbol</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="五符号与类型的设计">五、符号与类型的设计<a hidden class="anchor" aria-hidden="true" href="#五符号与类型的设计">#</a></h2>
+<p>符号表本身的设计并不复杂，我们在之前的小节中已经进行了详尽的说明。但是在符号表当中究竟应当存储哪些信息，却是一个难以回答的问题。将符号表视为一个映射，那么我们已知其键为符号的字面名称，而其值却需要根据后续语义分析阶段的需要来确定。而目前各位同学还未正式接触中间代码生成，对符号表应该存什么内容想必会一头雾水（不用怀疑自己，作者当初也是）。</p>
+<p>因此我们这里给出一些值得参考的思路。符号表中存储的信息应当包括符号定义处的信息，需要尽可能<strong>详细但不冗余</strong>，以方便后续的查找使用。具体来说，符号信息应当至少包括：符号类型（如变量、函数）、符号的数据类型（int、char、数组、指针等）以及中间代码中和符号相关的信息（例如 LLVM 中符号所对应的数据结构）。</p>
+<p>由于 Java 和 C++ 都支持 OOP，所以很容易通过继承区分不同的符号类型。在 tolangc 中，我们也使用继承区分了不同的符号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">Symbol</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">VariableSymbol</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Symbol</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">FunctionSymbol</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Symbol</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span></code></pre></div><p>接下来我们希望重点讨论一下类型系统。这主要是由于今年的实验课程文法中除了 <code>int</code> 类型，又额外加入了 <code>char</code> 类型，当面临更加复杂的类型时，有必要设计更加结构化、可扩展的类型系统。</p>
+<p>类型，一方面决定了数据在内存中的组织方式，另一方面又定义了不同数据的行为和约束。而类型系统就是在编译器中实现程序中类型的定义、转换、验证等等功能的系统。在一些语言中，类型系统可以极其复杂，不过我们实验所采用的类型系统十分简单。只设计两种基本类型：<code>int</code> 和 <code>char</code>，以及两种复合类型：数组和不完整的指针。</p>
+<p>基本类型是类型系统中的基本元素，所有类型要么是基本类型，要么便是类型的组合。对于类型的组合，数组就是一个很好的例子，例如 <code>int[3]</code>，意味着三个 <code>int</code> 类型的顺序组合。这也暗示了其在内存中的存储方式，那就是三个 <code>int</code> 类型按顺序排列而成。</p>
+<p>不同类型的变量或值之间能够进行一系列的运算，并产生新的值，该值同样具有一定的类型。这反映到类型本身，可以认为类型之间同样具有一系列的运算关系。</p>
+<p>例如，<code>int</code> 和 <code>char</code> 类型之间能够进行加法运算，得到的结果为 <code>int</code> 类型（<code>int + char = int</code>）。又例如一个二维数组 <code>int[2][3]</code>，我们能够进行索引运算，第一次索引得到 <code>int[3]</code>，第二次索引得到 <code>int</code>（<code>int[2][3] [] int = int[3]</code>，<code>int[3] [] int = int</code>）。同样的，对于实验文法中的不完整的指针类型，我们也可以进行索引操作（<code>int* [] int = int</code>）。</p>
+<blockquote>
+<p>这里容易产生的误区是将 <code>int[2][3]</code> 视为一个 2x3 大小的二维数组。但实际上应当视作一个长度为 2 的数组，其元素类型为 <code>int[3]</code>。</p>
+</blockquote>
+<p>类型系统能够暗示类型间的隐式转换。例如由于 <code>int</code> 与 <code>char</code> 的算术运算结果为 <code>int</code>，因此进行运算时，<code>char</code> 类型需要自动转换为 <code>int</code> 类型（由 8 位符号扩展为 32 位），之后再进行运算；将 <code>int</code> 值赋给 <code>char</code> 类型变量时，需要强制类型转换为 <code>char</code> 类型（将待赋值的 32 位截断至后 8 位）。</p>
+<p>最后，我们给出在代码中表示类型的一些建议。由于类型的嵌套关系，可以考虑定义所有类型的公共父类 <code>Type</code>。所有其他类型类集成自该类。对于不同基本类型，可以考虑将其设计为单例。对于数组和指针，则需在其字段中包含元素类型和引用类型。（另外数组还需额外设定数组长度。）</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Type</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">ArrayType</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Type</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Type</span> <span class="o">*</span><span class="n">_elm_type</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">_size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">PointerType</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Type</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Type</span> <span class="o">*</span><span class="n">_ref_type</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/tolang/">Tolang</a></li>
+      <li><a href="https://wokron.github.io/tags/buaa/">BUAA</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/buaa-compiler-tutorial-05/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>编译技术教程：语义分析</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/buaa-compiler-tutorial-03/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>编译技术教程：语法分析</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：符号表与类型系统 on x"
+            href="https://x.com/intent/tweet/?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e7%ac%a6%e5%8f%b7%e8%a1%a8%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%b3%bb%e7%bb%9f&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f&amp;hashtags=Tolang%2cBUAA">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：符号表与类型系统 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f&amp;title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e7%ac%a6%e5%8f%b7%e8%a1%a8%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%b3%bb%e7%bb%9f&amp;summary=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e7%ac%a6%e5%8f%b7%e8%a1%a8%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%b3%bb%e7%bb%9f&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：符号表与类型系统 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f&title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e7%ac%a6%e5%8f%b7%e8%a1%a8%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%b3%bb%e7%bb%9f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：符号表与类型系统 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：符号表与类型系统 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e7%ac%a6%e5%8f%b7%e8%a1%a8%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%b3%bb%e7%bb%9f%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：符号表与类型系统 on telegram"
+            href="https://telegram.me/share/url?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e7%ac%a6%e5%8f%b7%e8%a1%a8%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%b3%bb%e7%bb%9f&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：符号表与类型系统 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e7%ac%a6%e5%8f%b7%e8%a1%a8%e4%b8%8e%e7%b1%bb%e5%9e%8b%e7%b3%bb%e7%bb%9f&u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-04%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

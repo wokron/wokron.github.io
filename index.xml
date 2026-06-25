@@ -1,0 +1,1356 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/</link>
+    <description>Recent content on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Thu, 25 Jun 2026 17:04:22 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>2ascii：GIF 转 ASCII 动画</title>
+      <link>https://wokron.github.io/posts/2ascii/</link>
+      <pubDate>Thu, 25 Jun 2026 17:04:22 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/2ascii/</guid>
+      <description>几个月前，我决定把自己的 github 主页换成 ascii 动画。最初我以为很简单，但找了半天也没找到合适的脚本或网站，所以就自己手搓了个并不通用的脚本，调整了很久终于有了一个比较满意的结果。
+最近我想，为什么不把这个做成一个网页呢？如果有可视化的话，总比那时候慢慢调整更方便一点。所以就有了 2ascii 这个仓库。
+这只是一组静态页面，所以可以在任何地方访问。不过为了方便，我在这里托管了一个页面。
+我对 JS 并不熟悉，但是 LLM Agent 很好的弥补了这一点。作为一个小品级项目，LLM 还是够用的。</description>
+    </item>
+    <item>
+      <title>io_uring Internals</title>
+      <link>https://wokron.github.io/posts/io-uring-raids/</link>
+      <pubDate>Thu, 25 Jun 2026 16:03:51 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/io-uring-raids/</guid>
+      <description>最近做的一份幻灯片，介绍了 io_uring 的一些内部实现。
+点击上方幻灯片以控制播放，或点此直接打开。</description>
+    </item>
+    <item>
+      <title>Condy 性能实测：零开销抽象全面释放 io_uring 性能</title>
+      <link>https://wokron.github.io/posts/condy-bench/</link>
+      <pubDate>Fri, 06 Feb 2026 16:04:33 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/condy-bench/</guid>
+      <description>Condy 是一款基于 io_uring 的零开销、高性能协程运行时，专为 Linux 系统设计。它持续跟进内核 io_uring 的最新特性，充分发挥底层异步 IO 的极致性能。Condy 采用 C++20 协程，提供直观易用的异步编程体验，无需回调，代码更简洁、可读性更强。我们已将 Condy 与 libaio、liburing、epoll 等底层接口，以及 Asio、Monoio、Compio 等主流异步框架进行了全面性能对比。展现了 Condy 的性能优势。
+基准测试源码见 condy-bench。
+测试环境：
+CPU：AMD Ryzen 9 7945HX with Radeon Graphics × 16 存储：SK Hynix HFS001TEJ9X115N（NVMe SSD，1TB，PCIe 4.0 x4） 编译器：clang 18.1.3 操作系统：Linux Mint 22 Cinnamon 内核：6.8.0-90-generic 基线框架：
+libaio：Linux 上 io_uring 之前的异步文件 IO 框架。 liburing：io_uring 本身，未与协程封装，使用上略不便。 Asio：C++ 流行的 IO 框架。 Monoio：基于 io_uring 的 Rust 协程框架（GitHub 星数高于 liburing）。 Compio：另一个基于 io_uring 的 Rust 协程框架。 顺序文件读取 我们测试了 Condy 在 8GB 文件上进行 64KB 顺序读取的性能，收集吞吐量数据，并与 libaio 和 liburing 等的基线实现进行对比。</description>
+    </item>
+    <item>
+      <title>构建最简 Linux 文件系统</title>
+      <link>https://wokron.github.io/posts/custom-linux-kernel-in-qemu-2/</link>
+      <pubDate>Thu, 22 Jan 2026 17:24:05 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/custom-linux-kernel-in-qemu-2/</guid>
+      <description>上回说到了我们如何用 QEMU 搭建一个包含最新内核的开发环境。但试过一段时间后，我却感觉这样并不方便。
+更多时候，我只需要运行单个程序（比如，单元测试）即可，而上文中所构建的完整环境却让这个过程便复杂了。本文介绍了一个更简单的方法。只需要一个简单的脚本即可构建完整运行环境。
+initrd 上一篇文章中已经提到了使用 initrd 启动操作系统的方法。initrd 是一个只读文件系统镜像，内核启动时，会将镜像内容加载到内存中。程序可以像普通文件系统一样访问。
+加载文件系统之后，内核会从其中寻找可用的 init 程序。因此我们只要编写合理的 init 程序，将其打包到一个 initrd 中即可。
+busybox 在这种从零开始构建文件系统的场景下，使用动态库太过繁琐。因此我们直接用宿主机上的 busybox 来提供基本的程序。
+准备阶段 首先创建一个 WORK_DIR 目录。此路径下的文件会被打包成文件系统镜像。
+WORK_DIR=$(mktemp -d) trap &amp;#34;rm -rf $WORK_DIR&amp;#34; EXIT 之后寻找宿主机上的 busybox，将其复制到 $WORK_DIR/bin/busybox。
+mkdir -p &amp;#34;$WORK_DIR/bin&amp;#34; # Copy busybox into the work directory BUSYBOX_PATH=$(which busybox) if [ -z &amp;#34;$BUSYBOX_PATH&amp;#34; ]; then echo &amp;#34;Error: busybox not found in PATH.&amp;#34; exit 1 fi cp &amp;#34;$BUSYBOX_PATH&amp;#34; &amp;#34;$WORK_DIR/bin/busybox&amp;#34; 创建 $WORK_DIR/init 脚本，赋予其可执行权限。内核在启动中会识别并执行该脚本。
+# Create init script cat &amp;lt;&amp;lt; &amp;#39;EOF&amp;#39; &amp;gt; &amp;#34;$WORK_DIR/init&amp;#34; #!</description>
+    </item>
+    <item>
+      <title>在 QEMU 上运行最新内核</title>
+      <link>https://wokron.github.io/posts/custom-linux-kernel-in-qemu/</link>
+      <pubDate>Sat, 29 Nov 2025 23:03:46 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/custom-linux-kernel-in-qemu/</guid>
+      <description>最近，我的业余时间都花在了一个和系统编程有关的项目上。不久之后我遇到了一个问题：想要使用最新版本内核的特性并不是一件十分容易的事。发行版大多滞后于最新的内核版本，而我又不是那样激进的人，想要冒险在自己唯一的这台 Linux 电脑上升级内核（使用 installkernel 命令）。所以我需要一个办法，在保证我的系统安全的情况下，搭建一个具有新版本内核的开发环境。
+这种情况容器帮不了我，虚拟机则是一个好选择。
+我曾经写过一个简单的 QEMU 介绍。但实际上我对 QEMU 的了解也仅限于那篇文章的内容了。探索本文的内容花了我一些时间。在这个过程中，我也发现网上的相关内容要么包含了未充分说明的脚本，要么存在许多冗余选项。我觉得在此处以一个简单、充分解释的方式记录这一过程似乎是有意义的。
+当然，从编译内核开始 如果你只需要一个能在虚拟机里运行的内核，不需要深度定制的话，那么编译内核其实很简单。这里有一个简单的教程，不过我们接下来要做的还要更简单。
+首先，你要下载内核源码。如果不需要修改源码的话，从 kernel.org 下载是最方便的。这里下载了编写本文时的 stable 版本（6.17.9）。
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.9.tar.xz tar -xf linux-6.17.9.tar.xz cd ./linux-6.17.9 之后，配置编译选项。这将创建编译配置文件 .config
+make defconfig make kvm_guest.config 前一条命令选择使用默认编译配置。第二条命令在默认配置基础上设置编译选项，使编译后的镜像可以作为 kvm 上的虚拟机运行。如果有其他需求，可以在此基础上继续配置。
+之后直接编译即可。由于只包含了作为虚拟机运行的最小配置，不需要编译驱动程序，这一过程应该很快。在我的笔记本上只用了一分钟。
+make -j $(nproc) 编译后的内核镜像位于 arch/x86/boot/bzImage。当然，是 x86 架构。
+file arch/x86/boot/bzImage # arch/x86/boot/bzImage: Linux kernel x86 boot executable bzImage, version 6.17.9 (wokron@wokron-navi) #2 SMP PREEMPT_DYNAMIC Sun Nov 30 12:34:56 CST 2025, RO-rootFS, swap_dev 0XD, Normal VGA 准备根文件系统 简易根文件系统 这一点和我之前有关容器的文章中的内容类似。如果不考虑实际可用性，我们现在就可以运行一个内核了。</description>
+    </item>
+    <item>
+      <title>用 Namespace 手搓一个容器</title>
+      <link>https://wokron.github.io/posts/simple-container/</link>
+      <pubDate>Mon, 13 Oct 2025 10:24:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/simple-container/</guid>
+      <description>容器技术由 Linux 下三项技术构成。这三项技术分别是 Namespace、Cgroups 和 Unionfs。他们分别实现了系统逻辑资源的隔离、物理资源的限制以及容器的文件系统。
+在这之中最为关键的是 Namespace。因为 Namespace 实现了虚拟化中最重要的隔离的功能。在 Namespace 之外即使不使用 Cgroups，用其他文件系统替代 Unionfs，依然能够实现一个容器的许多功能。
+所以本文我们尝试用 Namespace 构建一个简单的容器。让我们首先想想，一个容器中的环境究竟需要与 host 隔离哪些资源。（请把容器想象成 host 之外的另一台机器。）
+文件系统：容器中的进程不能访问 host 的文件系统。这意味着挂载点的隔离 &amp;ndash; Mount Namespace 进程空间：容器中的进程无法查看容器外的进程信息。这意味着进程号的隔离 &amp;ndash; PID Namespace 网络接口：容器中的进程拥有自己的网络接口，不使用 host 上的网络接口。这意味着网络的隔离 &amp;ndash; Network Namespace 用户：容器中的用户和容器外的用户无关，例如容器内的 root 和容器外的 root 并不相同。这意味着用户的隔离 &amp;ndash; User Namespace 物理资源：容器能够看到和管理的物理资源和容器外的资源不同。这意味着 Cgroups 视图的隔离 &amp;ndash; Cgroups Namespace 时间：容器中的时间系统和容器外的时间不一定相同 &amp;ndash; Time Namespace 主机名：容器中的主机名和容器外的主机名不一定相同 &amp;ndash; UTS Namespace IPC：IPC，例如 Posix 消息队列，使用类似文件名的标识符，但是又并不真正存在于文件系统中。容器中的这些标识符和容器外的相同标识无关 &amp;ndash; IPC Namespace 虽然种类很多，但是想要形成虚拟化的错觉只需要用到其中的一部分即可。为了构建我们的容器，我们选择只使用 Mount、PID 和 User。
+隔离文件系统 容器化最重要的是隔离文件系统。所谓的程序运行环境，本质上就是文件系统中的各类库和应用程序。同一主机上的不同发行版的容器都运行在相同的内核上，他们只是在库和应用程序上存在不同。</description>
+    </item>
+    <item>
+      <title>Linux 下的用户和容器中的用户</title>
+      <link>https://wokron.github.io/posts/user-perm-and-container/</link>
+      <pubDate>Sun, 12 Oct 2025 16:11:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/user-perm-and-container/</guid>
+      <description>多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。
+不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。
+用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。
+操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。
+$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。
+$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。
+当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。
+子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。
+超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。
+超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。
+利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。
+$ sleep 1 &amp;amp; ps -o user,group,uid,gid -p $!</description>
+    </item>
+    <item>
+      <title>C&#43;&#43; 踩坑记录（持续更新！）</title>
+      <link>https://wokron.github.io/posts/cpp-pitfalls/</link>
+      <pubDate>Thu, 11 Sep 2025 22:37:42 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/cpp-pitfalls/</guid>
+      <description>有人说你永远不能自称精通 C++，本文试图为这个观点提供一个例证。下面列出了一些从去年（2024）开始我编写 C++ 代码时犯过的错误。当然，有些可能看上去很蠢，不过谁又能在未知全貌的时候保证自己不会犯错呢？我认为这些错误至少初看上去是反直觉的。
+std 集合操作只能用于有序容器 你要表示两个整数集合，所以你用了 std::unordered_set&amp;lt;int&amp;gt;。之后你想要求两个集合的交集，你搜了一下 STL，发现 std::set_intersection 似乎正合适。于是你写了一个简单的程序
+// test_set.cpp std::unordered_set&amp;lt;int&amp;gt; set1 = {1, 2, 3, 4, 5}; std::unordered_set&amp;lt;int&amp;gt; set2 = {4, 5, 6, 7, 8}; std::unordered_set&amp;lt;int&amp;gt; result; std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(result, result.begin())); for (const auto &amp;amp;elem : result) { std::cout &amp;lt;&amp;lt; elem &amp;lt;&amp;lt; &amp;#34; &amp;#34;; } std::cout &amp;lt;&amp;lt; std::endl; 然后运行，你期望输出的结果是 4 5 或是 5 4（毕竟你很严谨）。可是实际结果呢
+$ clang++ test_set.cpp -o test_set $ ./test_set 什么都没有输出。
+正如 std::set 实际上表示的是有序集合一样，std::set_intersection 实际上也是 ordered_set_intersection，只不过函数签名并不告诉你。</description>
+    </item>
+    <item>
+      <title>我该用什么参数类型？</title>
+      <link>https://wokron.github.io/posts/cpp-parameter-types/</link>
+      <pubDate>Fri, 01 Aug 2025 13:29:24 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/cpp-parameter-types/</guid>
+      <description>本文我们讨论一个很小的问题：不同的函数参数类型都在什么情况下使用？
+参数分类 比如我们有一个类型 T（让问题先简单点，此处 T 并非范型），那么要在函数中传入一个该类型的参数，共有几种可能？我们可以分一下类：
+修饰符：有 const 修饰、无 const 修饰 是否引用：值、左值引用、右值引用 按照这个分类，我们总共能得出 5 种参数类型
+const修饰 是否引用 参数类型 有 值 const T 有 左值引用 const T&amp;amp; 无 值 T 无 左值引用 T&amp;amp; 无 右值引用 T&amp;amp;&amp;amp; const T&amp;amp;&amp;amp; 是没有意义的
+接下来介绍这些参数类型的应用场景
+转移所有权的情况 假设需要将参数的生命周期转移到函数内，那么大多数情况下，直接使用 T 作为参数类型即可。
+例如我们有类型 A，其构造时会接受并持有一个 std::vector&amp;lt;int&amp;gt; 参数。那么参数类型应当为 std::vector&amp;lt;int&amp;gt;。
+class A { public: A(std::vector&amp;lt;int&amp;gt; v) : v_(std::move(v)) {} private: std::vector_&amp;lt;int&amp;gt; v_; }; 我们考虑两种构造类型 A 对象的情况。其一是我们在传入 std::vector&amp;lt;int&amp;gt; 对象后不会再使用该对象。这时我们可以采取移动语义。
+std::vector&amp;lt;int&amp;gt; v; // ... A a(std::move(v)); 其二是我们在传入 std::vector&amp;lt;int&amp;gt; 对象后还会使用该对象。这是我们需要采取复制语义。</description>
+    </item>
+    <item>
+      <title>试试触发（几乎）所有信号</title>
+      <link>https://wokron.github.io/posts/raise-signals/</link>
+      <pubDate>Fri, 23 May 2025 17:22:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/raise-signals/</guid>
+      <description>输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。</description>
+    </item>
+    <item>
+      <title>Linux 进程的内存管理</title>
+      <link>https://wokron.github.io/posts/program-memory-management/</link>
+      <pubDate>Sat, 17 May 2025 09:33:11 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/program-memory-management/</guid>
+      <description>虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。
+堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。
+在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。
+在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。
+下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。
+#include &amp;lt;stdio.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; extern char end; int main() { printf(&amp;#34;Address of end symbol: %p\n&amp;#34;, (void *)&amp;amp;end); printf(&amp;#34;Current program break: %p\n&amp;#34;, sbrk(0)); printf(&amp;#34;New program break: %p\n&amp;#34;, sbrk(1024) + 1024); printf(&amp;#34;After deallocation: %p\n&amp;#34;, sbrk(-512) - 512); } 运行结果如下</description>
+    </item>
+    <item>
+      <title>写个编译期排序</title>
+      <link>https://wokron.github.io/posts/compile-time-sort/</link>
+      <pubDate>Fri, 07 Mar 2025 16:17:03 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compile-time-sort/</guid>
+      <description>这回摆弄一下模板。
+C++ 里有一个 std::integer_sequence。可以定义编译期整数序列。比如说
+#include &amp;lt;utility&amp;gt; using my_seq = std::integer_sequence&amp;lt;int, 1, 2, 3, 4, 5&amp;gt;; 接下来写一个 trait seq_sort_t，实现编译期排序。类似于：
+using my_seq = std::integer_sequence&amp;lt;int, 2, 5, 3, 1, 4&amp;gt;; using sorted_my_seq = seq_sort_t&amp;lt;my_seq&amp;gt;; // std::integer_sequence&amp;lt;int, 1, 2, 3, 4, 5&amp;gt; 首先做一些准备工作。
+运行时输出 通过类型萃取，将 std::integer_sequence 转换为运行时的 std::initializer_list。方便输出结果。
+template &amp;lt;typename S&amp;gt; struct seq_to_init_list; template &amp;lt;typename T, T... Is&amp;gt; struct seq_to_init_list&amp;lt;std::integer_sequence&amp;lt;T, Is...&amp;gt;&amp;gt; { static constexpr std::initializer_list&amp;lt;T&amp;gt; value = {Is...}; }; template &amp;lt;typename S&amp;gt; constexpr auto seq_to_init_list_v = seq_to_init_list&amp;lt;S&amp;gt;::value; 用法如下：</description>
+    </item>
+    <item>
+      <title>Corio - 基于 Asio 的 C&#43;&#43;20 协程框架</title>
+      <link>https://wokron.github.io/posts/corio-readme/</link>
+      <pubDate>Tue, 21 Jan 2025 17:37:45 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/corio-readme/</guid>
+      <description>最近研究了一下协程和网络编程，结合 C++20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。
+项目仓库：wokron/corio。
+安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。
+以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。
+git submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。
+add_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。
+最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。
+#include &amp;lt;corio.hpp&amp;gt; 使用 协程类型 lazy corio::Lazy&amp;lt;T&amp;gt; 是 corio 库的核心。通过将函数的返回值设定为 Lazy&amp;lt;T&amp;gt;，我们将该函数定义为协程。在 Lazy&amp;lt;T&amp;gt; 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。</description>
+    </item>
+    <item>
+      <title>编译 Tensorflow 踩坑</title>
+      <link>https://wokron.github.io/posts/build-tensorflow-from-source/</link>
+      <pubDate>Mon, 20 Jan 2025 21:31:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/build-tensorflow-from-source/</guid>
+      <description>前段时间发现了 Tensorflow 里的一处小 Bug，现在有空正好提一个 PR。Bug 很快就修好了，不过之后进行本地编译时我却踩了不少坑。现在记录一下。
+一、各种版本傻傻分不清 在开始编译之前，需要介绍一下相关的 Nvidia GPU 依赖项。
+Nvidia 有不同架构的各型显卡。为了区分硬件上的区别，Nvidia 使用计算能力（Compute Capability）加以区分。计算能力版本分为两部分 x.y。大版本号表示计算架构（如 Pascal、Volta、Ampere 等等）上的变化，之间不可兼容；小版本号则表示同一架构内部的差别，更高版本可以兼容更低版本。
+GPU 驱动（GPU Driver）为操作系统提供硬件驱动。其版本可以通过 nvidia-smi --query-gpu=driver_version --format=csv 找到。同一版本的驱动支持一系列不同计算能力、不同架构的显卡。
+CUDA 驱动（CUDA Driver）在 GPU 驱动之上提供了 CUDA 接口。与 GPU 驱动属于内核态设备驱动不同，CUDA 驱动是一用户态的动态链接库（DSO）。CUDA 驱动的版本一般应当随着 GPU 驱动版本的更新而更新。
+CUDA Toolkit 提供了构建 CUDA 程序所需的编译器、运行时和库。构建后的 CUDA 应用程序依赖于 CUDA 驱动所提供的接口。又由于 CUDA 是向后兼容（Backward Compatibility）的，所以旧的 CUDA 应用程序可以运行在新的 CUDA 驱动上；换句话说，要运行某一 CUDA 程序，需要高于特定版本的 CUDA 驱动。
+向后兼容中的 Backward 指的是与时间上在前的进行兼容。这似乎是中英文导致的思维差异。
+二、构建配置 在构建 Tensorflow 时添加 CUDA 支持后，Tensorflow 需要满足 CUDA Toolkit 和 CUDA 驱动之间的兼容性要求。如前所述，为了更强的兼容性，我们希望 CUDA Toolkit 的版本较低。但更高的 Tensorflow 版本又会需要更高版本的 CUDA 特性。因此在编译时需要在这两方面进行权衡。</description>
+    </item>
+    <item>
+      <title>讨论一下环境变量</title>
+      <link>https://wokron.github.io/posts/shell-env-var/</link>
+      <pubDate>Sat, 02 Nov 2024 15:01:54 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/shell-env-var/</guid>
+      <description>这里所说的环境变量并不仅仅指 Shell 中的变量，而是每一个进程各自拥有的，能够通过系统 API 获取的变量。当然，Shell 通常会提供环境变量的操作方法，我们也经常通过在 Shell 中管理环境变量。但是 Shell 中的变量和环境变量实际上并不完全相同，在使用 Shell 时可能会混淆这两种概念，这里便稍微分辨一下。
+一、环境变量 从程序的角度来看，环境变量很简单。环境变量是每个进程各自拥有的键值对集合。进程可以从其环境变量中读取已有变量，修改已有变量或创建新的变量。当进程创建其子进程时，子进程会继承父进程的环境变量，但子进程的环境变量的修改并不会影响父进程的环境变量。
+为了方便，这里以 python 为例。
+进程可以读取已有环境变量：
+# inherit.py import os print(os.environ[&amp;#34;HOME&amp;#34;]) 也可以写入或创建环境变量：
+os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;my_value&amp;#34; 子进程会继承父进程的环境变量：
+# env.py import os import sys assert len(sys.argv) == 2 father_proc = bool(int(sys.argv[1])) print_my_var = lambda: print( f&amp;#34;process={&amp;#39;father&amp;#39; if father_proc else &amp;#39;child&amp;#39;}, &amp;#34; f&amp;#34;MY_VAR={os.environ.get(&amp;#39;MY_VAR&amp;#39;, None)}&amp;#34; ) print_my_var() if father_proc: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;1&amp;#34; print_my_var() os.system(f&amp;#34;{sys.executable} {sys.argv[0]} 0&amp;#34;) print_my_var() else: os.environ[&amp;#34;MY_VAR&amp;#34;] = &amp;#34;2&amp;#34; print_my_var() $ python inherit.</description>
+    </item>
+    <item>
+      <title>在 Conda 环境中安装 CUDA</title>
+      <link>https://wokron.github.io/posts/conda-install-cuda/</link>
+      <pubDate>Mon, 14 Oct 2024 19:18:09 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/conda-install-cuda/</guid>
+      <description>最近想学一下 CUDA。这里记录一下配置环境的过程。
+创建环境。这里只是用 Conda 实现环境隔离，不需要 python。 $ conda create -n cuda-dev $ conda activate cuda-dev 使用 nvidia-smi 查看 CUDA 版本。注意这里的版本为驱动所支持的最高 CUDA 版本。而非后面安装的 CUDA 运行时版本。在安装时应当保证 CUDA 运行时版本小于等于驱动版本。 $ nvidia-smi +---------------------------------------------------------------------------------------+ | NVIDIA-SMI 535.183.01 Driver Version: 535.183.01 CUDA Version: 12.2 | |-----------------------------------------+----------------------+----------------------+ 安装特定版本 CUDA。 $ conda install cuda -c nvidia/label/cuda-11.8.0 查看 nvcc 版本。保证驱动支持当前 CUDA 版本。 $ nvcc -V nvcc: NVIDIA (R) Cuda compiler driver Copyright (c) 2005-2022 NVIDIA Corporation Built on Wed_Sep_21_10:33:58_PDT_2022 Cuda compilation tools, release 11.</description>
+    </item>
+    <item>
+      <title>编译技术教程：附录 - 项目测试</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-06/</link>
+      <pubDate>Tue, 10 Sep 2024 16:07:58 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-06/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。
+因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。
+一、单元测试 （1）单元测试的结构 单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 Lexer、Parser、Visitor 等等分别编写了单元测试。
+一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当尽可能相互独立、互不影响。这也意味着单元测试的执行顺序不应当影响测试的结果。
+需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。
+由于上述特点，单元测试实际上应当看作一一个不同的可执行程序。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：构造、操作和检验。
+CMake 中提供的 “测试” 实际上就是这样的可执行程序。
+构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。
+操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。
+最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 to_string 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。
+（2）Mock 如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是代码中的副作用或具体类之间的耦合导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。
+例如，在实现 Lexer 时，我们没有将 ifstream 作为参数，而是将其父类 istream 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。
+class Lexer { Lexer(std::istream &amp;amp;in) : _input(in) {} // ... } 这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 istream 存在子类 istringstream。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。</description>
+    </item>
+    <item>
+      <title>编译技术教程：语义分析</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-05/</link>
+      <pubDate>Tue, 10 Sep 2024 16:05:08 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-05/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在之前的阶段中，我们编写了词法分析和语法分析程序，实现了源代码到抽象语法树的转换，这意味着我们就此得到了结构化的语法信息；另外我们还定义了符号表，从而能够将某一处的语义存储并关联到程序的其他部分；最后我们还定义了中间代码的数据结构，让我们能够方便地构建并输出中间代码。而在这些之后，我们需要一个阶段将这些内容全部连接起来，这就是语义分析阶段。
+根据语言的不同，语义分析阶段的目标也可能很不相同。例如 C 的语义分析阶段肯定与 SQL 的语义分析差别巨大。不过总体来说，语义分析阶段的思路还是类似的，那就是遍历语法树、维护符号表并构建中间代码（或者类似的翻译操作）。
+一、遍历语法树 树的遍历各位同学当然不陌生。但是怎么样遍历才更好却依旧是一个值得思考的问题。假设我们现在用 Node 类表示树的节点：
+struct Node { int val; std::vector&amp;lt;Node*&amp;gt; children; } 那么我们很容易想到两种遍历的方式。第一种便是在 Node 中增加一个方法 visit。
+struct Node { int val; std::vector&amp;lt;Node&amp;gt; children; void visit() { // do something, like `std::cout &amp;lt;&amp;lt; val &amp;lt;&amp;lt; std::endl;` for (auto child : children) { child.visit(); } } }; 而第二种方式则是将 Node 作为参数。为了避免使用全局变量，我们需要创建一个新的类 Visitor。
+struct Visitor { void visit(Node &amp;amp;node) { // do something, like `std::cout &amp;lt;&amp;lt; val &amp;lt;&amp;lt; std::endl;` for (auto child : children) { visit(child); } } }; 那么就这两种方法来说，哪种更加适合抽象语法树的遍历呢？答案是第二种使用 Visitor 的方法。因为语义分析的关键是跨节点的语义信息传递。采取第一种方法时，信息被隔离在了每一个节点之中，想要传播只能作为 visit 函数的参数和返回值，沿着节点的遍历顺序进行传递。而对于第二种方法，类中所有方法都共享一个类作用域，这意味着信息不仅能沿着遍历顺序传递，还能跨越语法树的分支传播到需要的地方，而不需要经过层层调用。这种功能十分重要，因为实现上下文关系的关键，符号，就是跨越语法树分支存在的。</description>
+    </item>
+    <item>
+      <title>编译技术教程：符号表与类型系统</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-04/</link>
+      <pubDate>Tue, 10 Sep 2024 16:04:07 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-04/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在语法分析部分，我们将单词序列转化为结构化的抽象语法树。然而抽象语法树依旧无法表达完整的程序语义。因为抽象语法树的定义基于上下文无关文法，而无法反映程序执行时的上下文环境。因此为了记录程序中的上下文相关信息，为后续语义分析阶段提供建议，我们需要定义新的数据结构以维护上下文信息。在程序设计语言中，最为关键的上下文信息即符号信息，因此本章节我们着重讨论符号表。
+一、符号表 符号表是编译过程中的一个重要结构，主要用于记录各个符号的标识以及相应的信息，例如名称、作用域、类型、大小、维度、存储地址、行数等各项信息。其目的是在编译过程中遇到对应符号时即可快速查询到相关信息。接下来我们也将提供符号表的实现思路以供参考。要注意，符号表的设计与使用将贯穿后续的全部实验流程，请同学们三思而后行！
+二、符号表的创建 在不区分作用域的情况下，符号表仅由需记录符号与符号信息的简单映射。但如果语言支持嵌套作用域，那么我们就需要表示各作用域符号表间的嵌套关系。在这种情况下，对于一张符号表来说，通常具有如图的结构：一个指向外层作用域符号表的指针 pre，表主体（符号名与对应信息），若干指向内层作用域符号表的指针 next。此外，在编译的过程中，有一个指向当前作用域符号表的指针 cur。
+符号表的生成主要有以下几个操作：
+初始时，创建一个全局变量符号表，也是最外层作用域符号表，cur 指向该符号表。 编译时，遇到变量声明语句，解析出需要的信息（一般包括类型、维度、大小等），填入 cur 指向的符号表。 编译时，进入新的作用域（block），生成新的符号表，设置 cur 指向的符号表的 next 指针指向新符号表，新符号表的 pre 设置为 cur，然后将 cur 指向新符号表，后续会在新符号表上填入信息。 编译时，离开作用域（block），通过 cur 指向的符号表的 pre 指针回溯至外层符号表，并对应修改 cur 指针。 不难发现，这样生成的符号表具有树状结构。当然，由于两个无嵌套关系的作用域中的符号并无任何联系，所以我们也可以按栈式结构来组织符号表，即进入新的作用域，就压入新的符号表，离开作用域时，弹出当前符号表。
+在 tolangc 中，我们定义了一个栈式符号表。符号表类 SymbolTable 对应某一作用域的符号表。每一个符号表拥有一个 _father 字段，指向更外层作用域的符号表。另有 _symbols 字段存储当前作用域的符号。以符号名称为键，以符号信息（这里为 Symbol 类对象）作为值。
+class SymbolTable : public std::enable_shared_from_this&amp;lt;SymbolTable&amp;gt; { // ... private: std::unordered_map&amp;lt;std::string, std::shared_ptr&amp;lt;Symbol&amp;gt;&amp;gt; _symbols; std::shared_ptr&amp;lt;SymbolTable&amp;gt; _father; }; 当进入新的作用域时，我们调用 push_scope 函数，创建新的符号表，并将该符号表的 _father 字段设置为当前符号表。</description>
+    </item>
+    <item>
+      <title>编译技术教程：语法分析</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-03/</link>
+      <pubDate>Tue, 10 Sep 2024 16:03:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-03/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。
+一、语法分析的作用 进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。
+例如，对于上表达式
+a + (3 + b) * 2 对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。
+实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。
+还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树
+LVal: Ident PrimaryExp: &amp;#39;(&amp;#39; Exp &amp;#39;)&amp;#39; | LVal | Number UnaryExp: PrimaryExp | Ident &amp;#39;(&amp;#39; [FuncRParams] &amp;#39;)&amp;#39; | UnaryOp UnaryExp UnaryOp: &amp;#39;+&amp;#39; | &amp;#39;-&amp;#39; | &amp;#39;!&amp;#39; MulExp: UnaryExp | MulExp (&amp;#39;*&amp;#39; | &amp;#39;/&amp;#39; | &amp;#39;%&amp;#39;) UnaryExp AddExp: MulExp | AddExp (&amp;#39;+&amp;#39; | &amp;#39;-&amp;#39;) MulExp Exp: AddExp 在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且语法树的层次结构自然保证了计算顺序的正确性。</description>
+    </item>
+    <item>
+      <title>编译技术教程：抽象语法树</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-02/</link>
+      <pubDate>Tue, 10 Sep 2024 16:01:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-02/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将字符序列解析为单词序列，其中每一个单词都是一个最小的语法单元。词法分析的分析结果是非结构化的序列，无法表达程序的复杂语法结构。因此我们还需进行语义分析，用给定的上下文无关文法识别单词序列。而语义分析的最终结果，就是抽象语法树。
+一、语法树的表示方法 文法反映了句子中不同结构之间的组成关系。例如下面的文法：
+VarDecl: BType Ident Dims [ &amp;#39;=&amp;#39; InitVals ] 便反映了变量定义由类型、标识符、维度以及可选的初始化值组成。
+而对于组成这一概念，十分常见的建模方法便是将整体定义为类，而将各子部分定义为其属性。因此对于上面的文法，可以将其建模为如下形式：
+struct VarDecl { BType btype; Ident ident; Dims dims; InitVals *init_vals; }; 同理，我们也可以进一步定义 BType、Ident、Dims 以及 InitVals。如此继续下去，我们便可以对文法中的任意符号定义对应的类型，从而实现对源程序的结构化表示。我们所定义的这一系列类型，实际上也就是文法所对应的语法树中的可能节点。
+在定义节点的时候，需要注意某一非终结符对应多条规则的情况。例如下面的规则：
+Stmt: &amp;#39;if&amp;#39; &amp;#39;(&amp;#39; Cond &amp;#39;)&amp;#39; Stmt [ &amp;#39;else&amp;#39; Stmt ] | &amp;#39;while&amp;#39; &amp;#39;(&amp;#39; Cond &amp;#39;)&amp;#39; Stmt 这种情况下我们会发现，if 语句和 while 语句的结构并不相同，然而不管是 if 语句还是 while 语句，它们都是语句。
+对是（is-a）关系的一种很容易想到的建模方法便是继承。因此，我们可以用如下方法表示 Stmt 符号对应的两条规则：
+struct Stmt {}; struct IfStmt : public Stmt {}; struct WhileStmt : public Stmt {}; 然而，继承不仅意味着变量多态，还意味着函数多态，可是在语法树的表示中，我们实际上只是希望用同一个名称指代不同的数据类型，而并不需要同一个函数拥有不同行为。因此，继承在此处似乎太 “重” 了。</description>
+    </item>
+    <item>
+      <title>编译技术教程：词法分析</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-01/</link>
+      <pubDate>Tue, 10 Sep 2024 16:00:13 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-01/</guid>
+      <description>系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 不论是从标准输入中读取还是从文件中解析，我们的源程序总是以字符流的形式存在。例如，对于下面这个简单的源程序：
+int main() { int var = 8 + 2; if (var != 10) { printf(&amp;#34;error!&amp;#34;); } else { printf(&amp;#34;correct!&amp;#34;); } return 0; } 尽管从我们的视角来看，源程序是结构化的，包含了顺序、分支、循环等多种结构；同时通过空格、换行等方法，我们还可以将程序中的各个成分清晰地区分开来。但是从编译器的角度看，源程序不带有任何结构，只是由字符组成的序列（字符串）：
+int main() {\n\tint var = 8+2;\n\tif (var != 10) {\n\t\tprintf(“error!”);\n\t}\n\telse {\n\t\tprintf(“correct!”);\n\t}\n\treturn 0;\n} 这导致了一个问题，虽然字符是构成字符串的基本单元，却每个字符自身却不一定具备特定的含义。这些字符需要组成一个单词才能传达出对于程序来说有意义的信息。因此，实现编译器的第一步就是要把这样的线性字符串分割成一个个单词，便于后续分析。在编译器中，这一阶段被称为词法分析。
+一、词法分析作用 词法分析器作为编译器的第一部分，承担的任务就是通过扫描输入的源程序字符串，将其分割成一个个单词。如图所示，经过词法分析器的处理，我们将字符序列转换为单词序列。对于每个单词，我们至少应当记录单词的取值及其类别信息。另外，编译器在词法分析阶段也可能记录单词在源代码中的位置信息，例如源文件路径、行号、列号等等。这些额外信息对于编译器的错误处理十分重要。得当的错误定位能够为代码的编写者提供极大便利。
+在源程序中，还有一些字符并不会影响程序的语法语义，如换行符 \n、注释等，这些符号自然也不会被词法分析器解析为单词，但词法分析器也需对这些符号进行适当处理，如忽略跳过、记录行号列号等等。
+二、词法分析器的接口 在上一小节中，我们了解了词法分析阶段的主要作用，在本小节中，我们将基于此介绍词法分析器（Lexer）。
+首先，词法分析的输出是单词序列，因而我们需要定义单词的数据结构。在 tolangc 中，我们所实现的 Token 类包括三个字段：type、content 和 lineno，分别对应了单词的类型、取值和位置。
+struct Token { enum TokenType { #define X(a, b) a, TOKEN_TYPE #undef X } type; std::string content; int lineno; Token() = default; Token(TokenType type, std::string content, int lineno) : type(type), content(content), lineno(lineno) {} }; 对于单词类型，除了文法定义中出现的类型外，我们还额外定义了 TK_EOF 类型。这一类型用于表示我们已经读到了输入字符串的末尾。</description>
+    </item>
+    <item>
+      <title>编译技术教程：前言</title>
+      <link>https://wokron.github.io/posts/buaa-compiler-tutorial-00/</link>
+      <pubDate>Tue, 10 Sep 2024 15:56:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-compiler-tutorial-00/</guid>
+      <description>本系列是北航《编译技术》实验教程的前端教程部分，介绍了编译器前端的实现过程。此系列内容由本人编写或参与修改，在此也感谢所有参与教程编写工作的本届和往届助教。对于完整的实验教程，可见 wokron/tolangc。
+系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 一、本教程的背景 编译技术实验是计算机科学与技术专业核心专业必修课编译技术的实践环节，旨在帮助学生深入理解编译原理和技术，并掌握实际编译器的设计和实现方法。在本实验中，各位同学需要自行设计、实现一个完整的编译器，该编译器能够实现 SysY 语言（C 语言子集）到中间代码 LLVM、Pcode 或目标代码 MIPS 的编译过程。
+亲自实现一个编译器对各位同学理解编译技术有着极大的帮助。然而，作为这门课的初学者，同学们往往难以在一开始就对编译器产生完整全面的认识。在实验中，这一点体现为一些同学在编译器的设计上存在不足，难以运用理论课上的知识实现一个架构清晰、可随实验进度不断扩展的编译器。这导致这种情况的出现：早期的设计隐患在之后的实验中爆发，不得不重构之前的程序逻辑。在浪费时间的同时，无法学到编译器设计的更好方法。
+当然，这并不意味着理论课的内容毫无必要，而是理论与实际之间本就有着难以轻易逾越的鸿沟。将理论与实践融会贯通，本就需要付出极大的努力。在往届的实验中，我们也曾提供或推荐一些已有的编译器代码供同学们学习，然而这些代码或过于老旧、或过于复杂，常常难以满足同学们的学习和借鉴需要。
+为了能稍稍帮助同学们更好的完成编译实验，实验课教程组决定做出一点自己的贡献。以往的编译实验教程主要关注于讲述实验中可能会用到的相关知识，尽管也有一些辅助理解的例子，但也常常局限于单一章节的内容，不同章节间内容互不相通。这一定程度上妨碍了同学们从中学习编译器的设计方法，并容易造成了理解上的混乱。
+因此，我们决定修改原有的编译实验教程，通过示例驱动的方式给同学们提供更有参考价值的教程内容。具体来说，我们会设计一个十分简单的编程语言：tolang。在本教程中，我们将以 tolang 编译器 tolangc 的编写为主线，介绍基本的编译器设计和实现方法，从而为同学们提供一个相对较好的实践样例。
+二、tolang 介绍 tolang 这个名字很奇怪，最初起名时的含义是 toy lang，但是也有 too long 的谐音。不过这个语言确实是一个玩具语言，根本没有复杂冗长的语法语义。
+（1）文法定义 我们的 tolang 可以由如下的 EBNF 范式确定：
+CompUnit: {FuncDef} {VarDecl} {Stmt} FuncDef: &amp;#39;fn&amp;#39; Ident &amp;#39;(&amp;#39; [FuncFParams] &amp;#39;)&amp;#39; &amp;#39;=&amp;gt;&amp;#39; Exp &amp;#39;;&amp;#39; FuncFParams: Ident { &amp;#39;,&amp;#39; Ident } VarDecl: &amp;#39;var&amp;#39; Ident &amp;#39;;&amp;#39; Stmt: &amp;#39;get&amp;#39; Ident &amp;#39;;&amp;#39; | &amp;#39;put&amp;#39; Exp &amp;#39;;&amp;#39; | &amp;#39;tag&amp;#39; Ident &amp;#39;;&amp;#39; | &amp;#39;let&amp;#39; Ident &amp;#39;=&amp;#39; Exp &amp;#39;;&amp;#39; | &amp;#39;if&amp;#39; Cond &amp;#39;to&amp;#39; Ident &amp;#39;;&amp;#39; | &amp;#39;to&amp;#39; Ident &amp;#39;;&amp;#39; Exp: AddExp AddExp: MulExp | AddExp (&amp;#39;+&amp;#39; | &amp;#39;-&amp;#39;) MulExp MulExp: UnaryExp | MulExp (&amp;#39;*&amp;#39; | &amp;#39;/&amp;#39; | &amp;#39;%&amp;#39;) UnaryExp UnaryExp: PrimaryExp | Ident &amp;#39;(&amp;#39; [FuncRParams] &amp;#39;)&amp;#39; | (&amp;#39;+&amp;#39; | &amp;#39;-&amp;#39;) UnaryExp PrimaryExp: &amp;#39;(&amp;#39; Exp &amp;#39;)&amp;#39; | Ident | Number FuncRParams: Exp { &amp;#39;,&amp;#39; Exp } Cond: Exp (&amp;#39;&amp;lt;&amp;#39; | &amp;#39;&amp;gt;&amp;#39; | &amp;#39;&amp;lt;=&amp;#39; | &amp;#39;&amp;gt;=&amp;#39; | &amp;#39;==&amp;#39; | &amp;#39;!</description>
+    </item>
+    <item>
+      <title>浅谈字体</title>
+      <link>https://wokron.github.io/posts/talk-about-font/</link>
+      <pubDate>Sun, 05 May 2024 14:08:59 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/talk-about-font/</guid>
+      <description>之前使用 Matplotlib 画图的时候发现不能正常显示中文。在解决问题的过程中了解了一下字体显示的一些知识，在这里记录一下。
+一、编码与字体 我们知道，为了让字符能够存储在计算机中，我们为每个字符分配对应的数码。这种人为约定称为字符编码。常见的编码包括 ASCII、GBK、Unicode 等等。字符编码是字符的数据表示。
+然而，仅有编码依然不能在计算机中显示字符。因为符号是一种图形，若我们不能确定字符所对应的图形的样式，那么我们就无法在屏幕中看到字符。同样的，这种字符到对应图形的约定称为字形，字形的集合即字体。字体是字符的图像表示。
+于是，这里我们就有了两种不同的映射关系。一种是字符到字符编码的映射关系，这一关系确定了字符的存储方式；另一种是字符到字体的映射关系，这一关系确定了字符的显示方式。
+因此，简单来说，计算机显示字符的过程就是将编码数据转换为字形图像的过程。
+二、编码的分裂和统一 然而这一过程并不真的那么简单。原因之一便是从计算机技术早期遗留下来的一系列互不兼容的编码方式。
+在互联网还未诞生的时候，各个国家和地区为了在计算机中显示自己的文字，各自开发出自己的字符编码方式，例如简体中文的 GB2312、繁体中文的 Big5、日文的 Shift_JIS 等等。然而在互联网的国际化场景下，不同的编码方式带来了交流上的困难。
+所以这时候 Unicode 标准应运而生。Unicode 由统一码联盟推动，旨在使用 Unicode 取代现存的字符编码。该标准整理并编码了世界上大部分的文字系统，使得电脑能以通用划一的字符集来处理和显示文字。
+然而 windows 下的默认编码方式还是 gbk。
+Unicode 编码空间区间为 $[0, 17 \times 2^{16})$，但目前只使用了其中很少一部分。该编码空间被划分为了 17 个平面，其中 4-13 号均未使用。其他平面的主要内容为：
+0 号平面（0x0000-0x​FFFF）称为基本多文种平面，包含了几乎所有现代语言的字符。 1 号平面（0x10000-0x1FFFF）称为多文种补充平面，包括了绝大多数古代文字，现时已不再使用或很少使用的符号等。 2、3 号平面（0x20000-0x​2FFFF、0x30000-0x​3FFFF）称为补充表意文字平面，用于中日韩统一表意文字中未被包含在早期编码标准中的文字。 14 号平面（0xE0000-0xEFFFF）为特别用途补充平面。 15、16 号平面（0xF0000-0x​10FFFF）为私人使用平面。（例如苹果公司的图标字符） Unicode 虽然制定了统一的字符编码方式，但是直接使用 Unicode 编码进行存储的效率并不高。因此需要对 Unicode 进行进一步编码，这就带来了 UTF（Unicode Transformation Format），包括 UTF-32、UTF-16 和 UTF-8。
+UTF-32 使用定长的 32 位对 Unicode 进行编码。根据 Unicode 的编码空间我们知道，最多只需要 21 位即可表示所有编码。因此 UTF-32 中的 11 位始终为 0。这使得 UTF-32 的空间效率很低。所以这种编码方式主要用在系统的内部 API 中。</description>
+    </item>
+    <item>
+      <title>从零开始的编译原理（5）：语义分析与中间代码生成</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-5/</link>
+      <pubDate>Mon, 11 Mar 2024 17:15:03 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-5/</guid>
+      <description>一、前言 我语言的局限，即是我世界的局限
+—— 路德维希·约瑟夫·约翰·维特根斯坦
+二、从文法树到语义 经过语法分析阶段的处理，我们将词序列组织成了一棵文法树。而在语义分析阶段，我们的目标就是理解该文法树的含义，并按其含义将该文法树翻译含义等价的另一种语言。
+上面的表述十分宽泛。这是因为语义分析阶段不像前两个阶段有着明确的输入输出和确定的算法，根据使用场景的不同采用各自的处理方法。
+举个例子，对比 C 语言和 SQL 语言，虽然它们都会采用编译技术进行语句的处理，但是 C 语言的语义分析产物是类似汇编的中间代码；而 SQL 语言的语义分析的结果则是对数据库中数据的处理操作。
+因此，语义分析并没有通用的算法，就算同样是编程语言，面向过程、面向对象、函数式等不同的语言类别在语义分析上也有许多不同的处理。所以在本篇文章中，我们只会介绍最为简单和普遍的一种语义分析方法，那就是语法制导翻译。
+三、语法制导翻译 （1）属性翻译文法 通过前面的文章，我们知道文法树表达了句子的结构。这种结构从语义上来说有两种含义：
+一是指整体由部分组成。这反映了文法树中父节点的含义。例如对于表达式会 $1 + 2$，表达式本身是文法树中的父节点，而 $1$ $+$ 和 $2$ 则是子节点。
+二是指部分处于整体之中。这反映了文法树中子节点的含义。
+在使用语法制导翻译进行语义分析时，这两种含义我们称为属性。第一种属性由 “父” 传递到 “子”，称之为继承属性；第二种属性由 “子” 传递到 “父”，称之为综合属性。
+（2）符号表管理 四、中间代码 </description>
+    </item>
+    <item>
+      <title>从零开始的编译原理（4）：语法分析与下推自动机</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-4/</link>
+      <pubDate>Thu, 15 Feb 2024 14:14:06 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-4/</guid>
+      <description>一、前言 从这个精神王国的圣餐杯里，
+他的无限性给他翻涌起泡沫。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识
+二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。
+然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。
+举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \rightarrow (S)S | \epsilon $$ 其中规则 $S \rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。
+而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。
+不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：
+可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。
+三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。</description>
+    </item>
+    <item>
+      <title>QEMU 模拟器介绍</title>
+      <link>https://wokron.github.io/posts/qemu-introduction/</link>
+      <pubDate>Sun, 21 Jan 2024 14:33:21 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/qemu-introduction/</guid>
+      <description>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。
+然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。
+本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
+什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard&amp;rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。
+QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。
+QEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。
+在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。
+通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。
+根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。
+第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。
+图片来自 Andrew S.</description>
+    </item>
+    <item>
+      <title>GDB：程序的解剖术</title>
+      <link>https://wokron.github.io/posts/gdb-tutorial/</link>
+      <pubDate>Thu, 18 Jan 2024 19:44:35 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/gdb-tutorial/</guid>
+      <description>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。
+为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。
+GDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。
+GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。
+GDB 是一个功能十分强大的调试器，它适用于 C、C++、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：
+启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。
+准备工作 在开始之前需要说明两点：
+接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。</description>
+    </item>
+    <item>
+      <title>从零开始的编译原理（3）：词法分析与有穷自动机</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-3/</link>
+      <pubDate>Wed, 10 Jan 2024 19:04:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-3/</guid>
+      <description>一、前言 因而，每一生物的有机形体都是一个神圣的机器，或一台无限地优越于任何人造的自动机器的自然的自动机器（automata）。因为人的技艺所制造的机器的每一部分并非机器。……而自然的机器，即有机体，在其无限小的部分仍是机器。
+—— 戈特弗里德·威廉·莱布尼茨《单子论》第 64 节
+本章将从词法分析所用的 3 型文法入手，引入自动机的概念，并详细介绍有穷自动机的原理及实现。最终实现编译程序的词法分析模块。
+二、正则文法的解析过程 在第 1 章的最后我们介绍了 3 型文法。3 型文法也称正则文法，特征是对于文法中的每一条规则，其右侧要么是一个终结符，要么是一个终结符加上一个非终结符，且非终结符只位于终结符的一侧。根据非终结符位置的不同分为左线性和右线性。
+或许有些人会这样讲：“左线性是终结符在右侧；右线性是终结符在左侧”。但是这样实在太别扭了。应该说 “左线性是非终结符在左侧；右线性是非终结符在右侧”。
+为什么通过这一约束，3 型文法就能区别于 2 型文法了呢？我们可以通过正则文法的解析过程来理解。
+现在有一左线性正则文法 $G_1[Z]$： $$ \begin{align*} Z &amp; \rightarrow A1 \\ A &amp; \rightarrow B1 | 1 \\ B &amp; \rightarrow A0 \end{align*} $$ 现在可能不太能看得出来，但是 $G_1[Z]$ 能够接受符号串 $101011$。我们可以画出此符号串对应的文法树。
+通过文法树我们可以看出，对于左线性正则文法 $G_1[Z]$，其文法树只向左增长。当然这一点从规则中也可以看出，只不过不那么直观罢了。
+可为什么具有这样特性的文法就特殊了呢？接下来我们根据文法树，以归约的视角看待符号串 $101011$ 的解析过程：
+读入 1，1 归约得到 A； 读入 0，A0 归约得到 B； 读入 1，B1 归约得到 A； …… 以此类推，我们就可以发现其中的规律。对于这样的文法，读入一次即归约一次。因为文法中最多只有两个符号，所以一旦读入了一个新的符号，则必定进行一次归约。
+同理的，我们考虑右线性正则文法 $G_2[S]$： $$ \begin{align*} S &amp; \rightarrow 1A \\ A &amp; \rightarrow 0B | 1 \\ B &amp; \rightarrow 1A \end{align*} $$ $101011$ 也能被 $G_2[S]$ 接受。其文法树如下，对于右线性正则文法 $G_2[Z]$，其文法树只向右增长</description>
+    </item>
+    <item>
+      <title>从零开始的编译原理（2）：编译程序架构</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-2/</link>
+      <pubDate>Sat, 06 Jan 2024 16:33:50 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-2/</guid>
+      <description>一、前言 本质是存在的真理，是自己过去了的或内在的存在。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《小逻辑》第二篇 本质论 §112
+本篇文章是一个间章。旨在衔接文法理论与编译过程，从架构上概述整个编译程序。文法理论旨在解释自然语言，而编译过程却要创造新的语言。编译程序通过将文法规则机械化，创造出易于理解的高级语言，实现了计算的高级抽象。
+二、何为 “编译” 为了理解何为 “编译”，我们可以从一个具体的编译器开始。这里我们以 C 语言的编译过程为例：
+现在有一个简单的由 C 语言文法写成的文本文件 test.c
+// test.c #include &amp;lt;stdio.h&amp;gt; int main() { printf(&amp;#34;hello, world.\n&amp;#34;); return 0; } 想要将其编译为可执行文件，当然可以使用 gcc test.c -o test 或 clang test.c -o test，但是这样就不能反映编译的具体过程了。所以这里我编写了一个 Makefile，用来指明 gcc 编译时所经历的具体步骤。
+# Makefile srcname = test cc = gcc # Default target all: $(srcname) @echo &amp;#34;Finish!&amp;#34; # Linking stage $(srcname): $(srcname).o @echo &amp;#34;Linking stage: Creating executable &amp;#39;$(srcname)&amp;#39;&amp;#34; $(cc) $(srcname).o -o $(srcname) # Assembly stage $(srcname).</description>
+    </item>
+    <item>
+      <title>从零开始的编译原理（1）：文法理论</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-1/</link>
+      <pubDate>Thu, 04 Jan 2024 10:23:22 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-1/</guid>
+      <description>一、前言 一个人进行推理时…… 这种过程如果是用语词进行的，他便是在心中把各部分的名词序列连成一个整体的名词或从整体及一个部分的名词求得另一个部分的名词。
+—— 托马斯·霍布斯《利维坦》第一部分 论人类 第五章 论推理与学术
+当霍布斯将他的机械唯物主义运用于人的思想时，语言便成为了人脑的齿轮。人的精神当然并非机械，可这种认识却也敏锐地察觉到了语言的一些本质，那就是语言是一些规则，通过这些规则的拼凑，我们得以表述我们的思想。如今，这种规则我们称之为文法。
+语言学家的一部分工作是从现有的自然语言中总结文法，让语言成为机械。但是这并不是我们的重点，我们所要探索的是一个更加年轻的领域，这个领域的研究从机械出发，却要去创造千变万化的语言，让机械成为语言。
+二、自然语言的文法：一个例子 但是要开始我们的旅程，还需要从自然语言开始。当我们听别人说话，或者阅读一段句子的时候，我们究竟在理解什么？比如说，现在有这样一句话，你知道我的叉子被放在哪里吗。让我们尝试理解这个句子。
+这部分默认各位已有了对词性的基本认识，至少知道名词、形容词、动词、副词等等的大致含义。否则的话，这部分内容实难描述。
+另外注意对于自然语言的相关表述可能并不完全符合人的认知的真实情况，这一部分只是为了方便理解。
+首先需要明确一点，抛开我们所有的经验来看，语言就是符号的序列。也就是说语言是在时间上存在先后顺序的许多符号。这意味着我们的理解过程必定是从前到后的。对于上述句子来说，我们先读到 你，之后才能读到 知，再之后 道、我 等等。
+另外，在这样不断读到一个个符号的时候，我们也并非单纯的按照字母或音节分别认识，而是首先明确哪些音节或符号共同组成相同含义，并将其作为一个单词来识别。在自然语言处理领域，这称为“分词”；而对于编译来说，这称为“词法分析”。
+我们理解这个句子的过程可能是这样的：
+读到 你，这指代一个事物，为名词 读到 知道，这指代一个行为，为动词 读到 我的，这描述了事物的属性，为形容词 读到 叉子，这指代了另一个事物，为名词 形容词 我的 和名词 叉子 组成 我的叉子，也是个名词 读到 被放，这是动词。 读到 在，这表达了一个关系，为介词 读到 哪里，这是名词 介词 在 和 名词 哪里 组成 在哪里，用于描述行为，为副词 动词 被放 和副词 在哪里 组成 被放在哪里，也是个动词。 名词 我的叉子 和动词 被放在哪里 组成 我的叉子被放在哪里，用于陈述一个事实，称为陈述句 名词 你、动词 知道 和句子 我的叉子被放在哪里 组成了 你知道我的叉子被放在哪里，是另一个陈述句。 读到 吗，这是一个疑问语气词，用于表达疑问。 句子 你知道我的叉子被放在哪里 和疑问语气词 吗 组成 你知道我的叉子被放在哪里吗，表达对被陈述的事情真实性的询问，是疑问句。 读完了所有的单词，最后得到的疑问句就是整个句子。 在上述过程中，我们不断将小的句子成分归纳为大的句子成分，在这样归纳的过程中，我们将句子中的每个单词相互关联起来，最终理解句子表达的含义。从中我们可以知道这是一个疑问，想要得到的回答是“你”与“我的叉子被放”两个事物间是否存在“知道”的关系等等。（这样说话好别扭。）</description>
+    </item>
+    <item>
+      <title>KeepAlive</title>
+      <link>https://wokron.github.io/posts/keep-alive/</link>
+      <pubDate>Wed, 03 Jan 2024 18:57:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/keep-alive/</guid>
+      <description>最近这段时间文章似乎写得不太多，但是这个小小博客并非就此死掉了。为了一些可能并不存在的关注者，同时也为了我自己，先在这里发一篇短文。
+现在的我处于这样的一个阶段，不再满足于罗列刚刚学到的知识，希望在文章中加上自己的思考；但同时自己却也没有经年的储备，稍有新意的认识只能慢慢积累。这就导致了一部分内容不必写；而另一部分内容又还不能写。有时我也想稍稍水一些字数，把那些不必写的内容写一写，可近期的学业又没有留给我那么多可浪费的时间。对这一点，我要向我的博客道歉。
+可道歉归道歉，我并没有忘记写文章这件事。自我上一篇文章完成已有一个半月的时间，在这期间我也构思了许久自己要做些什么。就在今天，我从考试中解放出来，接下来的计划也早就在我脑中成熟了。
+操作系统实验的笔记是本博客阅读量较多的一系列文章，接下来我希望以类似的形式写一系列编译技术的文章。从编译的理论知识出发，辅以相应代码，逐渐编写一个简单的编译器。这也是我对自己的编译技术课程的总结。
+说出去的话就不能反悔了。本文也是对我自己的鞭策。</description>
+    </item>
+    <item>
+      <title>了解 LLVM IR，从手写开始</title>
+      <link>https://wokron.github.io/posts/introduction-of-llvm/</link>
+      <pubDate>Fri, 03 Nov 2023 21:56:13 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/introduction-of-llvm/</guid>
+      <description>一、总览 如果你想要了解 LLVM，那么有几种可能呢？你或许是想要创造一门新的编程语言的技术爱好者；或是陷入编译课的泥沼不能自拔的大学生，但不管怎么样，你都只希望使用 LLVM 做一件事：生成目标代码。
+但是这一过程并不容易。你大概率经过了编译前端的艰辛历程，但是现在在你面前的是另一座大山，LLVM IR。在最开始就看到什么基本块、虚拟寄存器、phi 节点之类的概念使你心烦意乱；各种各样的代码示例中充满了和重点并不相关的细节。这些都使你无从下手……
+或许一个更好的学习方式是将 LLVM IR 视为一种特殊的编程语言，而非编译器的 “中间表示”。这种语言站在了高级与低级语言之间，既具备了一定的抽象能力，又反映了底层汇编的工作原理。
+本篇文章，就将以编程语言的视角粗略介绍 LLVM IR。通过直接手写 LLVM IR，逐步分析其特点和原理。希望能够有所帮助。
+（1）准备工作 LLVM IR 虽然是中间代码，但是 LLVM 也提供了 lli 工具用于解释/即时编译执行 LLVM IR 文件。这样 LLVM IR 又与 Java 字节码有了一些相似之处。使用 lli 可以直接运行我们手写的中间代码，很是方便。使用 lli 这需要安装 LLVM。
+sudo apt-get install llvm 另外，LLVM 中是没有内建输入输出的，因为 LLVM 的工作在操作系统之下。这就导致了一个问题，我们不能得知程序的执行结果。一种方法是可以用函数的返回值来输出，但是这样输出只能是单个数值。为了方便起见，可以先用 c 语言编写一个输出库。并使用 clang 将其编译成 LLVM IR。为此需要安装 clang
+sudo apt-get install clang 对于输出库，这里只简单定义 putint 函数。
+// lib.c #include &amp;lt;stdio.h&amp;gt; void putint(int i) { printf(&amp;#34;%d\n&amp;#34;, i); } 使用 clang 将其翻译成中间代码。不要担心，我们并不需要关心生成的 lib.</description>
+    </item>
+    <item>
+      <title>不务正业：玩个 zsh</title>
+      <link>https://wokron.github.io/posts/play-with-zsh/</link>
+      <pubDate>Sat, 21 Oct 2023 17:13:03 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/play-with-zsh/</guid>
+      <description>一、前言 不知道为什么，这学期看到好几个人都用 zsh。最近恰好有时间，我也是时候换一个 shell 了。
+不过嘛，shell 毕竟是用来工作的，不是一件艺术品，所以这里的配置也是以实用为主了。本文也没有用到 oh-my-zsh，用一个专门的框架来管理 shell 的配置在我看来还是太过沉重了。
+本篇文章所用的环境当然是 linux。更加具体来说是 debian 系的发行版。
+二、zsh 的安装 这里当然不会仔细介绍 zsh，将网上许多其他文章都重复过的内容再重复一遍。zsh 只是一个 shell，只不过这个 shell 有较强的可扩展性，同时具有一些比较有用的特性，仅此而已。
+安装 zsh，只需要一条命令
+apt-get install zsh 之后可以查看 /etc/shells 文件的内容，该文件记录了系统中已有的所有 shell，此时应当也有 zsh。
+cat /etc/shells 本人的输出结果是这样的
+# /etc/shells: valid login shells /bin/sh /bin/bash /usr/bin/bash /bin/rbash /usr/bin/rbash /usr/bin/sh /bin/dash /usr/bin/dash /bin/zsh /usr/bin/zsh 之后首次运行 zsh
+zsh 应该会出现如下内容，因为此时我们并未创建 zsh 的配置文件。正如 bash 的 .bashrc。这里只需要选择 0 即可。之后会在用户目录创建一个空的 .zshrc，该文件将在下一小节中详细说明。选择后重新输入命令 zsh 进入 zsh，此时应该可以看到输入提示符等内容。
+This is the Z Shell configuration function for new users, zsh-newuser-install.</description>
+    </item>
+    <item>
+      <title>面向对象的 C 语言</title>
+      <link>https://wokron.github.io/posts/oop-by-c/</link>
+      <pubDate>Sun, 01 Oct 2023 22:53:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/oop-by-c/</guid>
+      <description>一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang
+c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 + 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。
+了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。
+二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。
+让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。
+明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。
+此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。
+这样也可以理解为什么 c++ 中只能使用指针实现多态（引用本质还是指针）。
+Child c; Father *f = &amp;amp;c; // 正确 Father f2 = c; // 错误 而 c++ 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别</description>
+    </item>
+    <item>
+      <title>CMake 实用语法教程</title>
+      <link>https://wokron.github.io/posts/practical-cmake-tutorial/</link>
+      <pubDate>Sun, 03 Sep 2023 11:00:23 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/practical-cmake-tutorial/</guid>
+      <description>一、前言 最近一段时间在用 c++ 写一个项目，因此学了学 cmake。说实话，cmake 奇怪的语法在一开始实在容易让人望而生畏。但是上手使用的话就会发现平常会用到的不过是其中的一小部分，并且通常有规律可循。掌握这一部分的内容，大概率就可以组织起一个规模较大的项目了。因此本文也就旨在讲述 cmake 的这一部分的内容。
+当然，阅读本教程之前需要了解代码编译、链接的相关知识。关于编译相关的命令，可见我的文章系统编程之命令行编译。
+本文的所有代码保存在仓库 practical-cmake 中，欢迎 star :)。
+cmake 下载方式如下（apt）
+sudo apt-get install build-essential sudo apt-get install cmake 二、第一步 说到第一个程序，那当然要请出经典的 hello, world 了。
+#include &amp;lt;stdio.h&amp;gt; int main() { printf(&amp;#34;hello, world\n&amp;#34;); return 0; } 在本文中我会首先给出使用 gcc 编译的命令，之后再使用 cmake 做同样的事情。那么对于第一步，我们的 gcc 命令如下
+gcc main.cpp -o main 当然很简单，而对于 cmake 也类似。要使用 cmake，我们需要添加一个配置文件 CMakeLists.txt，其中包含要执行的操作。本小节中，CMakeLists.txt 的内容是
+cmake_minimum_required(VERSION 3.10) project(main) add_executable(main main.cpp) 其中第一条指定了 cmake 版本要求，第二条指定了当前项目名，而第三条 add_executable 则实现了和 gcc 命令相同的操作：指定源文件 main.cpp 和输出文件名 main，生成一个可执行文件。</description>
+    </item>
+    <item>
+      <title>Pybind11 实现 Python 与 C&#43;&#43; 混合编程</title>
+      <link>https://wokron.github.io/posts/pybind11-tutorial/</link>
+      <pubDate>Thu, 17 Aug 2023 10:42:38 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/pybind11-tutorial/</guid>
+      <description>一、前言 最近在尝试写一个简单的游戏引擎，我决定用 python 作为脚本，所以了解了一些混合编程的知识。
+（1）python api 从原理来说，根据文档所述，python 提供了 Python.h 头文件，能够将 c 或 c++ 代码编译成可供 python 引入的动态链接库。该库中定义的可供 python 调用的函数中所有的入参都是名为 PyObject 结构体的指针。在代码中可以通过一系列函数对 PyObject 进行操作。
+举一个简单的例子，我们希望 python 调用一个由 c 编写的简单的加法函数
+int add(int a, int b) { return a + b; } 我们期望在 python 中这样调用
+# test_mymodule.py from mymodule import add a = 10 b = 20 c = add(a, b) assert c == 30 那么我们首先需要对该函数进行包装，包装函数 _add 的参数和返回值都应该是 PyObject *。在包装函数中调用了 PyArg_ParseTuple 将传入的参数转换为 int 类型，调用原本的 add 函数得到返回值，之后又通过 PyLong_FromLong 将 int 转换为 PyObject。</description>
+    </item>
+    <item>
+      <title>Hexo 博客迁移教程</title>
+      <link>https://wokron.github.io/posts/hexo-blog-migration/</link>
+      <pubDate>Mon, 26 Jun 2023 14:44:44 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/hexo-blog-migration/</guid>
+      <description>一、前言 因为用了新的笔记本，为了继续更新自己的博客，我决定把原来那台笔记本上的博客资源迁移过来。不过呢，当然不能用u盘拷贝这种比较low的方法，最好还是把资源放到 github 上，这样不仅方便现在的迁移，更能防止数据丢失。
+二、将博客资源推送到仓库 如果你使用 hexo 搭建了自己的博客，并且把博客放到了 github 上，那么很容易注意到使用 hexo 部署时并不是将本地的所有内容推送到了 github，实际推送的只是 ./public 路径下的文件。而现在我们要做的就是将博客的所有资源推送到仓库，不仅是用于网页的部分。
+我们选择就在博客网站所在的仓库存储博客资源，为了做到这一点，首先要在本地克隆一个仓库
+git clone https://github.com/&amp;lt;username&amp;gt;/&amp;lt;username&amp;gt;.github.io.git 随后我们新建一个分支用于存储博客资源。该分支与博客网站所使用的 master 分支无关，因此最好创建成一个“孤儿”分支。
+git checkout --orphan &amp;lt;branch_name&amp;gt; 切换到该分支后，原本随着克隆拉取到本地的文件现在依旧存在，需要将这些文件删除
+git rm -rf . 接着将位于本地的博客资源复制到该文件夹下。
+cp -r &amp;lt;old_blog_dir&amp;gt;/* . 这里需要注意，如果你使用了 next 等主题，并且是通过克隆仓库的方式下载的，那么此时应该把主题对应的项目路径下的 .git 文件夹删除。
+# take next theme as example rm -r ./themes/next/.git 以上的工作都完成后，将这些复制到仓库中的博客资源文件添加并提交
+git add . git commit -m &amp;#34;commit info&amp;#34; 最后将本地分支推送到远程仓库的新分支中
+git push --set-upstream origin &amp;lt;remote_branch_name&amp;gt; 三、迁移博客 接下来要将博客迁移到另一台设备上。首先当然要下载 git 并配置用户名和邮箱
+sudo apt install git git config --global user.</description>
+    </item>
+    <item>
+      <title>Linux-Mint双系统的安装及美化</title>
+      <link>https://wokron.github.io/posts/linuxmint-install-and-beautify/</link>
+      <pubDate>Sat, 24 Jun 2023 21:50:32 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/linuxmint-install-and-beautify/</guid>
+      <description>一、前言 我的笔记本现在用起来很慢了。每次听到它嗡嗡的风扇声却又看不到它跑不出来结果的时候，就感觉它好似一头老驴，使劲却又力不从心，腿打着颤却也拉不动身后的货。所以我谋划着新买一台，就让之前的那台好好休息吧。
+一想到买台新的笔记本，我的思绪就沿着这条道一直走下去：“要买什么样的配置呢？买了新的电脑要做些什么项目呢？要玩什么游戏呢？” 诸如此类。装一个 linux 系统也是这时产生的想法。有人可能会想，“这有什么用呢？难道 windows 就不能用吗？如果不得不用 linux，wsl 也是很好地办法，或者用虚拟机，甚至直接用 docker，都可以解决。” 确实，如果就满足当下的使用而言，将 linux 作为一个个人使用的真正的系统，相对于 windows 似乎并没有什么优点。
+不过呢，我选择折腾这么一阵也并没有什么经过考量的理由，而仅仅是因为自己在主观上更加喜欢 linux 罢了。在我不算太长的接触并学习 linux 的时间里，我从这个系统中感受到了设计的一致性，这是我在更长时间的对 windows 的接触和学习中所没有体会到的。当然，或许在之后看来，我现在的理解也不过是浅薄的认识罢了。但是现在，我还是决定安装一个 linux 系统。
+如果有读者的话，希望不要嫌弃我太过啰嗦（笑）。
+二、为什么是薄荷 众所周知，linux 是内核，许多不同的组织在 linux 内核的基础上增加了其他必要的软件和应用，开发了不同的发行版。发行版的江湖中帮派林立，主要有三大派系，debian 系、redhat 系和 suse 系。各个派系中又有无数相互关联却又相互区分的发行版。如 debian 的 ubuntu、deepin；redhat 的 fedora、suse 的 opensuse。只需要把这些发行版的大名亮出来，就足以让人眼花缭乱了。
+本人也在这些发行版中漂移不定了一段时间，但最终选择了 debian 系的 mint（薄荷）。主要有一下几个原因
+debian 系有着 apt 的超级牛力加持，.deb 格式的软件包使用作为广泛 mint 基于 ubuntu，ubuntu 是使用最为广泛的 linux 发行版 mint 精简了 ubuntu 下的一些功能，如 snap；并对初学者较为友好 三、安装操作系统 我新买的电脑是联想拯救者 R9000P，配置如下
+设备 配置 处理器 AMD Ryzen 9 7945HX 内存 16G 硬盘 1T 显卡 Nvidia 4060 要安装的操作系统配置</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab6</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab6/</link>
+      <pubDate>Fri, 19 May 2023 15:59:29 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab6/</guid>
+      <description>一、Lab6 前言 操作系统实验的最后一篇笔记，不说什么了。本文主要讲了 Shell 的实现机制，管道通信略有说明。
+二、Shell 程序的启动 这次我们还要回到 Init/init.c 文件。我们的 MOS 的所有实验都结束之后，mips_init 函数应该是这样的
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); // lab3: env_init(); // lab6: ENV_CREATE(user_icode); // This must be the first env! // lab5: ENV_CREATE(fs_serv); // This must be the second env! // lab3: kclock_init(); enable_irq(); while (1) { } } 其中我们使用 ENV_CREATE 创建了两个用户进程。这两个进程的代码在编译时便写入了内核 ELF 文件中。其中第二个进程 fs_serv 就是 Lab5 中用到的文件系统服务进程；而第一个进程 user_icode 则是整个操作系统中除文件系统服务进程外所有进程的共同祖先进程，该进程便用于启动 Shell 进程。user_icode 或为 “user init code” 之意。</description>
+    </item>
+    <item>
+      <title>奇技淫巧：RNN 求解常微分方程组</title>
+      <link>https://wokron.github.io/posts/rnn-solve-ode/</link>
+      <pubDate>Thu, 11 May 2023 22:25:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/rnn-solve-ode/</guid>
+      <description>一、前言 前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。
+参考：
+貌离神合的RNN与ODE：花式RNN简介 基于RNN的微分方程拟合 二、常微分方程组和欧拉法 所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程 $$ \frac{dv}{dt} = a $$ 速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。
+类似的，路程 $s$ 也满足微分方程 $$ \frac{ds}{dt} = v $$ 那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组 $$ \begin{cases} \frac{dv}{dt} = a \\ \frac{ds}{dt} = v \end{cases} $$ 虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。
+还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令 $$ \begin{cases} v_{t_m} &amp;= v_{t_{m-1}} + a \Delta t \\ s_{t_m} &amp;= s_{t_{m-1}} + v_{t_m} \Delta t \end{cases} $$ 其中 $t_{m-1} &lt; t_{m}, \Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab5</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab5/</link>
+      <pubDate>Tue, 02 May 2023 08:34:31 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab5/</guid>
+      <description>一、Lab5 前言 这是最长的一篇文章，可就算这么长，文中出现的代码也不过本次 Lab 中新增加的代码的一小部分。幸好完成本次实验不需要熟悉所有代码，一部分练习甚至不需要熟悉要填写的代码的前后文，只需要根据注释就可以填出很多。可是我感觉本篇文章还是有帮助的，毕竟谁也不知道 Exam 会出什么题。
+Lab5 主要分为四部分，分别是镜像制作工具、关于设备的系统调用、文件系统服务进程、文件操作库函数。本文对这四个方面都有所涉及，第二章主要讲镜像制作工具，第三章主要讲文件系统服务进程和文件操作库函数，最后一章讲关于设备的系统调用。
+二、磁盘镜像 （1）镜像制作工具 在本次实验中我们要实现一个文件系统。广义来说，一切字节序列都可以称为文件，但本次实验中我们还是主要关注在磁盘中存储的数据，将这些数据按一定的结构组织起来，就是本次实验的主要目标。
+本文依旧不按照指导书中的顺序。我们先查看位于 tools 文件夹下的磁盘镜像制作工具 fsformat 的源代码，以便我们理解磁盘以及文件系统的组织结构。
+（2）磁盘数据初始化 我们查看 tools/fsformat.c 文件。找到其中的 main 函数。main 函数首先调用了 init_disk 用于初始化磁盘。
+int main(int argc, char **argv) { static_assert(sizeof(struct File) == BY2FILE); init_disk(); 该函数中我们要用到一个数据结构 disk。因此我们先考察 disk。disk 是一个数组，大小为 NBLOCK，每个元素是一个结构体，其中有字段 data，是一个 BY2BLK 字节大小的空间，用于存储一个磁盘块的数据。很容易得知，NBLOCK * BY2BLK = 磁盘空间大小。这样就可以理解 disk 起到的作用了，也就是在构筑磁盘镜像时暂时存储磁盘数据，等到构筑完成后再将 disk 中 data 的内容拼接并输出为二进制镜像文件。
+struct Block { uint8_t data[BY2BLK]; uint32_t type; } disk[NBLOCK]; 磁盘块是对磁盘空间的逻辑划分；扇区是对磁盘空间的物理划分
+另外 Block 结构体还有一个字段 type，该字段的值为如下枚举的值
+enum { BLOCK_FREE = 0, BLOCK_BOOT = 1, BLOCK_BMAP = 2, BLOCK_SUPER = 3, BLOCK_DATA = 4, BLOCK_FILE = 5, BLOCK_INDEX = 6, }; 让我们回到 init_disk。该函数中首先将第一个磁盘块类型设为 BLOCK_BOOT，表示主引导扇区。之后我们要从第三个磁盘块开始（为什么不是第二个？因为第二个磁盘块为 “超级块”，将在后面介绍），设置磁盘块的位图分配机制。在函数中我们计算了在磁盘中存储位图需要的磁盘块数量。NBLOCK 是磁盘块的总数，那么我们同样需要 NBLOCK bit 大小的位图，又因为一个磁盘块有 BIT2BLK bit，那么总共需要 NBLOCK / BIT2BLK 个磁盘块。向上取整，总共需要 (NBLOCK + BIT2BLK - 1) / BIT2BLK 个磁盘块来存储位图。现在我们已经将 0 到 nbitblock-1 的位图分配了用途，那么下一个空闲的磁盘块就是 nextbno = 2 + nbitblock 了。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之脚本</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-4/</link>
+      <pubDate>Tue, 25 Apr 2023 18:10:33 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-4/</guid>
+      <description>一、前言 这篇文章只是记录一些自己编写脚本时用到的零碎知识而已。这也是这一系列的最后一篇。
+二、shell 的异常处理 有时我们希望在 shell 脚本命令执行出现异常时进行处理，比如说输出异常情况或退出等等。我们知道发生异常时返回值不为 0，如果是在 c 语言中我们可以这样处理
+if (!do_something()) { // handle exception } 类似的在 shell 中
+dosomething arg1 arg2 if [ $? -ne 0 ] then # handle exception if 但是这样编写起来太过麻烦了，我们可以采用另一种方法，那就是使用短路逻辑运算符。
+我们还先以 c 语言为例，假设现在我们有两个函数，对他们取逻辑或
+int r = func1() &amp;amp;&amp;amp; func2() 那么在 func1 的返回值为 0 时，就会发生短路，不执行 func2。而在返回值为；而当 func1 的返回值不为 0 时，则会继续执行 func2。我们可以让 func2 完成 func1 的异常处理。
+当然，在 c 语言中这种方法很是牵强，因为不同函数的栈帧并不一样，很难跨函数进行处理。可是 shell 中就不同了，所有的变量都是全局变量。
+但还需要注意一点，shell 中 0 表示真，1 表示假。（因为 0 表示程序正常结束，所以为真。）所以在 shell 中就需要使用 || 而非 &amp;amp;&amp;amp;。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之 Docker</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-3/</link>
+      <pubDate>Tue, 25 Apr 2023 18:09:15 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-3/</guid>
+      <description>一、前言 最近事情有些多，这篇短文写写停停，花费了很长时间。本来想着在五一假期结束前完成这一系列文章的，现在看来还有些困难呀。
+这篇文章总结了自己使用 Docker 时用到的一些知识，可能内容不深，还请见谅。
+二、镜像的构筑 （1）Docker 镜像简介 正如在“准备工作”那篇文章中所说的，镜像时静态的容器，容器是运行的镜像。我们在使用 Docker 时，需要做的就是像编写代码一样构建 Docker 镜像。
+Docker 镜像中包含了一套文件系统，其所维护的文件包含了项目运行所需的环境以及项目本身。但是镜像和一般的文件系统不同，镜像由一系列层构成，每一层中存储了对之前镜像的修改信息。
+这样做有一定的优点，在下载镜像时，我们不需要每次都下载完整的镜像；而只需要下载与本地镜像不相同的层就可以了。另一方面，容器基于镜像进行构筑，在容器运行时，分层设计也有利于不同容器的共享。采取写时复制技术可以减少内存的占用。
+我们进行镜像的构筑时，也不需要从头开始，而可以选择在已有的镜像上添加新的层，通过修改已有环境来构建我们所需的项目运行环境。
+（2）Dockerfile 简介 Docker 中使用 Dockerfile 来设置镜像构建的操作流程，这一点类似于 Makefile。这里借我的后端项目中的 Dockerfile 的内容来稍微解释一下。
+# python alpine is the smallest python image FROM python:3.9-alpine COPY ./src /src COPY ./start.sh ./ COPY ./config.ini ./ RUN pip install -r ./src/requirements.txt # ash is shell for alpine CMD ash start.sh Dockerfile 中使用一系列大写关键字作为指令，构建镜像时，从头到尾依次执行。
+第一句使用了 FROM 指令。该指令指定了构筑时的基础镜像，接下来的指令都是对镜像的修改，会在基础镜像上增加新的层。这里 FROM python:3.9-alpine 指定了一个镜像，来自仓库 python，标签为 3.9-alpine。该镜像包含了 python3.9 的运行环境，底层的操作系统为 alpine，这也是 Linux 的一个发行版，以体积小著称。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之 Flask 简介</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-2/</link>
+      <pubDate>Sat, 22 Apr 2023 22:40:12 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-2/</guid>
+      <description>一、前言 这一篇文章中主要讲解了为完成后端项目所使用的 Flask 框架。对于自己所使用的功能和特性进行了着重的讨论。当然说是着重讨论，其实还是皮毛罢了。想要更加系统地了解 Flask，还请查看官方文档
+二、Flask （1）Flask 介绍 Flask 是一个 Python Web 框架，十分轻量灵活，可以用于开发小型 Web 应用。Flask 高度可扩展，可以通过添加不同的组件来实现定制化的功能。对于简单的后端任务来说，Flask 十分合适。
+（2）Flask 用于后端 虽然 Flask 可以实现经典的 MVC 架构，但是本项目只进行后端开发，提供一些用于数据库操作的 RESTful 接口，并不涉及显示的部分。因此只讨论 Flask 用于后端开发的方面。
+对于后端项目，我们希望其向下管理数据库，向上为前端提供接口。这就需要用到 ORM 来通过对象管理数据库关系；同时通过 Route 提供 api 接口。
+另外，我们还需要对项目进行管理，以合理的结构组织项目。我们需要了解 Flask 的 BluePrint。
+三、ORM （1）数据库设置 Flask 使用 Flask-SQLAlchemy 组件实现 ORM。SQLAlchemy 本是独立于 Flask 的 ORM 库，但在 Flask 中使用时，又针对 Flask 进行了一定封装。
+我们希望创建到数据库的连接，这需要在后端项目中进行设置。对 Flask 来说，设置以字符串的形式保存于项目的配置变量 SQLALCHEMY_DATABASE_URI 中。
+app = Flask(__name__) app.config[&amp;#39;SQLALCHEMY_DATABASE_URI&amp;#39;] = f&amp;#39;mysql+pymysql://{username}:{password}@{host}:{port}/{name}?charset=utf8mb4&amp;#39; 配置存储于 app.config 中。其中 app 是一个 Flask 类型的对象，用于表示 Flask 项目这个整体。</description>
+    </item>
+    <item>
+      <title>后端开发入门笔记之准备工作</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-1/</link>
+      <pubDate>Sat, 22 Apr 2023 22:22:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-1/</guid>
+      <description>一、前言 当我第一次看到那份作业的时候，我绝想不到，这作业将牵扯出多少我还未曾学习过的知识；我更想不到，自己要以多久的时间涉猎完所有这些内容。当然现在这些都已经结束了，感慨不应该抒发太多，还是趁着自己没有忘记，做一下总结吧。
+这一系列应该会有几篇文章。主要内容是回顾总结我的第一次较为系统的后端开发经历。在学习的过程中我参考了许多文章，其中一些我也会在文章中给出链接。这些文章或许在一些方面比本篇文章讲的更加深入，但是本篇文章综合了许多文章的不同信息，给出了系统的安装配置流程和自己的一些见解，因此我认为还是有一些价值的。
+二、WSL，一切的起点 （1）WSL 简介 windows 系统虽然在个人电脑上常用，但是开发起后端来还是不方便，最好还是使用 linux。但是只有一台电脑的话，装双系统极其麻烦、虚拟机又太过笨重。那么有没有一种更加方便的方法呢？有的，那就是使用 WSL（Windows Subsystem for Linux），即 Windows 的 Linux 子系统。WSL 分为 WSL1 和 WSL2，此二者的实现原理并不相同。虽然有些跑题，但是还是介绍一下，毕竟是自己费力去查的结果。
+WSL1 不是虚拟机，Hyper-V 或 VMware 等虚拟机会用软件模拟硬件的行为，其中装入的操作系统是和模拟的硬件进行交互；而 WSL1 则是通过 Windows 操作系统库模拟了一个 Linux 内核，用 Windows 的系统调用来处理 Linux 的系统调用。并且由于 WSL1 不需要模拟硬件这一中间过程，因此效率会比虚拟机高。而 WSL2 则可以看做虚拟机，但是与其他虚拟机相比更加轻量，Linux 系统运行在此虚拟机上资源占用更少、运行更快。问题是 WSL2 使用了虚拟化技术，可能与其他虚拟机冲突，不能同时使用。
+在这里我们使用 WSL2。主要原因是 WSL2 运行了真正的 Linux 内核，和各种 Linux 程序的兼容性更好。
+（2）WSL 安装 安装 WSL 很简单。这里的安装流程参考 使用 WSL 在 Windows 上安装 Linux。插一句，微软的技术文档真的很有用，如果对搜索得到的关于微软的技术问题的解决方案有不确定的地方，参考微软的技术文档有时会有很大帮助。就比如 WSL 的安装，搜到的经常已经是过时的教程了。
+安装 WSL，只需要在 PowerShell 中以管理员模式运行如下命令即可。
+wsl --install 注意网上的教程中，需要使用 dism.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab4</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab4/</link>
+      <pubDate>Thu, 13 Apr 2023 22:30:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab4/</guid>
+      <description>一、Lab4 前言 Lab4 主要实现了系统调用，并通过系统调用实现了进程的创建和通信等操作。按照提示编写代码的难度应该不大（除非你的 Lab3 schedule 函数有 bug，很可惜我就是这样 :(），所以本次的笔记更多的讨论了一些和实验无关的代码。希望不会显得太啰嗦。
+二、系统调用 （1）从一个用户程序引入 在之前的几篇文章中，我们大致循着内核初始化的过程进行分析。可是在这 Lab4 中这一思路就不适用了。因为在本次实验中我们所要实现的，不过是一些由内核提供的，可供用户程序调用的接口而已。这种调用被称为系统调用。
+但是为了保持文章行文的一致性，我们还是希望确定一个入口开始讲解。正好在 mips_init 中有这样的语句，那我们就从被创建的这个用户程序开始。
+// lab4: // ENV_CREATE(user_tltest); 这里需要插一嘴，在 Lab3 中我们就已经使用 ENV_CREATE 完成了一些程序的加载，可你有没有仔细看过被加载的程序的源代码是什么样的？代码在 user/bare 路径下。我们查看其中的 put_a.c 程序
+void _start() { for (unsigned i = 0;; ++i) { if ((i &amp;amp; ((1 &amp;lt;&amp;lt; 16) - 1)) == 0) { // Requires `e-&amp;gt;env_tf.cp0_status &amp;amp;= ~STATUS_KUp;` in kernel to work *(volatile char *)0xb0000000 = &amp;#39;a&amp;#39;; *(volatile char *)0xb0000000 = &amp;#39; &amp;#39;; } } } 你会发现这些所谓的程序并没有 main 函数，而是 _start。实际上和内核一样，我们同样在用于用户程序编译的链接器脚本中将程序入口设定为 _start。该脚本为 user/user.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab3</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab3/</link>
+      <pubDate>Thu, 30 Mar 2023 14:36:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab3/</guid>
+      <description>一、Lab3 前言 不知道为什么，虽然写 Lab3 所用的时间比 Lab2 少，但这次的笔记居然比 Lab2 长。我认为可能是因为自己在本篇文章中讲了更多和实验本身无关的东西。不过既然讲了，应该也会对进一步认识操作系统起到一些作用吧。希望本篇文章不会显得太啰嗦。
+二、内核初始化（再续） Lab2 中，我们在内核初始化阶段初始化了虚拟内存的相关信息，Lab3 中我们要继续这一过程。本次实验中我们会完成进程控制的初始化。
+（1）再度 mips_init 我们查看 Lab3 中 init/init.c 的 mips_init 函数的内容变化。与 Lab2 相比，其中多调用了如下的方法 env_init、ENV_CREATE_PRIORITY、kclock_init 和 enable_irq。
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); // lab3: env_init(); // lab3: ENV_CREATE_PRIORITY(user_bare_loop, 1); ENV_CREATE_PRIORITY(user_bare_loop, 2); // lab3: kclock_init(); enable_irq(); while (1) { } } 其中 env_init 用于进程控制的初始化，ENV_CREATE_PRIORITY 手工创建了两个进程，kclock_init 和 enable_irq 设置了时钟中断并启用了中断。后两者将分别在第三和四节介绍。本届只介绍前者。
+（2）进程管理的数据结构 让我们深入在 kern/env.c 中的 env_init，在该函数中，首先初始化了两个列表
+void env_init(void) { int i; /* Step 1: Initialize &amp;#39;env_free_list&amp;#39; with &amp;#39;LIST_INIT&amp;#39; and &amp;#39;env_sched_list&amp;#39; with * &amp;#39;TAILQ_INIT&amp;#39;.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab2</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab2/</link>
+      <pubDate>Mon, 20 Mar 2023 21:38:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab2/</guid>
+      <description>一、Lab2 前言 这篇文章应该是我目前写过的文章中长度排行前几的了。Lab2 的内容着实繁多，不仅是分页内存管理本身的理论和实现细节颇多；操作系统的基本知识和注意事项也占据了很大的篇幅。后者在不理解的情况下实在会对本次实验产生许多困惑。本人也是在逐步地探索之后才得以有了较多的认识——当然，这一认识或许也只是片面的。
+本文逐函数、逐代码地讲解了 Lab2 中新增的内容。主要在于内核初始化中关于内存的部分以及分页内存管理的实现。在本文中，关于链表宏和虚拟/物理内存的辨析也占据了比较多的内容。
+二、内核初始化（续） 在 Lab1 中，我们的内核初始化过程只进行了一部分。因为 Lab1 中 mips_init 函数几乎没有任何功能。在 Lab2 中，我们会继续推进这一过程。
+在 Lab2 中，我们会建立操作系统的内存管理机制。具体来说，我们会在 mips_init 中调用三个函数 mips_detect_memory、mips_vm_init 和 page_init。这三个函数会分别完成探测内存、初始化虚拟地址和初始化页的工作。接下来我们会分别介绍这三个函数。
+Lab2 中 mips_init 的结构如下：
+void mips_init() { printk(&amp;#34;init.c:\tmips_init() is called\n&amp;#34;); // lab2: mips_detect_memory(); mips_vm_init(); page_init(); while (1) { } } （1）探测内存 mips_detect_memory 的作用是获取总物理内存大小，并根据物理内存计算分页数。
+注意！是物理内存
+void mips_detect_memory() { /* Step 1: Initialize memsize. */ memsize = *(volatile u_int *)(KSEG1 | DEV_MP_ADDRESS | DEV_MP_MEMORY) 第一步中的这条语句似乎使人困惑。为什么这样就可以获得物理内存大小了呢？我们可以查看一下 DEV_MP_ADDRESS 和 DEV_MP_MEMORY 所在的头文件。它们定义在 include/driver/dev_mp.</description>
+    </item>
+    <item>
+      <title>基于概率模型的蘑菇菌丝规模分析</title>
+      <link>https://wokron.github.io/posts/hyphae-scale-math-model/</link>
+      <pubDate>Fri, 17 Mar 2023 16:38:01 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/hyphae-scale-math-model/</guid>
+      <description>摘要： 本文提出了一种将菌丝体结构与地面上蘑菇子实体的位置联系起来的概率模型，用于分析蘑菇菌丝体的规模。我们假设地形平坦，菌丝体以恒定速率扩散。同时假设地面上蘑菇子实体的位置遵循菌丝体形状决定的均匀分布。基于这些假设，我们将菌丝体定义为以初始孢子位置 (m n) 为中心，半径为 r 的圆形区域。蘑菇子实体位置的分布服从该圆形区域内的均匀分布。
+对于圆心位置和半径大小，我们分别提出了三种模型。对圆心位置来说：样本点平均值模型通过直接计算所有蘑菇子实体位置的平均值来估计圆心位置；最远点平均值模型通过计算横纵坐标投影上的最远点的平均值作为对圆心的估计；中位数模型通过分别计算横纵坐标轴上的中位数进行估计。
+对半径大小来说：平均值模型通过计算所有样本点距已求得的圆心距离的平均值估计半径；第二种模型中采用了极大似然法对半径进行估计；两端间隔模型则通过考虑半径取值中两端间隔的比例关系计算半径大小。
+我们将这些模型结合起来求解原问题。为了选择出更优的模型，我们采用了计算机数值模拟的方法。通过多次的随机模拟试验，考察模型预测结果的平均值、相对平均值的误差和标准差，对模型进行了评价，并据此选出了更好的求解结果。 Keywords: 概率论，数值模拟
+简介 背景 蘑菇作为一种广泛存在于自然界的真菌，为人们所熟知。但其除了裸露在地表的子实体部分以外，在地下还拥有着极其庞大的菌丝结构。为了完成对蘑菇的全面详细研究，有必要对菌丝结构这一蘑菇的重要组成部分进行分析和度量。其中尤为重要的，就是确定菌丝结构的位置和范围。但是由于菌丝处于地下且规模巨大，难以通过直接测量得出结果。
+问题重述 蘑菇的孢子落到土壤中，不断生长出菌丝。菌丝以相同的速度向外辐射，构成庞大的菌丝菌丝。当环境条件合适时，这些菌丝会生长成裸露在地面的“蘑菇”。现在我们已知地面上属于同一菌丝结构的所有蘑菇的位置，如表 1 和图 1 所示：
+序号 横坐标 纵坐标 序号 横坐标 纵坐标 1 21.12 29.84 11 24.81 17.16 2 20.39 11.50 12 41.31 31.77 3 38.52 13.34 13 20.24 15.50 4 33.85 15.47 14 34.63 26.43 5 44.24 21.49 15 42.67 20.42 6 24.87 22.42 16 18.52 14.49 7 46.32 26.41 17 17.09 25.83 8 20.</description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记之 Lab1</title>
+      <link>https://wokron.github.io/posts/buaa-os-lab1/</link>
+      <pubDate>Tue, 14 Mar 2023 21:13:05 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/buaa-os-lab1/</guid>
+      <description>一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。
+但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。
+二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……
+不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。
+（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。
+我们看一下该文件的开头。
+/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的
+.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit.</description>
+    </item>
+    <item>
+      <title>使用 Transformer 进行机器翻译</title>
+      <link>https://wokron.github.io/posts/translate-using-transformer/</link>
+      <pubDate>Sun, 12 Mar 2023 13:25:50 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/translate-using-transformer/</guid>
+      <description>一、transformer 简介 transformer 是 Google 在 2017 年发表的文章 Attention Is All You Need 中提出的网络架构。transformer 中只使用了注意力，实现了序列数据的处理，而未使用之前常用的 RNN 或 CNN。
+对 nlp 问题，我们希望的是尽可能的获取句子的整体含义。使用 RNN，我们必须逐词获取语义，因此容易导致开头词汇词义的遗忘；使用 CNN，我们必须通过增加层数来扩大获取信息的范围。这两种方法都有很大的局限。
+注意力方法则可以直接获得全局信息。方法是对一条序列，求其对于本身的注意力，这被称为自注意力。
+transformer 的原理和模型较为复杂，在这里只是简单说明。
+二、数据集 此为训练模型所用的数据集。设定英文为源语言，中文为要翻译成的语言。
+（1）Dataset 类编写 我们根据路径打开文件，获取中英文序列和单词表。并将序列直接转化为 tensor，方便读取。
+class TranslateDataset(Dataset): def __init__(self, en_path, zh_path): en_seqs, self.en_vocab = get_seq_and_vocab(en_path, get_tokenizer(&amp;#34;basic_english&amp;#34;)) zh_seqs, self.zh_vocab = get_seq_and_vocab(zh_path, zh_simple_tokenizer) self.items = [] for i in range(len(en_seqs)): en_seq = en_seqs[i] zh_seq = zh_seqs[i] src = en_seq tgt = zh_seq[:-1] pdt = zh_seq[1:] self.</description>
+    </item>
+    <item>
+      <title>ESIM 网络的搭建和训练</title>
+      <link>https://wokron.github.io/posts/traning-esim-network/</link>
+      <pubDate>Sun, 05 Mar 2023 10:30:20 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/traning-esim-network/</guid>
+      <description>一、前言 最近半年多的时间里学了许多人工智能，尤其是深度学习的知识，但是一直没有搭建过一个较为复杂的神经网络，最多也只是一个简单的 rnn。这主要是因为自己的笔记本没有训练较大模型的能力。
+因为对nlp比较感兴趣，因此最近开始尝试跟着复旦大学邱锡鹏老师的NLP入门练习搭建网络。但到任务三时自己的笔记本就无法继续训练了，于是这次我下定决心找到训练一个比较好的训练模型的方法。最终找到了 Colab。
+因为使用了Colab，本次模型的构建和训练比较成功，因而做此记录。
+二、任务 本次任务是输入两个句子，判断它们之间的关系。具体来说，我们需要实现论文中提出的 ESIM 网络，并通过 SNLI数据集 进行训练，以学习预测两个句子间的关系。
+三、数据集 SNLI数据集包含57万行英文句子对，并被标注了句子间的关系，包括蕴含（Entailment），矛盾（Contradiction），中立/不冲突（Neutral），未知（-）。
+例如
+输入文本： A man inspects the uniform of a figure in some East Asian country. 输入假设： The man is sleeping. 输出： 矛盾（C）
+输入文本： A smiling costumed woman is holding an umbrella. 输入假设：A happy woman in a fairy costume holds an umbrella. 输出： 中立（N）
+输入文本： A soccer game with multiple males playing. 输入假设： Some men are playing a sport.</description>
+    </item>
+    <item>
+      <title>利用 Colab 训练神经网络</title>
+      <link>https://wokron.github.io/posts/training-on-colab/</link>
+      <pubDate>Sat, 04 Mar 2023 16:44:22 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/training-on-colab/</guid>
+      <description>一、算力从哪里来？ 曾听到过这样一种说法，深度学习 “自学 + 没经费 = 天坑”。不幸的是我似乎正处于这种状态中。自学的方面还比较好克服，可没有 gpu 进行训练就 “难为无米之炊” 了。就算理论学得再好，自己构建的模型电脑带不动，没有实践的机会，也是难以学好这门学科的。
+最近我正开始学着实现更大的模型，我的笔记本此前的小模型还可以勉强撑住，可现在却完全带不动了。一方面，训练的时间太长，挤占了我使用笔记本做其他事的时间；另一方面，我的 gpu 显存太小，不能调大参数，可参数较小时又无法收敛。这就是我面临的双重两难问题。
+我希望找到一处租用算力的平台。它应该同时满足如下的条件
+算力丰富，能快速训练模型 对用户友好，和本机环境差别不大，能够迅速上手训练模型 费用便宜，最好有免费的算力 综合以上各点，通过搜索，我找到了 Colab。Colab(oratory) 是一个 Google 研究项目，旨在帮助传播机器学习培训和研究成果。它是一个 Jupyter 笔记本环境，不需要进行任何设置就可以使用，并且完全在云端运行。Colab 笔记本存储在 Google 云端硬盘中，并且可以共享。利用Colaboratory ，可以方便的使用Keras, TensorFlow, PyTorch, OpenCV 等框架进行深度学习应用的开发。最重要的是，Colab 可免费使用。
+二、Colab基本操作 （1）创建笔记本 在正式介绍 Colab 之前需要说明一点，使用 Colab 需要科学上网。
+要新建 Colab 需要创建笔记，笔记是 Colab 编辑文本、代码和运行程序的地方。使用过 jupyter notebook 的人应该很了解。不同笔记之间内容互不相通，可以把每一个笔记看做一台独立运行的虚拟机。
+Colab 是谷歌的产品，因此需要实现注册好一个谷歌账号。
+通过 Google Drive 创建笔记本 Google Drive 是 Google 的一款云端硬盘，操作与其他云盘，如百度网盘、阿里云盘，类似。
+通过 Google Drive 可以创建 Colab 笔记。方式是：点击左上角的“新建”按钮或右击背景 =&amp;gt; 在弹出的窗口中选择“更多” =&amp;gt; 选择 “Google Colaboratory” 选项。</description>
+    </item>
+    <item>
+      <title>利用 ASM 库实现 Java 反射</title>
+      <link>https://wokron.github.io/posts/java-asm-lib/</link>
+      <pubDate>Tue, 21 Feb 2023 18:10:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/java-asm-lib/</guid>
+      <description>一、ASM库简介 ASM 库是一款基于 Java 字节码层面的代码分析和修改工具。它能分析二进制的 class 文件并对其进行动态修改。ASM 库侧重性能，设计和实现尽可能小和快。
+通过 ASM 库，我们可以方便地获取类信息，并实现类似于反射的功能。ASM 库处理字节码，因此能得到仅仅使用反射无法获取的信息，如方法内的结构。
+ASM 库同样具有动态修改和创建类文件的功能，但本篇文章主要使用 ASM 库的字节码读取功能。
+本篇文章假设读者能自行通过Maven或其他方式添加ASM库依赖。
+二、利用ASM库访问类文件 ASM 库的核心库提供了读取和修改字节码的基本 API。核心库包含如下几个工具类：
+ClassReader ClassReader 类用于从 class 文件中加载字节码。这样，这一 ClassReader 对象就拥有了关于某一类的所有信息。
+ClassVisitor ClassVisitor 类可以从 ClassReader 中获取想要的信息。
+ClassVisitor 是访问者模式的访问类。简单解释访问者模式，就是被访问的对象调用访问者类的方法，从而使得访问者获取希望得到的数据。
+还是通过 ASM 的例子来理解吧，ClassVisitor 实际是一个抽象类，其中定义了一个方法 visit。该方法的签名为：
+visit(int version, int access, String name, String signature, String superName, String[] interfaces) 假设我们继承 ClassVisitor 创建了一个新的访问类，那么获取信息的方式如下：
+ClassReader cr = new ClassReader(&amp;#34;className&amp;#34;); ClassVisitor cv = new ClassVisitor(Opcodes.ASM5) { // this is an anonymous class }; cr.</description>
+    </item>
+    <item>
+      <title>Java 注解与 C# 特性</title>
+      <link>https://wokron.github.io/posts/java-annotation-and-csharp-attribute/</link>
+      <pubDate>Mon, 20 Feb 2023 12:45:30 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/java-annotation-and-csharp-attribute/</guid>
+      <description>一、元数据简介 元数据是指用来描述数据的数据。对编程语言来说，元数据可以为程序中元素添加额外的信息。这一功能可以被用于描述代码间关系，以及代码与其他资源的联系。
+元数据可以被用于框架中。通过元数据可以实现在代码上对类的直接配置，避免编写如 xml 的配置文件。
+Java 和 C# 都具有为程序中元素，如类、方法等等，添加元数据的方式。Java中称为注解，而C#中称为特性。注解和特性都通过反射获取，关于两者的获取方式，已经在前一篇文章中有所记述。本篇只讨论注解和特性的定义和使用。
+二、Java注解 注解的定义 如果想要自定义注解，需要继承 Annotation 类。
+public class MyAnnotation extends Annotation { } 同时还有另一种写法，由此可知注释本质上是接口
+public @interface MyAnnotation2 { } 和接口一样，注解可以添加静态变量
+我们可以为注解添加“参数”，比如 Spring 中的注解 @Profile(value = &amp;quot;dev&amp;quot;)。我们为其设置了 value 属性。
+但是注解本是接口，不可能有保存数据的能力，要如何设置注解的属性呢？实际上，注解的属性在编写 Annotation 时是一个方法。即
+public @interface MyProfile { String value(); } 还可以为参数添加默认值
+public @interface MyAnnotation3 { String value(); int number() default 8; // set default number } 注解经常和枚举一起使用。
+public @interface MyAnnotation4 { enum SELECT_TYPE {TYPE_A, TYPE_B} SELECT_TYPE selectType() default TYPE_A; } 元注解 元注解是注解的元数据，也就是对注解的注解。元注解为注解设置额外的信息，如设置注解的作用对象等等。</description>
+    </item>
+    <item>
+      <title>Java 和 C# 中的反射机制</title>
+      <link>https://wokron.github.io/posts/reflection-in-java-and-csharp/</link>
+      <pubDate>Sun, 19 Feb 2023 13:59:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/reflection-in-java-and-csharp/</guid>
+      <description>一、反射简介 反射是一种程序动态访问修改其状态或行为的机制。具体来说，反射提供了在程序运行时对代码进行操作的手段。
+反射提高了程序的灵活性和扩展性，能使程序员通过字符串动态地实现程序的修改。它降低了代码间的耦合度，可以避免硬编码，实现代码的组件化。反射的这些特点在对灵活性和扩展性要求很高的框架上有巨大的作用。
+当然，也需要注意到，反射通过字符串进行操作的方式是解释性的，这将导致性能的降低。
+二、反射的原理 对于拥有虚拟机（或者类似的东西，虚拟机只是一个不正规的名词）的语言，都存在加载字节码（同样不正规的名词）到虚拟机的过程。在这个过程中，虚拟机获取了有关类的信息，包括继承关系、包含的字段和方法等等。对于java来说，局部变量放在栈中，类实例放在堆中，程序方法放在方法区中。
+对不使用反射的一般情况来说，方法调用更加直接。调用时虚拟机将根据编译时即确定的方法地址进行跳转。而对于反射，则需要根据字符串查找对应的类或方法。这样查找而非硬编码的过程就会影响性能。
+二、java中的反射 通过反射我们能获取java语言中的如下组成部分：包、类（和接口）、方法（一般/构造）、字段、注解。反射不能操作方法中的内容。
+类是面向对象的基本单元，我们通过获取类来实现对程序的动态操作。
+（1）类和包 “类” Class&amp;lt;?&amp;gt; 是一个用于表示类的类型。它有三种获取方式
+ClassName.class // 类型名.class obj.getClass(); // 对象.getClass Class.forName(String className); // Class.forName(&amp;#34;包含包路径的类型全称&amp;#34;) 前两种较好理解，相当于获取一个类型，我们可以用这编写一个类似于 instanceof 的函数。
+boolean typeof(Object obj, Class&amp;lt;?&amp;gt; cls) { return obj.getClass() == cls; } 当然这无法将子类也判断为真。值得注意的是这里我们直接使用了 == 而不是 equals。因为对于每一个类，Class只用一个实例。
+但第三种才最为重要，它通过字符串获取了一个类型。这就为程序提供了灵活性。
+获取了一个 Class 对象后，我们可以进一步获取其父类和实现的接口
+Class&amp;lt;?&amp;gt; cls = Class.forName(&amp;#34;somepackages.someClass&amp;#34;); Class&amp;lt;?&amp;gt; superCls = cls.getSuperclass(); Class&amp;lt;?&amp;gt;[] interfaces = cls.getInterfaces(); 值得注意的是获取接口方法返回的是一个 Class 数组。这说明对于虚拟机来说本没有类和接口之分。
+调用 getPackage 可以获取包
+Package p = cls.getPackage(); Package 类型保存了该包的一些信息，如名称、版本等等，不一一列举。</description>
+    </item>
+    <item>
+      <title>2D 物理引擎基础之刚体力学与碰撞约束</title>
+      <link>https://wokron.github.io/posts/physics-engine-basics-3/</link>
+      <pubDate>Fri, 10 Feb 2023 09:47:10 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/physics-engine-basics-3/</guid>
+      <description>一、前言 本文是“2D物理引擎基础”的第三篇文章，主要介绍物体刚体力学的相关知识以及碰撞发生后的处理办法。后者背后的数学原理较为复杂，因此这里大多情况只是罗列公式并做简要说明。
+二、刚体力学 连续的刚体力学 我们考虑二维的情况。假设有一刚体，质量为 $M$，转动惯量为 $I$，在距质心 $\vec{r}$ 处受到一力 $\vec{F}$ 的作用。
+那么刚体所受相对于质心的力矩 $\vec{M}$ 为： $$ \vec{M} = \vec{r} \times \vec{F} $$ 注意 $\vec{M}$ 的方向垂直于平面，后面的角速度同理。
+在 $\Delta{t}$ 时间内速度变化 $\Delta{\vec{v}}$ 有 $$ \Delta{\vec{v}} = \int_{t_0}^{t0+\Delta{t}} \frac{\vec{F}(t)}{M} dt $$ 同样的，角速度变化 $\Delta{\vec{w}}$ 有 $$ \Delta{\vec{w}} = \int_{t_0}^{t0+\Delta{t}} \frac{\vec{M(t)}}{I} dt $$ 类似的，也有位置和角度的变化 $$ \Delta{\vec{p}} = \int_{t_0}^{t0+\Delta{t}} \vec{v}(t) dt $$ $$ \Delta{\vec{\theta}} = \int_{t_0}^{t0+\Delta{t}} \vec{w}(t) dt $$ 还有冲量 $$ \vec{I} = \int_{t_0}^{t0+\Delta{t}} \vec{F}(t) dt $$ 以及角冲量（或称冲量矩） $$ \vec{H} = \int_{t_0}^{t0+\Delta{t}} \vec{M}(t) dt $$ 并有等式 $$ \vec{I} = M \Delta{\vec{v}} $$ $$ \vec{H} = I \Delta{\vec{w}} $$ 离散的刚体模拟 正如第一篇文章中说过的，一般情况下计算机无法计算连续，只能通过离散的方式进行近似。物理引擎中进行的模拟会导致误差，但这对于视觉效果来说已经足够了。</description>
+    </item>
+    <item>
+      <title>2D 物理引擎基础之碰撞检测</title>
+      <link>https://wokron.github.io/posts/physics-engine-basics-2/</link>
+      <pubDate>Wed, 08 Feb 2023 20:22:21 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/physics-engine-basics-2/</guid>
+      <description>一、前言 本篇是“2D物理引擎基础”的第二篇文章，将主要讲解碰撞检测的基本原理和算法。
+碰撞检测是物理引擎十分重要的组成部分。碰撞检测及后续的碰撞约束反映了物质的不可入性，是物理模拟真实性的基础。另外碰撞检测也能有效用于游戏逻辑的实现，如触发陷阱、探测障碍等等。
+二、碰撞检测的基本概念 碰撞检测的目标就是判断两个几何体是否存在重合部分，如果存在重合部分，则得到接触点、碰撞法线和穿透深度。
+接触点（Contact Point）指的是两个几何体相接触的位置。当然对于碰撞检测而言，接触的部分并非点而是区域，但是我们可以通过算法从中近似地取出接触点，一般位于其中一个几何体的顶点或边上。
+碰撞法线指示了一个物体与另一个物体发生碰撞后，后者为了分离而应该采取的运动方向。这一法线大多是几何体中某一条边的法线
+穿透深度是沿碰撞法线方向最终分离所需的距离，这一数值常用来修正碰撞后两几何体的位置，避免两几何体在视觉上发生重叠。
+三、分离轴定理（SAT，Separating Axis Theorem） 分离轴定理是如下内容：若两个凸物体没有重合，则总会存在一条直线，能将两个物体分离。这样的直线称为分离轴。对于高维物体来说这同样适用，只不过分离轴将变为分离超平面。
+利用分离轴定理可以实现凸几何体的碰撞检测。对于多边形，算法是这样的：
+对两个多边形的每一条边，做垂直于该边的直线 对两个多边形的每一个顶点，分别做到步骤1中所得直线的投影 如果存在一条直线，两个多边形对这条直线的投影并不重合，则两个多边形不重合 如果不存在步骤3中的直线，则两个多边形重合。 完全按照算法思路得到代码如下
+def sat(body_a, body_b): return not find_separate_axis(body_a, body_a, body_b) and not find_separate_axis(body_b, body_a, body_b) def find_separate_axis(lines_body, body_a, body_b): for i in range(len(lines_body) - 1): p1 = lines_body[i] p2 = lines_body[i] + get_normal(lines_body[i+1] - lines_body[i]) a_min, a_max = body_cast(p1, p2, body_a) b_min, b_max = body_cast(p1, p2, body_b) if p1[0] != p2[0]: max_min = a_min if a_min[0] &amp;gt; b_min[0] else b_min min_max = a_max if a_max[0] &amp;lt; b_max[0] else b_max if max_min[0] &amp;lt; min_max[0]: continue else: max_min = a_min if a_min[1] &amp;gt; b_min[1] else b_min min_max = a_max if a_max[1] &amp;lt; b_max[1] else b_max if max_min[1] &amp;lt; min_max[1]: continue return True return False def body_cast(a, b, body): body_min = body_max = point_cast(a, b, body[0]) for p in body: p_cast = point_cast(a, b, p) if p_cast[0] &amp;lt; body_min[0] or (p_cast[0] == body_min[0] and p_cast[1] &amp;lt; body_min[1]): body_min = p_cast if p_cast[0] &amp;gt; body_max[0] or (p_cast[0] == body_max[0] and p_cast[1] &amp;gt; body_max[1]): body_max = p_cast return body_min, body_max def point_cast(a, b, p): u = p - a v = b - a p_cast = a + v * (np.</description>
+    </item>
+    <item>
+      <title>2D 物理引擎基础之物理属性</title>
+      <link>https://wokron.github.io/posts/physics-engine-basics-1/</link>
+      <pubDate>Wed, 08 Feb 2023 10:52:13 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/physics-engine-basics-1/</guid>
+      <description>一、前言 本系列是我学习物理引擎相关知识的总结。虽说最初的目标是自己实现一个完整的物理引擎，但是随着学习的深入我认识到，为了让引擎更好地模拟实际，所需要的各种数学原理和处理技巧远远超出了“涉猎”的程度。因此我决定就此止步，但是还是留下了自己的实践成果和经验总结，就在这系列文章中。
+本文是“2D物理引擎基础”的第一篇，将介绍物理引擎中物体所需的物理属性
+二、物理引擎中的物体 在物理引擎中，模拟的物体对象被假定为刚体。刚体是如此致密坚硬的一种物体，以至于任何碰撞都无法改变其形状。同时物理引擎还常常假定对象的密度均匀，这样对象的质心将只由其几何形状决定。通过这样的假设，物理引擎将能够通过算法优化高效地进行计算模拟：
+刚体说明物体不会改变形状，这样当物体受到力的作用时，力的作用效果就不会造成改变物体运动之外的其他影响，如质心改变。 密度均匀使得质心的求解更为方便，将质心位置和偏转角度作为物体属性，就可以完全表示物体上各点的位置信息 接下来所说的物理属性也是在如上约定的基础上的。
+三、运动学属性 形状的表示 物理引擎中的形状用描述物体边界的属性表示。不同形状的物体通过不同的几何参数进行表示，如矩形可用长宽表示，圆可用半径长度表示，这些较为简单。更一般地我们考虑多边形，多边形可用顶点坐标表示，但是我们希望形状是位置无关的，那么多边形的顶点坐标也不能在坐标轴上随意选取。虽然 $(0, 0), (1, 0), (1, 1), (0, 1)$ 和 $(1, 1), (2, 1), (2, 2), (1, 2)$ 表示相同形状的多边形，但我们需要选择与位置无关的那一个。我们可以选择使多边形的质心在坐标原点的顶点集合，因为我们后续需要通过质心确定运动学属性。对于均质物体来说，这也就是多边形的几何中心在原点。
+我们不能人为地在设置形状时就限制顶点围成的形状中心必须在原点，这对于复杂的形状来说十分困难。我们可以根据顶点集合先确定几何中心位置，再对每一顶点减去中心坐标以将物体平移到集合中心为原点的位置。
+对于多边形，计算几何中心的公式为 $$ A = \frac{1}{2} \sum_{i=0}^{N-1}(x_iy_{i+1} - x_{i+1}y_i) $$ $$ c_x = \frac{1}{6A} \sum_{i=0}^{N-1}(x_i + x_{i+1})(x_iy_{i+1} - x_{i+1}y_i) $$ $$ c_y = \frac{1}{6A} \sum_{i=0}^{N-1}(y_i + y_{i+1})(x_iy_{i+1} - x_{i+1}y_i) $$ 其中 $A$ 为多边形面积， $(c_x, c_y)$ 即几何中心位置。需要注意的是，在这个公式中，顶点序列为逆时针，且第一个和最后一个应是同一个坐标，以暗示这是一个闭合图形并且方便公式表示。$N$ 是不重合的顶点个数/边数。
+如下是求集合中心的 python 代码
+def get_geometric_center(points): area = 0 c_x = c_y = 0 n = points.</description>
+    </item>
+    <item>
+      <title>用 Pytorch 实现简单循环神经网络</title>
+      <link>https://wokron.github.io/posts/pytorch-rnn/</link>
+      <pubDate>Tue, 17 Jan 2023 21:02:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/pytorch-rnn/</guid>
+      <description>一、歌词生成项目 想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 最浅显易懂的 PyTorch 深度学习入门 的启发，并利用 up 主提供的 源码 中的数据集。
+相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。
+二、数据的获取 （1）编写数据集 原作者用爬虫获取的歌词数据被保存在 lyrics.txt 文件中。我们要将数据按可供训练的模型加载。具体来说
+我们希望每一次获取数据，都能得到输入和目标输出（对本项目来说就是两段有一个文字偏差的序列） 并且将文字数字化，即 nlp 的 tokenize 为了实现批量训练，需要每次获取定长的序列 为了实现第一点，我们要继承 dataset；实现第二点，需要根据数据建立字符表；实现第三点，需要定长截取歌词句子的一部分。
+另外，为了减少每次加载数据所用的时间，还需要将数据集的信息持久化。
+我们的 LyricsDataset 具体实现如下。首先，我们在构造函数中通过传入的路径加载数据，判断是否已经存在处理过后的数据，如存在则加载；如不存在则读入原始数据并处理
+class LyricsDataset(Dataset): def __init__(self, root_path, seq_size): self.seq_size = seq_size processed_name = &amp;#34;/processed/lyrics.pth&amp;#34; raw_name = &amp;#34;/raw/lyrics.txt&amp;#34; if os.path.exists(root_path + processed_name): print(&amp;#34;find processed data&amp;#34;) self.__load_processed_data(root_path + processed_name) else: print(&amp;#34;processed data not found, will process raw data&amp;#34;) self.</description>
+    </item>
+    <item>
+      <title>机器学习 NLP 基本知识</title>
+      <link>https://wokron.github.io/posts/nlp-basics/</link>
+      <pubDate>Tue, 17 Jan 2023 21:01:27 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/nlp-basics/</guid>
+      <description>一、自然语言处理（nlp）简介 一份思绪奔驰的前言： 语言的边界就是思想的边界。如果从人类所具有的一切中挑出一个事物，让它来显示出人与其他生物的不同之处，那一定是语言。语言是我们用来思考和交流的方式，我们的一切文明都构筑在这简单的一维序列中，可我们却几乎不曾深入了解过它。
+有人说，我们不曾真正的理解语言，我们所有对语言的运用和理解，不过建立在婴儿及此后对他人的声音与书本上符号的猜测上。或许正是如此，但是我们依旧要做出猜测，向着语言的神秘进发，这是我们的信念，是我们认识我们的认识的开始。
+（1）作为语言学的 nlp 早在计算机的上古时代，深度学习还未诞生的时候，自然语言处理作为语言学的一个领域就已诞生了，这个领域也被语言学家们称为计算机语言学。两个名称在一起，才表达出 nlp 的真正含义——通过机器处理语言。nlp 最早的研究方向是机器翻译，那时人们人为地总结语言的规律，对词汇进行标注，对语句进行句法分析。结果是人为的规则覆盖面不足，所设计的系统无法扩展。
+（2）作为机器学习研究领域的 nlp 随着计算机的发展，出现了基于传统统计学习模型的自然语言处理方式。这些原始的模型较之之前有所进步，但受限于计算机性能，统计方法也遭遇了瓶颈。
+直到近年来算力的发展，使得深度神经网络成为可能。深度神经网络结构中潜在的学习能力，在 nlp 领域发挥了作用。通过多维数据表示语言和含义，深度学习以高效且与人类认知过程相似的方式发挥了巨大的效果。
+二、词向量 词汇作为符号，其形象是离散的；但词汇的所指作为定义，其含义却是丰富而连续的。比如说“母亲”这个词汇，既表示了这个概念所对应的事物是在一种血缘关系中的一方（她是孩子的母亲）；又表示了这个事物是能繁殖者（母鸡）；在一定程度上，同样表示了非血缘关系，但具有类似血缘关系的行为的个体（大地是母亲）。
+偏个题，《来自深渊》中有对生骸语的类似的描述.
+因此，我们就不能再将词汇只作为离散的符号看待了，不能认为词汇之间是相互排斥的关系了。我们需要将词汇看做某些元含义在不同程度下的集合，或者从机器学习的角度，把这些元含义称作特征。那么也就是说，我们将每个词汇都看成一定维度的向量。
+但是我们要如何确定特征呢？特征的数量又有多少？如果人工地确定特征为“存在、含义、物质、精神”等等，这一过程将耗费精力且永无止境。实际上按照机器学习的一般策略，我们只需要通过统计文本，自发的构建词汇向量即可。
+这一方面有许多算法，如 N-gram 算法，GloVe 算法等等。另外也可以在深度学习的过程中利用反向传播自发的调整词向量，在 pytorch 中这通过 Embedding 层来实现。
+三、循环神经网络（RNN）及其变体 （1）朴素 RNN 考虑我们说话或写作时的基本逻辑。对于一段语言序列，在之后的词汇总是和之前的词汇有关，未表达的部分总是已表达部分的补全或补充。循环神经网络的机制类似，我们需要用一个或多个隐藏变量作为对之前语句含义的表示，在输出下一个词汇时，会让隐藏变量参与决策；同时每多说完一个词汇，这个词汇也会更新隐藏变量，以实现表达含义的更新。
+具体来说，我们用 $t$ 表示时间序列，对某一时间 $t$，$x_t$ 表示输入，$y_t$ 表示输出，$h_t$ 表示隐含状态。那么朴素的 RNN 网络即： $$ h_t = tanh(W^{(hx)} x_t + W^{(hh)} h_{t-1}) $$ $$ y_t = W^{(S)} h_t $$ 容易看出 RNN 和 Moore 自动机有相似之处。
+其中 $W^{(hx)}, W^{(hh)}, W^{(S)} h_t$ 分别为三个不同的矩阵。RNN 的激活函数也可以选择 ReLU。同时可以为激活函数中的部分添加偏置（bias）$b^{(hx)}, b^{(hh)}$ 等。</description>
+    </item>
+    <item>
+      <title>Spring 面向切面</title>
+      <link>https://wokron.github.io/posts/spring-note-3/</link>
+      <pubDate>Tue, 10 Jan 2023 16:47:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/spring-note-3/</guid>
+      <description>一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。
+面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。
+二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。
+通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。
+连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。
+切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。
+切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。
+引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。
+织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。
+三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。
+Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容
+AspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如
+execution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。
+切点表达式中还可以使用与（&amp;amp;&amp;amp;）或（||）非（!）操作。如
+execution(* concert.Performance.perform(..)) &amp;amp;&amp;amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。</description>
+    </item>
+    <item>
+      <title>Spring 高级装配</title>
+      <link>https://wokron.github.io/posts/spring-note-2/</link>
+      <pubDate>Tue, 10 Jan 2023 15:05:26 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/spring-note-2/</guid>
+      <description>上一篇文章已经讲解了 spring 依赖注入装配的方法。但是为了处理一些特殊的问题，或者为了更好地实现某些功能，spring 还提供了更多的装配设置。
+一、条件化声明 Bean 让我们回到上一篇第一节的例子，假设这次我们需要在开发时使用 SQLite，而在生产环境使用 Oracle 要怎么办呢？
+或许可以这样，我们在生产环境注意将 DBUtil Bean 改成 Oracle，把原来的部分注释掉，就像是这样。
+@Bean public DBUtil databaseUtil() { // return new SQLiteUtil(); // for dev return new OracleUtil(); // for prod } 但这样做很明显是不合适的。如果许多组件都需要进行调整的话，修改上就会十分复杂，且很容易出错。
+我们可以使用注释 @Profile 实现不同环境条件下选择不同的装配方式。这需要给带有 @Bean 或 @Configuration 注释的方法或类添加注释 @Profile(&amp;quot;某某环境&amp;quot;)。于是数据库的选择就可以改为如下形式：
+@Bean @Profile(&amp;#34;dev&amp;#34;) public DBUtil sqliteUtil() { return new SQLiteUtil(); } @Bean @Profile(&amp;#34;prod&amp;#34;) public DBUtil oracleUtil() { return new OracleUtil(); } 想要启用某个 Bean 需要设置环境。具体来说，这通过两个环境变量来实现，spring.profiles.default 和 spring.profiles.active。这两个值可以在许多地方定义。一种方式是在 properties 或 yaml 文件中定义，如</description>
+    </item>
+    <item>
+      <title>Spring 依赖注入</title>
+      <link>https://wokron.github.io/posts/spring-note-1/</link>
+      <pubDate>Mon, 09 Jan 2023 17:42:35 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/spring-note-1/</guid>
+      <description>一、依赖注入 考虑这样一个例子，CustomerDAO 类使用了 DBUtil 类中的方法连接到 MySQL 数据库
+public class CustomerDAO { private DBUtil databaseUtil = new DBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 假设现在想要改为使用 Oracle 数据库，需要怎么做？可以使用 OracleDBUtil 继承 DBUtil，并重写其相关方法。但是由于 CustomerDAO 中将 DBUtil 实例添加到其初始化过程中。因此想要修改的话还是需要对 CustomerDAO 本身进行修改。这违反了开-闭原则。
+public class CustomerDAO { private DBUtil databaseUtil = new OracleDBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 为了使对 dbUtil 的修改不影响 CustomerDAO 本身，我们可以将实例的创建移到 CustomerDAO 之外。
+public class CustomerDAO { private DBUtil databaseUtil; public CustomerDAO(DBUtil databaseUtil) { this.</description>
+    </item>
+    <item>
+      <title>Django 创建表结构</title>
+      <link>https://wokron.github.io/posts/django-orm/</link>
+      <pubDate>Mon, 09 Jan 2023 13:44:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/django-orm/</guid>
+      <description>一、对象关系映射（ORM） 面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。
+面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。
+二、django 的 ORM 实现 django 通过 models.Model 类来对应数据库中的表结构，如
+class User(models.Model): 即表示了 User 类，也对应了数据库中的 user 表。django 会根据类的声明自动在数据库中建表。
+django 用类中的属性来表示表的列字段。如
+class User(models.Model): id = models.IntegerField(primary_key=True) name = models.CharField(max_length=50) password = models.CharField(max_length=50) 定义了 user 表的主键、名字、密码信息。
+表间关系通过类与其属性表示，如
+class User(models.Model): id = models.IntegerField(primary_key=True) name = models.CharField(max_length=50) password = models.CharField(max_length=50) courses = models.ManyToManyField(to=&amp;#34;Course&amp;#34;) courses 属性表示用户具有的课程，反映了用户与课程之间的关系。
+三、类属性与数据库字段的对应 如上一节所述，django 建立了类属性与数据库字段之间的对应关系。常见的如
+models.CharField models.TextField models.IntegerField models.FloatField 就对应了数据库中的 char(n)，text，int，float 类型。不一一详述。
+四、主键与外键 在表中要定义主键，作为该表一条记录的唯一标识。相应的，在 django 中定义主键需要在对应属性上添加 primary_key=True 参数。例如</description>
+    </item>
+    <item>
+      <title>用 Pytorch 搭建神经网络</title>
+      <link>https://wokron.github.io/posts/pytorch-basics/</link>
+      <pubDate>Mon, 02 Jan 2023 15:52:55 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/pytorch-basics/</guid>
+      <description>一、前言 本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。
+本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。
+本文所使用的例子是自己写的第一个神经网路，如下：
+import os.path import torch.utils.data from torch.utils.data import DataLoader from torch import nn from torch.utils.tensorboard import SummaryWriter from torchvision import transforms, datasets device = torch.device(&amp;#34;cpu&amp;#34;) if torch.cuda.is_available(): print(&amp;#34;cuda available, use cuda to train module&amp;#34;) device = torch.device(&amp;#34;cuda&amp;#34;) train_set = datasets.CIFAR10(&amp;#34;./CIFAR10&amp;#34;, transform=transforms.ToTensor(), download=True) test_set = datasets.CIFAR10(&amp;#34;./CIFAR10&amp;#34;, transform=transforms.ToTensor(), train=False, download=True) train_set_size = len(train_set) test_set_size = len(test_set) print(f&amp;#34;train set size: {train_set_size}&amp;#34;) print(f&amp;#34;test set size: {test_set_size}&amp;#34;) train_dataloader = DataLoader(train_set, 64, shuffle=True, drop_last=True) test_dataloader = DataLoader(test_set, 64) class MyModule(nn.</description>
+    </item>
+    <item>
+      <title>MySQL 的中文插入问题</title>
+      <link>https://wokron.github.io/posts/using-chinese-in-mysql/</link>
+      <pubDate>Sat, 31 Dec 2022 15:24:00 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/using-chinese-in-mysql/</guid>
+      <description>一、问题描述 在执行一个sql脚本的时候出现了这样的问题：
+ERROR 1366 (HY000): Incorrect string value: &amp;#39;\xA3\x8E\xE6\x9C\x89\xE5...&amp;#39; for column &amp;#39;name_zh&amp;#39; at row 1 问题很明显是由于中文引起的。查看报错的语句：
+INSERT INTO `admin_menu` VALUES (&amp;#39;1&amp;#39;, &amp;#39;/admin&amp;#39;, &amp;#39;AdminIndex&amp;#39;, &amp;#39;首页&amp;#39;, &amp;#39;el-icon-s-home&amp;#39;, &amp;#39;AdminIndex&amp;#39;, &amp;#39;0&amp;#39;); 是 “首页” 无法被识别。考虑是字符集的问题。
+二、问题处理 情况一：数据库字符集与脚本所用字符集不一致 第一种可能是数据库所用的字符集和脚本字符集不一致，比如说建表时使用的字符集为 latin1，而脚本使用的却是 utf-8，这样就会导致错误。
+输入命令，查看建库语句
+SHOW CREATE DATABASE wj; +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ | Database | Create Database | +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ | white_jotter | CREATE DATABASE `wj` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION=&amp;#39;N&amp;#39; */ | +--------------+----------------------------------------------------------------------------------------------------------------------------------------+ 显示所用字符集为 utf8mb4，说明数据库字符集与脚本所用字符集一致。</description>
+    </item>
+    <item>
+      <title>系统编程之线程管理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-6/</link>
+      <pubDate>Thu, 22 Dec 2022 22:07:37 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-6/</guid>
+      <description>一、Linux 多线程简述 进程和线程的关系老生常谈。线程是最小的调度单位，进程是最小的资源分配单位。同一进程中的多个线程是在共享的内存空间中并发的多道执行路径，它们共享一个进程的资源。
+对于Linux来说，Linux线程属于用户级线程，即线程的调度是在用户空间执行的。也就是说，Linux线程的实现是在内核之外的，多线程的概念对于内核来说并不是真实存在的，而只是通过线程库中的程序模拟的并发效果。
+Linux线程遵循POSIX线程接口，称为pthread。pthread在其他平台也有对应的实现，如在windows。
+二、线程操作 （1）库的使用 在开始多线程编程之前，需要说明一下 pthread.h 库。在编译使用pthread.h库的代码时，一般需要加-lpthread。pthread在glibc2.34之前是在glibc里面的，之后分出来变成一个单独的库，因此有的情况下，不加-lpthread也能编译成功。
+（2）基本操作 创建线程 int pthread_create(pthread_t _Nullable * _Nonnull __restrict, const pthread_attr_t * _Nullable __restrict, void * _Nullable (* _Nonnull)(void * _Nullable), void * _Nullable __restrict); 该函数中第一个参数为指向一个线程标识变量的指针。第二个参数用来手动设置线程的各项属性，一般可以用NULL选择默认属性。第三个参数为一个函数指针，表示新建线程时需要执行的函数。注意该函数的参数类型和返回值类型，使用时需要进行强制类型转换。第四个参数为传递给函数的参数，也就是线程执行的函数的参数。不传递参数时可设置为NULL。 如下举一个创建线程的例子。
+pthread_t tid; if (pthread_create(&amp;amp;tid, NULL, do_something, NULL)) { // error handler } 线程退出 void pthread_exit(void *ral_ptr); 当某一线程执行该函数时，会导致该线程结束。结束时会将ral_ptr指针传递给pthread_join 函数的 rval_ptr
+线程取消 int pthread_cancel(pthread_t tid); 某一线程调用该函数，可以终止同一进程内的其他线程。 tid 即要终止的线程。
+线程挂起 int pthread_join(pthread_t thread, void **rval_ptr); 某一线程调用该函数会阻塞该线程，直到参数 thread 所指示的线程退出。第二个参数为一个指向 pthread_exit 所设置的 ral_ptr 指针的指针。</description>
+    </item>
+    <item>
+      <title>系统编程之进程间通信</title>
+      <link>https://wokron.github.io/posts/system-programming-note-5/</link>
+      <pubDate>Wed, 16 Nov 2022 09:54:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-5/</guid>
+      <description>一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：
+管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include &amp;lt;sys/types.h&amp;gt; #include &amp;lt;sys/ipc.h&amp;gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。
+注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。
+命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。
+ipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include &amp;lt;sys/types.</description>
+    </item>
+    <item>
+      <title>对不重复随机数的数学分析</title>
+      <link>https://wokron.github.io/posts/analysis-of-non-repeat-random-nums/</link>
+      <pubDate>Sun, 13 Nov 2022 21:03:39 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/analysis-of-non-repeat-random-nums/</guid>
+      <description>一、引子——双色球 我们知道，双色球每注投注号码由 6 个红色球号码和 1 个蓝色球号码组成。红色球号码从 1—33 中选择；蓝色球号码从 1—16 中选择。现在要求写出一个程序，模拟双色球的抽奖过程。
+我们很容易想到使用某种方法生成一定范围内的随机数。蓝色球很好解决，但对于红色球，需要的是随机生成 6 个号码不同的数，可一定范围内的随机数总可能出现相同的情况，这样要如何解决？
+也就是说：对于 $1, 2, ..., m$ 这 m 个数字，随机抽取其中 $n(n \lt m)$ 个数。要采取怎样的算法？
+二、两种思路 其一 : 暴力方法 的确，随机数总有可能出现相同的情况，但是我们知道，同一个数多次出现的概率很小，以至于我们可以将其忽略。因此，我们只需要不断地取范围内的随机数，遇到重复的舍弃，直到取得的数字数目达到 n 即可。
+void rand1(int m, int n, int rands[]) { char* hasSelect = calloc(m+1, sizeof(char)); for (int i = 0; i &amp;lt; n; ) { int r = randomInt(1, m); if (!hasSelect[r]) { rands[i++] = r; hasSelect[r] = 1; } } free(hasSelect); } 但这种算法是有缺陷的。问题在于，概率达到多小才算作可以忽略？ 考虑 $m=100, n=99$ 的情况。首先，取得第一个球，一定只需要选取 1 次；但是，我们再计算一下取得最后一个球的选取次数。为了取得第 99 个数，选中的概率为 $p_{99} = \frac{1}{50}$。我们设离散型随机变量 $X$ 表示为了取得第 99 个数所需的选取次数，则 $P\{X = k\} = (1-p)^{k-1}p$ 服从几何分布。因此 $E(X) = \frac{1}{p} = 50$。从期望上看，需要整整 50 次才能取到第 99 个数！！这中间的差距说明了，在 m 一定时，随着 n 的增大，随机的效率明显降低。</description>
+    </item>
+    <item>
+      <title>系统编程之信号及信号处理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-4/</link>
+      <pubDate>Sun, 13 Nov 2022 15:30:11 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-4/</guid>
+      <description>一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&amp;lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl+c ctrl+\ ctrl+Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &amp;lt;signal.h&amp;gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&amp;gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&amp;lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。</description>
+    </item>
+    <item>
+      <title>系统编程之进程管理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-3/</link>
+      <pubDate>Mon, 31 Oct 2022 22:08:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-3/</guid>
+      <description>一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。
+二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。
+在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。
+2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。
+这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。
+进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。
+需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。
+当一个可执行文件被加载到内存时，这个程序就成为进程。
+两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。
+三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。
+1. 使用 fork 创建新进程 #include &amp;lt;unistd.h&amp;gt; pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：
+一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。
+#include &amp;lt;sys/wait.h&amp;gt; pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。</description>
+    </item>
+    <item>
+      <title>机器学习之异常检测</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-11/</link>
+      <pubDate>Sun, 23 Oct 2022 10:57:17 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-11/</guid>
+      <description>一、引言 另一种常用的非监督学习应用场景是异常检测。异常检测会学习正常情况下的样本数据，并在应用时检测出现的异常数据。
+异常检测会运用正态分布等知识，这里先介绍一下正态分布（同时也作为自己对概率统计中的相关知识的一点总结）。
+二、正态分布 对于连续型随机变量 X，若其概率密度函数为如下的形式 $$ f(x) = \frac{1}{\sqrt{2\pi}\sigma} e^{-\frac{(x-\mu)^2}{2\sigma^2}} $$ 其中 $\sigma &gt; 0, \mu \in R$
+则称 X 服从正态分布（Normal distribution），记 $X \sim N(\mu, \sigma^2)$。
+取 $\mu = 0, \sigma = 1$，此时 $X \sim N(0, 1)$，称 X 服从标准正态分布。记标准正态分布的概率密度为 $\phi(x)$，分布函数为 $\Phi(x)$，则任意的服从正态分布的随机变量 X，其分布函数为 $F(x) = \Phi(\frac{x - \mu}{\sigma})$。
+标准正态分布的分布函数数值有表可查。 任意正态分布的分布函数等式中的 $\frac{x - \mu}{\sigma}$ 是不是有点熟悉？在特征放缩那一篇文章中的 Z score 标准化部分有出现。 Z score 标准化似乎就是假定特征数值服从正态分布，并将其转化为标准正态分布形式。 三、算法 我们假设不同训练样本的每一个特征服从服从正态分布。那么，对每一个特征 x_j，求其期望 $\mu_j$ 和方差 $\sigma_j^2$，则该特征对应的概率密度为 $p(x_j, \mu_j, \sigma_j^2) = \Phi(\frac{x - \mu}{\sigma})$。我们假设各个特征之间相互独立，则对于任意的 $\vec{x}=(x_1, x_2, .</description>
+    </item>
+    <item>
+      <title>机器学习之 K 均值聚类</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-10/</link>
+      <pubDate>Sun, 23 Oct 2022 08:53:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-10/</guid>
+      <description>一、引言——非监督学习 之前介绍的算法都是监督学习算法。需要样本中包含各特征信息以及结果标签来让模型学习特征与结果的对应关系。但是，如果我们此时只有特征信息，而不指明具体结果是什么，又需要什么样的算法和模型才能得知哪些样本会有同样的标签呢？
+这种从原始数据中探索样本间联系的学习方式称为非监督学习。其中非监督意指，模型不需要人来告知他 “什么是什么”，而能自己从数据中挖掘信息。
+二、聚类算法 非监督学习中的一种算法为聚类算法。它的目的是将数据按照一定特征进行分组。
+最广泛使用的聚类算法称为 K 均值（K-means）算法。
+三、K均值算法 假设我们要将所有数据分成 k 组，并称在一组中的数据为一个簇。那么对于每一簇内的数据，我们就希望他们之间的距离相对较小，而他们与其他簇中的数据的距离较大。直观上讲，就是同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙（这或许就是聚类的含义）。
+我们用簇内的数据的平均作为对簇的描述，相当于指示了簇在特征空间中的位置。这一平均后得到的点称为簇质心。假设我们现在已经得到了一种分组，那么这种分组现在是否有优化的可能呢？要回答这个问题就要查看每一数据点相对于各个簇质心的距离，如果某个数据点相对于其他簇质心的距离要小于其相对于当前所在的簇的质心的距离，就说明该点被错分类了。我们就要将其重新划分为与其距离最小的簇质心所对应的簇内。
+但是，这种重新划分又会使得簇质心的位置发生变化，这又导致一些之前是距离该质心位置最小的数据点不再是距离该质心位置最小，又需要再次调整分类。就这样，不断地调整，直到最终所有的点距离当前所在簇的质心距离都为最小，就代表了分类完成。
+经过了上面的分析，我们现在给出 K 均值算法的流程：
+初始化 k 个簇质心位置，分别对应 k 个簇 对每个数据点，选择与其距离最近的簇质心对应的簇作为其当前分组 对所有同一簇的数据点，计算其平均值，作为新的当前簇的簇质心 不断重复 2、3，直到所有簇的簇质心不再发生变化，即代表分组完成 可以看出，该算法具有很简单的流程，且没有复杂的数据结构。
+算法中还需要明确两个点：
+如何初始化簇质心： 一般是随机选取点作为质心，或者在样本数据中随机选取 k 个点 怎么计算数据点到簇质心的距离 该算法使用二范数，或者说欧氏距离作为距离 四、K均值算法的损失函数 这里我们要更理论化地解释为什么这样的算法可以将数据成功分类
+假设总共有 m 个样本数据 $x^{(1)}, x^{(2)}, ..., x^{(m)}$，需要将其分为 k 类（k &amp;lt; m）。我们用 $c^{(i)}$ 表示第 i 个数据点选择第几个簇。用 $\mu_{j}$ 表示第 j 个簇的簇质心。
+要衡量当前分组，按照之前所说的 “同簇的数据点形成一个较为密集的区域，不同簇之间则有较大的空隙”，很容易采用簇中数据点相对于质心的距离的平均作为标准。这里直接给出损失函数 $$ J(c^{(1)}, ..., c^{(m)}, \mu_{1}, ..., \mu_{k}) = \frac{1}{m}\sum_{i=1}^m \Vert x^{(i)} - \mu_{c^{(i)}} \Vert^2 $$ 该损失函数在这里又叫做失真函数。很明显，失真函数是所有数据点到其对应的簇质心的距离的平方的平均。距离取平方是因为这样并不影响损失函数的衡量效果，而又方便计算。</description>
+    </item>
+    <item>
+      <title>机器学习之决策树</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-9/</link>
+      <pubDate>Mon, 17 Oct 2022 08:07:31 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-9/</guid>
+      <description>一、引言 决策树是另一种十分有效的机器学习模型。该模型采取树状分支结构，能够很快地进行模型训练，并具有较高的准确率。
+本文将以决策树的最简单形式开始，即特征只包括真值特征，或只有两种选择的特征，且结果也只有两种的情况。
+二、决策树基本模型 决策树是一个二叉树，树的非叶节点存储需要区分的特征，叶节点存储预测的分类。对于每一个要进行预测的数据，从根节点开始，根据当前节点所对应的特征，选择移动到左子节点或右子节点。直到最终移动到一个叶节点，返回预测结果。
+可以认为决策树的预测过程就是通过不同特征将当前数据分组归类的过程。决策树的构建过程，或者更一般地说，该模型的学习过程，也就是不断确定如何分类的过程。
+三、决策树的构建 总体上讲，对于我们已有的样本数据，构建决策树的过程时这样的。
+选择一个特征，将该特征作为当前节点的特征 根据该特征将样本数据分为两组 对于两组被分类的数据，分别递归执行如上操作，从而确定当前节点的左右子节点。直到当前数据已经全部是要预测的某个结果了、或者所有特征都被用完、又或者递归进行到了最大层数。 可以看到，决策树构建的过程中大部分过程都可以用简单的程序逻辑实现。现在唯一要解决的就是在每个节点时，如何选择一个特征了。
+当然，对于神经网络来说也是这样的。唯一要解决的是如何选择权重。
+四、特征的选择 我们要衡量选择不同特征对训练样本的区分效果。这点类似于损失函数。
+我们区分的目标是使得所有当前组的样本属于同一个预测结果。那么我们就要找到一种衡量纯度的指标，数据越纯指标越小，数据越不纯指标越大。这种指标就是熵。假设某一种类在数据总体中的占比为 $p_1$，则熵 $H(p_1)$ 为 $$ p_0 = 1 - p_1 \\ H(p_1) = -p_1log_2(p_1) - p_0 log_2(p_0) $$ 即 $$ H(p_1) = -p_1log_2(p_1) - (1-p_1) log_2(1 - p_1) $$ 当 $p_1 = 0$ 或 $p_1 = 1$ 时 $$ H(0) = H(0+0) = 0 \\ H(1) = H(1-0) = 0 $$ 可以看出熵与交叉熵损失函数之间有联系。确实，交叉熵损失函数也是用来衡量预测的纯度的。对于一个预测，我们总希望它接近 0 或者 1，也就是纯度最大的比例。</description>
+    </item>
+    <item>
+      <title>机器学习之模型评估与优化</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-8/</link>
+      <pubDate>Sun, 16 Oct 2022 16:22:46 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-8/</guid>
+      <description>一、引言 对于一个训练好的模型，我们需要知道它是否能很好地适应现实应用。也就是说，我们希望得知该模型对于训练样本之外的数据，是否也能有较好的预测效果。
+模型的这种能力称为泛化能力
+这一问题本质上还是我们之前讨论过的拟合问题。只不过对于一个较为复杂的模型来说，常常不能将其拟合或分类的结果用图像直观表示。如果我们不能较为清晰地评估模型，那就无法进一步进行优化调整（如调整正则化系数、增加或减少特征、增加样本数量等）。因此我们需要方法，来一般化地评估模型的质量。
+二、泛化能力的衡量指标 正如前一节所说，泛化能力的衡量就是衡量模型对训练样本集之外的数据集的预测效果。我们知道衡量模型对训练样本预测效果的指标是损失函数，那么对于其他数据，我们同样可以把损失函数的概念迁移到这里来。
+我们可以将已经获得的数据划分为两部分，一部分用于训练模型，称为训练集；另一部分用于测试模型的泛化能力，称为测试集。对于用训练集训练后的数据，我们再求该模型对测试集数据的损失函数。
+举个例子，如果我们采用简单的平方误差损失函数，则我们就是要求 $$ J_{test}(\vec{w},b) = \frac{1}{2m_{test}}\sum_{i=0}^{m_{test}-1} ( f_{\vec{w},b}(\vec{x}^{(i)}_{test}) - y^{(i)}_{test} )^2 $$ $J_{test}(\vec{w},b)$ 就是我们对该模型泛化能力的衡量指标，称为测试误差。
+我们可以将该指标与训练集的损失函数值 $J_{train}(\vec{w},b)$（注意这里没有正则项，称为训练误差）进行比较。一般的情况是 $J_{test}(\vec{w},b)$ 大于 $J_{train}(\vec{w},b)$。
+我们还可以将该模型的泛化能力与其他模型的泛化能力，或者与人类的误差进行比较。这样我们就可以评价我们所训练的模型的优劣了。
+三、交叉验证集 在我们继续评估模型之前，我们要先来考虑一些我们究竟要如何进行优化。你可能会想，我们既然有了评价模型泛化能力的指标 $J_{test}$，那么只要试图让该指标减小不就可以了吗？这是一个很直接的想法。
+但问题是，如果我们向着使 $J_{test}$ 减小的目标优化，那么测试集与训练集有什么区别呢？按照这种方法，测试集就相当于变成了训练集的一部分，而不再能成为衡量训练集之外泛化能力的样本了。
+因此，我们不能将训练集作为优化的方向，而只能将其作为评价的指标。我们需要再分出一部分数据，作为优化时的参考。这就是交叉验证（Cross-validation）集。对应的衡量指标为 $J_{cv}$
+四、模型评价 我们用偏差和方差来评价一个模型。
+偏差表示模型对训练集的预测相对于真实情况的误差，如果模型对训练样本都不能很好地拟合或分类，就称其为高偏差的。 $J_{train}$ 可衡量模型的偏差。 方差表示模型对测试集的预测相对于真实情况的误差（也就是泛化能力本身），如果模型不能很好地预测测试集中数据，就称其为高方差的。$J_{cv}$ 可衡量模型的方差。 一般来说，模型的方差会大于偏差。因此高偏差的模型都是高方差的。
+随着模型复杂度的提升，模型的偏差会逐渐降低，但偏差会先降低再升高；随着训练样本量的提升，偏差会逐渐减小，方差会逐渐升高，直到最后方差和偏差程度接近。
+五、倾斜数据集的误差指标 对于正面例子和负面例子比例差距较大的训练样本（也就是说，被标记为某一结果的样本数量占样本总数的比例很大或很小），根据全概率分布可知，可能就算全部预测同一结果，其正确的概率也很大。因此我们需要能消除样本本身概率分布导致的正确率偏差的指标。
+有两种误差指标用于评价这种情况。分别为准确率（Precision）和召回率（Recall）。
+准确率衡量的是，模型预测为某一结果的情况中，有多少是预测正确的。 召回率衡量的是，对所有真正为某一结果的情况，有多少是模型预测到的。 也就是说，设
+TP表示将正类预测为正类的数量 FN表示将正类预测为负类的数量 FP表示将负类预测为正类的数量 TN表示将负类预测为负类的数量 则准确率为 $$ P = \frac{TP}{TP + FP} $$ 召回率为 $$ R = \frac{TP}{TP + FN} $$ 可以这样理解，把预测的过程当做选择的过程，准确率高就是“不重”，不过多的选择，以致把许多不属于的也包括在内；召回率高就是“不漏”，不过少地选择，把一些属于的漏掉了。</description>
+    </item>
+    <item>
+      <title>机器学习之神经网络基础</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-7/</link>
+      <pubDate>Fri, 14 Oct 2022 19:25:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-7/</guid>
+      <description>一、神经元模型 在研究人工智能的过程中，模拟生物的神经是一条很显然的道路。神经网络模型最初便是以模拟生物的神经网络为目的的。但是在早期算力不足的情况下，神经网络的效果并不怎么好。直到硬件基础成熟的最近一段时间，神经网络才发挥出超常的能力。
+当然，此时经过改进、优化后的神经网络也在一定程度上偏离了最初模拟生物神经系统的初衷。当前的，以统计为基础的神经网络模型是否是实现强人工智能的有效方法也不得而知。但是我们还是有必要对神经网络模型，特别是作为神经网络的最小单元——神经元模型，做充分的介绍。因为事实证明了，这是一条有效的创造 AI 工具的途径。
+单个神经元可以看做有多个输入 $x_j$，单个输出 $a$ 的函数。神经元模型具有如下属性：
+权重 $\vec{w}, b$ 激发函数 $g(z)$ 所对应的函数为 $$ f_{\vec{w}, b, g(z)}(\vec{x}) = g(\vec{w} \cdot \vec{x} + b) $$ 取 $g(z) = \frac{1}{1 + e^{-z}}$, 与我们之前学习过的逻辑回归没有差别。
+通过对这样的神经元按一定规则进行组合，便可以构造用于完成某种功能的神经网络。
+二、神经网络层 对于一组输入，我们可以将其依次通过不同的神经元进行计算，计算的结果可以按顺序组成向量，作为一组新的输入。这种不断迭代的能力是神经网络的基础。我们称同一次计算使用的所有神经元为同一层的神经元。这些神经元组成了神经网络上的一层。不同层的组合构成了整个神经网络。
+注意，同一层的神经元需要满足输入个数相同、激发函数相同。
+从数学上讲，设输入为 $\vec{x} = (x_1, x_2, ..., x_n)$，输出为 $\vec{a} = (a_1, a_2, ..., a_m)$，神经元函数为 $f_1(\vec{x}), f_2(\vec{x}), ... f_m(\vec{x})$ 则 $$ \vec{a} = (f_1(\vec{x}), f_2(\vec{x}), ... f_m(\vec{x})) $$ 对于不同层上的属性或参数 x，我们加上上标 $x^{[i]}$ 表示该属性或参数属于第 i 层（第几层指示神经元计算的顺序）；对于同一层的不同神经元，加上下标 $x^{[i]}_j$ 表示第 i 层的第 j 个神经元的属性或参数。</description>
+    </item>
+    <item>
+      <title>系统编程之 Shell 编程</title>
+      <link>https://wokron.github.io/posts/system-programming-note-2/</link>
+      <pubDate>Sat, 08 Oct 2022 19:30:58 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-2/</guid>
+      <description>一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。
+二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。
+而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。
+三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如
+vi c1.sh vim c2.sh &amp;gt; c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。
+创建的shell脚本，一定要在开头第一行加上如下语句：
+#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。
+执行脚本 shell脚本的执行方法有
+sh &amp;lt;scriptname&amp;gt; bash &amp;lt;scriptname&amp;gt; 或者使用chmod命令修改脚本为可执行，再直接使用 ./&amp;lt;scriptname&amp;gt; 运行。
+四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。
+其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。
+声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。
+var=hello_world 注意shell对空格敏感，声明时等号两边不能有空格
+另外可以在变量名前添加 readonly关键字设为只读
+readonly constVar shell中声明数组同样直接写出数组名称
+arr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。
+注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash &amp;lt;scriptname&amp;gt;
+赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。
+var1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。
+并且，为了满足命令处理的需要，shell设计出了引号变量值。
+shell中的引号包括单引号、双引号和倒引号。
+单引号中的字符均作为普通字符出现。（可以包括空格）
+var1=hello_world # var2=hello world # 不合法 var3=&amp;#39;hello world&amp;#39; 双引号中的字符大部分作为普通字符对待。除了$\’和双引号，这些变量依旧用于对字符串内容进行变量替换。</description>
+    </item>
+    <item>
+      <title>机器学习笔记之正则化</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-6/</link>
+      <pubDate>Sat, 08 Oct 2022 19:27:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-6/</guid>
+      <description>一、前言——过拟合 我们知道，经过一组点可以有无数条曲线。这些曲线对于这组样本点的损失函数同为 0。但是对于预测来说，这些曲线产生的结果却并不相同。这就意味着，进行梯度下降到达某一最低点时，依旧不一定能得到“最好的”预测（拟合/分类）效果。甚至可能对于一些情况，此时的（预测/分类）效果反而更差了。这样的情况就称为过拟合。
+过拟合的存在是很合理的。从感性上讲，将机器学习的过程类比人类的认知，一个观念的形成不能超出经验之外，认知的结果永远是片面而非客观的。那么在与更广泛的客观现实接触之前，我们必然无法得知已经形成的认知是否是依旧可以应用的。
+这是一个很休谟的观点。但却无法解决现实问题。我们依旧需要找到减少过拟合的方法。
+二、惩罚 我们的思想中存在着一种先验观念，它规范天地万物，在冥冥中告诉我们什么是“合理的”。对于机器学习模型来说也是一样的，它应当具有这样的机制，告诉它什么情况是不可能的。
+就比如说，对于房价，我们知道一些特征是更加重要的，而另一些是更加不重要的。很显然，那些更重要的特征对应的权重应该较不重要的特征对应的权重大。那么我们就需要对那些不重要的权重进行“惩罚”，以避免这些权重过大，从而导致模型过拟合。这样的“惩罚”在损失函数中体现。即，当这些权重过大时，损失函数也会相应增大。
+具体而言，对如下的表达式 $$ y = w_1x_1 + w_2x_2 + w_3x_3 + b $$ 假设要使第二、三个权重相对较小，则可以在损失函数中加上惩罚项 $\lambda_2 w_2 + \lambda_3 w_3$。其中 $\lambda_2, \lambda_3$ 取较大值。则损失函数变为 $$ J_{new}(\vec{w}, b) = J(\vec{w}, b) + \lambda_2 w_2 + \lambda_3 w_3 $$ 具体地比如说 $$ J_{new}(\vec{w}, b) = J(\vec{w}, b) + 1000 w_2 + 2000 w_3 $$ 那么此时很显然，当 $w_2, w_3$ 较大时，损失函数也会相应更大。
+可是对于大多数情况，我们无法事先知晓权重的重要程度。对于这些一般化的问题，还需要有一般化的解决办法。
+三、正则化 正则化是惩罚的一种。该方法在损失函数中增加了正则项： $$ \frac{\lambda}{2m} \sum_{j=1}^n w^2_j $$ 其中 $\lambda$ 称为正则化参数。</description>
+    </item>
+    <item>
+      <title>机器学习笔记之逻辑回归</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-5/</link>
+      <pubDate>Wed, 05 Oct 2022 16:06:34 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-5/</guid>
+      <description>一、前言——逻辑分类 机器学习研究的另一种问题为分类问题。给出一些信息，判断是或不是某种物体、属性。比如说给出病人的各项检测指标，判断其是否患病。
+对于是、否的判断，这里用 1、0 表示。则训练样本就与之前的线性与多项式回归样本类似。
+我们可以试着用一元线性回归来拟合分类问题的样本。
+比如对于如下的样本数据 进行一元线性回归后得到 我们将数值大于 0.5 的部分看做预测为真，小于 0.5 的部分看做预测为假。可以看到，此时一元线性回归就已经可以使所有样本点符合判断结果了。
+但如果我们在 x 值更大的区域增加更多的样本点，再进行回归 可以看到，有一部分应为 1 的点被分在了 y &amp;lt; 0.5 的部分，被预测为 0。这说明只凭线性回归无法解决分类问题。我们需要另一种回归方法。
+二、逻辑回归 线性回归失效的原因在于，拟合的目标是对所有点的方差最小，在分类边界上的样本可能因为其他样本的影响而被分到另一类。而为什么会受到其他样本的影响呢？因为线性回归得到的表达式值域趋向于无穷；而样本的结果却只有 0、1。所以对于一个样本，只要它的特征数值足够大或足够小，就足以产生极大的损失。（为什么可能出现足够远的样本？因为分类问题需要划分出一个边界，在边界两侧可能存在足够大的范围。）
+我们要对线性回归进行修改，需要将回归得到的表达式的值域缩小到 0 至 1 的范围。
+这里引入 Sigmoid 函数 $$ S(z) = \frac{1}{1 + e^{-z}} $$ 它的图像如下 该函数定义域为 $(-\infty, +\infty)$，值域为 $(0, 1)$
+假设原本线性回归的函数为 $$ f_{\vec{w}, b}(\vec{x}) = \vec{w} \cdot \vec{x} + b $$ 则现在令 $$ f_{\vec{w}, b}(\vec{x}) = S(\vec{w} \cdot \vec{x} + b) $$ 即 $$ f_{\vec{w}, b}(\vec{x}) = \frac{1}{1 + e^{\vec{w} \cdot \vec{x} + b}} $$ 为新的函数。其中 $S(z)$ 即为 Sigmoid 函数。这样，表达式的值域就缩小为了 $(0, 1)$，从而消除了值域对损失的影响。</description>
+    </item>
+    <item>
+      <title>机器学习笔记之多项式回归</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-4/</link>
+      <pubDate>Sat, 01 Oct 2022 21:52:38 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-4/</guid>
+      <description>一、引言——拟合多项式 考虑如图所示的样本数据： 如果我们用一元线性回归去拟合该数据，会发现直线与数据点拟合效果很差。 通过观察，我们很容易得知数据点满足二次函数，具体地，函数是 $\frac{1}{2}x^2 + 5$。既然用直线 $y = wx + b$ 不能拟合，那么换用二次函数 $y = w_1x^2 + w_2x + b$ 拟合的话效果会如何？
+二、多项式回归的步骤 对于一元多项式函数 $$ y = w_1x + w_2x^2 + \cdots + w_nx^n + b $$ 令 $x^i = y_i$，则原函数变为 $$ y = w_1y_1 + w_2y_2 + \cdots + w_ny_n + b $$ 对于自变量 $x$，只需将 $x^2, x^3, \cdots, x^n$ 看成与 $x$ 不同的特征。此时一个一元多项式函数的拟合问题就转变成了我们已知的多元线性拟合问题。同理，对于多元多项式函数，也可以将其转化为多元线性函数进行拟合。
+三、代码实现 对于如下样本：
+x = np.array(range(-1, 10)) y = (x ** 2) / 2 + 5 将 $x^2$ 也作为一个特征</description>
+    </item>
+    <item>
+      <title>机器学习笔记之特征缩放</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-3/</link>
+      <pubDate>Sat, 01 Oct 2022 17:16:30 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-3/</guid>
+      <description>一、引言——参数数值对权重的影响 考虑有两个特征的房价预测。其一为房子面积，其二为卧室数量。参数的范围为 $$ x_1 \in [300, 2000] \\ x_2 \in [0, 5] $$ 预测直线为 $$ y = w_1x_1 + w_2x_2 + b $$ 从感性上认知，如果 $w_1$ 的数值大于 $w_2$，那么由特征 $x_1$ 贡献的房价就会远大于特征 $x_2$。因为这样的话，对于同等数值的变化，特征 $x_1$ 的贡献变化大于 $x_2$，而 $x_1$ 的范围又更大，则其对贡献的变化也会更加得大。这是很不合常理的。因此从感性上讲，$w_1$ 的数值应该小于 $w_2$。
+另外，根据损失函数的定义 $$ J(\vec{w}, b) = \frac{1}{2m}\sum_{i=1}^{m}(\vec{w}\cdot\vec{x}^{(i)} + b - y^{(i)})^2 $$ 当损失函数值固定时，改变权重 $w_1$, 则对应的权重 $w_2$ 的变化要大于 $w_1$。从图像来说，此时损失函数形成陡峭的“山谷”，它的等高线图类似于椭圆。这时进行梯度下降，在步长较大时可能出现在“崖壁”上来回跳跃的情况。
+为了避免这种情况，我们需要找到一种优化的方法。
+二、特征缩放 我们要做的是避免出现不同特征的范围差距较大的情况。那么对于极差较大的特征，我们需要将其数值所在的区间范围缩小。这就是特征放缩。
+在进行过特征放缩后，损失函数从图像上看将会较原来更接近正圆形，这样的话，寻找通向最低点的路径将会更加容易。
+特征缩放有许多不同的方法，如：
+除数特征缩放 均值归一化（Mean normalization） Z-score标准化（Z-score normalization） 除数特征缩放指的是将该特征的所有值同除以某一个数，比如说最大值。 $$ x_{scaled} = \frac{x}{x_{max}} $$ 均值归一化是以均值为参照对所有数值进行缩放，公式： $$ x_{scaled} = \frac{x - x_{mean}}{x_{max} - x_{min}} $$ Z-score标准化将数值转换为正态分布。公式： $$ x_{scaled} = \frac{x - \mu}{\sigma} $$ 其中 $$ \mu = \frac{1}{m}\sum_{i = 1}^m x^{(i)} \\ \sigma^2 = \frac{1}{m}\sum_{i = 1}^m (x^{(i)} - \mu)^2 $$ 三、代码实现 利用 Z-score 标准化对特征进行缩放</description>
+    </item>
+    <item>
+      <title>机器学习笔记之多元线性回归</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-2/</link>
+      <pubDate>Mon, 26 Sep 2022 14:52:30 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-2/</guid>
+      <description>一、引言——多特征的房价预测 现实中，某一变量并不一定只与单一变量有关。还以房价来举例，除了位置以外，房价还可能与房子面积、卧室数量、层数、房龄等因素有关。
+面积 卧室数 层数 房龄 房价 2104 5 1 45 460 1416 3 2 40 232 1534 3 2 30 315 852 2 1 36 178 &amp;hellip; &amp;hellip; &amp;hellip; &amp;hellip; &amp;hellip; 对于多个特征的情况，我们需要对之前的一元线性回归进行推广。但在此之前，需要先约定一下使用的符号：
+和前面一样，这里将用 $x^{(i)}$ 表示第 i 组样本中的特征。 $y^{(i)}$ 表示第 i 组样本对应的目标结果。不同的是，对于第 j 个特征组，也就是第j个特征对应的数值的序列，采用 $x_{j}$ 表示。那么很自然的， $x^{(i)}_j$ 表示第 j 个特征中的第 i 个值，或者说表示第 i 组样本中的第 j 个特征。
+与上文中的列表相结合进行理解，相当于 $x^{(i)}$ 表示第 i 行中非房价的部分，$x_{j}$ 则表示第 j 列中的数值。
+要对多元特征进行拟合，也就是找到适当的 $w_1, w_2, ..., w_n$ 使得对任意的 i，有 $$ y^{(i)} = w_1 * x^{(i)}_1 + w_2 * x^{(i)}_2 + .</description>
+    </item>
+    <item>
+      <title>机器学习笔记之一元线性回归</title>
+      <link>https://wokron.github.io/posts/machine-learning-note-1/</link>
+      <pubDate>Sun, 25 Sep 2022 10:22:13 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/machine-learning-note-1/</guid>
+      <description>一、引言——房价预测问题 问题： 假设我们知道一些房价与距离的对应关系，通过这些已知的信息，能否预测在一定范围内任意距离对应的房价？
+首先考虑最为简单的情况，也就是只有两个房价信息的情况。 如图所示，1km时对应房价为300，2km 时对应房价为500。很容易可以在这两点间连一条直线，这条直线就可以作为对房价的预测。这样用曲线对已知数据中的关系进行估计的方法称为拟合。
+（注意，本文只考虑以一元线性函数进行拟合）
+类似的，增加房价信息为三个点，如果三点共线，则该直线依然可以作为对房价的拟合。 但更可能的情况是三点不共线，对于更多的数据的情况则更是如此。这样的话要如何找到一条直线来拟合房价信息呢？
+二、损失函数 我们需要找到一种标准来衡量直线对已有信息的拟合程度。
+假设当前直线为： $$ y = wx+b $$ 房子距离为 $x^{(1)},x^{(2)},x^{(3)}...,x^{(m)}$，对应的房价为 $y^{(1)},y^{(2)},y^{(3)}...,y^{(m)}$。 则对于每个距离 $x^{(i)}$，当前直线所预测的房价为: $$ \hat{y}^{(i)} = wx^{(i)} + b $$ 该房价与真正的房价的差距为 $$ d = |y^{(i)} - \hat{y}^{(i)}| $$ 绝对值不可导，不妨用平方来代替 $$ d_2 = (y^{(i)} - \hat{y}^{(i)})^2 $$ 对于每个已知的房价信息，当前直线的预测都可能会有偏差，将这些偏差求和得到总的偏差 $$ \sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2 $$ 为了排除样本数量不同对偏差的影响，将偏差总和除以样本数量 $$ \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2 $$ 这也就是总体方差的计算式： $$ \sigma^2 = \frac{1}{m}\sum_{i=1}^{m}(y^{(i)} - \hat{y}^{(i)})^2 $$ 对于机器学习，我们将$\hat{y}^{(i)}$展开，并将方差除以2，得到一元线性回归的损失函数（loss function），即 $$ J(w, b) = \frac{1}{2m}\sum_{i=1}^{m}(y^{(i)} - wx^{(i)} - b)^2 $$ 在 $x^{(i)}$，$y^{(i)}$ 确定的情况下，损失函数是关于 $w$ 和 $b$ 的连续可导的二元函数。该函数可以用来衡量 $w，b$ 所确定的直线与已知数据之间的偏差。</description>
+    </item>
+    <item>
+      <title>基本正则表达式总结</title>
+      <link>https://wokron.github.io/posts/regex-basics/</link>
+      <pubDate>Wed, 21 Sep 2022 14:26:22 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/regex-basics/</guid>
+      <description>简介 正则表达式是用于描述字符串匹配模式的表达式。利用正则表达式进行匹配，可以实现检查字符串是否符合某种规则、字符串是否含有某种子串；替换匹配的子串或者从某个串中取出符合某个条件的子串。
+正则表达式的引擎是一种自动机，在根据规则完成自动机的构建后，对任意字符串的匹配都将花费 O(n) 的时间复杂度。有关正则表达式的理论及实现本文并不继续深入。
+基本语法 这里将介绍正则表达式的基本语法。另外这里推荐网站 regex101，可以用于验证正则表达式。
+字符与字符集 正则表达式中一般的字符用于匹配字符串中对应的相同字符。例如正则表达式 &amp;ldquo;a&amp;rdquo; 可以匹配字符串中的字符 &amp;lsquo;a&amp;rsquo; 。 &amp;ldquo;abc&amp;rdquo; 可以匹配字符串中的子串 &amp;ldquo;abc&amp;rdquo; 。
+对于在正则表达式中具有特殊含义的字符，需要进行转义，在原字符前加上反斜杠 &amp;ldquo;\&amp;rdquo;
+用方括号将一个或多个字符括起来表示一个字符集，一个字符集匹配在该字符集中出现的字符。例如 [abc]，可以匹配 &amp;lsquo;a&amp;rsquo; &amp;lsquo;b&amp;rsquo; 或 &amp;lsquo;c&amp;rsquo;。
+还可以在字符集中指定要匹配的字符的范围，例如 [a-z]，用来匹配所有的小写英文字母。在同一字符集内可以有多个范围，例如 [a-zA-Z0-9]。
+在字符集括号内的所有字符之前添加 &amp;ldquo;^&amp;rdquo; 表示对该字符集取反，即匹配所有不在字符集内的元素。例如 [^a-b] 匹配所有不是小写英文字母的元素。
+字符 &amp;ldquo;.&amp;rdquo; 可用于匹配换行符为所有字符。
+限定符 限定符用来指定其前面的部分将要匹配几次。例如a{2,5}匹配2到5个a，即&amp;quot;aa&amp;quot;、&amp;ldquo;aaa&amp;rdquo;、&amp;ldquo;aaaa&amp;quot;和&amp;quot;aaaaa&amp;rdquo;。具体的限定符含义如下表所示：
+限定符 解释 {n} 匹配内容n次 {n,} 匹配内容次数大于等于n次 {n,m} 匹配内容次数为n到m次 * 匹配零次或多次，同{0,} + 匹配一次或多次，同{1,} ? 匹配零次或一次，同{0,1} 注意，限定符匹配默认遵循贪婪原则，即在同样能够完成匹配的情况下，会匹配尽可能多的字符。例如要匹配&amp;lt;html&amp;gt;&amp;lt;dir&amp;gt;hello,world&amp;lt;/dir&amp;gt;&amp;lt;/html&amp;gt;中的标签，若使用正则表达式 &amp;ldquo;&amp;lt;.+&amp;gt;&amp;quot;，则只会匹配整个字符串。 解决方法是在限定符后加上一个问号 &amp;ldquo;?&amp;rdquo; 。这样限定符的匹配模式便会切换为懒惰匹配，即在同样能够完成匹配的情况下，会匹配尽可能少的字符。
+组 用括号将一部分表达式括起，可以将这部分表达式作为一个整体。
+比如说，需要匹配 &amp;ldquo;aacacaaac&amp;rdquo;，可以归纳出字符串中重复的部分 &amp;ldquo;a+c&amp;rdquo;，将该部分作为一个整体，则该部分重复了三次。最终得到可以匹配该字符串的正则表达式为 &amp;ldquo;(a+c){3}&amp;quot;。
+另外，组分为捕获组与非捕获组，捕获组即单纯的括号，非捕获组包括 &amp;ldquo;(?:exp)&amp;rdquo; &amp;ldquo;(?=exp)&amp;rdquo; &amp;ldquo;(?!exp)&amp;rdquo; &amp;ldquo;(?&amp;lt;=exp)&amp;rdquo; &amp;ldquo;(?&amp;lt;!exp)&amp;quot;。这里先说明 &amp;ldquo;(exp)&amp;rdquo; 和 &amp;ldquo;(?</description>
+    </item>
+    <item>
+      <title>系统编程之命令行编译</title>
+      <link>https://wokron.github.io/posts/system-programming-note-1/</link>
+      <pubDate>Mon, 12 Sep 2022 21:18:59 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-1/</guid>
+      <description>一、前言 本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。
+二、GCC 基本操作 编译选项 无选项编译链接 用法：gcc test.c 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。 选项 -o 用法：gcc test.c -o test 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。 选项 -E 用法：gcc -E test.c -o test.i 作用：将 test.c 预处理输出 test.i 文件。 选项 -S 用法：gcc -S test.i 作用：将预处理输出文件 test.i 编译成 test.s 文件。 选项 -c 用法：gcc -c test.s 作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。 无选项链接 用法：gcc test.o -o test 作用：将目标代码文件 test.o 链接成最终可执行文件 test。 选项 -O 用法：gcc -O1 test.c -o test 作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。 官方文档：GCC, the GNU Compiler Collection</description>
+    </item>
+    <item>
+      <title>Hexo 个人博客搭建及主题配置教程</title>
+      <link>https://wokron.github.io/posts/hexo-personal-blog-tutorial/</link>
+      <pubDate>Sun, 11 Sep 2022 18:28:06 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/hexo-personal-blog-tutorial/</guid>
+      <description>一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。
+二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。
+（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。
+windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。
+linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码
+sudo apt-get install git 安装好后，用git --version来查看一下版本。
+安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。
+windows：nodejs选择LTS版本就行了。
+linux：
+sudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行
+node -v npm -v 检查一下有没有安装成功
+安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。
+输入命令
+npm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。
+接下来初始化一下hexo
+hexo init myblog 这个myblog可以自己取什么名字都行，然后
+cd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：
+node_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务
+hexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。</description>
+    </item>
+    <item>
+      <title>FunctionSketch 说明文档</title>
+      <link>https://wokron.github.io/posts/function-sketch-doc/</link>
+      <pubDate>Sat, 10 Sep 2022 18:33:26 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/function-sketch-doc/</guid>
+      <description>一、简述 本文档将介绍程序函数画板的主要功能和基本操作。函数画板是一款轻量的函数绘制软件。支持单变量函数、参数方程、隐函数的绘制。可以采用直角坐标和极坐标绘制简单图像，并带有求导、积分、二维线性变换等功能。
+二、函数绘制 1、添加函数 运行exe文件后，将进入程序的主界面。如下图所示。 点击右侧“函数列表”栏内的加号按钮，将出现表达式的输入框。 输入函数表达式后按回车键（或采取使输入框不再被选中的操作），若表达式正确，则会将该表达式所对应的函数绘制到主界面左侧的窗口上。
+其中正确的表达式包括如下几种情况：
+表示单变量函数 此时表达式请以x为自变量，不忽略运算符（特别注意，对数如logm(n)请写作mlogn）。表达式前可忽略“y=”。例如“y=x+x^2”或“x*(elogx)” 表示参数方程 此时请同时输入两个单变量函数表达式，以x或t为自变量，两表达式间以逗号间隔。注意请不要在两个表达式前添加“x=”或“y=”。例如“t^2,t”或“sinx,cosx” 表示隐函数（或一般的方程） 此时请以x，y表示横纵两坐标轴对应的变量。表达式中必须包含等号。例如“x^2+y^2=1”。当等式左侧为“y=”时自动转换为单变量函数计算。 另外，一次输入可以绘制多个图像。若要输入多个表达式，请将各表达式以分号间隔。
+2、函数属性设置 添加函数后，函数图像将在左侧窗口内显示，同时右侧函数列表栏内也会出现记录该函数信息的卡片（超出范围的卡片可以滑动滚轮以查看）。 每一个函数信息卡右侧有两个按钮。上面标有“x&amp;quot;字的按钮点击后可关闭该函数卡并删除左侧窗口内对应的函数图像。下面显示“···”符号的按钮，点击后可以设置该函数相关的属性。主要包括如下内容。 坐标形式 单变量函数和参数方程共有。设置图像以直角坐标或极坐标形式呈现。 线性变换 单变量函数和参数方程共有。表示一个2*2矩阵。在绘制过程中，图像的每一个坐标点会与该矩阵相乘。 位移 单变量函数和参数方程共有。表示一个二维矢量。在绘制过程中，图像的每一个坐标点会与该矢量相加。 积分 单变量函数特有。表示一个积分区间。默认不计算积分（积分范围NaN-&amp;gt;NaN）。若输入正确的积分范围，则会在左侧窗口内将求积分的面积涂色。并在信息卡上显示积分结果。 求导 单变量函数特有。点击求导按钮后会求一阶导数，并将得到的新函数添加到函数列表栏的末尾。图像也会在左侧窗口内显示。 参数范围 参数方程特有。用以表示参数的范围。左侧窗口内只会绘制参数范围内的图像。 三、保存文件 1、保存当前函数图像 点击主窗口上侧菜单栏“文件”选项。其中第一项“保存”可以将当前绘制的图像保存为图片格式（当前暂时只支持jpg格式）。
+2、查看默认保存位置 第二项“打开默认保存路径”会打开exe所在路径之下的SaveImage文件夹。可用于作为保存文件的位置。
+四、设置 1、绘制设置 点击菜单栏“设置”选项，会打开一个设置窗口。 其中前三项用于绘制设置。
+显示范围 相对位置用于设置当前显示位置与默认位置的偏移量。可以理解该值为一个表示当前窗口显示的位置相对于原点的坐标。 显示宽度用于设置当前窗口宽度下，横坐标数值的变化范围。 （该项设置也可以在主界面显示窗口用鼠标拖动和滚轮实现。） 线条颜色 设置图像曲线、坐标轴、积分区域的颜色。 线条宽度 设置图像曲线、坐标轴线条的粗细。注意该粗细不会随着窗口的缩放而发生变化。 2、算法设置 设置窗口第四项用于设置算法相关参数。算法原理详见设计文档。 基本 最小绘制间隔即生成基本绘制点时自变量的间隔。 平滑算法 平滑算法用于处理曲率较大的情况。平滑率表示连点绘制的曲线的“尖锐度”的阈值，过于“尖锐”的部分将被试图平滑。最大递归层数用于避免过深的递归，减少绘制时间。 Marching Square算法 Marching Square算法用于处理一般方程，能较有效地绘制隐函数图像。但计算量较大，以dx为单位长度绘制速度较慢。因此以dx乘以某一常数得到的长度作为新的单位长度，该常数即方块比例。 五、帮助 1、查看源代码 点击菜单栏“帮助”选项，第一项“源代码”点击后会转到保存该程序源代码的github仓库。
+2、操作说明 第二项“操作说明”可以打开一个新的帮助窗口，其中记录了一些较为常见的操作的提示。可在使用时随时查看。</description>
+    </item>
+    <item>
+      <title>FunctionSketch 设计文档</title>
+      <link>https://wokron.github.io/posts/function-sketch-design-doc/</link>
+      <pubDate>Sat, 10 Sep 2022 18:28:04 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/function-sketch-design-doc/</guid>
+      <description>一、程序简述 本软件是一个轻量级的图像绘制软件。在实现较为丰富的函数绘制功能的同时，避免了庞大的体量。与Matlab、Mathematica等专业软件的二维图像绘制功能相比，更方便上手，便于使用。可用于满足学习和简单研究的二维绘图需要。
+二、实现思路 1、表达式字符串解析 （1）解析目标 本程序的主要输入内容为表达式字符串，用以表示单变量函数、参数方程或是隐函数。为了进行计算，我们需要将其转化为可使用计算机计算的函数。我们可以将三种方程分别看成单参数、单返回值的函数；单参数、双返回值的函数；双参数，单返回值的函数（即f(x,y)=0）。这可以利用C#的delegate实现。C#中预先定义了Func&amp;lt;&amp;gt;委托。利用泛型可分别存储三种类型的方法。
+因此现在的问题便是，如何依据不同的字符串，构造出对应的可反映该表达式计算过程的方法。这里采取表达式树的结构。
+（2）FunctionParser类——字符串转表达式树 字符串转表达式树的基本算法已经在大一的数据结构课上讲过了。这里不赘述。
+不同的地方在于面向对象可以方便的利用多态代替判断。因此对于表达式树，不再需要节点内储存数据表示不同的节点类型。只需要所有的节点继承共同的抽象父类ExpressionElement，同时ExpressionElement具有函数Calculate,子类，包括Value、ArgumentX、ArgumentY、Operator等等，各自实现不同的Calculate操作。 最后，将Calculate方法赋给Func&amp;lt;&amp;gt;类型的变量，就可以实现表达式的存储了。
+（3）FunctionFactory类——字符串转函数封装信息 但是，不同类型的函数有着不同的信息，比如单变量函数可以方便地求导、积分；参数方程需要指定参数的范围。因此在绘制图像之前，还需要对函数的信息做一次封装。
+FunctionFactory读入字符串，判断其类型，将其封装为不同的类（SingleVarFuncStorage 、DoubleVarFuncStorage和ParamVarFuncStorage。其中各自具有对应函数的属性和方法），并以FunctionStorage[]父类数组的形式返回。
+2、FunctionDrawing类——图像绘制 （1）基础算法 FunctionStorage类的成员将传入FunctionDrawing类中，成员被存储在一个List&amp;lt;FunctionStorage&amp;gt;内。每次调用Refresh函数重绘，都将对列表内的每一个元素调用绘制。
+不同的函数类型将采取不同的绘制策略。绘制时先用里氏转换将函数转换会真正的子类。随后调用多态方法DrawFunction。
+虽然绘制算法并不相同，但本质上都采取了取点描线的方式。绘制利用了WPF的绘图API，主要是运用了DrawingGroup、DrawingContext类。并将绘制结果以DrawingImage的形式作为位于主界面左侧窗口的Image的Source。
+（2）平滑算法 单变量函数和参数方程的基本绘制，就是简单的以某一小间隔dx为单位，从自变量初值递增到终值，对每一个自变量，计算对应的坐标。最后将所有在绘制范围内的坐标点连接起来。
+而平滑算法是用于改善一些极端情况，如y=sin(1/x)，的绘制效果的算法。用于平滑过于“尖锐”的图像。这是一个递归算法，具体操作如下
+输入参数为三个点，构成两条线段 如果这两条线段较为“平滑”（本程序采用斜率之差的绝对值小于某一值），则退出 否则，分别对于两条线段，各自取端点参数的中值，算出坐标，将原线段的端点和中值的坐标作为参数，重复1。 （3）Marching Square算法 对于图像一般形式f(x,y)=0，就算遍历全部绘制范围也较难恰好取到等于0的情况。另外如果以某一确定的eps作为误差范围，也会因为不同的梯度导致绘制的曲线误差较大。因此需要采用新的算法。
+Marching Square算法一定程度上解决了这一问题。该算法通过将绘制区域划分成等大的方块，并取样方块顶点上的函数值，根据函数值的正负估计曲线的走向。最后利用线性插值估计f(x,y)=0在方块边上的位置，连线得出图像。 3、UI设计 （1）图像尺寸自适应 软件需要能实现尺寸的自由变化，而如果只绘制某一特定尺寸的图像，那么就无法实现较好的变化效果。
+采取的解决方式是在FunctionDrawing类内添加属性AspectRatio用于表示长宽比。同时监听窗口的尺寸变化事件。在尺寸变化后，获取新的长宽比，更新AspectRatio并调用Refresh方法重绘界面。
+（2）UserControl自定义控件 在添加函数后，主界面右侧函数列表会出现记录该函数的信息卡片。并具有删除和设置函数的按钮。该卡片集成了该函数所能做的所有操作，是FunctionStorage在UI的反映。
+如果每创建一个新的函数，都要执行一大段生成包括Button、Label、TextBlock PopUp等控件的代码，很显然是不明智的。因此采用用户控件UserControl在新的窗口设计信息卡片需要的功能。主页面则只需要在添加函数时创建关于该函数的卡片实例即可。类似的，表达式输入框等内容也是如此。 （3）Frame——Page实现单窗口多页面 点击菜单栏的设置选项，会出现一个用于设置的新窗口。选择左侧边栏的不同设置选项，右侧会显示不同的页面。这个单窗口多页面的功能，由Frame加Page控件实现。
+主设置页添加一个Frame控件，在打开该窗口时，Frame加载显示不同设置的Page。在点击左侧边栏按钮的时候，调用Frame的Navigate方法导航到对应的设置页。 三、运行环境 编写时使用Visual Studio版本为VS2019 16.11.17 .NET版本为netcoreapp3.1 c#版本为C#8.0
+四、收获 学习了面向对象编程的思想，实践了简单的代码重构。 获得了开发近4000行代码的项目的经验。 学习了一些图形学算法。 对C#的理解更加深入，并获得了简单的WPF经验。 </description>
+    </item>
+    <item>
+      <title>关于 Git 推送失败</title>
+      <link>https://wokron.github.io/posts/git-push-failure/</link>
+      <pubDate>Sat, 10 Sep 2022 14:40:57 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/git-push-failure/</guid>
+      <description>问题背景 其实这个问题出现过许多次了，可每次的解决方法都不尽相同。因此这里做一个简单的汇总，也为之后再次出现提供一个总结的位置。
+曾经出现该问题的情况：
+VS推送失败 hexo推送失败 问题形式类似于fatal: unable to access &#39;https://github.com/.../.git&#39;:...
+问题原因 貌似是代理产生的问题。根据网上资料，通过取消代理就可以解决问题。但本人也曾有过通过更换VPN线路解决的情况，不知是否仅仅是凑巧解决。
+问题解决 查看代理：
+git config --global --get http.proxy git config --global --get https.proxy 如果发现git使用了代理，则取消代理：
+git config --global --unset http.proxy git config --global --unset https.proxy 需要再次设置代理请使用如下命令（设置当前代理为 http://127.0.0.1:1080）：
+git config --global http.proxy &amp;#39;http://127.0.0.1:1080&amp;#39; git config --global https.proxy &amp;#39;http://127.0.0.1:1080&amp;#39; 值得注意的是，git还可以对单一网站设置代理，例如只对github使用代理http://127.0.0.1:58591：
+git config --global http.https://github.com.proxy http://127.0.0.1:58591 该类代理无法通过前面的查看代理命令查看，需要明确指出网站才可查询到：
+git config --global --get http.https://github.com.proxy 取消对github的代理：
+git config --global --unset http.https://github.com.proxy 另外代理设置也可以直接在git配置文件中查看，为C:\Users\{用户名}\.gitconfig。也可以在其中直接修改。</description>
+    </item>
+    <item>
+      <title>Test</title>
+      <link>https://wokron.github.io/posts/test/</link>
+      <pubDate>Sat, 10 Sep 2022 10:04:47 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/test/</guid>
+      <description>Article Test 测试，第一篇推文
+I wonder if this can be seen&amp;hellip;
+// this is what a string cat can do. StringCat.new(&amp;#34;black&amp;#34;).meow(2).jump().sleep(1000); </description>
+    </item>
+    <item>
+      <title>友情链接</title>
+      <link>https://wokron.github.io/links/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://wokron.github.io/links/</guid>
+      <description>传送门 (∩•̀ω•́)⊃--*⋆</description>
+    </item>
+  </channel>
+</rss>

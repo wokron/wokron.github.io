@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Coroutine on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/coroutine/</link>
+    <description>Recent content in Coroutine on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Fri, 06 Feb 2026 16:04:33 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/coroutine/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Condy 性能实测：零开销抽象全面释放 io_uring 性能</title>
+      <link>https://wokron.github.io/posts/condy-bench/</link>
+      <pubDate>Fri, 06 Feb 2026 16:04:33 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/condy-bench/</guid>
+      <description>Condy 是一款基于 io_uring 的零开销、高性能协程运行时，专为 Linux 系统设计。它持续跟进内核 io_uring 的最新特性，充分发挥底层异步 IO 的极致性能。Condy 采用 C++20 协程，提供直观易用的异步编程体验，无需回调，代码更简洁、可读性更强。我们已将 Condy 与 libaio、liburing、epoll 等底层接口，以及 Asio、Monoio、Compio 等主流异步框架进行了全面性能对比。展现了 Condy 的性能优势。
+基准测试源码见 condy-bench。
+测试环境：
+CPU：AMD Ryzen 9 7945HX with Radeon Graphics × 16 存储：SK Hynix HFS001TEJ9X115N（NVMe SSD，1TB，PCIe 4.0 x4） 编译器：clang 18.1.3 操作系统：Linux Mint 22 Cinnamon 内核：6.8.0-90-generic 基线框架：
+libaio：Linux 上 io_uring 之前的异步文件 IO 框架。 liburing：io_uring 本身，未与协程封装，使用上略不便。 Asio：C++ 流行的 IO 框架。 Monoio：基于 io_uring 的 Rust 协程框架（GitHub 星数高于 liburing）。 Compio：另一个基于 io_uring 的 Rust 协程框架。 顺序文件读取 我们测试了 Condy 在 8GB 文件上进行 64KB 顺序读取的性能，收集吞吐量数据，并与 libaio 和 liburing 等的基线实现进行对比。</description>
+    </item>
+    <item>
+      <title>Corio - 基于 Asio 的 C&#43;&#43;20 协程框架</title>
+      <link>https://wokron.github.io/posts/corio-readme/</link>
+      <pubDate>Tue, 21 Jan 2025 17:37:45 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/corio-readme/</guid>
+      <description>最近研究了一下协程和网络编程，结合 C++20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。
+项目仓库：wokron/corio。
+安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。
+以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。
+git submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。
+add_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。
+最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。
+#include &amp;lt;corio.hpp&amp;gt; 使用 协程类型 lazy corio::Lazy&amp;lt;T&amp;gt; 是 corio 库的核心。通过将函数的返回值设定为 Lazy&amp;lt;T&amp;gt;，我们将该函数定义为协程。在 Lazy&amp;lt;T&amp;gt; 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。</description>
+    </item>
+  </channel>
+</rss>

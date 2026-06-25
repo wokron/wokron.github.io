@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Asio on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/asio/</link>
+    <description>Recent content in Asio on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Tue, 21 Jan 2025 17:37:45 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/asio/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Corio - 基于 Asio 的 C&#43;&#43;20 协程框架</title>
+      <link>https://wokron.github.io/posts/corio-readme/</link>
+      <pubDate>Tue, 21 Jan 2025 17:37:45 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/corio-readme/</guid>
+      <description>最近研究了一下协程和网络编程，结合 C++20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。
+项目仓库：wokron/corio。
+安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。
+以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。
+git submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。
+add_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。
+最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。
+#include &amp;lt;corio.hpp&amp;gt; 使用 协程类型 lazy corio::Lazy&amp;lt;T&amp;gt; 是 corio 库的核心。通过将函数的返回值设定为 Lazy&amp;lt;T&amp;gt;，我们将该函数定义为协程。在 Lazy&amp;lt;T&amp;gt; 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。</description>
+    </item>
+  </channel>
+</rss>

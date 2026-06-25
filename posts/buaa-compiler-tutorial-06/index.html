@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>编译技术教程：附录 - 项目测试 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Tolang, BUAA">
+<meta name="description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。
+因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。
+一、单元测试 （1）单元测试的结构 单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 Lexer、Parser、Visitor 等等分别编写了单元测试。
+一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当尽可能相互独立、互不影响。这也意味着单元测试的执行顺序不应当影响测试的结果。
+需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。
+由于上述特点，单元测试实际上应当看作一一个不同的可执行程序。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：构造、操作和检验。
+CMake 中提供的 “测试” 实际上就是这样的可执行程序。
+构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。
+操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。
+最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 to_string 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。
+（2）Mock 如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是代码中的副作用或具体类之间的耦合导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。
+例如，在实现 Lexer 时，我们没有将 ifstream 作为参数，而是将其父类 istream 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。
+class Lexer { Lexer(std::istream &amp;in) : _input(in) {} // ... } 这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 istream 存在子类 istringstream。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/buaa-compiler-tutorial-06/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/buaa-compiler-tutorial-06/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="编译技术教程：附录 - 项目测试" />
+<meta property="og:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。
+因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。
+一、单元测试 （1）单元测试的结构 单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 Lexer、Parser、Visitor 等等分别编写了单元测试。
+一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当尽可能相互独立、互不影响。这也意味着单元测试的执行顺序不应当影响测试的结果。
+需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。
+由于上述特点，单元测试实际上应当看作一一个不同的可执行程序。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：构造、操作和检验。
+CMake 中提供的 “测试” 实际上就是这样的可执行程序。
+构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。
+操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。
+最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 to_string 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。
+（2）Mock 如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是代码中的副作用或具体类之间的耦合导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。
+例如，在实现 Lexer 时，我们没有将 ifstream 作为参数，而是将其父类 istream 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。
+class Lexer { Lexer(std::istream &amp;in) : _input(in) {} // ... } 这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 istream 存在子类 istringstream。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/buaa-compiler-tutorial-06/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-09-10T16:07:58+08:00" />
+<meta property="article:modified_time" content="2024-09-10T16:07:58+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="编译技术教程：附录 - 项目测试"/>
+<meta name="twitter:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。
+因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。
+一、单元测试 （1）单元测试的结构 单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 Lexer、Parser、Visitor 等等分别编写了单元测试。
+一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当尽可能相互独立、互不影响。这也意味着单元测试的执行顺序不应当影响测试的结果。
+需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。
+由于上述特点，单元测试实际上应当看作一一个不同的可执行程序。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：构造、操作和检验。
+CMake 中提供的 “测试” 实际上就是这样的可执行程序。
+构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。
+操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。
+最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 to_string 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。
+（2）Mock 如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是代码中的副作用或具体类之间的耦合导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。
+例如，在实现 Lexer 时，我们没有将 ifstream 作为参数，而是将其父类 istream 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。
+class Lexer { Lexer(std::istream &amp;in) : _input(in) {} // ... } 这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 istream 存在子类 istringstream。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "编译技术教程：附录 - 项目测试",
+      "item": "https://wokron.github.io/posts/buaa-compiler-tutorial-06/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "编译技术教程：附录 - 项目测试",
+  "name": "编译技术教程：附录 - 项目测试",
+  "description": "系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。\n因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。\n一、单元测试 （1）单元测试的结构 单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 Lexer、Parser、Visitor 等等分别编写了单元测试。\n一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当尽可能相互独立、互不影响。这也意味着单元测试的执行顺序不应当影响测试的结果。\n需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。\n由于上述特点，单元测试实际上应当看作一一个不同的可执行程序。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：构造、操作和检验。\nCMake 中提供的 “测试” 实际上就是这样的可执行程序。\n构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。\n操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。\n最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 to_string 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。\n（2）Mock 如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是代码中的副作用或具体类之间的耦合导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。\n例如，在实现 Lexer 时，我们没有将 ifstream 作为参数，而是将其父类 istream 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。\nclass Lexer { Lexer(std::istream \u0026amp;in) : _input(in) {} // ... } 这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 istream 存在子类 istringstream。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。",
+  "keywords": [
+    "Tolang", "BUAA"
+  ],
+  "articleBody": " 系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。\n因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。\n一、单元测试 （1）单元测试的结构 单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 Lexer、Parser、Visitor 等等分别编写了单元测试。\n一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当尽可能相互独立、互不影响。这也意味着单元测试的执行顺序不应当影响测试的结果。\n需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。\n由于上述特点，单元测试实际上应当看作一一个不同的可执行程序。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：构造、操作和检验。\nCMake 中提供的 “测试” 实际上就是这样的可执行程序。\n构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。\n操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。\n最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 to_string 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。\n（2）Mock 如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是代码中的副作用或具体类之间的耦合导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。\n例如，在实现 Lexer 时，我们没有将 ifstream 作为参数，而是将其父类 istream 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。\nclass Lexer { Lexer(std::istream \u0026in) : _input(in) {} // ... } 这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 istream 存在子类 istringstream。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。\n由于被测试的类所依赖的是抽象的接口，所以在满足接口行为的前提下，我们可以仿造模块的输入，或让模型输出到模拟的接口当中。\n对于程序中的各个模块，我们均可以采用此种方法。例如对 Paser 类的测试。当然，由于 tolangc 的规模较小，所以我们并没有对 Lexer 类进行模拟。但我们可以将其一个例子。\n为了对 Parser 进行测试，我们需要将原本的 Lexer 转变为抽象的接口。为了方便，我们这里保持 Lexer 的名称不变，但将其定义为抽象类。\nclass Lexer { public: virtual void next(Token \u0026token) = 0; } 此时，我们将原本的 Lexer 实现搬移到另一个类 LexerImpl 中。该类是 Lexer 的子类。\nclass LexerImpl : public Lexer { public: void next(Token \u0026token) override; // ... } 最后，我们将原本创建 Lexer 对象的语句修改为创建 LexerImpl。经过重构之后，Lexer 的接口和实现完成了分离。\n为了测试，我们再定义模拟类 MockLexer。该类的行为应当和 LexerImpl 相同，当调用 next 函数时，返回新的 Token。当读到 Token 序列的末尾时，此后对 next 的调用返回的类型为 TK_EOF。\n唯一的不同是，MockLexer 返回的序列将由我们给定。这意味着构造 MockLexer 时不应再传入 istream，而是一个单词序列 std::vector。\nclass MockLexer : public Lexer { public: void next(Token \u0026token) override; MockLexer(std::vector\u003cToken\u003e\u0026 tokens) : _tokens(tokens) {} // ... } MockLexer 中 next 函数的实现较为简单，这里就不再详细介绍。\n定义 MockLexer 之后，我们便可以修改 tolangc 中 Parser 的测试代码。\n// test_parser.cpp // ... TEST_CASE(\"testing lexer\") { std::vector\u003cToken\u003e input = { Token(Token::TK_FN, \"fn\", 1), Token(Token::TK_IDENT, \"nonParam\", 1), Token(Token::TK_LPARENT, \"(\", 1), Token(Token::TK_RPARENT, \")\", 1), // ... }; MockLexer lexer(input); Parser parser(lexer); auto ast = parser.parse(); std::ostringstream oss; root-\u003eprint(oss); CHECK(oss.str() == EXPECTED); } 二、集成测试 尽管单元测试保证了功能模块内部的正确性，但模块之间不合理的配合也会导致功能的错误。这时集成测试就十分必要。对于编译器这样有着明确输入输出的程序，编写源代码作为测试样例是十分有效的方法。\n“将源代码作为测试样例” 也适用于广义的编译器，如排版系统，文本渲染器等。\n当然，如果每次测试都需要手动进行编译，那就太不方便了。合理的做法是为集成测试编写自动化脚本。接下来我们介绍一下 tolangc 中的集成测试脚本。\n（1）测试样例与测试程序 我们规定一个测试样例由源文件、输入文件和输出文件三部分组成。源文件使用 .tol 后缀，输入文件使用 .input 后缀，输出文件使用 .output 后缀。三个文件需要位于同一目录中。输出文件中包含程序对给定的输入应当返回的输出。由于 llvm、mips 或 pcode 对浮点数的显示有所不同，所以在评测正确性时我们统一将结果转换为浮点数再进行比较。\n我们用 python 编写评测脚本 ./script/test.py。该脚本有如下参数：\n测试阶段：选择对 llvm、mips 或 pcode 的输出结果进行测试 样例文件：选择指定的样例文件进行测试，需要给出 *.tol 源文件的路径 样例目录：选择指定目录中的样例文件进行测试，需要给出测试样例所在的目录 $ python ./scripts/test.py -h usage: test.py [-h] -s {llvm,mips,pcode} [-d DIR] [-f FILE] Integration test script for tolangc options: -h, --help show this help message and exit -s {llvm,mips,pcode}, --stage {llvm,mips,pcode} stage to test -d DIR, --dir DIR directory of test cases -f FILE, --file FILE test case to run （2）集成测试过程 集成测试的主体逻辑由 python 写成。首先，我们根据命令行参数获取进行测试的阶段和测试样例。之后对于每一个评测阶段，我们进行如下操作：\n按照测试阶段编译 tolangc 使用各测试样例对编译得到的 tolangc 进行测试 而对于第二步，我们遵循了和单元测试一致的结构，即构造、操作和检验。我们可以查看脚本中的 general_test 函数。该函数传入的 preprocess_fn、run_fn 和 compare_fn 分别代表了这三个阶段。\ndef general_test(test_files: list[pathlib.Path], preprocess_fn, run_fn, compare_fn): for test_file in test_files: # ... preprocess_result = preprocess_fn(test_file) run_result = run_fn( preprocess_result, input_file if input_file.exists() else None ) is_success = compare_fn(run_result, output_file) # ... 对于编译操作和运行操作，由于需要进行大量的命令行操作，所以我们选择使用 shell 脚本编写，并通过 python 的 subprocess.run 方法进行调用。\ndef build(backend: Literal[\"llvm\", \"pcode\"]): # ... subprocess.run( [\"bash\", \"./scripts/build.sh\", backend], stdout=subprocess.DEVNULL, check=True, env=dict(os.environ) | {\"BUILD_DIR\": TEST_CACHE_DIR / \"build\" / backend}, ) # ... 最后，我们将评测的结果存储在 TestStat 中，并在测试结束后输出。\n三、流水线 尽管我们通过脚本自动化了项目的测试过程。但脚本的执行依旧需要我们手动触发。像测试、发布、部署这样的操作，本应当随着项目的演进而随时进行。为了实现这一点，我们在 tolangc 中使用 Github Action 配置了一组 CI 流水线，每当向 PR 或 master 分支中推送提交时，便会运行该流水线，自动对代码进行测试。\n我们的流水线配置位于 .github/workflows 中。类似于一个在满足条件时自动触发的脚本。配置文件中较为关键的包括如下几个部分。\n首先是触发流水线的条件。对应配置中的 on 字段。在我们的例子中，触发流水线的条件是更新目标为 master 的 PR 以及向 mater 分支推送。每当仓库中出现此类事件，便会触发该流水线的执行。\n# pr-check.yml on: push: branches: [ \"master\" ] pull_request: branches: [ \"master\" ] 接下来是 jobs 字段，用于定义流水线中运行的任务。在这里我们定义了两个任务 build 和 test。前者用于验证构建过程的正确性并进行单元测试，后者则用于运行集成测试。任务之间可以设定依赖关系，例如这里我们使 test 任务依赖于 build。这样若 build 任务出现了问题，便不会再运行 test 任务。\njobs: build: # ... test: needs: build # ... 在任务内部，我们需要设定任务的运行环境 runs-on，每一步的执行操作 steps，也可以设置任务的运行策略 strategy。\n运行环境指任务运行所处的操作系统环境。在这里是 ubuntu-latest。\nbuild: runs-on: ubuntu-latest 在运行环境中，我们可以像脚本一样运行一系列命令，或是使用其他人编写好的 Action 应用执行某些操作。例如在 build 任务中，我们执行了 bash ... 和 ctest ... 两条命令。\njobs: build: # ... steps: - uses: actions/checkout@v4 - name: Build env: BUILD_TYPE: ${{env.BUILD_TYPE}} run: bash ./scripts/build.sh ${{matrix.backend}} - name: Unit test working-directory: ${{github.workspace}}/build run: ctest -C ${{env.BUILD_TYPE}} Action 是其他人封装好的操作。例如在配置中我们使用了 KyleMayes/install-llvm-action@v2 用于在运行环境中安装 llvm。\n- name: Install llvm if: matrix.stage == 'llvm' uses: KyleMayes/install-llvm-action@v2 with: version: \"16.0\" 通过设置 matrix 策略，我们可以并行执行一系列不同相近但配置有所不同的任务。例如在 tolangc 中我们有着 llvm 和 pcode 两个后端。通过 matrix 我们可以同时对这两种后端进行测试。如下图，在 Build 步骤中，我们使用了 matrix 中定义的 matrix.backend。根据当前 backend 的取值不同采用不同的构建方式。\njobs: build: strategy: matrix: backend: [ \"llvm\", \"pcode\" ] # ... - name: Build env: BUILD_TYPE: ${{env.BUILD_TYPE}} run: bash ./scripts/build.sh ${{matrix.backend}} 配置完成之后，当满足流水线的触发条件时，流水线便会自行运行，实现项目的自动化测试。\n当然流水线所能做到的不止自动化测试，还可以实现版本发布或自动化部署等功能。由于与本教程的主题并不相关，因此不做介绍。各位同学可以自行探索。\n",
+  "wordCount" : "544",
+  "inLanguage": "zh",
+  "datePublished": "2024-09-10T16:07:58+08:00",
+  "dateModified": "2024-09-10T16:07:58+08:00",
+  "author":[{
+    "@type": "Person",
+    "name": "Wokron"
+  }],
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/buaa-compiler-tutorial-06/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      编译技术教程：附录 - 项目测试
+    </h1>
+    <div class="post-meta"><span title='2024-09-10 16:07:58 +0800 CST'>九月 10, 2024</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;544 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/buaa-compiler-tutorial-06.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%8d%95%e5%85%83%e6%b5%8b%e8%af%95" aria-label="一、单元测试">一、单元测试</a><ul>
+                        
+                <li>
+                    <a href="#1%e5%8d%95%e5%85%83%e6%b5%8b%e8%af%95%e7%9a%84%e7%bb%93%e6%9e%84" aria-label="（1）单元测试的结构">（1）单元测试的结构</a></li>
+                <li>
+                    <a href="#2mock" aria-label="（2）Mock">（2）Mock</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%ba%8c%e9%9b%86%e6%88%90%e6%b5%8b%e8%af%95" aria-label="二、集成测试">二、集成测试</a><ul>
+                        
+                <li>
+                    <a href="#1%e6%b5%8b%e8%af%95%e6%a0%b7%e4%be%8b%e4%b8%8e%e6%b5%8b%e8%af%95%e7%a8%8b%e5%ba%8f" aria-label="（1）测试样例与测试程序">（1）测试样例与测试程序</a></li>
+                <li>
+                    <a href="#2%e9%9b%86%e6%88%90%e6%b5%8b%e8%af%95%e8%bf%87%e7%a8%8b" aria-label="（2）集成测试过程">（2）集成测试过程</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%89%e6%b5%81%e6%b0%b4%e7%ba%bf" aria-label="三、流水线">三、流水线</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><blockquote>
+<p>系列导航：</p>
+<ul>
+<li>《<a href="../buaa-compiler-tutorial-00">编译技术教程：前言</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-01">编译技术教程：词法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-02">编译技术教程：抽象语法树</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-03">编译技术教程：语法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-04">编译技术教程：符号表与类型系统</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-05">编译技术教程：语义分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-06">编译技术教程：附录 - 项目测试</a>》</li>
+</ul>
+</blockquote>
+<p>项目的规模越大，越难以通过直接观察发现隐藏的代码缺陷。在实验中，各位同学需要实现的是一个万行级别的编译器项目。在这一情景下若不对自己的开发过程进行规范，及时进行项目测试，必然会严重影响代码质量，进而影响各位同学的实验进展。</p>
+<p>因此在本附录中，我们将结合 tolangc 项目，提供一个较为简单，但具体可行的项目测试示例，以供同学们参考。</p>
+<h2 id="一单元测试">一、单元测试<a hidden class="anchor" aria-hidden="true" href="#一单元测试">#</a></h2>
+<h3 id="1单元测试的结构">（1）单元测试的结构<a hidden class="anchor" aria-hidden="true" href="#1单元测试的结构">#</a></h3>
+<p>单元测试样例用于对程序中的最小功能模块进行测试，能够验证功能模块内部的正确性。一般来说，一个单元测试对应一个类或一个函数。对于编译器这一架构得到了充分研究的程序类型，一般来说我们可以选择为各个编译阶段设计对应的单元测试。例如在 tolangc 中，我们为 <code>Lexer</code>、<code>Parser</code>、<code>Visitor</code> 等等分别编写了单元测试。</p>
+<p>一个单元测试样例是对某一功能进行的一次测试。不同的样例之间应当<strong>尽可能相互独立、互不影响</strong>。这也意味着单元测试的执行顺序不应当影响测试的结果。</p>
+<p>需要注意的是，一些单元测试框架可能会提供设定样例执行顺序的功能，例如在某一样例成功之后执行等等。但是此处的执行顺序实际上反映的是功能模块之间的依赖关系，意为 “由于 A 模块依赖于 B 模块，所以如果 B 模块的测试出错，那么 A 模块的测试便没有意义”，而并不意味着单元测试之间可以相互关联。</p>
+<p>由于上述特点，单元测试实际上应当看作<strong>一一个不同的可执行程序</strong>。但和整个项目所组成的程序不同，单个功能模块往往无法单独运行，且不像程序那样有着明确的输出。这就需要我们为单元测试构建测试所需的环境，并对模块的运行结果进行检验。这组成了单元测试所需要遵循的三个阶段：<strong>构造</strong>、<strong>操作</strong>和<strong>检验</strong>。</p>
+<blockquote>
+<p>CMake 中提供的 “测试” 实际上就是这样的可执行程序。</p>
+</blockquote>
+<p>构造指设定模块的运行环境，例如参数、依赖的对象、数据库中数据等等。构造在每个单元测试中都要进行，绝不能依赖其他单元测试的运行结果。运行环境当中需要重点关注的是可以被所有单元测试访问的单例和全局变量，以及可以实现数据持久化的文件和数据库。如果存在单元测试之间相互影响的风险，则需要在单元测试结束后进行重置操作。</p>
+<p>操作指功能模块的运行。当构造完成运行环境之后，我们希望功能模块能够按照预期方式正确运行。</p>
+<p>最后，检验指将功能模块的运行结果和预期结果进行比对。一般来说，测试框架会提供一系列用于比较结果的接口。具体的接口则视框架而定。这一部分的关键实际在于如何获取功能模块的运行结果。如果运行结果相对简单，如某个数值、单个数组等等，那么检验过程便相对简单。但如果运行结果的数据结构较为复杂，或运行结果位置分散，那么检验起来便较为困难。这时可以选择定义相应的信息提取函数，例如定义 <code>to_string</code> 函数将复杂数据结构转换为字符串。在 tolangc 中，对于语法树我们便采用了这样的处理方式。</p>
+<h3 id="2mock">（2）Mock<a hidden class="anchor" aria-hidden="true" href="#2mock">#</a></h3>
+<p>如果我们发现难以编写某个类或函数的单元测试代码，那可能意味着我们的类或函数需要进行进一步的拆分。难以测试可能是<strong>代码中的副作用</strong>或<strong>具体类之间的耦合</strong>导致的。对于类之间的耦合，我们需要遵循依赖倒置原则，用抽象的接口替代具体的实现。</p>
+<p>例如，在实现 <code>Lexer</code> 时，我们没有将 <code>ifstream</code> 作为参数，而是将其父类 <code>istream</code> 作为参数。尽管对于 tolangc 来说，源代码总是从文件中读入的。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Lexer</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Lexer</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">istream</span> <span class="o">&amp;</span><span class="n">in</span><span class="p">)</span> <span class="o">:</span> <span class="n">_input</span><span class="p">(</span><span class="n">in</span><span class="p">)</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>这样做将使 Lexer 类更加可测试。若对 Lexer 类进行测试，我们不必创建真正的源文件。因为 <code>istream</code> 存在子类 <code>istringstream</code>。该类创建时需传入一字符串，而当从流中读取时，读到的便是传入的字符串的内容。</p>
+<p>由于被测试的类所依赖的是抽象的接口，所以在满足接口行为的前提下，我们可以仿造模块的输入，或让模型输出到模拟的接口当中。</p>
+<p>对于程序中的各个模块，我们均可以采用此种方法。例如对 <code>Paser</code> 类的测试。当然，由于 tolangc 的规模较小，所以我们并没有对 <code>Lexer</code> 类进行模拟。但我们可以将其一个例子。</p>
+<p>为了对 <code>Parser</code> 进行测试，我们需要将原本的 <code>Lexer</code> 转变为抽象的接口。为了方便，我们这里保持 <code>Lexer</code> 的名称不变，但将其定义为抽象类。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Lexer</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">virtual</span> <span class="kt">void</span> <span class="n">next</span><span class="p">(</span><span class="n">Token</span> <span class="o">&amp;</span><span class="n">token</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>此时，我们将原本的 <code>Lexer</code> 实现搬移到另一个类 <code>LexerImpl</code> 中。该类是 <code>Lexer</code> 的子类。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">LexerImpl</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Lexer</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="n">next</span><span class="p">(</span><span class="n">Token</span> <span class="o">&amp;</span><span class="n">token</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>最后，我们将原本创建 <code>Lexer</code> 对象的语句修改为创建 <code>LexerImpl</code>。经过重构之后，<code>Lexer</code> 的接口和实现完成了分离。</p>
+<p>为了测试，我们再定义模拟类 <code>MockLexer</code>。该类的行为应当和 <code>LexerImpl</code> 相同，当调用 <code>next</code> 函数时，返回新的 <code>Token</code>。当读到 <code>Token</code> 序列的末尾时，此后对 <code>next</code> 的调用返回的类型为 <code>TK_EOF</code>。</p>
+<p>唯一的不同是，<code>MockLexer</code> 返回的序列将由我们给定。这意味着构造 <code>MockLexer</code> 时不应再传入 <code>istream</code>，而是一个单词序列 <code>std::vector&lt;Token&gt;</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">MockLexer</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Lexer</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="n">next</span><span class="p">(</span><span class="n">Token</span> <span class="o">&amp;</span><span class="n">token</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">MockLexer</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Token</span><span class="o">&gt;&amp;</span> <span class="n">tokens</span><span class="p">)</span> <span class="o">:</span> <span class="n">_tokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p><code>MockLexer</code> 中 <code>next</code> 函数的实现较为简单，这里就不再详细介绍。</p>
+<p>定义 <code>MockLexer</code> 之后，我们便可以修改 tolangc 中 <code>Parser</code> 的测试代码。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// test_parser.cpp
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="n">TEST_CASE</span><span class="p">(</span><span class="s">&#34;testing lexer&#34;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Token</span><span class="o">&gt;</span> <span class="n">input</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Token</span><span class="p">(</span><span class="n">Token</span><span class="o">::</span><span class="n">TK_FN</span><span class="p">,</span> <span class="s">&#34;fn&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>      <span class="n">Token</span><span class="p">(</span><span class="n">Token</span><span class="o">::</span><span class="n">TK_IDENT</span><span class="p">,</span> <span class="s">&#34;nonParam&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Token</span><span class="p">(</span><span class="n">Token</span><span class="o">::</span><span class="n">TK_LPARENT</span><span class="p">,</span> <span class="s">&#34;(&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>  <span class="n">Token</span><span class="p">(</span><span class="n">Token</span><span class="o">::</span><span class="n">TK_RPARENT</span><span class="p">,</span> <span class="s">&#34;)&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MockLexer</span> <span class="nf">lexer</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Parser</span> <span class="nf">parser</span><span class="p">(</span><span class="n">lexer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">ast</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">parse</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">ostringstream</span> <span class="n">oss</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">root</span><span class="o">-&gt;</span><span class="n">print</span><span class="p">(</span><span class="n">oss</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CHECK</span><span class="p">(</span><span class="n">oss</span><span class="p">.</span><span class="n">str</span><span class="p">()</span> <span class="o">==</span> <span class="n">EXPECTED</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="二集成测试">二、集成测试<a hidden class="anchor" aria-hidden="true" href="#二集成测试">#</a></h2>
+<p>尽管单元测试保证了功能模块内部的正确性，但模块之间不合理的配合也会导致功能的错误。这时集成测试就十分必要。对于编译器这样有着明确输入输出的程序，编写源代码作为测试样例是十分有效的方法。</p>
+<blockquote>
+<p>“将源代码作为测试样例” 也适用于广义的编译器，如排版系统，文本渲染器等。</p>
+</blockquote>
+<p>当然，如果每次测试都需要手动进行编译，那就太不方便了。合理的做法是为集成测试编写自动化脚本。接下来我们介绍一下 tolangc 中的集成测试脚本。</p>
+<h3 id="1测试样例与测试程序">（1）测试样例与测试程序<a hidden class="anchor" aria-hidden="true" href="#1测试样例与测试程序">#</a></h3>
+<p>我们规定一个测试样例由源文件、输入文件和输出文件三部分组成。源文件使用 <code>.tol</code> 后缀，输入文件使用 <code>.input</code> 后缀，输出文件使用 <code>.output</code> 后缀。三个文件需要位于同一目录中。输出文件中包含程序对给定的输入应当返回的输出。由于 llvm、mips 或 pcode 对浮点数的显示有所不同，所以在评测正确性时我们统一将结果转换为浮点数再进行比较。</p>
+<p>我们用 python 编写评测脚本 <code>./script/test.py</code>。该脚本有如下参数：</p>
+<ol>
+<li>测试阶段：选择对 llvm、mips 或 pcode 的输出结果进行测试</li>
+<li>样例文件：选择指定的样例文件进行测试，需要给出 <code>*.tol</code> 源文件的路径</li>
+<li>样例目录：选择指定目录中的样例文件进行测试，需要给出测试样例所在的目录</li>
+</ol>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> python ./scripts/test.py -h                                     
+</span></span><span class="line"><span class="cl"><span class="go">usage: test.py [-h] -s {llvm,mips,pcode} [-d DIR] [-f FILE]
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">Integration test script for tolangc
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">options:
+</span></span></span><span class="line"><span class="cl"><span class="go">  -h, --help            show this help message and exit
+</span></span></span><span class="line"><span class="cl"><span class="go">  -s {llvm,mips,pcode}, --stage {llvm,mips,pcode}
+</span></span></span><span class="line"><span class="cl"><span class="go">                        stage to test
+</span></span></span><span class="line"><span class="cl"><span class="go">  -d DIR, --dir DIR     directory of test cases
+</span></span></span><span class="line"><span class="cl"><span class="go">  -f FILE, --file FILE  test case to run
+</span></span></span></code></pre></div><h3 id="2集成测试过程">（2）集成测试过程<a hidden class="anchor" aria-hidden="true" href="#2集成测试过程">#</a></h3>
+<p>集成测试的主体逻辑由 python 写成。首先，我们根据命令行参数获取进行测试的阶段和测试样例。之后对于每一个评测阶段，我们进行如下操作：</p>
+<ol>
+<li>按照测试阶段编译 tolangc</li>
+<li>使用各测试样例对编译得到的 tolangc 进行测试</li>
+</ol>
+<p>而对于第二步，我们遵循了和单元测试一致的结构，即<strong>构造</strong>、<strong>操作</strong>和<strong>检验</strong>。我们可以查看脚本中的 <code>general_test</code> 函数。该函数传入的 <code>preprocess_fn</code>、<code>run_fn</code> 和 <code>compare_fn</code> 分别代表了这三个阶段。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">general_test</span><span class="p">(</span><span class="n">test_files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">],</span> <span class="n">preprocess_fn</span><span class="p">,</span> <span class="n">run_fn</span><span class="p">,</span> <span class="n">compare_fn</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">test_file</span> <span class="ow">in</span> <span class="n">test_files</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># ...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">preprocess_result</span> <span class="o">=</span> <span class="n">preprocess_fn</span><span class="p">(</span><span class="n">test_file</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">run_result</span> <span class="o">=</span> <span class="n">run_fn</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">preprocess_result</span><span class="p">,</span> <span class="n">input_file</span> <span class="k">if</span> <span class="n">input_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">is_success</span> <span class="o">=</span> <span class="n">compare_fn</span><span class="p">(</span><span class="n">run_result</span><span class="p">,</span> <span class="n">output_file</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># ...</span>
+</span></span></code></pre></div><p>对于编译操作和运行操作，由于需要进行大量的命令行操作，所以我们选择使用 shell 脚本编写，并通过 python 的 <code>subprocess.run</code> 方法进行调用。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&#34;llvm&#34;</span><span class="p">,</span> <span class="s2">&#34;pcode&#34;</span><span class="p">]):</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># ...</span>
+</span></span><span class="line"><span class="cl">    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="s2">&#34;bash&#34;</span><span class="p">,</span> <span class="s2">&#34;./scripts/build.sh&#34;</span><span class="p">,</span> <span class="n">backend</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">env</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">)</span> <span class="o">|</span> <span class="p">{</span><span class="s2">&#34;BUILD_DIR&#34;</span><span class="p">:</span> <span class="n">TEST_CACHE_DIR</span> <span class="o">/</span> <span class="s2">&#34;build&#34;</span> <span class="o">/</span> <span class="n">backend</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># ...</span>
+</span></span></code></pre></div><p>最后，我们将评测的结果存储在 <code>TestStat</code> 中，并在测试结束后输出。</p>
+<h2 id="三流水线">三、流水线<a hidden class="anchor" aria-hidden="true" href="#三流水线">#</a></h2>
+<p>尽管我们通过脚本自动化了项目的测试过程。但脚本的执行依旧需要我们手动触发。像测试、发布、部署这样的操作，本应当随着项目的演进而随时进行。为了实现这一点，我们在 tolangc 中使用 Github Action 配置了一组 CI 流水线，每当向 PR 或 master 分支中推送提交时，便会运行该流水线，自动对代码进行测试。</p>
+<p>我们的流水线配置位于 <code>.github/workflows</code> 中。类似于一个在满足条件时自动触发的脚本。配置文件中较为关键的包括如下几个部分。</p>
+<p>首先是触发流水线的条件。对应配置中的 <code>on</code> 字段。在我们的例子中，触发流水线的条件是更新目标为 master 的 PR 以及向 mater 分支推送。每当仓库中出现此类事件，便会触发该流水线的执行。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="c"># pr-check.yml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s2">&#34;master&#34;</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s2">&#34;master&#34;</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span></span></span></code></pre></div><p>接下来是 <code>jobs</code> 字段，用于定义流水线中运行的任务。在这里我们定义了两个任务 <code>build</code> 和 <code>test</code>。前者用于验证构建过程的正确性并进行单元测试，后者则用于运行集成测试。任务之间可以设定依赖关系，例如这里我们使 <code>test</code> 任务依赖于 <code>build</code>。这样若 <code>build</code> 任务出现了问题，便不会再运行 <code>test</code> 任务。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">build</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">test</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">needs</span><span class="p">:</span><span class="w"> </span><span class="l">build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># ...</span><span class="w">
+</span></span></span></code></pre></div><p>在任务内部，我们需要设定任务的运行环境 <code>runs-on</code>，每一步的执行操作 <code>steps</code>，也可以设置任务的运行策略 <code>strategy</code>。</p>
+<p>运行环境指任务运行所处的操作系统环境。在这里是 <code>ubuntu-latest</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="w">  </span><span class="nt">build</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span></code></pre></div><p>在运行环境中，我们可以像脚本一样运行一系列命令，或是使用其他人编写好的 Action 应用执行某些操作。例如在 <code>build</code> 任务中，我们执行了 <code>bash ...</code> 和 <code>ctest ...</code> 两条命令。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">build</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">env</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">BUILD_TYPE</span><span class="p">:</span><span class="w"> </span><span class="l">${{env.BUILD_TYPE}}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">bash ./scripts/build.sh ${{matrix.backend}}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Unit test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">working-directory</span><span class="p">:</span><span class="w"> </span><span class="l">${{github.workspace}}/build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">ctest -C ${{env.BUILD_TYPE}}</span><span class="w">
+</span></span></span></code></pre></div><p>Action 是其他人封装好的操作。例如在配置中我们使用了 <code>KyleMayes/install-llvm-action@v2</code> 用于在运行环境中安装 llvm。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install llvm</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">matrix.stage == &#39;llvm&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">KyleMayes/install-llvm-action@v2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;16.0&#34;</span><span class="w">
+</span></span></span></code></pre></div><p>通过设置 <code>matrix</code> 策略，我们可以并行执行一系列不同相近但配置有所不同的任务。例如在 tolangc 中我们有着 llvm 和 pcode 两个后端。通过 matrix 我们可以同时对这两种后端进行测试。如下图，在 Build 步骤中，我们使用了 <code>matrix</code> 中定义的 <code>matrix.backend</code>。根据当前 <code>backend</code> 的取值不同采用不同的构建方式。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">build</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">matrix</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s2">&#34;llvm&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;pcode&#34;</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">env</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">BUILD_TYPE</span><span class="p">:</span><span class="w"> </span><span class="l">${{env.BUILD_TYPE}}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">bash ./scripts/build.sh ${{matrix.backend}}</span><span class="w">
+</span></span></span></code></pre></div><p>配置完成之后，当满足流水线的触发条件时，流水线便会自行运行，实现项目的自动化测试。</p>
+<p><img loading="lazy" src="workflow.png" alt="workflow-result"  />
+</p>
+<p>当然流水线所能做到的不止自动化测试，还可以实现版本发布或自动化部署等功能。由于与本教程的主题并不相关，因此不做介绍。各位同学可以自行探索。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/tolang/">Tolang</a></li>
+      <li><a href="https://wokron.github.io/tags/buaa/">BUAA</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/conda-install-cuda/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>在 Conda 环境中安装 CUDA</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/buaa-compiler-tutorial-05/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>编译技术教程：语义分析</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：附录 - 项目测试 on x"
+            href="https://x.com/intent/tweet/?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e9%99%84%e5%bd%95%20-%20%e9%a1%b9%e7%9b%ae%e6%b5%8b%e8%af%95&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f&amp;hashtags=Tolang%2cBUAA">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：附录 - 项目测试 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f&amp;title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e9%99%84%e5%bd%95%20-%20%e9%a1%b9%e7%9b%ae%e6%b5%8b%e8%af%95&amp;summary=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e9%99%84%e5%bd%95%20-%20%e9%a1%b9%e7%9b%ae%e6%b5%8b%e8%af%95&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：附录 - 项目测试 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f&title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e9%99%84%e5%bd%95%20-%20%e9%a1%b9%e7%9b%ae%e6%b5%8b%e8%af%95">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：附录 - 项目测试 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：附录 - 项目测试 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e9%99%84%e5%bd%95%20-%20%e9%a1%b9%e7%9b%ae%e6%b5%8b%e8%af%95%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：附录 - 项目测试 on telegram"
+            href="https://telegram.me/share/url?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e9%99%84%e5%bd%95%20-%20%e9%a1%b9%e7%9b%ae%e6%b5%8b%e8%af%95&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：附录 - 项目测试 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e9%99%84%e5%bd%95%20-%20%e9%a1%b9%e7%9b%ae%e6%b5%8b%e8%af%95&u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-06%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

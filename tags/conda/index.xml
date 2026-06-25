@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Conda on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/conda/</link>
+    <description>Recent content in Conda on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Mon, 14 Oct 2024 19:18:09 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/conda/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>在 Conda 环境中安装 CUDA</title>
+      <link>https://wokron.github.io/posts/conda-install-cuda/</link>
+      <pubDate>Mon, 14 Oct 2024 19:18:09 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/conda-install-cuda/</guid>
+      <description>最近想学一下 CUDA。这里记录一下配置环境的过程。
+创建环境。这里只是用 Conda 实现环境隔离，不需要 python。 $ conda create -n cuda-dev $ conda activate cuda-dev 使用 nvidia-smi 查看 CUDA 版本。注意这里的版本为驱动所支持的最高 CUDA 版本。而非后面安装的 CUDA 运行时版本。在安装时应当保证 CUDA 运行时版本小于等于驱动版本。 $ nvidia-smi +---------------------------------------------------------------------------------------+ | NVIDIA-SMI 535.183.01 Driver Version: 535.183.01 CUDA Version: 12.2 | |-----------------------------------------+----------------------+----------------------+ 安装特定版本 CUDA。 $ conda install cuda -c nvidia/label/cuda-11.8.0 查看 nvcc 版本。保证驱动支持当前 CUDA 版本。 $ nvcc -V nvcc: NVIDIA (R) Cuda compiler driver Copyright (c) 2005-2022 NVIDIA Corporation Built on Wed_Sep_21_10:33:58_PDT_2022 Cuda compilation tools, release 11.</description>
+    </item>
+  </channel>
+</rss>

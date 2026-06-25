@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head>
+	<meta name="generator" content="Hugo 0.123.7"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Wokron&#39;s Blog</title>
+<meta name="keywords" content="blog, code, tutorial">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/index.xml">
+<link rel="alternate" type="application/json" href="https://wokron.github.io/index.json">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Wokron&#39;s Blog" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Wokron&#39;s Blog"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Wokron's Blog",
+  "url": "https://wokron.github.io/",
+  "description": "Wokron 的个人博客。记录学习、分享经验",
+  "thumbnailUrl": "https://wokron.github.io/img/favicon/96x96.png",
+  "sameAs": [
+      "https://github.com/wokron", "mailto:yi1tang.yang@gmail.com", "mailto:3160114036@qq.com"
+  ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">用 Pytorch 实现简单循环神经网络
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、歌词生成项目 想要在 nlp 方面深入，于是选择训练生成一个 RNN 网络，主要目标是自动生成歌词。在这里受到了 最浅显易懂的 PyTorch 深度学习入门 的启发，并利用 up 主提供的 源码 中的数据集。
+相关代码的编写也有参考该 up 主的部分，但均为在理解内容的基础上自行编写的。另外也有对该 up 主代码中的疏漏进行修改的地方。
+二、数据的获取 （1）编写数据集 原作者用爬虫获取的歌词数据被保存在 lyrics.txt 文件中。我们要将数据按可供训练的模型加载。具体来说
+我们希望每一次获取数据，都能得到输入和目标输出（对本项目来说就是两段有一个文字偏差的序列） 并且将文字数字化，即 nlp 的 tokenize 为了实现批量训练，需要每次获取定长的序列 为了实现第一点，我们要继承 dataset；实现第二点，需要根据数据建立字符表；实现第三点，需要定长截取歌词句子的一部分。
+另外，为了减少每次加载数据所用的时间，还需要将数据集的信息持久化。
+我们的 LyricsDataset 具体实现如下。首先，我们在构造函数中通过传入的路径加载数据，判断是否已经存在处理过后的数据，如存在则加载；如不存在则读入原始数据并处理
+class LyricsDataset(Dataset): def __init__(self, root_path, seq_size): self.seq_size = seq_size processed_name = &#34;/processed/lyrics.pth&#34; raw_name = &#34;/raw/lyrics.txt&#34; if os.path.exists(root_path &#43; processed_name): print(&#34;find processed data&#34;) self.__load_processed_data(root_path &#43; processed_name) else: print(&#34;processed data not found, will process raw data&#34;) self....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-17 21:02:34 +0800 CST'>一月 17, 2023</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;642 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 用 Pytorch 实现简单循环神经网络" href="https://wokron.github.io/posts/pytorch-rnn/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">机器学习 NLP 基本知识
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、自然语言处理（nlp）简介 一份思绪奔驰的前言： 语言的边界就是思想的边界。如果从人类所具有的一切中挑出一个事物，让它来显示出人与其他生物的不同之处，那一定是语言。语言是我们用来思考和交流的方式，我们的一切文明都构筑在这简单的一维序列中，可我们却几乎不曾深入了解过它。
+有人说，我们不曾真正的理解语言，我们所有对语言的运用和理解，不过建立在婴儿及此后对他人的声音与书本上符号的猜测上。或许正是如此，但是我们依旧要做出猜测，向着语言的神秘进发，这是我们的信念，是我们认识我们的认识的开始。
+（1）作为语言学的 nlp 早在计算机的上古时代，深度学习还未诞生的时候，自然语言处理作为语言学的一个领域就已诞生了，这个领域也被语言学家们称为计算机语言学。两个名称在一起，才表达出 nlp 的真正含义——通过机器处理语言。nlp 最早的研究方向是机器翻译，那时人们人为地总结语言的规律，对词汇进行标注，对语句进行句法分析。结果是人为的规则覆盖面不足，所设计的系统无法扩展。
+（2）作为机器学习研究领域的 nlp 随着计算机的发展，出现了基于传统统计学习模型的自然语言处理方式。这些原始的模型较之之前有所进步，但受限于计算机性能，统计方法也遭遇了瓶颈。
+直到近年来算力的发展，使得深度神经网络成为可能。深度神经网络结构中潜在的学习能力，在 nlp 领域发挥了作用。通过多维数据表示语言和含义，深度学习以高效且与人类认知过程相似的方式发挥了巨大的效果。
+二、词向量 词汇作为符号，其形象是离散的；但词汇的所指作为定义，其含义却是丰富而连续的。比如说“母亲”这个词汇，既表示了这个概念所对应的事物是在一种血缘关系中的一方（她是孩子的母亲）；又表示了这个事物是能繁殖者（母鸡）；在一定程度上，同样表示了非血缘关系，但具有类似血缘关系的行为的个体（大地是母亲）。
+偏个题，《来自深渊》中有对生骸语的类似的描述.
+因此，我们就不能再将词汇只作为离散的符号看待了，不能认为词汇之间是相互排斥的关系了。我们需要将词汇看做某些元含义在不同程度下的集合，或者从机器学习的角度，把这些元含义称作特征。那么也就是说，我们将每个词汇都看成一定维度的向量。
+但是我们要如何确定特征呢？特征的数量又有多少？如果人工地确定特征为“存在、含义、物质、精神”等等，这一过程将耗费精力且永无止境。实际上按照机器学习的一般策略，我们只需要通过统计文本，自发的构建词汇向量即可。
+这一方面有许多算法，如 N-gram 算法，GloVe 算法等等。另外也可以在深度学习的过程中利用反向传播自发的调整词向量，在 pytorch 中这通过 Embedding 层来实现。
+三、循环神经网络（RNN）及其变体 （1）朴素 RNN 考虑我们说话或写作时的基本逻辑。对于一段语言序列，在之后的词汇总是和之前的词汇有关，未表达的部分总是已表达部分的补全或补充。循环神经网络的机制类似，我们需要用一个或多个隐藏变量作为对之前语句含义的表示，在输出下一个词汇时，会让隐藏变量参与决策；同时每多说完一个词汇，这个词汇也会更新隐藏变量，以实现表达含义的更新。
+具体来说，我们用 $t$ 表示时间序列，对某一时间 $t$，$x_t$ 表示输入，$y_t$ 表示输出，$h_t$ 表示隐含状态。那么朴素的 RNN 网络即： $$ h_t = tanh(W^{(hx)} x_t &#43; W^{(hh)} h_{t-1}) $$ $$ y_t = W^{(S)} h_t $$ 容易看出 RNN 和 Moore 自动机有相似之处。
+其中 $W^{(hx)}, W^{(hh)}, W^{(S)} h_t$ 分别为三个不同的矩阵。RNN 的激活函数也可以选择 ReLU。同时可以为激活函数中的部分添加偏置（bias）$b^{(hx)}, b^{(hh)}$ 等。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-17 21:01:27 +0800 CST'>一月 17, 2023</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;328 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 机器学习 NLP 基本知识" href="https://wokron.github.io/posts/nlp-basics/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Spring 面向切面
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。
+面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。
+二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。
+通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。
+连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。
+切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。
+切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。
+引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。
+织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。
+三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。
+Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容
+AspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如
+execution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。
+切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如
+execution(* concert.Performance.perform(..)) &amp;&amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-10 16:47:00 +0800 CST'>一月 10, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;433 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Spring 面向切面" href="https://wokron.github.io/posts/spring-note-3/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Spring 高级装配
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>上一篇文章已经讲解了 spring 依赖注入装配的方法。但是为了处理一些特殊的问题，或者为了更好地实现某些功能，spring 还提供了更多的装配设置。
+一、条件化声明 Bean 让我们回到上一篇第一节的例子，假设这次我们需要在开发时使用 SQLite，而在生产环境使用 Oracle 要怎么办呢？
+或许可以这样，我们在生产环境注意将 DBUtil Bean 改成 Oracle，把原来的部分注释掉，就像是这样。
+@Bean public DBUtil databaseUtil() { // return new SQLiteUtil(); // for dev return new OracleUtil(); // for prod } 但这样做很明显是不合适的。如果许多组件都需要进行调整的话，修改上就会十分复杂，且很容易出错。
+我们可以使用注释 @Profile 实现不同环境条件下选择不同的装配方式。这需要给带有 @Bean 或 @Configuration 注释的方法或类添加注释 @Profile(&#34;某某环境&#34;)。于是数据库的选择就可以改为如下形式：
+@Bean @Profile(&#34;dev&#34;) public DBUtil sqliteUtil() { return new SQLiteUtil(); } @Bean @Profile(&#34;prod&#34;) public DBUtil oracleUtil() { return new OracleUtil(); } 想要启用某个 Bean 需要设置环境。具体来说，这通过两个环境变量来实现，spring.profiles.default 和 spring.profiles.active。这两个值可以在许多地方定义。一种方式是在 properties 或 yaml 文件中定义，如...</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-10 15:05:26 +0800 CST'>一月 10, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;502 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Spring 高级装配" href="https://wokron.github.io/posts/spring-note-2/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Spring 依赖注入
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、依赖注入 考虑这样一个例子，CustomerDAO 类使用了 DBUtil 类中的方法连接到 MySQL 数据库
+public class CustomerDAO { private DBUtil databaseUtil = new DBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 假设现在想要改为使用 Oracle 数据库，需要怎么做？可以使用 OracleDBUtil 继承 DBUtil，并重写其相关方法。但是由于 CustomerDAO 中将 DBUtil 实例添加到其初始化过程中。因此想要修改的话还是需要对 CustomerDAO 本身进行修改。这违反了开-闭原则。
+public class CustomerDAO { private DBUtil databaseUtil = new OracleDBUtil(); public Customer findCustomerByName(String name) { databaseUtil.doSomething() } } 为了使对 dbUtil 的修改不影响 CustomerDAO 本身，我们可以将实例的创建移到 CustomerDAO 之外。
+public class CustomerDAO { private DBUtil databaseUtil; public CustomerDAO(DBUtil databaseUtil) { this....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-09 17:42:35 +0800 CST'>一月 9, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;481 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Spring 依赖注入" href="https://wokron.github.io/posts/spring-note-1/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Django 创建表结构
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、对象关系映射（ORM） 面向对象与关系型数据库中的数据存储方式并不匹配，因此为了在编程中实现对数据库的操作，需要 ORM 技术将数据库中数据映射到对象之中。通过对对象的操作，做到对数据库的操作，从而实现增删改查等功能。
+面向对象编程中，“关系”体现在类与其属性之间以及同一类的不同属性之间；而在关系型数据库中，“关系”体现在同一表中的不同列字段中。
+二、django 的 ORM 实现 django 通过 models.Model 类来对应数据库中的表结构，如
+class User(models.Model): 即表示了 User 类，也对应了数据库中的 user 表。django 会根据类的声明自动在数据库中建表。
+django 用类中的属性来表示表的列字段。如
+class User(models.Model): id = models.IntegerField(primary_key=True) name = models.CharField(max_length=50) password = models.CharField(max_length=50) 定义了 user 表的主键、名字、密码信息。
+表间关系通过类与其属性表示，如
+class User(models.Model): id = models.IntegerField(primary_key=True) name = models.CharField(max_length=50) password = models.CharField(max_length=50) courses = models.ManyToManyField(to=&#34;Course&#34;) courses 属性表示用户具有的课程，反映了用户与课程之间的关系。
+三、类属性与数据库字段的对应 如上一节所述，django 建立了类属性与数据库字段之间的对应关系。常见的如
+models.CharField models.TextField models.IntegerField models.FloatField 就对应了数据库中的 char(n)，text，int，float 类型。不一一详述。
+四、主键与外键 在表中要定义主键，作为该表一条记录的唯一标识。相应的，在 django 中定义主键需要在对应属性上添加 primary_key=True 参数。例如...</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-09 13:44:16 +0800 CST'>一月 9, 2023</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;234 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to Django 创建表结构" href="https://wokron.github.io/posts/django-orm/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="https://wokron.github.io/page/10/">
+      «&nbsp;上一页&nbsp;
+    </a>
+    <a class="next" href="https://wokron.github.io/page/12/">下一页&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

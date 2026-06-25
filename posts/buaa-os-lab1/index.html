@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>BUAA-OS 实验笔记之 Lab1 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="MOS, BUAA">
+<meta name="description" content="一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。
+但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。
+二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……
+不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。
+（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。
+我们看一下该文件的开头。
+/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的
+.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit.">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/buaa-os-lab1/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/buaa-os-lab1/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="BUAA-OS 实验笔记之 Lab1" />
+<meta property="og:description" content="一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。
+但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。
+二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……
+不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。
+（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。
+我们看一下该文件的开头。
+/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的
+.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/buaa-os-lab1/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-03-14T21:13:05+08:00" />
+<meta property="article:modified_time" content="2023-03-14T21:13:05+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="BUAA-OS 实验笔记之 Lab1"/>
+<meta name="twitter:description" content="一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。
+但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。
+二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……
+不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。
+（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。
+我们看一下该文件的开头。
+/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的
+.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit."/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "BUAA-OS 实验笔记之 Lab1",
+      "item": "https://wokron.github.io/posts/buaa-os-lab1/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "BUAA-OS 实验笔记之 Lab1",
+  "name": "BUAA-OS 实验笔记之 Lab1",
+  "description": "一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。\n但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。\n二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……\n不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。\n（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。\n我们看一下该文件的开头。\n/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的\n.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit.",
+  "keywords": [
+    "MOS", "BUAA"
+  ],
+  "articleBody": "一、总前言 操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。\n但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。\n二、进入操作系统 （1）操作系统的启动 操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……\n不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。\n（2）内核的入口和内存布局 所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。\n我们看一下该文件的开头。\n/* * Set the architecture to mips. */ OUTPUT_ARCH(mips) /* * Set the ENTRY point of the program to _start. */ ENTRY(_start) 其中 OUTPUT_ARCH(mips) 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 ENTRY(_start) 便设置了程序的入口函数。因此 MOS 内核的入口即 _start。这是一个符号，对应的是 init/start.S 中的\n.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* omit... */ EXPORT 是一个宏，该宏将符号设置为全局符号，这样才对链接器可见。\n#define EXPORT(symbol) \\ .globl symbol; \\ symbol: 现在让我们回到 kernel.lds，原来其中还定义了其他内容。\nSECTIONS { /* Exercise 3.10: Your code here. */ /* fill in the correct address of the key sections: text, data, bss. */ /* Exercise 1.2: Your code here. */ . = 0x80010000; .text : { *(.text) } .data : { *(.data) } .bss : { *(.bss) } bss_end = .; . = 0x80400000; end = . ; } 这一部分是用来设置程序中的段位置的，它将.text .data .bss 段设置在以 0x8001 0000 为开始的地址空间中。另外它还设置了 bss_end 和 end 符号的地址，这将在之后的实验中起作用。\n这些设置的依据是什么呢？实际上只是人为的规定。在裸机上，我们事先规定好了不同区域的内存用于何种功能。内存布局图可在 include/mmu.h 中找到\n/* o 4G -----------\u003e +----------------------------+------------0x100000000 o | ... | kseg2 o KSEG2 -----\u003e +----------------------------+------------0xc000 0000 o | Devices | kseg1 o KSEG1 -----\u003e +----------------------------+------------0xa000 0000 o | Invalid Memory | /|\\ o +----------------------------+----|-------Physical Memory Max o | ... | kseg0 o KSTACKTOP-----\u003e +----------------------------+----|-------0x8040 0000-------end o | Kernel Stack | | KSTKSIZE /|\\ o +----------------------------+----|------ | o | Kernel Text | | PDMAP o KERNBASE -----\u003e +----------------------------+----|-------0x8001 0000 | o | Exception Entry | \\|/ \\|/ o ULIM -----\u003e +----------------------------+------------0x8000 0000------- o | User VPT | PDMAP /|\\ o UVPT -----\u003e +----------------------------+------------0x7fc0 0000 | o | pages | PDMAP | o UPAGES -----\u003e +----------------------------+------------0x7f80 0000 | o | envs | PDMAP | o UTOP,UENVS -----\u003e +----------------------------+------------0x7f40 0000 | o UXSTACKTOP -/ | user exception stack | BY2PG | o +----------------------------+------------0x7f3f f000 | o | | BY2PG | o USTACKTOP ----\u003e +----------------------------+------------0x7f3f e000 | o | normal user stack | BY2PG | o +----------------------------+------------0x7f3f d000 | a | | | a ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ | a . . | a . . kuseg a . . | a |~~~~~~~~~~~~~~~~~~~~~~~~~~~~| | a | | | o UTEXT -----\u003e +----------------------------+------------0x0040 0000 | o | reserved for COW | BY2PG | o UCOW -----\u003e +----------------------------+------------0x003f f000 | o | reversed for temporary | BY2PG | o UTEMP -----\u003e +----------------------------+------------0x003f e000 | o | invalid memory | \\|/ a 0 ------------\u003e +----------------------------+ ---------------------------- o */ 同时在该头文件中，还定义了一些和内存相关的宏常量和宏函数。在本次实验中用到的有\n#define KSTACKTOP (ULIM + PDMAP) 三、内核初始化 现在我们已经进入到 _start 函数中了。这一部分内容不多。在 init/start.S 中只有这些内容。\n.text EXPORT(_start) .set at .set reorder /* disable interrupts */ mtc0 zero, CP0_STATUS /* hint: you can reference the memory layout in include/mmu.h */ /* set up the kernel stack */ /* Exercise 1.3: Your code here. (1/2) */ la\tsp, KSTACKTOP /* jump to mips_init */ /* Exercise 1.3: Yoiur code here. (2/2) */ j\tmips_init .text 表示一下内容都是可执行的汇编指令。.set at 设置允许汇编器使用 at 寄存器。.set reorder 设置允许汇编器进行指令重排。mtc0 zero, CP0_STATUS 正如注释所言，停用了中断。这些并不重要。\n更重要的是本实验中需要填写的部分。首先，我们需要初始化 sp 寄存器的地址。sp 用于实现栈帧，是完成函数调用的基础。通过查看内存布局图，我们可以得知内核的栈处在 0x8040 0000 以下的位置。\n可是，我们不应该将 sp 初始化到栈底所在的位置吗？为什么加载地址所用的符号名称为 KSTACKTOP？这是因为 sp 是低地址增长的，所以其栈底地址就在“顶”了。\n另外还需要注意一点，这里只能使用 la 指令设置地址。因为 0x8040 0000 数值超出了立即数所能表达的范围，不能使用 lui、li 等指令。\n最后，j\tmips_init 是一条跳转语句，跳转到的符号是一个 c 语言函数，定义在 init/init.c 中。记得第一次看到 c 语言和汇编相互调用的时候，感到十分惊奇。\nvoid mips_init() { printk(\"init.c:\\tmips_init() is called\\n\"); /* omit... */ } 这个函数在本实验中几乎毫无内容，因此本实验中内核的程序便到此为止了。\n最后还需要说明一点，跳转到 mips_init 使用的是 j 而非 jal。这是因为按照操作系统的设计，根本不存在 mips_init 函数返回的情况。\n四、printk 的实现 GXemul 的调试只有汇编码，打桩调试又成了大多数时候的手段。为此实验贴心地让我们在最开始就实现一个类 printf 函数（这当然是假的，主要目的是提供一个输出评测的方式）。\n在 kern/printk.c 中有 printk 的定义\nvoid printk(const char *fmt, ...) { va_list ap; va_start(ap, fmt); vprintfmt(outputk, NULL, fmt, ap); va_end(ap); } 和 printf 一样，这是一个具有边长参数的函数。va_list ap 是变长参数列表。va_start 和 va_end 是用来初始化和结束变长参数列表的宏。真正重要的只有第三条语句 vprintfmt(outputk, NULL, fmt, ap);\n值得注意的是这条语句的第一个参数。这是一个回调函数，其定义同在kern/printk.c。是一个输出字符串的函数。其中 printcharc 一定是一个输出单个字符的函数。\nvoid outputk(void *data, const char *buf, size_t len) { for (int i = 0; i \u003c len; i++) { printcharc(buf[i]); } } 更深入一层，在 kern/console.c 中有 printcharc 的定义，这样就完全到达底层了。输出字符本质上是向一个地址写入该字符所对应的数值。在同一个文件中还有读取字符的函数，是读取同一个地址的数值作为字符。\nvoid printcharc(char ch) { *((volatile char *)(KSEG1 + DEV_CONS_ADDRESS + DEV_CONS_PUTGETCHAR)) = ch; } 让我们回到 printk。不，应该是进入到 vprintfmt。这个函数定义在 lib/print.c。是需要我们填空的函数。首先看到一些定义的变量。我们需要设置这些变量的数值。\nvoid vprintfmt(fmt_callback_t out, void *data, const char *fmt, va_list ap) { char c; const char *s; long num; int width; int long_flag; // output is long (rather than int) int neg_flag; // output is negative int ladjust; // output is left-aligned char padc; // padding char 接着是一个循环，很明显是用来处理 fmt 字符串并按照格式进行输出的。这里我们翻一下指导书，可以找到格式的定义。\n%[flags][width][length] 在编写代码前仔细思考一下：\nflags 有三种情况，-、0 或没有 width 只可能出现数字 length 只有两种情况 l 或没有。 我们很容易可以写出 for 循环中的代码。需要注意这里使用了回调函数 out 进行输出。\n/* scan for the next '%' */ /* Exercise 1.4: Your code here. (1/8) */ const char * p = fmt; while (*p != '%' \u0026\u0026 *p != '\\0') { p++; } /* flush the string found so far */ /* Exercise 1.4: Your code here. (2/8) */ out(data, fmt, p - fmt); fmt = p; /* check \"are we hitting the end?\" */ /* Exercise 1.4: Your code here. (3/8) */ if (*fmt == '\\0') { break; } /* we found a '%' */ /* Exercise 1.4: Your code here. (4/8) */ fmt++; /* check format flag */ /* Exercise 1.4: Your code here. (5/8) */ ladjust = 0; padc = ' '; if (*fmt == '-') { ladjust = 1; fmt++; } else if (*fmt == '0') { padc = '0'; fmt++; } /* get width */ /* Exercise 1.4: Your code here. (6/8) */ width = 0; while ('0' \u003c= *fmt \u0026\u0026 *fmt \u003c= '9' \u0026\u0026 *fmt != '\\0') { width *= 10; width += *fmt - '0'; fmt++; } /* check for long */ /* Exercise 1.4: Your code here. (7/8) */ long_flag = 0; if (*fmt == 'l') { long_flag = 1; fmt++; } 之后根据 specifier 判断输出类型。不同的输出类型有不同的函数。感兴趣的可以深入研究。算法比较基本。\n最后还有一个输出 %d 类型的部分需要填写。唯一有不同的地方是需要根据正负号设置 print_num 的 neg_flag 参数。\n五、编写 readelf 工具 本实验的还有一个和内核关系不大的内容，需要自己编写一个读取 elf 文件头的工具。该程序的相关代码在 tools/readelf 文件夹中。\n程序的入口在 tools/readelf/main.c 文件中。main 函数首先判断参数是否合法，随后\n打开文件 获取文件大小 将文件内容读取到内存中 调用 readelf 函数进行处理 int main(int argc, char *argv[]) { if (argc \u003c 2) { fprintf(stderr, \"Usage: %s \\n\", argv[0]); return 1; } FILE *fp = fopen(argv[1], \"rb\"); if (fp == NULL) { perror(argv[1]); return 1; } if (fseek(fp, 0, SEEK_END)) { perror(\"fseek\"); goto err; } int fsize = ftell(fp); if (fsize \u003c 0) { perror(\"ftell\"); goto err; } char *p = malloc(fsize + 1); if (p == NULL) { perror(\"malloc\"); goto err; } if (fseek(fp, 0, SEEK_SET)) { perror(\"fseek\"); goto err; } if (fread(p, fsize, 1, fp) \u003c 0) { perror(\"fread\"); goto err; } p[fsize] = 0; return readelf(p, fsize); err: fclose(fp); return 1; } 值得注意的是异常处理使用到了 goto 语句。\nreadelf 函数是功能的主要实现函数，也是我们需要补全的部分。首先，将传入的 binary 指针转换为 elf 格式结构体的指针。c 语言中通过结构体实现二进制内容的划分。\nint readelf(const void *binary, size_t size) { Elf32_Ehdr *ehdr = (Elf32_Ehdr *)binary; 随后判断文件是否是 elf 格式。\n// Check whether `binary` is a ELF file. if (!is_elf_format(binary, size)) { fputs(\"not an elf file\\n\", stderr); return -1; } 其中 is_elf_format 函数通过文件大小和魔数来进行判断\nint is_elf_format(const void *binary, size_t size) { Elf32_Ehdr *ehdr = (Elf32_Ehdr *)binary; return size \u003e= sizeof(Elf32_Ehdr) \u0026\u0026 ehdr-\u003ee_ident[EI_MAG0] == ELFMAG0 \u0026\u0026 ehdr-\u003ee_ident[EI_MAG1] == ELFMAG1 \u0026\u0026 ehdr-\u003ee_ident[EI_MAG2] == ELFMAG2 \u0026\u0026 ehdr-\u003ee_ident[EI_MAG3] == ELFMAG3; } 回到 readelf 函数，我们希望读取节表（section table）的内容。首先要确定节表的位置、节表头的数量和大小。Elf32_Ehdr 结构体中有 e_shoff 用来记录节表位置相对于 elf 整体地址的偏移量。另有 e_shnum、e_shentsize 分别表示节表的数量和大小。\n// Get the address of the section table, the number of section headers and the size of a // section header. const void *sh_table; Elf32_Half sh_entry_count; Elf32_Half sh_entry_size; /* Exercise 1.1: Your code here. (1/2) */ sh_table = binary + ehdr-\u003ee_shoff; sh_entry_count = ehdr-\u003ee_shnum; sh_entry_size = ehdr-\u003ee_shentsize; 之后我们遍历所有的节表，每个节表头的地址由节表头地址加上多个节表头的大小得到 sh_table + i * sh_entry_size。我们将其转化为节表头结构体的指针，获取该节表头所对应的节的地址 addr = shdr-\u003esh_addr。最后输出结果。\n// For each section header, output its index and the section address. // The index should start from 0. for (int i = 0; i \u003c sh_entry_count; i++) { const Elf32_Shdr *shdr; unsigned int addr; /* Exercise 1.1: Your code here. (2/2) */ shdr = (Elf32_Shdr*)(sh_table + i * sh_entry_size); addr = shdr-\u003esh_addr; printf(\"%d:0x%x\\n\", i, addr); } return 0; } 在其中唯一需要明确的是，节表存储了节的相关信息，但并不是节本身。如下的图片就很好地说明了节表和节的关系。节是文件中间的部分，而节表的位置则在文件的最后，section header table 的位置。程序表的内容也与节表类似。\n",
+  "wordCount" : "1206",
+  "inLanguage": "zh",
+  "datePublished": "2023-03-14T21:13:05+08:00",
+  "dateModified": "2023-03-14T21:13:05+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/buaa-os-lab1/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      BUAA-OS 实验笔记之 Lab1
+    </h1>
+    <div class="post-meta"><span title='2023-03-14 21:13:05 +0800 CST'>三月 14, 2023</span>&nbsp;·&nbsp;6 分钟&nbsp;·&nbsp;1206 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/buaa-os-lab1.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e6%80%bb%e5%89%8d%e8%a8%80" aria-label="一、总前言">一、总前言</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e8%bf%9b%e5%85%a5%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f" aria-label="二、进入操作系统">二、进入操作系统</a><ul>
+                        
+                <li>
+                    <a href="#1%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%e7%9a%84%e5%90%af%e5%8a%a8" aria-label="（1）操作系统的启动">（1）操作系统的启动</a></li>
+                <li>
+                    <a href="#2%e5%86%85%e6%a0%b8%e7%9a%84%e5%85%a5%e5%8f%a3%e5%92%8c%e5%86%85%e5%ad%98%e5%b8%83%e5%b1%80" aria-label="（2）内核的入口和内存布局">（2）内核的入口和内存布局</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%89%e5%86%85%e6%a0%b8%e5%88%9d%e5%a7%8b%e5%8c%96" aria-label="三、内核初始化">三、内核初始化</a></li>
+                <li>
+                    <a href="#%e5%9b%9bprintk-%e7%9a%84%e5%ae%9e%e7%8e%b0" aria-label="四、printk 的实现">四、printk 的实现</a></li>
+                <li>
+                    <a href="#%e4%ba%94%e7%bc%96%e5%86%99-readelf-%e5%b7%a5%e5%85%b7" aria-label="五、编写 readelf 工具">五、编写 readelf 工具</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一总前言">一、总前言<a hidden class="anchor" aria-hidden="true" href="#一总前言">#</a></h2>
+<p>操作系统是一门重课，我并不知晓自己是否做好了准备。“在这样的情况下就开始写文章，是否太着急了？” 我这样想，不知道对这门课自己是否有写文章的水平，也不知道自己是否会半途而废。</p>
+<p>但我还是决定开始，并不是因为有什么十足的信心，而是希望这一系列文章能帮助自己更深入的理解操作系统的知识，在讲解的过程中发现自己的不足。我希望这系列能持续下去，希望未来的自己看到结果时能够满意；希望他人也能从中得到收获。</p>
+<!-- raw HTML omitted -->
+<h2 id="二进入操作系统">二、进入操作系统<a hidden class="anchor" aria-hidden="true" href="#二进入操作系统">#</a></h2>
+<h3 id="1操作系统的启动">（1）操作系统的启动<a hidden class="anchor" aria-hidden="true" href="#1操作系统的启动">#</a></h3>
+<p>操作系统的 boot 过程是一个复杂繁琐的过程，从 bios 从上电后的启动地址开始执行，初始化硬件，读取磁盘的主引导记录，跳转到 bootloader；到加载内核程序，跳转到操作系统入口。这一整个过程难以详述……</p>
+<p>不过幸好在本实验中，这些都不是问题，因为我们所使用的 GXemul 模拟器不会去执行上述环节，它可以直接加载 ELF 格式内核。也就是说，我们的操作系统实验是从跳转到操作系统入口开始的。</p>
+<h3 id="2内核的入口和内存布局">（2）内核的入口和内存布局<a hidden class="anchor" aria-hidden="true" href="#2内核的入口和内存布局">#</a></h3>
+<p>所以，哪里是操作系统入口？内核入口的设置在 kernel.lds 中，这是一个链接器脚本，用于帮助链接器确定最终生成的文件的组织形式。</p>
+<p>我们看一下该文件的开头。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * Set the architecture to mips.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nf">OUTPUT_ARCH</span><span class="p">(</span><span class="n">mips</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * Set the ENTRY point of the program to _start.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nf">ENTRY</span><span class="p">(</span><span class="n">_start</span><span class="p">)</span>
+</span></span></code></pre></div><p>其中 <code>OUTPUT_ARCH(mips)</code> 设置了最终生成的文件采用的架构，对于 MOS 来说就是 mips。而 <code>ENTRY(_start)</code> 便设置了程序的入口函数。因此 MOS 内核的入口即 <code>_start</code>。这是一个符号，对应的是 init/start.S 中的</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="n">text</span>
+</span></span><span class="line"><span class="cl"><span class="nf">EXPORT</span><span class="p">(</span><span class="n">_start</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="n">set</span> <span class="n">at</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="n">set</span> <span class="n">reorder</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* disable interrupts */</span>
+</span></span><span class="line"><span class="cl">	<span class="n">mtc0</span>    <span class="n">zero</span><span class="p">,</span> <span class="n">CP0_STATUS</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* omit... */</span>
+</span></span></code></pre></div><p><code>EXPORT</code> 是一个宏，该宏将符号设置为全局符号，这样才对链接器可见。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#define EXPORT(symbol) \
+</span></span></span><span class="line"><span class="cl"><span class="cp">	.globl symbol; \
+</span></span></span><span class="line"><span class="cl"><span class="cp">	symbol:
+</span></span></span></code></pre></div><p>现在让我们回到 kernel.lds，原来其中还定义了其他内容。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">SECTIONS</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Exercise 3.10: Your code here. */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/* fill in the correct address of the key sections: text, data, bss. */</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Exercise 1.2: Your code here. */</span>
+</span></span><span class="line"><span class="cl">	<span class="p">.</span> <span class="o">=</span> <span class="mh">0x80010000</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">.</span><span class="nl">text</span> <span class="p">:</span> <span class="p">{</span> <span class="o">*</span><span class="p">(.</span><span class="n">text</span><span class="p">)</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">.</span><span class="nl">data</span> <span class="p">:</span> <span class="p">{</span> <span class="o">*</span><span class="p">(.</span><span class="n">data</span><span class="p">)</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">.</span><span class="nl">bss</span> <span class="p">:</span> <span class="p">{</span> <span class="o">*</span><span class="p">(.</span><span class="n">bss</span><span class="p">)</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="n">bss_end</span> <span class="o">=</span> <span class="p">.;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">.</span> <span class="o">=</span> <span class="mh">0x80400000</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="n">end</span> <span class="o">=</span> <span class="p">.</span> <span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这一部分是用来设置程序中的段位置的，它将<code>.text</code> <code>.data</code> <code>.bss</code> 段设置在以 <code>0x8001 0000</code> 为开始的地址空间中。另外它还设置了 <code>bss_end</code> 和 <code>end</code> 符号的地址，这将在之后的实验中起作用。</p>
+<p>这些设置的依据是什么呢？实际上只是人为的规定。在裸机上，我们事先规定好了不同区域的内存用于何种功能。内存布局图可在 include/mmu.h 中找到</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o     4G -----------&gt;  +----------------------------+------------0x100000000
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |       ...                  |  kseg2
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      KSEG2    -----&gt; +----------------------------+------------0xc000 0000
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |          Devices           |  kseg1
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      KSEG1    -----&gt; +----------------------------+------------0xa000 0000
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |      Invalid Memory        |   /|\
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      +----------------------------+----|-------Physical Memory Max
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |       ...                  |  kseg0
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      KSTACKTOP-----&gt; +----------------------------+----|-------0x8040 0000-------end
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |       Kernel Stack         |    | KSTKSIZE            /|\
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      +----------------------------+----|------                |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |       Kernel Text          |    |                    PDMAP
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      KERNBASE -----&gt; +----------------------------+----|-------0x8001 0000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |      Exception Entry       |   \|/                    \|/
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      ULIM     -----&gt; +----------------------------+------------0x8000 0000-------
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |         User VPT           |     PDMAP                /|\
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      UVPT     -----&gt; +----------------------------+------------0x7fc0 0000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |           pages            |     PDMAP                 |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      UPAGES   -----&gt; +----------------------------+------------0x7f80 0000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |           envs             |     PDMAP                 |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o  UTOP,UENVS   -----&gt; +----------------------------+------------0x7f40 0000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o  UXSTACKTOP -/       |     user exception stack   |     BY2PG                 |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      +----------------------------+------------0x7f3f f000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |                            |     BY2PG                 |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o      USTACKTOP ----&gt; +----------------------------+------------0x7f3f e000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |     normal user stack      |     BY2PG                 |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      +----------------------------+------------0x7f3f d000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a                      |                            |                           |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                           |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a                      .                            .                           |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a                      .                            .                         kuseg
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a                      .                            .                           |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a                      |~~~~~~~~~~~~~~~~~~~~~~~~~~~~|                           |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a                      |                            |                           |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o       UTEXT   -----&gt; +----------------------------+------------0x0040 0000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |      reserved for COW      |     BY2PG                 |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o       UCOW    -----&gt; +----------------------------+------------0x003f f000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |   reversed for temporary   |     BY2PG                 |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o       UTEMP   -----&gt; +----------------------------+------------0x003f e000    |
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o                      |       invalid memory       |                          \|/
+</span></span></span><span class="line"><span class="cl"><span class="cm"> a     0 ------------&gt;  +----------------------------+ ----------------------------
+</span></span></span><span class="line"><span class="cl"><span class="cm"> o
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span></code></pre></div><p>同时在该头文件中，还定义了一些和内存相关的宏常量和宏函数。在本次实验中用到的有</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#define KSTACKTOP (ULIM + PDMAP)
+</span></span></span></code></pre></div><h2 id="三内核初始化">三、内核初始化<a hidden class="anchor" aria-hidden="true" href="#三内核初始化">#</a></h2>
+<p>现在我们已经进入到 <code>_start</code> 函数中了。这一部分内容不多。在 init/start.S 中只有这些内容。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="n">text</span>
+</span></span><span class="line"><span class="cl"><span class="nf">EXPORT</span><span class="p">(</span><span class="n">_start</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="n">set</span> <span class="n">at</span>
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="n">set</span> <span class="n">reorder</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* disable interrupts */</span>
+</span></span><span class="line"><span class="cl">	<span class="n">mtc0</span>    <span class="n">zero</span><span class="p">,</span> <span class="n">CP0_STATUS</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/* hint: you can reference the memory layout in include/mmu.h */</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* set up the kernel stack */</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Exercise 1.3: Your code here. (1/2) */</span>
+</span></span><span class="line"><span class="cl">	<span class="n">la</span>	<span class="n">sp</span><span class="p">,</span> <span class="n">KSTACKTOP</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="cm">/* jump to mips_init */</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Exercise 1.3: Yoiur code here. (2/2) */</span>
+</span></span><span class="line"><span class="cl">	<span class="n">j</span>	<span class="n">mips_init</span>
+</span></span></code></pre></div><p><code>.text</code> 表示一下内容都是可执行的汇编指令。<code>.set at</code> 设置允许汇编器使用 <code>at</code> 寄存器。<code>.set reorder</code> 设置允许汇编器进行指令重排。<code>mtc0    zero, CP0_STATUS</code> 正如注释所言，停用了中断。这些并不重要。</p>
+<p>更重要的是本实验中需要填写的部分。首先，我们需要初始化 <code>sp</code> 寄存器的地址。<code>sp</code> 用于实现栈帧，是完成函数调用的基础。通过查看内存布局图，我们可以得知内核的栈处在 <code>0x8040 0000</code> 以下的位置。</p>
+<p>可是，我们不应该将 <code>sp</code> 初始化到栈底所在的位置吗？为什么加载地址所用的符号名称为 <code>KSTACKTOP</code>？这是因为 <code>sp</code> 是低地址增长的，所以其栈底地址就在“顶”了。</p>
+<p>另外还需要注意一点，这里只能使用 <code>la</code> 指令设置地址。因为 <code>0x8040 0000</code> 数值超出了立即数所能表达的范围，不能使用 <code>lui</code>、<code>li</code> 等指令。</p>
+<p>最后，<code>j	mips_init</code> 是一条跳转语句，跳转到的符号是一个 c 语言函数，定义在 init/init.c 中。记得第一次看到 c 语言和汇编相互调用的时候，感到十分惊奇。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">mips_init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printk</span><span class="p">(</span><span class="s">&#34;init.c:</span><span class="se">\t</span><span class="s">mips_init() is called</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* omit... */</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这个函数在本实验中几乎毫无内容，因此本实验中内核的程序便到此为止了。</p>
+<p>最后还需要说明一点，跳转到 <code>mips_init</code> 使用的是 <code>j</code> 而非 <code>jal</code>。这是因为按照操作系统的设计，根本不存在 mips_init 函数返回的情况。</p>
+<h2 id="四printk-的实现">四、printk 的实现<a hidden class="anchor" aria-hidden="true" href="#四printk-的实现">#</a></h2>
+<p>GXemul 的调试只有汇编码，打桩调试又成了大多数时候的手段。为此实验贴心地让我们在最开始就实现一个类 <code>printf</code> 函数（这当然是假的，主要目的是提供一个输出评测的方式）。</p>
+<p>在 kern/printk.c 中有 <code>printk</code> 的定义</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">printk</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">fmt</span><span class="p">,</span> <span class="p">...)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">va_list</span> <span class="n">ap</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">va_start</span><span class="p">(</span><span class="n">ap</span><span class="p">,</span> <span class="n">fmt</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">vprintfmt</span><span class="p">(</span><span class="n">outputk</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">ap</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">va_end</span><span class="p">(</span><span class="n">ap</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>和 <code>printf</code> 一样，这是一个具有边长参数的函数。<code>va_list ap</code> 是变长参数列表。<code>va_start</code> 和 <code>va_end</code> 是用来初始化和结束变长参数列表的宏。真正重要的只有第三条语句 <code>vprintfmt(outputk, NULL, fmt, ap);</code></p>
+<p>值得注意的是这条语句的第一个参数。这是一个回调函数，其定义同在kern/printk.c。是一个输出字符串的函数。其中 <code>printcharc</code> 一定是一个输出单个字符的函数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">outputk</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">data</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">len</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">printcharc</span><span class="p">(</span><span class="n">buf</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>更深入一层，在 kern/console.c 中有 <code>printcharc</code> 的定义，这样就完全到达底层了。输出字符本质上是向一个地址写入该字符所对应的数值。在同一个文件中还有读取字符的函数，是读取同一个地址的数值作为字符。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">printcharc</span><span class="p">(</span><span class="kt">char</span> <span class="n">ch</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="o">*</span><span class="p">((</span><span class="k">volatile</span> <span class="kt">char</span> <span class="o">*</span><span class="p">)(</span><span class="n">KSEG1</span> <span class="o">+</span> <span class="n">DEV_CONS_ADDRESS</span> <span class="o">+</span> <span class="n">DEV_CONS_PUTGETCHAR</span><span class="p">))</span> <span class="o">=</span> <span class="n">ch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>让我们回到 <code>printk</code>。不，应该是进入到 <code>vprintfmt</code>。这个函数定义在 lib/print.c。是需要我们填空的函数。首先看到一些定义的变量。我们需要设置这些变量的数值。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">vprintfmt</span><span class="p">(</span><span class="kt">fmt_callback_t</span> <span class="n">out</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">data</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">fmt</span><span class="p">,</span> <span class="n">va_list</span> <span class="n">ap</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">char</span> <span class="n">c</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">long</span> <span class="n">num</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kt">int</span> <span class="n">width</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">int</span> <span class="n">long_flag</span><span class="p">;</span> <span class="c1">// output is long (rather than int)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kt">int</span> <span class="n">neg_flag</span><span class="p">;</span>  <span class="c1">// output is negative
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kt">int</span> <span class="n">ladjust</span><span class="p">;</span>   <span class="c1">// output is left-aligned
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kt">char</span> <span class="n">padc</span><span class="p">;</span>     <span class="c1">// padding char
+</span></span></span></code></pre></div><p>接着是一个循环，很明显是用来处理 <code>fmt</code> 字符串并按照格式进行输出的。这里我们翻一下指导书，可以找到格式的定义。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">%[flags][width][length]&lt;specifier&gt;
+</span></span></code></pre></div><p>在编写代码前仔细思考一下：</p>
+<ul>
+<li>flags 有三种情况，<code>-</code>、<code>0</code> 或没有</li>
+<li>width 只可能出现数字</li>
+<li>length 只有两种情况 <code>l</code> 或没有。</li>
+</ul>
+<p>我们很容易可以写出 for 循环中的代码。需要注意这里使用了回调函数 <code>out</code> 进行输出。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">		<span class="cm">/* scan for the next &#39;%&#39; */</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.4: Your code here. (1/8) */</span>
+</span></span><span class="line"><span class="cl">		<span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">p</span> <span class="o">=</span> <span class="n">fmt</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="k">while</span> <span class="p">(</span><span class="o">*</span><span class="n">p</span> <span class="o">!=</span> <span class="sc">&#39;%&#39;</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="n">p</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="n">p</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="cm">/* flush the string found so far */</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.4: Your code here. (2/8) */</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">out</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fmt</span><span class="p">,</span> <span class="n">p</span> <span class="o">-</span> <span class="n">fmt</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="n">fmt</span> <span class="o">=</span> <span class="n">p</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="cm">/* check &#34;are we hitting the end?&#34; */</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.4: Your code here. (3/8) */</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">fmt</span> <span class="o">==</span> <span class="sc">&#39;\0&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="cm">/* we found a &#39;%&#39; */</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.4: Your code here. (4/8) */</span>
+</span></span><span class="line"><span class="cl">		<span class="n">fmt</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="cm">/* check format flag */</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.4: Your code here. (5/8) */</span>
+</span></span><span class="line"><span class="cl">		<span class="n">ladjust</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="n">padc</span> <span class="o">=</span> <span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">fmt</span> <span class="o">==</span> <span class="sc">&#39;-&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="n">ladjust</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">fmt</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">fmt</span> <span class="o">==</span> <span class="sc">&#39;0&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="n">padc</span> <span class="o">=</span> <span class="sc">&#39;0&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">fmt</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="cm">/* get width */</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.4: Your code here. (6/8) */</span>
+</span></span><span class="line"><span class="cl">		<span class="n">width</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="k">while</span> <span class="p">(</span><span class="sc">&#39;0&#39;</span> <span class="o">&lt;=</span> <span class="o">*</span><span class="n">fmt</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="n">fmt</span> <span class="o">&lt;=</span> <span class="sc">&#39;9&#39;</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="n">fmt</span> <span class="o">!=</span> <span class="sc">&#39;\0&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="n">width</span> <span class="o">*=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">width</span> <span class="o">+=</span> <span class="o">*</span><span class="n">fmt</span> <span class="o">-</span> <span class="sc">&#39;0&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">fmt</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="cm">/* check for long */</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.4: Your code here. (7/8) */</span>
+</span></span><span class="line"><span class="cl">		<span class="n">long_flag</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">fmt</span> <span class="o">==</span> <span class="sc">&#39;l&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="n">long_flag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">fmt</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span></code></pre></div><p>之后根据 specifier 判断输出类型。不同的输出类型有不同的函数。感兴趣的可以深入研究。算法比较基本。</p>
+<p>最后还有一个输出 <code>%d</code> 类型的部分需要填写。唯一有不同的地方是需要根据正负号设置 <code>print_num</code> 的 <code>neg_flag</code> 参数。</p>
+<h2 id="五编写-readelf-工具">五、编写 readelf 工具<a hidden class="anchor" aria-hidden="true" href="#五编写-readelf-工具">#</a></h2>
+<p>本实验的还有一个和内核关系不大的内容，需要自己编写一个读取 elf 文件头的工具。该程序的相关代码在 tools/readelf 文件夹中。</p>
+<p>程序的入口在 tools/readelf/main.c 文件中。<code>main</code> 函数首先判断参数是否合法，随后</p>
+<ol>
+<li>打开文件</li>
+<li>获取文件大小</li>
+<li>将文件内容读取到内存中</li>
+<li>调用 <code>readelf</code> 函数进行处理</li>
+</ol>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;Usage: %s &lt;elf-file&gt;</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="n">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="o">=</span> <span class="nf">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#34;rb&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">fp</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">perror</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="nf">fseek</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">SEEK_END</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">perror</span><span class="p">(</span><span class="s">&#34;fseek&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">goto</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">int</span> <span class="n">fsize</span> <span class="o">=</span> <span class="nf">ftell</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">fsize</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">perror</span><span class="p">(</span><span class="s">&#34;ftell&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">goto</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kt">char</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="n">fsize</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">p</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">perror</span><span class="p">(</span><span class="s">&#34;malloc&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">goto</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="nf">fseek</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">SEEK_SET</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">perror</span><span class="p">(</span><span class="s">&#34;fseek&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">goto</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="nf">fread</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">fsize</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">perror</span><span class="p">(</span><span class="s">&#34;fread&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">goto</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="n">p</span><span class="p">[</span><span class="n">fsize</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nf">readelf</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">fsize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nl">err</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">fclose</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>值得注意的是异常处理使用到了 <code>goto</code> 语句。</p>
+<p><code>readelf</code> 函数是功能的主要实现函数，也是我们需要补全的部分。首先，将传入的 <code>binary</code> 指针转换为 elf 格式结构体的指针。c 语言中通过结构体实现二进制内容的划分。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">readelf</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">binary</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">Elf32_Ehdr</span> <span class="o">*</span><span class="n">ehdr</span> <span class="o">=</span> <span class="p">(</span><span class="n">Elf32_Ehdr</span> <span class="o">*</span><span class="p">)</span><span class="n">binary</span><span class="p">;</span>
+</span></span></code></pre></div><p>随后判断文件是否是 elf 格式。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">	<span class="c1">// Check whether `binary` is a ELF file.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nf">is_elf_format</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">size</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">fputs</span><span class="p">(</span><span class="s">&#34;not an elf file</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">stderr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></div><p>其中 <code>is_elf_format</code> 函数通过文件大小和魔数来进行判断</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">is_elf_format</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">binary</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">Elf32_Ehdr</span> <span class="o">*</span><span class="n">ehdr</span> <span class="o">=</span> <span class="p">(</span><span class="n">Elf32_Ehdr</span> <span class="o">*</span><span class="p">)</span><span class="n">binary</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="n">size</span> <span class="o">&gt;=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">Elf32_Ehdr</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">ehdr</span><span class="o">-&gt;</span><span class="n">e_ident</span><span class="p">[</span><span class="n">EI_MAG0</span><span class="p">]</span> <span class="o">==</span> <span class="n">ELFMAG0</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">	       <span class="n">ehdr</span><span class="o">-&gt;</span><span class="n">e_ident</span><span class="p">[</span><span class="n">EI_MAG1</span><span class="p">]</span> <span class="o">==</span> <span class="n">ELFMAG1</span> <span class="o">&amp;&amp;</span> <span class="n">ehdr</span><span class="o">-&gt;</span><span class="n">e_ident</span><span class="p">[</span><span class="n">EI_MAG2</span><span class="p">]</span> <span class="o">==</span> <span class="n">ELFMAG2</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">	       <span class="n">ehdr</span><span class="o">-&gt;</span><span class="n">e_ident</span><span class="p">[</span><span class="n">EI_MAG3</span><span class="p">]</span> <span class="o">==</span> <span class="n">ELFMAG3</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>回到 <code>readelf</code> 函数，我们希望读取节表（section table）的内容。首先要确定节表的位置、节表头的数量和大小。<code>Elf32_Ehdr</code> 结构体中有 <code>e_shoff</code> 用来记录节表位置相对于 elf 整体地址的偏移量。另有 <code>e_shnum</code>、<code>e_shentsize</code> 分别表示节表的数量和大小。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">	<span class="c1">// Get the address of the section table, the number of section headers and the size of a
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// section header.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">sh_table</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="n">Elf32_Half</span> <span class="n">sh_entry_count</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="n">Elf32_Half</span> <span class="n">sh_entry_size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Exercise 1.1: Your code here. (1/2) */</span>
+</span></span><span class="line"><span class="cl">	<span class="n">sh_table</span> <span class="o">=</span> <span class="n">binary</span> <span class="o">+</span> <span class="n">ehdr</span><span class="o">-&gt;</span><span class="n">e_shoff</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="n">sh_entry_count</span> <span class="o">=</span> <span class="n">ehdr</span><span class="o">-&gt;</span><span class="n">e_shnum</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="n">sh_entry_size</span> <span class="o">=</span> <span class="n">ehdr</span><span class="o">-&gt;</span><span class="n">e_shentsize</span><span class="p">;</span>
+</span></span></code></pre></div><p>之后我们遍历所有的节表，每个节表头的地址由节表头地址加上多个节表头的大小得到 <code>sh_table + i * sh_entry_size</code>。我们将其转化为节表头结构体的指针，获取该节表头所对应的节的地址 <code>addr = shdr-&gt;sh_addr</code>。最后输出结果。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">	<span class="c1">// For each section header, output its index and the section address.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// The index should start from 0.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">sh_entry_count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">const</span> <span class="n">Elf32_Shdr</span> <span class="o">*</span><span class="n">shdr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">addr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Exercise 1.1: Your code here. (2/2) */</span>
+</span></span><span class="line"><span class="cl">		<span class="n">shdr</span> <span class="o">=</span> <span class="p">(</span><span class="n">Elf32_Shdr</span><span class="o">*</span><span class="p">)(</span><span class="n">sh_table</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">sh_entry_size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="n">addr</span> <span class="o">=</span> <span class="n">shdr</span><span class="o">-&gt;</span><span class="n">sh_addr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">		<span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d:0x%x</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">addr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>在其中唯一需要明确的是，节表存储了节的相关信息，但并不是节本身。如下的图片就很好地说明了节表和节的关系。节是文件中间的部分，而节表的位置则在文件的最后，section header table 的位置。程序表的内容也与节表类似。</p>
+<p><img loading="lazy" src="elf.png" alt="elf"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/mos/">MOS</a></li>
+      <li><a href="https://wokron.github.io/tags/buaa/">BUAA</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/hyphae-scale-math-model/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>基于概率模型的蘑菇菌丝规模分析</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/translate-using-transformer/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>使用 Transformer 进行机器翻译</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share BUAA-OS 实验笔记之 Lab1 on x"
+            href="https://x.com/intent/tweet/?text=BUAA-OS%20%e5%ae%9e%e9%aa%8c%e7%ac%94%e8%ae%b0%e4%b9%8b%20Lab1&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f&amp;hashtags=MOS%2cBUAA">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share BUAA-OS 实验笔记之 Lab1 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f&amp;title=BUAA-OS%20%e5%ae%9e%e9%aa%8c%e7%ac%94%e8%ae%b0%e4%b9%8b%20Lab1&amp;summary=BUAA-OS%20%e5%ae%9e%e9%aa%8c%e7%ac%94%e8%ae%b0%e4%b9%8b%20Lab1&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share BUAA-OS 实验笔记之 Lab1 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f&title=BUAA-OS%20%e5%ae%9e%e9%aa%8c%e7%ac%94%e8%ae%b0%e4%b9%8b%20Lab1">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share BUAA-OS 实验笔记之 Lab1 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share BUAA-OS 实验笔记之 Lab1 on whatsapp"
+            href="https://api.whatsapp.com/send?text=BUAA-OS%20%e5%ae%9e%e9%aa%8c%e7%ac%94%e8%ae%b0%e4%b9%8b%20Lab1%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share BUAA-OS 实验笔记之 Lab1 on telegram"
+            href="https://telegram.me/share/url?text=BUAA-OS%20%e5%ae%9e%e9%aa%8c%e7%ac%94%e8%ae%b0%e4%b9%8b%20Lab1&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share BUAA-OS 实验笔记之 Lab1 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=BUAA-OS%20%e5%ae%9e%e9%aa%8c%e7%ac%94%e8%ae%b0%e4%b9%8b%20Lab1&u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-os-lab1%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

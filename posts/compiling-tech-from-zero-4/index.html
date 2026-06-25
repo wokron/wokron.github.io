@@ -1,0 +1,2758 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>从零开始的编译原理（4）：语法分析与下推自动机 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="自动机, 数学, 文法理论">
+<meta name="description" content="一、前言 从这个精神王国的圣餐杯里，
+他的无限性给他翻涌起泡沫。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识
+二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。
+然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。
+举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \rightarrow (S)S | \epsilon $$ 其中规则 $S \rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。
+而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。
+不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：
+可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。
+三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/compiling-tech-from-zero-4/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/compiling-tech-from-zero-4/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="从零开始的编译原理（4）：语法分析与下推自动机" />
+<meta property="og:description" content="一、前言 从这个精神王国的圣餐杯里，
+他的无限性给他翻涌起泡沫。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识
+二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。
+然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。
+举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \rightarrow (S)S | \epsilon $$ 其中规则 $S \rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。
+而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。
+不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：
+可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。
+三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/compiling-tech-from-zero-4/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-02-15T14:14:06+08:00" />
+<meta property="article:modified_time" content="2024-02-15T14:14:06+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="从零开始的编译原理（4）：语法分析与下推自动机"/>
+<meta name="twitter:description" content="一、前言 从这个精神王国的圣餐杯里，
+他的无限性给他翻涌起泡沫。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识
+二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。
+然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。
+举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \rightarrow (S)S | \epsilon $$ 其中规则 $S \rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。
+而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。
+不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：
+可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。
+三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "从零开始的编译原理（4）：语法分析与下推自动机",
+      "item": "https://wokron.github.io/posts/compiling-tech-from-zero-4/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "从零开始的编译原理（4）：语法分析与下推自动机",
+  "name": "从零开始的编译原理（4）：语法分析与下推自动机",
+  "description": "一、前言 从这个精神王国的圣餐杯里，\n他的无限性给他翻涌起泡沫。\n—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识\n二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。\n然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。\n举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \\rightarrow (S)S | \\epsilon $$ 其中规则 $S \\rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。\n而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。\n不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：\n可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。\n三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\\Sigma = \\{`(`, `)`, `[`, `]`, `\\{`, `\\}`\\}$，对给定的括号文法 $G$，对于任意 $s \\in \\Sigma^*$，给出一个算法，判断是否有 $s \\in L(G)$（即 $s$ 是否被文法 $G$ 接受）。",
+  "keywords": [
+    "自动机", "数学", "文法理论"
+  ],
+  "articleBody": "一、前言 从这个精神王国的圣餐杯里，\n他的无限性给他翻涌起泡沫。\n—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识\n二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。\n然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。\n举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \\rightarrow (S)S | \\epsilon $$ 其中规则 $S \\rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。\n而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。\n不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：\n可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。\n三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\\Sigma = \\{`(`, `)`, `[`, `]`, `\\{`, `\\}`\\}$，对给定的括号文法 $G$，对于任意 $s \\in \\Sigma^*$，给出一个算法，判断是否有 $s \\in L(G)$（即 $s$ 是否被文法 $G$ 接受）。\n很明显，括号文法 $G$ 是 2 型文法，而我们又是如何解决这一问题的呢？由于左括号一定要与右括号匹配，因此我们要做的就是记录左括号的嵌套状态，并在读入右括号时尝试与其匹配。又由于嵌套具有后进先出的特点，所以我们会使用栈结构记录嵌套状态。具体的实现如下：\ndef is_valid(s: str): match_cases = {'(': ')', '[': ']', '{':'}'} def is_match(left: str, right: str): return match_cases[left] == right stack = [] for ch in s: if ch in match_cases.keys(): stack.append(ch) else: if len(stack) == 0 or not is_match(stack.pop(), ch): return False return len(stack) == 0 从具体到一般，栈结构是处理嵌套的普遍方法。因而从 3 型文法到 2 型文法，我们需要做的就是在有穷自动机之外增加一个堆栈结构，使其能够存取当前状态之外的其他信息。这样得到的自动机称为下推自动机（Pushdown Automaton, PDA）。\n（2）下推自动机的介绍 非正式地说，下推自动机就是一个增加了堆栈的有穷自动机。而也因为增加了堆栈结构，下推自动机的状态转移取决于读入符号、当前状态和栈顶元素三部分；同时在转移时，下推自动机也可以同时操作堆栈，执行入栈出栈操作。\n下推自动机的结构如下图所示，包括了输入符号序列 input tape、转移关系表 finite control、状态 state 以及堆栈 stack。\n在运行时，下推自动机会按顺序读入符号。读入符号之后查找转移关系表，通过读入符号、当前状态和栈顶元素索引得到转移到的目标状态和要进行的堆栈操作。其中堆栈操作包括将某符号入栈、出栈或者不进行操作。在最后，下推自动机读入所有符号，并根据当前状态判断是否接受该符号串。\n与有穷自动机类似，根据 ”在给定读入符号、当前状态和栈顶元素下，是否允许存在多种不同的可选操作“ 可以将下推自动机分为不确定的下推自动机（NPDA）和确定的下推自动机（DPDA）。然而又不同于有穷自动机，NPDA 和 DPDA 并不等价。NPDA 能够识别所有 2 型文法所定义的语言（即 2 型语言），但 DPDA 却只能识别确定性上下文无关语言（Deterministic Context-free Language, DCFL）。这是 2 型语言的一个真子集。\n尽管 NPDA 能够识别 2 型语言，但在编译领域中我们只使用 DPDA 实现语法分析器。并且为了语法分析器的实用性，我们还需要对其进行更加精巧的设计。\n因为下推自动机的理论与真正实用的语法分析器的关系不大，所以本文就不再介绍下推自动机的理论了。\n四、语法分析的一般方法 所有的语法分析器都是 DPDA。但根据其设计思路的不同，又分为自顶向下分析器（Top-Down Parsers）和自底向上分析器（Bottom-up Parsers）。两类分析器所使用的解析方法分别称自顶向下分析和自底向上分析。\n（1）自顶向下分析 自顶向下分析利用了文法理论中的 “推导“ 的视角。将句子的解析视为从文法开始符号起，不断运用规则推导从而生成与要解析的句子相同的句子的过程。原理是若 $Z \\xRightarrow[G]{+} S$，则 $S \\in L(G[Z])$，否则 $S \\notin L(G[Z])$。\n自顶向下分析器的栈中存储的是当前还未匹配的句型后缀。在每一步中，分析器都会检查栈顶符号以及输入串首部符号，并 ”按照一定方法“ 选择采取推导、匹配、接受或拒绝动作。其中：\n推导：指使用文法中某条规则将符号栈顶的非终结符推导为规则右侧的符号序列，并按从右到左的顺序入栈。 匹配：指符号栈顶的终结符和输入串首部的终结符相同时，读入输入串首部终结符并使栈顶终结符出栈。这一操作意味着当前句型的终结符前缀增加了一个终结符。 接受：指当读入输入串中所有符号后，判断符号栈是否为空。如为空则接受该输入串。 拒绝：指当出现无法推导的情况时，判断拒绝该输入串。 我们还以之前定义的括号文法 $G[S]$ 为例，查看输入符号串 $(()(()))$ 的自顶向下分析过程。如下表所示：\n需要注意：\n下面的符号栈的底部位于最左侧，因此符号栈中的符号顺序是从右到左，与正常的书写顺序相反。 我们在符号序列的最右侧加上 $\\#$ 表示到达符号序列的末尾。 符号栈 输入串 动作 $\\#S$ $(()(()))\\#$ 推导 $S \\rightarrow (S)S$ $\\#S)S($ $(()(()))\\#$ 匹配 $\\#S)S$ $()(()))\\#$ 推导 $S \\rightarrow (S)S$ $\\#S)S)S($ $()(()))\\#$ 匹配 $\\#S)S)S$ $)(()))\\#$ 推导 $S \\rightarrow \\epsilon$ $\\#S)S)$ $)(()))\\#$ 匹配 $\\#S)S$ $(()))\\#$ 推导 $S \\rightarrow (S)S$ $\\#S)S)S($ $(()))\\#$ 匹配 $\\#S)S)S$ $()))\\#$ 推导 $S \\rightarrow (S)S$ $\\#S)S)S)S($ $()))\\#$ 匹配 $\\#S)S)S)S$ $)))\\#$ 推导 $S \\rightarrow \\epsilon$ $\\#S)S)S)$ $)))\\#$ 匹配 $\\#S)S)S$ $))\\#$ 推导 $S \\rightarrow \\epsilon$ $\\#S)S)$ $))\\#$ 匹配 $\\#S)S$ $)\\#$ 推导 $S \\rightarrow \\epsilon$ $\\#S)$ $)\\#$ 匹配 $\\#S$ $\\#$ 推导 $S \\rightarrow \\epsilon$ $\\#$ $\\#$ 接受 当然，上表虽然表现了自顶向下分析的一般方法，但却未指出何时应当选取何种规则进行推导。在具体的自顶向下分析方法中，则会处理这些并未明确的内容。在本文后续将会介绍常用的自顶向下方法 LL(1) 分析法。\n（2）自底向上分析 自底向上分析则利用了文法理论中的 “归约“ 的视角。将句子的解析视为从句子开始，不断运用规则归约句型成分，最终归约为文法开始符号的过程。原理是若 $Z \\xLeftarrow[G]{+} S$，则 $S \\in L(G[Z])$，否则 $S \\notin L(G[Z])$。\n和自顶向下时类似，在自底向上分析器运行的每一步中，分析器都会检查栈顶符号以及输入串首部符号，并 ”按照一定方法“ 选择采取移进、归约、接受或拒绝动作。其中：\n移进：指读入输入串的一个符号并将其入栈。移进的过程是寻找句柄的过程。 归约：指栈顶部的一部分符号串被识别为句柄时，按照某条规则进行归约，并将归约的结果入栈。 符号栈顶的终结符和输入串首部的终结符相同时，读入输入串首部终结符并使栈顶终结符出栈。这一操作意味着当前句型的终结符前缀增加了一个终结符。 接受：指当读入输入串中所有符号后，判断符号栈中是否只有单一开始符号。如是则接受该输入串。 拒绝：指当出现无法归约的情况时，判断拒绝该输入串。 我们还使用上一小节的例子，只不过这次展示自底向上分析的一般过程：\n符号栈 输入串 动作 $\\#$ $(()(()))\\#$ 移进 $\\#($ $()(()))\\#$ 移进 $\\#(($ $)(()))\\#$ 归约 $\\epsilon \\leftarrow S$ $\\#((S$ $)(()))\\#$ 移进 $\\#((S)$ $(()))\\#$ 移进 $\\#((S)($ $()))\\#$ 移进 $\\#((S)(($ $)))\\#$ 归约 $\\epsilon \\leftarrow S$ $\\#((S)((S$ $)))\\#$ 移进 $\\#((S)((S)$ $))\\#$ 归约 $\\epsilon \\leftarrow S$ $\\#((S)((S)S$ $))\\#$ 归约 $(S)S \\leftarrow S$ $\\#((S)(S$ $))\\#$ 移进 $\\#((S)(S)$ $)\\#$ 归约 $\\epsilon \\leftarrow S$ $\\#((S)(S)S$ $)\\#$ 归约 $(S)S \\leftarrow S$ $\\#((S)S$ $)\\#$ 归约 $(S)S \\leftarrow S$ $\\#(S$ $)\\#$ 移进 $\\#(S)$ $\\#$ 归约 $\\epsilon \\leftarrow S$ $\\#(S)S$ $\\#$ 归约 $(S)S \\leftarrow S$ $\\#S$ $\\#$ 接受 根据文法树，我们当然知道何时应该移进、何时可以归约，但是如何以形式化的方法识别可归约成分，却是一个难题。不同的具体的自底向上分析方法采用不同的策略解决这一问题。在后面我们便会介绍常用的两种自底向上分析方法：算符优先分析法和 LR 分析法。\n五、LL(1) 分析法 LL(1) 分析法是实现自顶向下分析的一种方法。所谓 LL，指的是该方法 “从左向右（Left to Right）扫描输入符号串，并产生句子的最左推导（Leftmost Derivation）”。而括号中的 1 则指该方法在一步中只向前看一个输入符号。\n推广来看，还有向前看 k 个符号的分析法 LL(k)。其原理与 LL(1) 类似，但实现起来更加复杂，因此并不介绍。\n（1）LL(1) 分析算法和分析表 虽然在上一节中我们已经稍微提到了自顶向下分析法的流程，但是这里我们还是给出更详细的算法描述：\n除了符号栈，在一个 LL(1) 分析器中还会维护一个分析表 $M$，其每一行代表一个非终结符，每一列代表一个终结符或 $\\#$ 符号。表中元素则是文法规则或是留空以表示不存在匹配的规则。\n在最开始，将符号 $\\#$ 以及文法开始符号 $S$ 依次推入符号栈中。 在分析的某一步中： 如果栈顶的符号为非终结符,令当前栈顶非终结符为 $A$，输入串首部符号为 $a$。此时查找分析表 $M$。取规则 $M[A, a]$。如果此处不存在规则，则进行错误处理（拒绝）。如果存在规则，将 $A$ 从符号栈中弹出，并将规则右侧符号按从右到左的顺序依次压入符号栈（推导）。 如果是终结符,令当前栈顶终结符为 $a'$，输入串首部符号为 $a$。若 $a' = a \\neq \\#$，则将 $A$ 从栈中弹出，并读入符号 $a$（匹配）。若 $a' = a \\neq \\#$，说明输入串完全匹配，说明分析器成功接受了该输入串，算法结束（接受）。若 $a' \\ne a$，则进行错误处理（拒绝）。 不断重复步骤 2，直到算法结束。 根据算法，我们所要做的就是找到分析表 $M$ 的构造方法。由于在推导时，我们将规则右侧的符号按从右侧到左的顺序压入栈中，因此位于栈顶的永远是最左侧的符号。故而分析表项 $M[A,a]$ 中的规则实际上的是 “能使非终结符 $A$ 最终推导出的句子中最左侧终结符为 $a$” 的规则。\n更形式地说，对于规则 $A \\rightarrow \\alpha, \\alpha \\in V^*$，定义 $\\alpha$ 最终能推导出的句子中最左侧终结符集合 $\\text{FIRST}(\\alpha) = \\{a | \\alpha \\xRightarrow{*} a..., a \\in V_t\\}$。那么若终结符 $a \\in \\text{FIRST}(\\alpha)$，则有 $M[A, a] = A \\rightarrow \\alpha$。\n但是如果选择该规则后最终能够推导出空符号串 $\\epsilon$（$\\epsilon \\in \\text{FIRST}(\\alpha)$），那么还需要特殊考虑。因为这种情况意味着选用该规则后可以 “跳过” 当前的非终结符 $A$，此时输入串中的首部符号应当与在 $A$ 之后出现的终结符进行匹配。\n因此对于规则 $A \\rightarrow \\alpha, \\alpha \\in V^*$，我们定义在非终结符 $A$ 之后可能出现的终结符集合 $\\text{FOLLOW}(A) = \\{a | S \\xRightarrow{*} ...Aa..., a \\in V_t \\}$。那么若 $\\epsilon \\in \\text{FIRST}(\\alpha)$ 且 $a \\in \\text{FOLLOW}(A)$，则有 $M[A, a] = A \\rightarrow \\alpha$。\n特别的，若 $S \\xRightarrow{*} ...A$，则规定 $\\# \\in \\text{FOLLOW}(A)$。\n让我们总结一下，$M[A, a] = A \\rightarrow a$ 当且仅当 $a \\in \\text{FIRST}(\\alpha)$ 或 $\\epsilon \\in \\text{FIRST}(\\alpha) \\land a \\in \\text{FOLLOW}(A)$。现在我们得到了分析表 $M$ 的构造方法，接下来就是确定如何计算 $\\text{FIRST}(\\alpha)$ 和 $\\text{FOLLOW}(A)$。\n（2）FIRST 集的构造 规则右侧 $\\alpha = A_1A_2...A_n$ 为一符号串，因此在构造 $\\text{FIRST}(\\alpha)$ 之前我们可以先求出组成 $\\alpha$ 的每一个符号 $A_i$ 的 FIRST 集合 $\\text{FIRST}(A_i)$。\n因为对于规则 $A \\rightarrow B...$，有 $\\text{FIRST}(B) - \\{\\epsilon\\} \\subset \\text{FIRST}(A)$。我们可以使用一个递归算法求得 $\\text{FIRST}(A_i)$：\n若 $A_i \\in V_t \\cup \\{\\epsilon\\}$，则 $\\text{FIRST}(A_i) = \\{A_i\\}$\n若 $A_i \\in V_n$，则对于每条规则 $A_i \\rightarrow A_1A_2... A_n$，\n有 $\\text{FIRST}(A_1) - \\{\\epsilon\\} \\subset \\text{FIRST}(A)$。 若 $\\epsilon \\in \\text{FIRST}(A_1)$，则有 $\\text{FIRST}(A_2) - \\{\\epsilon\\} \\subset \\text{FIRST}(A)$。 若 $\\epsilon \\in \\text{FIRST}(A_2)$，则有 $\\text{FIRST}(A_3) - \\{\\epsilon\\} \\subset \\text{FIRST}(A)$。 若… 以此类推，直到找到 $i \\le n$，$\\epsilon \\notin \\text{FIRST}(A_i)$，此时停止。而如果对于规则中最后一个符号 $A_n$ 依旧有 $\\epsilon \\in \\text{FIRST}(A_n)$，则有 $\\epsilon \\in \\text{FIRST}(A)$。\n此时对于 $\\alpha = A_1A_2...A_n$，我们就可以采用和上述算法中步骤 2 类似的方法求得 $\\text{FIRST}(\\alpha)$，这里不再赘述。\n我们可以用一个例子演示上述算法。对于如下文法 $G[E]$： $$ \\begin{align*} E \u0026\\rightarrow TE' \\\\ E' \u0026\\rightarrow +TE' | \\epsilon \\\\ T \u0026\\rightarrow FT' \\\\ T' \u0026\\rightarrow *FT' | \\epsilon \\\\ F \u0026\\rightarrow (E) | i \\end{align*} $$ 我们求其 FIRST 集。\n算法是递归过程，我们可以将其转换为迭代，先求可以直接得出的 FIRST 集。对于本例来说，我们从 $F$ 开始。\n$F$ 的两条规则都以终结符开头，因此直接得到 FIRST 集。\n非终结符 FIRST $E$ $\\{\\}$ $E'$ $\\{\\}$ $T$ $\\{\\}$ $T'$ $\\{\\}$ $F$ $\\{(, i\\}$ 之后是 $T'$，其第一条规则以终结符开头，第二条为 $\\epsilon$，同样直接得到 FIRST 集。\n非终结符 FIRST $E$ $\\{\\}$ $E'$ $\\{\\}$ $T$ $\\{\\}$ $T'$ $\\{*, \\epsilon \\}$ $F$ $\\{(, i\\}$ 之后是 $T$。由于规则以非终结诶符 $F$ 开头，因此需要求 $\\text{FIRST}(F)$。因为 $\\epsilon \\notin \\text{FIRST}(F)$，所以不需要再求 $T'$ 的 FIRST 集。\n非终结符 FIRST $E$ $\\{\\}$ $E'$ $\\{\\}$ $T$ $\\{(, i\\}$ $T'$ $\\{*, \\epsilon \\}$ $F$ $\\{(, i\\}$ 之后是 $E'$。\n非终结符 FIRST $E$ $\\{\\}$ $E'$ $\\{+, \\epsilon \\}$ $T$ $\\{(, i\\}$ $T'$ $\\{*, \\epsilon \\}$ $F$ $\\{(, i\\}$ 最后是 $E$。同样需要求 $\\text{FIRST}(T)$。\n非终结符 FIRST $E$ $\\{(, i\\}$ $E'$ $\\{+, \\epsilon \\}$ $T$ $\\{(, i\\}$ $T'$ $\\{*, \\epsilon \\}$ $F$ $\\{(, i\\}$ 得到各非终结符的 FIRST 集后，我们就可以求得各规则右侧符号串的 FIRST 集了。\n$$ \\begin{align*} \\text{FIRST}(TE') \u0026= \\text{FIRST}(T) - \\{\\epsilon\\} = \\{(, i\\} \\\\ \\text{FIRST}(+TE') \u0026= \\{+\\} \\\\ \\text{FIRST}(\\epsilon) \u0026= \\{\\epsilon\\} \\\\ \\text{FIRST}(FT') \u0026= \\text{FIRST}(F) - \\{\\epsilon\\} = \\{(, i\\} \\\\ \\text{FIRST}(*FT') \u0026= \\{*\\} \\\\ \\text{FIRST}((E)) \u0026= \\{(\\} \\\\ \\text{FIRST}(i) \u0026= \\{i\\} \\end{align*} $$ （3）FOLLOW 集的构造 FOLLOW 集的构造要在 FIRST 集之后。因为我们要得到的是非终结符 “之后” 可能出现的终结符。所以实际上要求的就是非终结符之后的子符号串的 FIRST 集。\n按照这一思路，我们就可以得到构造 FOLLOW 集的算法：\n对于开始符号 $S$，有 $\\# \\in \\text{FOLLOW}(S)$。 在每一步迭代中，对于非终结符 $B$，若有 $A \\rightarrow \\alpha B \\beta$ 其中 $\\alpha, \\beta \\in V^* \\cup \\{\\epsilon\\}$，则有 $\\text{FIRST}(\\beta) - \\{\\epsilon\\} \\subset \\text{FOLLOW}(B)$。若 $\\epsilon \\in \\text{FIRST}(\\beta)$，则还有 $\\text{FOLLOW}(A) \\subset \\text{FOLLOW}(B)$。 重复步骤 2，直到所有非终结符的 FOLLOW 集都不再变化。 对于规则 $A \\rightarrow \\alpha B \\beta$，由于非终结符 $B$ 之后的子符号串 $\\beta$ 也可能推出 $\\epsilon$。此时规则等同于 $A \\rightarrow \\alpha B$，在 $A$ 之后可能出现的终结符也同样是在 $B$ 之后可能出现的终结符。\n也正因为上面的特点，FOLLOW 集的构造算法只用一次迭代不一定能得到最终结果。必须多次迭代，使得 FOLLOW 集从规则的左侧 “传播” 到右侧。\n我们还以前一小节中的文法 $G[E]$ 为例。\n首先进行初始化，将 $\\#$ 加入 $\\text{FOLLOW}(E)$ 中。\n非终结符 FIRST FOLLOW $E$ $\\{(, i\\}$ $\\{\\#\\}$ $E'$ $\\{+, \\epsilon \\}$ $\\{\\}$ $T$ $\\{(, i\\}$ $\\{\\}$ $T'$ $\\{*, \\epsilon \\}$ $\\{\\}$ $F$ $\\{(, i\\}$ $\\{\\}$ 对于 $E$，其出现在 $F \\rightarrow (E)$ 中，因此 $)$ 位于 FOLLOW 集中。\n非终结符 FIRST FOLLOW $E$ $\\{(, i\\}$ $\\{\\#, )\\}$ $E'$ $\\{+, \\epsilon \\}$ $\\{\\}$ $T$ $\\{(, i\\}$ $\\{\\}$ $T'$ $\\{*, \\epsilon \\}$ $\\{\\}$ $F$ $\\{(, i\\}$ $\\{\\}$ 对于 $E'$，其出现在 $E \\rightarrow TE'$ 和 $E' \\rightarrow + TE'$ 中。我们只需求 $\\text{FOLLOW}(E)$。\n非终结符 FIRST FOLLOW $E$ $\\{(, i\\}$ $\\{\\#, )\\}$ $E'$ $\\{+, \\epsilon \\}$ $\\{\\#, )\\}$ $T$ $\\{(, i\\}$ $\\{\\}$ $T'$ $\\{*, \\epsilon \\}$ $\\{\\}$ $F$ $\\{(, i\\}$ $\\{\\}$ 对于 $T$，其出现在 $E \\rightarrow TE'$ 和 $E' \\rightarrow +TE'$ 中。需要求 $FIRST(E')$。并且由于 $\\epsilon \\in FIRST(E')$，因此还要求 $\\text{FOLLOW}(E)$。\n非终结符 FIRST FOLLOW $E$ $\\{(, i\\}$ $\\{\\#, )\\}$ $E'$ $\\{+, \\epsilon \\}$ $\\{\\#, )\\}$ $T$ $\\{(, i\\}$ $\\{\\#,),+\\}$ $T'$ $\\{*, \\epsilon \\}$ $\\{\\}$ $F$ $\\{(, i\\}$ $\\{\\}$ 对于 $T'$，其出现在 $T \\rightarrow FT'$ 和 $T' \\rightarrow *FT'$ 中。我们只需求 $\\text{FOLLOW}(T)$。\n非终结符 FIRST FOLLOW $E$ $\\{(, i\\}$ $\\{\\#, )\\}$ $E'$ $\\{+, \\epsilon \\}$ $\\{\\#, )\\}$ $T$ $\\{(, i\\}$ $\\{\\#,),+\\}$ $T'$ $\\{*, \\epsilon \\}$ $\\{\\#,),+\\}$ $F$ $\\{(, i\\}$ $\\{\\}$ 对于 $F$，其出现在 $T \\rightarrow FT'$ 和 $T' \\rightarrow *FT'$ 中。我们需要求 $\\text{FIRST}(T')$，并且由于 $\\epsilon \\in \\text{FIRST}(T')$，我们还需要求 $\\text{FOLLOW}(T)$。\n非终结符 FIRST FOLLOW $E$ $\\{(, i\\}$ $\\{\\#, )\\}$ $E'$ $\\{+, \\epsilon \\}$ $\\{\\#, )\\}$ $T$ $\\{(, i\\}$ $\\{\\#,),+\\}$ $T'$ $\\{*, \\epsilon \\}$ $\\{\\#,),+\\}$ $F$ $\\{(, i\\}$ $\\{*，\\#,),+\\}$ 重复此过程，发现 FOLLOW 集不再变化。停止迭代。\n（4）LL(1) 的局限性 根据上面构造的 FIRST 集和 FOLLOW 集，并结合在前面提到的构造分析表算法，我们可以构造文法 $G[E]$ 的 LL(1) 分析表。这里就直接给出了。\n$i$ $+$ $*$ $($ $)$ $\\#$ $E$ $E \\rightarrow TE'$ $E \\rightarrow TE'$ $E'$ $E' \\rightarrow +TE'$ $E' \\rightarrow \\epsilon$ $E' \\rightarrow \\epsilon$ $T$ $T \\rightarrow FT'$ $T \\rightarrow FT'$ $T'$ $T' \\rightarrow \\epsilon$ $T' \\rightarrow *FT'$ $T' \\rightarrow \\epsilon$ $T' \\rightarrow \\epsilon$ $F$ $F \\rightarrow i$ $F \\rightarrow (E)$ 可以看到，此时的分析表 $M$ 中每一个位置最多只有一条规则。这意味着对于任意的符号栈和输入串，要么找不到规则，语法分析器不接受该输入串；要么找到一条规则，直接使用该规则进行推导。而不存在推导时出现歧义的情况。\n而如果分析表中的一个位置出现多于一条规则，则不能使用 LL(1) 分析法进行分析。设这时出现在同一位置 $M[A, a]$ 的两条规则分别为 $A \\rightarrow \\alpha$ 和 $A \\rightarrow \\beta$。那么一定满足下面两个条件之一：\n$a \\in \\text{FIRST}(\\alpha) \\cap \\text{FIRST}(\\beta)$ $\\epsilon \\in \\text{FIRST}(\\beta)$ 且 $a \\in \\text{FIRST}(\\alpha) \\cap \\text{FOLLOW}(A)$ 我们定义可以构造出无歧义的 LL(1) 分析器的文法称为 LL(1) 文法。那么将上面的两个条件取逆，我们就可以得到文法 $G$ 是 LL(1) 文法的充要条件：对于 $G$ 的每一个非终结符 $A$ 的任意两条规则 $A \\rightarrow \\alpha | \\beta$，下面两条件成立\n$\\text{FIRST}(\\alpha) \\cap \\text{FIRST}(\\beta) = \\emptyset$ 若 $\\epsilon \\in \\text{FIRST}(\\beta)$，则 $\\text{FIRST}(\\alpha) \\cap \\text{FOLLOW}(A) = \\emptyset$ 很明显，由于增加了额外的限制条件，所以 LL(1) 文法的集合是上下文无关文法的集合的真子集。这与下推自动机的结论吻合。\n关于 LL(1) 的局限性，还有另一个结论。在第一篇文章中我们介绍了递归规则，指的是非终结符推出其自身的规则。如果递归规则是类似下面的形式 $A \\rightarrow A...$，即非终结符出现在推出的符号串的最左侧，则我们称其为左递归规则。可以证明，如果文法 $G$ 中存在左递归规则，则其一定不是 LL(1) 文法。\n对此我们可以给出一个简单的证明：若文法 $G$ 中存在一条左递归规则 $A \\rightarrow A\\alpha$，则对于非终结符 $A$，必定存在至少一条规则 $A \\rightarrow \\beta$。那么对于 $A \\rightarrow A\\alpha$，有 $\\text{FIRST}(A) = \\text{FIRST}(A\\alpha)$。而对于 $A \\rightarrow \\beta$，又有 $\\text{FIRST}(\\beta) \\subset \\text{FIRST}(A)$。因此有 $\\text{FIRST}(\\beta) \\subset \\text{FIRST}(A\\alpha)$。因此 $\\text{FIRST}(\\beta) \\cap \\text{FIRST}(A\\alpha) = \\text{FIRST}(\\beta) \\ne \\emptyset$，$G$ 不是 LL(1) 文法。\n然而，左递归又是非常普遍的，比如说为了实现从左到右的运算，我们常常会使用类似这样的文法规则： $$ \\begin{align*} A \u0026\\rightarrow A + B | A - B | B \\\\ B \u0026\\rightarrow B * C | B / C | C \\\\ C \u0026\\rightarrow i \\end{align*} $$ 这样的规则能够保证位于更左侧的运算处于更深的文法子树中。这时使用后序遍历访问整棵文法树的顺序就是计算的顺序。\n因而我们可以选择改造文法，消除其中的左递归。有两种方法。\n第一种方法是将文法改为右递归：\n第一步：提取左递归公因子。若有左递归文法 $U \\rightarrow U\\alpha | U \\beta | V$，则改为 $U \\rightarrow U(\\alpha|\\beta) | V$。对本例来说，将文法改造成 $A \\rightarrow A (+ B | - B) | B$ 的形式 第二步：增加间接非终结符 $P'$，将 $P \\rightarrow P\\alpha|\\beta$ 改写为 $P \\rightarrow \\beta P'$ 和 $P' \\rightarrow \\alpha P' | \\epsilon$。对本例来说，可将文法改造为 $A \\rightarrow BA'$ 和 $A' \\rightarrow +BA' | -BA' | \\epsilon$。 我们以规则 $A \\rightarrow A + B | A - B | B$ 为例。首先提取左递归公因子，将其改写为 $A \\rightarrow A (+ B | - B) | B$；之后再增加非终结符 $A'$，改写为 $A \\rightarrow BA'$ 和 $A' \\rightarrow +BA' | -BA' | \\epsilon$。此时我们就将左递归转化为了右递归。\n第二种方法是使用扩展 BNF 范式改写：\n第一步：和第一种方法相同 第二步：使用 $\\{\\}$ 符号，将 $P \\rightarrow P\\alpha|\\beta$ 改写为 $P \\rightarrow \\beta \\{\\alpha\\}$ 我们还以规则 $A \\rightarrow A + B | A - B | B$ 为例。首先同样改写为 $A \\rightarrow A (+ B | - B) | B$；之后使用扩展 BNF 范式改写为 $A \\rightarrow B\\{+B | -B\\}$。\n两种方法都消除了左递归，但也有一些缺陷。第一种方法修改了文法，导致文法树发生改变；第二种方法使用了扩展 BNF 范式，无法根据文法构建 LL(1) 分析表。\n你可能会想，第二种方法不能构建分析表，那又有什么用？其实，虽然我们无法据此构建 “标准的” LL(1) 语法分析器，但却可以在一种更加实用的 LL(1) 分析方法中使用。即就是递归子程序法。\n六、递归子程序法 （1）递归子程序的基本结构 递归子程序法不是另一种自顶向下分析法，而就是 LL(1) 分析法。其和 LL(1) 分析法的唯一区别就是递归子程序法使用程序的函数调用栈作为符号栈。因此递归子程序法相较于标准的 LL(1) 分析法，更适合编程实现。\n递归子程序法不会显式地构造分析表结构，而是将分析表蕴含在程序中。具体来说，递归子程序法需要对文法的每一个非终结符都编写一个分析子程序（即函数），当根据所处的子程序和当前的输入符号预测到要使用某个非终结符去匹配输入串时，就调用该非终结符的分析程序。（而一次调用过程，实际上就相当于非终结符入栈的过程。）\n接下来我们使用伪代码展示递归子程序法的实现细节。首先我们约定一些程序运行的上下文。\n# FIRST sets of symbol strings FIRST: dict[str, set[str]] # FOLLOW sets of non-terminal symbols FOLLOW: dict[str, set[str]] def getsym() -\u003e str: \"\"\" read the next symbol from the input string \"\"\" def error(): \"\"\" raise an error \"\"\" def assert_match(expect: str，actual: str): \"\"\" if the value of `actual` is not equal to `expect`, raise an error \"\"\" FIRST：即规则右侧符号串的 FIRST 集； FOLLOW：即非终结符的 FOLLOW 集； getsym：用于读入下一个符号； error：用于报告解析错误； assert_match：当两符号不相同时报告解析错误。 在此上下文中，在不考虑其他功能（如构建文法树，因为文法树的构建就在文法的推导和归约过程中完成了），只考虑推导过程的情况下，任意非终结符 $A$ 的分析子程序 A 应当为如下形式：\ndef A(sym: str) -\u003e str: \"\"\" function to analyze non-terminal symbol `A` \"\"\" 此时函数 x 传入的参数 sym 是将要进行解析的，属于非终结符 $A$ 的第一个符号（应有 $\\text{sym} \\in \\text{FIRST}(A)$）。而函数的返回值则是解析完 $A$ 之后，第一个不属于 $A$ 的符号（应有 $\\text{ret\\_val} \\in \\text{FOLLOW}(A)$）。这是在编写分析子程序时必须遵守的前置和后置约束。\n而对于相同非终结符 $A$ 的所有规则 $A \\rightarrow x_1 | x_2 |...| x_n$，我们使用 FIRST 集判断当前符号应当适用于那条规则，从而划分到不同的条件分支中。\ndef A(sym: str) -\u003e str: if sym in FIRST[\"x1\"]: pass elif sym in FIRST[\"x2\"]: pass # omit... elif sym in FIRST[\"xn\"]: pass else: error() 特别的，如果有 $\\epsilon \\in \\text{FIRST}(x_i)$，则应当使用非终结符 $A$ 的 FOLLOW 集作为分支的条件：\nif sym in FOLLOW[\"A\"]: pass 在条件分支中，我们实现对规则的解析。对于终结符，我们使用 match 函数判断是否匹配；对于非终结符，则使用其对应的解析函数进行解析。举个例子，假设存在规则 $A \\rightarrow abYcZ$，其中 $a,b,c \\in V_t$ 而 $Y,Z \\in V_n$。那么对该规则进行解析的代码如下所示：\ndef A(sym: str) -\u003e str: # omit... elif sym in FIRST[\"abYcZ\"]: assert_match(\"a\", sym); sym = getsym() # parse 'a' assert_match(\"b\", sym); sym = getsym() # parse 'b' sym = Y(sym) # parse 'Y' assert_match(\"c\", sym); sym = getsym() # parse 'c' sym = Z(sym) # parse 'Z' return sym # omit... 上述代码中，不管是匹配终结符还是解析非终结符，我们都遵循了关于当前符号的前置和后置约束。这使得代码中的每一步都具有规律性。因此在完成解析后，我们也需要返回解析 $A$ 之后第一个不属于 $A$ 的符号。即 Z(sym) 的返回值。\n而若规则为 $A \\rightarrow \\epsilon$，则直接返回即可：\ndef A(sym: str) -\u003e str: # omit... elif sym in FOLLOW[\"A\"]: return sym # omit... 在最后，我们需要判断是否接受该符号串。对于文法 $G[S]$，我们可以在解析的入口函数处使用如下代码判断：\nif S(getsym()) != \"#\": error() 通过上面所描述的方法，对于任意 LL(1) 文法，我们都可以写出其语法分析程序。\n（2）递归子程序法的扩展 递归子程序法具有很强的灵活性。我们可以通过修改代码实现更强大的解析功能。对于 LL(1) 文法，我们必须保证对于任意两条规则 $A \\rightarrow \\alpha | \\beta$，$\\text{FIRST}(\\alpha) \\cap \\text{FIRST}(\\beta) = \\emptyset$。否则对于分析表，这两条规则会占据相同的表项；而对于递归子程序来说，这两条规则会占据相同的条件分支。\ndef A(sym: str) -\u003e str: # omit... elif sym in FIRST[\"alpha\"] and sym in FIRST[\"beta\"]: # A -\u003e alpha \u0026 A -\u003e beta pass # omit... 但是，如果我们能够在当前符号不变的情况下，提前读取一下个或多个符号的话，或许就可以区分出该使用哪一条规则进行分析了。当然，如果从理论上看，我们还需要计算 “SECOND” 乃至 “THIRD” 集。不过在实践中，或许也可以直接从文法中看出两条规则的区别。\n如果我们定义 preread 函数用于提前查看下一个符号\ndef preread() -\u003e str: pass 那么可能可以使用下面的方式区分两规则：\ndef A(sym: str) -\u003e str: # omit... elif sym in FIRST[\"alpha\"] and sym in FIRST[\"beta\"]: nextsym = preread() if nextsym in SECOND[\"alpha\"] # A -\u003e alpha elif nextsym in SECOND[\"beta\"]: # A -\u003e beta else: error() # omit... 注意，不可偷懒将 else 作为 $A \\rightarrow \\beta$ 的条件分支。\n但是，提前读也不能解决左递归问题。不过对于左递归，递归子程序法有更加优雅的解决办法。在上一节中，我们提到可以使用扩展 BNF 范式中的重复符号 $\\{\\}$ 修改左递归规则。对于这种规则，例如 $A \\rightarrow B\\{B\\}$。我们可以使用循环来处理。\ndef A(sym: str) -\u003e str: # omit... elif sym in FIRST[\"B{B}\"]: sym = B(sym) while sym in FIRST[\"B\"]: sym = B(sym) return sym # omit... 说起来，不知道你有没有意识到，标准的文法中是不存在循环（迭代）的，而是通过递归来代替循环。从这一点也可以看出递归和循环的等价性。从中我们还可以得到另一个见解：3 型文法不需要符号栈因为其是 “尾递归” 的；2 型文法需要符号栈因为其不是 “尾递归” 的。\n我们知道，推导或归约的过程就是构建文法树的过程，但是我们并没有考虑到循环。实际上在循环中我们也可以按照消除左递归之前的文法构造文法树，只需要记住先进行解析的是更深的子树即可。\n七、算符优先分析法 （1）例子：中缀表达式转后缀问题 除了判断有效括号，各位初学编程的时候也应该做过 “中缀表达式转后缀” 问题。实际上这也是一个编译问题。因为将中缀表达式的文法树以后序遍历的方式输出，就是后缀表达式。关键的问题就是如何构建中缀表达式的文法树。\n这一问题的标准解法是使用栈。大致思路是对于每一个运算符，为其设定优先级。对于输入表达式，从左到右扫描，如果是数字则直接添加到后缀表达式中；如果是运算符则将所有优先级高于该运算符的运算符弹出并添加到后缀表达式中，再将该运算符入栈；如果是右括号则将栈中左右括号之间的运算符弹出并添加到后缀表达式中。\n看到了栈的存在，应该想到这就是一个简易的语法分析器。而优先级的概念实际上反映了文法树的深度。优先级越高，意味着位于文法树更深的地方（即 “句柄”），应该更先进行归约。从栈中弹出的过程实际上等同于进行归约的过程，所以才会将所有优先级更高的运算符弹出。\n上面的分析实际上表述了算符优先分析法的基本原理：用算符表示规则，用算符间的优先关系表示规则归约的优先关系。\n（2）算符优先分析算法 算符优先分析法是一种自底向上分析法。特点是通过比较算符间的优先级识别 “句柄”，选择采取移进或归约操作。\n需要注意，这里的带引号的 “句柄” 和真正的句柄有一定区别。将在之后说明。\n为了方便表述，我们先定义比较算符间优先级的符号：\n$a$ ⋖ $b$ 指符号 $a$ 的优先级小于 $b$； $a$ ≐ $b$ 指符号 $a$ 的优先级等于 $b$； $a$ ⋗ $b$ 指符号 $a$ 的优先级大于 $b$； 之后我们给出该分析算法的具体步骤：\n在进行算符优先分析之前，我们需要定义终结符间可能的优先级关系，这样的关系我们可以使用一个优先关系矩阵 $M$ 表示。其中的项 $M[a, b]$ 表示终结符 $a$ 和 $b$ 的优先关系。\n在最开始，将符号 $\\#$ 推入符号栈中。 在分析的某一步中，取符号栈从栈顶开始的第一个终结符 $a$ 和输入串首部符号 $b$。如果 $a$ ⋗ $b$，则按照此时 “句柄” 所对应的规则进行归约；如果 $a$ ⋖ $b$ 或 $a$ ≐ $b$ 则读入 $b$ 并压入栈中（移进）；如果 $a$ 和 $b$ 间无法进行比较，则进行错误处理（拒绝）。 不断重复步骤 2，直到读入输入串中所有符号。如果此时符号栈中恰好只剩 $\\#$ 和文法的开始符号，说明接受该输入串，算法结束（接受）；否则进行错误处理（拒绝）。 需要注意，算符优先分析法没有指出要使用哪一条规则进行归约，而只是说此时能够进行归约。\n我们可以举个例子。对于文法 $G[E]$： $$ E \\rightarrow E + E | E * E | (E) | i $$ 很明显，该文法是二义性文法。但是通过指定算符间的优先关系，却也可以实现文法的解析。\n我们直接给出其优先关系矩阵：\n$+$ $*$ $i$ $($ $)$ $\\#$ $+$ ⋗ ⋖ ⋖ ⋖ ⋗ ⋗ $*$ ⋗ ⋗ ⋖ ⋖ ⋗ ⋗ $i$ ⋗ ⋗ ⋗ ⋗ $($ ⋖ ⋖ ⋖ ⋖ ≐ $)$ ⋗ ⋗ ⋗ ⋗ $\\#$ ⋖ ⋖ ⋖ ⋖ ≐ 注意，优先关系很可能不是偏序的。\n根据优先关系矩阵和上面给出的算法，我们能够分析符号串 $i+i*i$：\n符号栈 输入串 优先关系 动作 $\\#$ $i+i*i\\#$ ⋖ 移进 $\\#i$ $+i*i\\#$ ⋗ 归约 $\\#E$ $+i*i\\#$ ⋖ 移进 $\\#E+$ $i*i\\#$ ⋖ 移进 $\\#E+i$ $*i\\#$ ⋗ 归约 $\\#E+E$ $*i\\#$ ⋖ 移进 $\\#E+E*$ $i\\#$ ⋖ 移进 $\\#E+E*i$ $\\#$ ⋗ 归约 $\\#E+E*E$ $\\#$ ⋗ 归约 $\\#E+E$ $\\#$ ⋗ 归约 $\\#E$ $\\#$ ≐ 接受 上面的算法虽然给出了算符优先分析法的一般步骤，但是对于给定的文法 $G$，我们并不清楚其优先关系矩阵要如何构造。接下来我们就对算符优先分析法的原理做进一步分析，考察优先关系矩阵的构造方法。\n让我们考虑一个简单的表达式，$a + a * a + a$，并只视 $+$ 和 $*$ 为终结符，同时设定 $*$ 的优先级别大于 $+$。因此应当在读入 $a + a * a$ 后识别到 “句柄”，对 $a * a$ 进行归约。此时，我们是用 $*$ 的优先级来代表 $a * a$ 在归约中的优先级。因为前一个 $+$ 小于 $*$，所以应该优先归约还未读入的 $a * a$；又因为 $*$ 大于后一个 $+$，所以应该优先归约已经读入的 $a * a$。正是因为算符间有 $+$ ⋖ $*$ ⋗ $+$ 的关系，我们才能找出那一个应该最先进行归约的，优先级最高的 “句柄”。\n因此，对于使用算符优先分析法进行归约的句子，其任意中间句型中的所有终结符 $a_1, a_2, ..., a_n$ 应当有类似这样的优先级关系：$a_1$ ⋖ $a_2$ ≐ $a_3$ ⋗ $a_4$ ⋖ $a_5$ ⋗ $a_6$… 其中 $a_2$、$a_3$ 是第一个优先级高于左右相邻终结符的部分。因此应当首先归约 $a_2$、$a_3$ 所代表的 “句柄”。故而，在算法中，我们的归约时机是遇到第一个 ⋗ 关系的时刻。因为此时优先级第一次下降，所有的 “句柄\" 成分都进入到符号栈中。\n根据上面的分析，我们就知道要如何为某一文法确定其优先关系矩阵了。\n（3）优先关系矩阵的确定 为了能够让符号表示整个规则的优先关系，我们需要对文法进行约束。使用算符优先分析法的文法必须是算符文法（Operator Grammar, OG）。如果文法 $G$ 中没有形如 $U \\rightarrow ...VW...$，其中 $V,W \\in V_n$ 的规则（即存在两个非终结符相邻的规则），则称 $G$ 为算符文法。\n如果存在形如 $U \\rightarrow ...VW...$ 的规则，则我们无法识别非终结符 $V$ 的归约时机，因为在 $V$ 之后不是一个优先级低于 $V$ 所推导出的符号串中终结符的终结符。$V$ 和 $W$ 间无法建立 ⋗ 关系。\n对于算符文法 $G$，我们希望设定文法中各终结符间的优先关系，使得对于任意句型 $s \\in V^*$，我们希望其 “句柄” 左右两侧终结符的优先级小于句柄内的终结符；“句柄” 内的终结符的优先级按顺序相等。\n首先我们定义\n非终结符 $U$ 所能推导出的符号序列中最左终结符的集合（即 First $V_t$） $$ \\text{FIRSTVT}(U) = \\{b | U \\xRightarrow{+} b... \\lor U \\xRightarrow{+} Vb..., b \\in V_t, V \\in V_n \\} $$ 以及非终结符 $U$ 所能推导出的符号序列中最右终结符的集合（即 Last $V_t$） $$ \\text{LASTVT}(U) = \\{a | U \\xRightarrow{+} ...a \\lor U \\xRightarrow{+} ...aV, a \\in V_t, V \\in V_n \\} $$ FIRSTVT 和 LASTVT 集表示了一个非终结符 $U$ 能够推出的最左和最右的终结符。这些终结符的优先级应当大于位于 $U$ 左右两侧的终结符。\n因此下面我们定义优先关系：对于算符文法 $G$，定义 $U,V,W \\in V_n$。则任意两终结符 $a$ 和 $b$，它们之间的优先关系为：\n$a$ ≐ $b$，当且仅当文法中有形如 $U \\rightarrow ...ab...$ 或 $U \\rightarrow ...aVb...$ 的规则。 $a$ ⋖ $b$，当且仅当文法中有形如 $U \\rightarrow ...aW...$ 的规则，且 $b \\in \\text{FIRSTVT}(W)$。 $a$ ⋗ $b$，当且仅当文法中有形如 $U \\rightarrow ...Wb...$ 的规则，且 $a \\in \\text{LASTVT}(W)$。 注意，对于文法 $G[U]$，我们需要添加新的开始符号 $U'$ 并添加规则 $U' \\rightarrow \\#U\\#$，从而确定符号 $\\#$ 和其他终结符的优先级关系。\n通过上面的方式，我们可以定义优先关系矩阵。但是和 LL(1) 分析法的分析表一样，优先关系矩阵的单一项中也可能具有多个不同关系。如果出现这种情况，则说明该算符文法不能使用算符优先分析法进行分析。\n另外，我们定义如果一个算符文法中两个终结符之间最多只有一种关系，则该文法为算符优先文法。算符优先文法必定能够使用算符优先分析法进行分析。\n在前面我们提到，“‘句柄’ 和真正的句柄有一定区别”。从上面我们定义优先关系的方法也可以看出。在定义 FIRSTVT 和 LASTVT 时我们指的并不是单步推出的最左和最右终结符。当然，FIRSTVT 和 LASTVT 这样定义是必须的，但也使得我们每一次归约时识别的符号串并不是句柄。\n我们归约的实际上是最左素短语。素短语是一个短语（但不一定是简单短语），该短语中至少包含一个终结符，且除自身外不包含其他素短语。而最左素短语即在句型中位于最左侧的素短语（就像句柄是在句型中位于最左侧的简单短语）。由于算符优先分析法中通过终结符定义 “句柄”，所以在每一步归约时，归约的符号串中也必定包括至少一个终结符，这也就是素短语。\n素短语所针对的实际上是规则中只有单个非终结符的情况。举个例子，对文法 $G[E]$： $$ \\begin{align*} E \u0026\\rightarrow E + T | T \\\\ T \u0026\\rightarrow T * F | F \\\\ F \u0026\\rightarrow (E) | i \\end{align*} $$ 该文法是算符文法，并且可以证明是算符优先文法，因此可以应用算符优先分析法。但是对于其中的规则 $E \\rightarrow T$ 和 $T \\rightarrow F$，由于这两条规则中不存在终结符，所以并不能知晓何时应当使用这两条规则进行归约。因而可能出现对 $T + T$、$F + T$ 或 $F * F$ 进行归约的情况（尽管这时的句柄应是 $T$ 或 $F$）。这时 “句柄” 并不与任意一条规则匹配。这也是为什么我们在前面说 “算符优先分析法没有指出要使用哪一条规则进行归约，而只是说此时能够进行归约。”。\n（4）FIRSTVT 和 LASTVT 集的构造 相较于 LL(1) 分析法中的 FIRST 和 FOLLOW 集，算符优先分析法中的 FIRSTVT 和 LASTVT 的构造方法就简单得多了。\n构造 $\\text{FIRSTVT}(U)$ 的算法如下：\n若有规则 $U \\rightarrow b...$ 或 $U \\rightarrow Vb...$，则 $b \\in \\text{FIRSTVT}(U)$。 若有规则 $U \\rightarrow V...$，则 $\\text{FIRSTVT}(V) \\subset \\text{FIRSTVT}(U)$ 同理，构造 $\\text{LASTVT}(U)$ 的算法如下：\n若有规则 $U \\rightarrow ...a$ 或 $U \\rightarrow ...aV$，则 $a \\in \\text{LASTVT}(U)$。 若有规则 $U \\rightarrow ...V$，则 $\\text{LASTVT}(V) \\subset \\text{LASTVT}(U)$ 我们还举文法 $G[E]$ 为例： $$ \\begin{align*} E \u0026\\rightarrow E + T | T \\\\ T \u0026\\rightarrow T * F | F \\\\ F \u0026\\rightarrow (E) | i \\end{align*} $$ 在一开始，求 $F$ 的 FIRSTVT 和 LASTVT。\nFIRSTVT LASTVT $E$ $\\{\\}$ $\\{\\}$ $T$ $\\{\\}$ $\\{\\}$ $F$ $\\{(,i\\}$ $\\{),i\\}$ 随后求 $T$ 的 FIRSTVT 和 LASTVT。此时我们已经求得了 $\\text{FIRSTVT}(F)$ 和 $\\text{LASTVT}(F)$。\nFIRSTVT LASTVT $E$ $\\{\\}$ $\\{\\}$ $T$ $\\{*,(,i\\}$ $\\{*,),i\\}$ $F$ $\\{(,i\\}$ $\\{),i\\}$ 最后求 $E$ 的 FIRSTVT 和 LASTVT。\nFIRSTVT LASTVT $E$ $\\{+,*,(,i\\}$ $\\{+,*,),i\\}$ $T$ $\\{*,(,i\\}$ $\\{*,),i\\}$ $F$ $\\{(,i\\}$ $\\{),i\\}$ 根据求得的 FIRSTVT 和 LASTVT 集，我们可以构造优先关系矩阵。最终的结果和之前例子中的优先关系矩阵相同：\n$+$ $*$ $i$ $($ $)$ $\\#$ $+$ ⋗ ⋖ ⋖ ⋖ ⋗ ⋗ $*$ ⋗ ⋗ ⋖ ⋖ ⋗ ⋗ $i$ ⋗ ⋗ ⋗ ⋗ $($ ⋖ ⋖ ⋖ ⋖ ≐ $)$ ⋗ ⋗ ⋗ ⋗ $\\#$ ⋖ ⋖ ⋖ ⋖ ≐ 很有趣的是，无二义的文法使用算符优先分析法，可能由于最左素短语问题导致归约时的困难；但保持优先关系矩阵不变，使用二义性文法却可以没有歧义的进行归约。\n八、LR 分析法 （1）LR 分析法的分类 LR(k) 分析法是实现自底向上分析的一类方法。所谓 LR，指的是该方法“从左向右（Left to Right）扫描输入符号串，反向产生句子的 “最右推导（Rightmost Derivation）”。而 k 则和 LL(1) 类似，表示该方法在一步中只向前看的输入符号数量。\n因为是一种自底向上分析法，所以实际上应当说规范归约。\n与其他分析法相比，LR 分析法能够接受的文法范围更广，具有很高的分析效率。唯一的问题是结构较为复杂，手工实现工作量大。不过由于其便于通过程序自动生成，因此经常被语法分析程序生成器（如 yacc 或 bison）用来自动生成语法分析程序。\nLR 分析法包括一系列分析方法，如 LR(0)、SLR(1)、LR(1)、LALR(1) 等等。其中：\nLR(0) 并不向前看任何符号，因而并不实用。但是由于其结构简单，方便我们进行引入。 LR(1) 是规范的 LR 方法，接受的文法范围更大，但实现更加困难。 SLR(1) 即 Simple LR(1)。是 LR(1) 的简化版本，最容易实现。 LALR(1) 即 Look-ahead LR(1)。同样是 LR(1) 的简化版本，但考虑到向前看，虽然不及 LR(1)，但相较于 SLR(1) 功能更加强大。 限于篇幅，下面将着重介绍 LR(0) 和 SLR(1)。\nLR 分析法由传奇程序员高德纳（Donald Ervin Knuth）在 1965 年发明。高德纳是图灵将得主、算法分析之父、计算机排版系统 Tex 的作者、巨著《计算机程序设计艺术》的作者… 在算法、编译器等领域，他是永远绕不开的人物。\n（2）构建 LR(0) 自动机 我们知道，自底向上分析法的主要原理就是不断移进输入串中的符号，直到识别到句柄时使用规则进行归约。但是我们要如何确定当前就是句柄了呢？算符优先分析法是根据终结符间的优先关系确定，而 LR 分析法则采取了另一种方式。后者会在每一步中记录当前可能处于的句柄中的位置，根据当前的位置情况，就可以做出移进或归约决定。\n这种对位置的记录称为LR(0) 项目，或简称为项目。一个项目是由文法的一条规则再加上标记位置的点组成。项目中的点之前的部分表示已经读入了符号栈中，点之后的部分表示还未读入符号栈中。比如说对于规则 $A \\rightarrow XYZ$，对应四个不同的项目： $$ \\begin{align*} A \u0026\\rightarrow \\cdot XYZ \\\\ A \u0026\\rightarrow X\\cdot YZ \\\\ A \u0026\\rightarrow XY\\cdot Z \\\\ A \u0026\\rightarrow XYZ\\cdot \\\\ \\end{align*} $$ 对于 $A \\rightarrow \\epsilon$，只对应一个项目 $A \\rightarrow \\cdot$。\n根据项目的含义我们可以得知，点在最开始的项目表示还未读入该规则的任何部分，点在最末尾的项目表示已经完全读入了该规则（即匹配了句柄）。这时对于文法 $G[S]$ 的开始符号 $S$，我们也希望能使用项目来表示解析的位置，从而表示解析开始和接受输入的情况。\n因此我们还需要进行文法拓广。$G$ 的拓广文法 $G'$ 是在 $G$ 的基础上增加一个开始符号 $S'$ 和规则 $S' \\rightarrow S$。该规则对应两个项目：$S' \\rightarrow \\cdot S$ 和 $S' \\rightarrow S\\cdot$。前一个项目表示对文法的解析刚刚开始的情况，后一个项目表示整个文法的解析已经完成的情况（即接受输入串）。拓广后的文法能够保证指示接受输入的项目唯一。\n对于拓广后的文法 $G'[S']$，表示文法的解析刚刚开始的项目为 $S' \\rightarrow \\cdot S$，然而需要注意的是，$S' \\rightarrow \\cdot S$ 只是当前位置的一种可能，因为对于点之后的非终结符 $S$，同样有着规则 $S \\rightarrow \\alpha | \\beta$。因此项目 $S \\rightarrow \\cdot \\alpha$ 和 $S \\rightarrow \\cdot \\beta$ 同样是可能的当前位置。\n由于这一原因，我们定义 LR 分析法的闭包函数 $\\text{CLOSURE}(I)$，其中输入 $I$ 为一项目集。$\\text{CLOSURE}(I)$ 的构造方法如下：\n在最开始，将 $I$ 加入 $\\text{CLOSURE}(I)$ 中。 在每一步迭代中，如果有形如 $A \\rightarrow \\alpha \\cdot B \\beta$ 的规则在 $\\text{CLOSURE}(I)$ 中，则对于非终结符 $B$ 的规则 $B \\rightarrow \\gamma$，如果项目 $B \\rightarrow \\cdot \\gamma$ 不在 $\\text{CLOSURE}(I)$ 中，则将该项目加入其中。 重复步骤 2，直到 $\\text{CLOSURE}(I)$ 不再发生变化。 因此，文法 $G'[S']$ 中表示解析刚刚开始的应当是项目集 $\\text{CLOSURE}(\\{S' \\rightarrow \\cdot S\\})$。我们定义其为初始项目集 $I_0$，即： $$ I_0 = \\text{CLOSURE}(\\{S' \\rightarrow \\cdot S\\}) $$ 由于项目表示当前解析的位置，因此随着解析的进行，项目中点的位置也应该发生变化。举个例子，对于项目 $A \\rightarrow \\alpha \\cdot B \\beta$，其中 $B \\in V_n \\cup V_t$。如果读入了终结符 $B_t$ 或是归约得到了非终结符 $B_n$，都应使项目变为 $A \\rightarrow \\alpha B \\cdot \\beta$。\n因此我们定义转移函数 $\\text{GOTO}(I, X)$，其中 $I$ 为一项目集，$X \\in V_n \\cup V_t$。用于表示项目集 $I$ 在读入符号 $X$ 后变成的新项目集。$\\text{GOTO}(I, X)$ 的构造方法如下：\n定义 $J = \\{ \\text{任何形如} A \\rightarrow \\alpha X \\cdot \\beta \\text{的项目}| A \\rightarrow \\alpha \\cdot X \\beta \\in I\\}$。 令 $\\text{GOTO}(I, X) = \\text{CLOSURE}(J)$。 此时对于初始项目集 $I_0$，对于任意符号 $X \\in V_n \\cup V_t$，我们都可以使用 GOTO 函数得到转移后的项目集 $I_i = \\text{GOTO}(I_0, X)$。而同理，对于转移后得到的项目集 $I_i$，我们还可以再使用 GOTO 函数进行进一步的转移，得到 $I_j = \\text{GOTO}(I_i, X)$… 按照此方法不断迭代，最终得到的项目集的数量是有限的。\n如果我们将得到的所有项目集 $I_0, I_1, ..., I_n$ 作为状态，将关系 $I_j = \\text{GOTO}(I_i, X)$ 作为从状态 $I_i$ 到 $I_j$ 的状态转移，并以 $X$ 作为状态转移的输入。最后再另 $I_0$ 为开始状态，其他项目集为接受状态。这样我们就得到了一个确定的有穷自动机。我们称其为 LR(0) 自动机，因为该自动机的每一个状态都是 LR(0) 项目集。\n或者更形式化的，我们定义 LR(0) 自动机 $M$: $$ M = (\\{I_0, ..., I_n\\}, V_n \\cup V_t, \\text{GOTO}, I_0, Z) $$ 其中 $Z$ 是除初始状态 $I_0$ 外的其他状态。即接受状态集 $Z = S - \\{I_0\\}$。\n我们定义，对于句型 $\\alpha \\beta \\gamma$，其中 $\\beta$ 是句柄，如果 $\\alpha \\beta = u_1u_2...u_n$，则符号串 $u_1u_2...u_i, (1 \\le i \\le n)$ 是句型 $\\alpha \\beta \\gamma$ 的活前缀。那么可以证明，LR(0) 自动机所接受的就是规范句型的活前缀。因此 LR(0) 自动机具有识别句柄的能力。\nLR(0) 自动机的构建过程是十分繁琐的，非常不适人工构建。一个较为简单的文法，也可能拥有众多的状态。下面的例子我们就直接给出增广后的文法和构建后的 LR(0) 自动机。\n对于增广的文法 $G'[E']$： $$ \\begin{align*} E' \u0026\\rightarrow E \\\\ E \u0026\\rightarrow E + T | T \\\\ T \u0026\\rightarrow T * F | F \\\\ F \u0026\\rightarrow (E) | \\textbf{id} \\end{align*} $$ 其 LR(0) 自动机如下所示：\n文法和自动机出自 Compilers: Principles, Techniques, and Tools (Second Edition)。\n（3）LR(0) 自动机的使用 上面我们提到，LR(0) 自动机能够识别句型的活前缀，又因为句柄是当前句型的最长活前缀的后缀，所以为了识别句柄，我们只需要采取类似有穷自动机识别词成分的方法识别最长活前缀，就可以进一步实现句柄的识别。\n我们希望使用 LR(0) 自动机实现最长匹配。而实现的方法已经在词法分析部分讲解过了：我们只需要不断读入当前句型中的符号并进行状态转移，直到无法进行状态转移（转移到死状态 $\\phi$）即可。此时又由于除了开始状态 $I_0$，其他状态都是接受状态，所以最长活前缀实际上就是无法进行状态转移时已读入的符号序列。\n举个例子，对于句子 $(\\textbf{id})+\\textbf{id}$，我们使用上一小节中给出的 LR(0) 自动机识别其句柄。会经历如下状态转移 $I_0 \\xrightarrow{(} I_4 \\xrightarrow{\\textbf{id}} I_5 \\xrightarrow{)} \\phi$。因此识别到的最长活前缀应当是 $(\\textbf{id}$。句柄是最长活前缀的后缀，因此句柄为 $\\textbf{id}$。\n由于句柄一定和某一规则右侧的符号串相同，所以我们从项目集 $I_5$ 中也可以得知此时的句柄。$I_5$ 中项目 $F \\rightarrow \\textbf{id} \\cdot$ 中的点位于其最右侧，说明这时识别的句柄即 $\\textbf{id}$。\n识别了句柄之后，我们进行归约。此时的句型变为 $(F)+\\textbf{id}$。接着我们同样使用 LR(0) 自动机识别最长活前缀。会经历如下状态转移 $I_0 \\xrightarrow{(} I_4 \\xrightarrow{F} I_3 \\xrightarrow{)} \\phi$。\n在此过程中可以注意到，由于句柄是最长活前缀的后缀，所以归约完句柄之后，并不改变最长活前缀句柄之前的部分。如将 $(\\textbf{id})+\\textbf{id}$ 归约为 $(F)+\\textbf{id}$，最前面的 $($ 并不会发生变化。\n所以我们并不需要每归约一次都从头匹配最长活前缀，只需要记录每一次状态转移时的状态，在归约之后重新从句柄之前的状态匹配即可。对于上面的例子来说，在将 $\\textbf{id}$ 归约为 $F$ 后，只需要从 $I_4$ 开始进行状态转移，而不需要从 $I_0$ 开始。\nLR(0) 语法分析器便是按照上面的策略实现句子的解析。符号栈中并不存储读入的符号，而是每一步转移到的某个状态。在进行解析时：\n在最开始将状态 $I_0$ 压入栈中； 在每一步中，对于栈顶的状态 $I_i$ 和输入串首部符号 $a$，求得转移后的状态 $I_j = \\text{GOTO}(I_i, a)$： 若 $I_j = \\phi$，则按照 $I_i$ 中的项目进行归约，并将句柄所对应的栈中状态弹出。同时对于归约得到的非终结符 $A$，求 $I_j = \\text{GOTO}(I_t, a)$，其中 $I_t$ 为此时符号栈顶的状态。将得到的状态 $I_j$ 压入栈中。 若 $I_j \\ne \\phi$，将 $I_j = \\text{GOTO}(I_i, a)$ 压入栈中，并读入输入串首部符号 $a$（移进）。 重复步骤 2 直到读入全部输入串中符号。若此时符号栈中只有一个状态 $I_i$ 且有项目 $S' \\rightarrow S \\cdot \\in I_i$，则接受。 步骤中的 “按照 $I_i$ 中的项目进行归约” 指的是查找项目集 $I_i$ 中点位于最末尾的项目，使用该项目对应的规则进行归约。\n当然你可能会想到，在一个项目集中可能出现多条点位于最末尾的项目，这样 LR(0) 便无法处理了，需要使用 SLR(1) 分析法。\n接下来我们使用 LR(0) 分析法解析句子 $\\textbf{id} * \\textbf{id}$ 作为例子。在符号栈中，我们使用 $i$ 指代 $I_i$。\n符号栈 输入串 动作 $0$ $\\textbf{id} * \\textbf{id} \\#$ 移进 $0\\ 5$ $* \\textbf{id} \\#$ 归约 $F \\rightarrow \\textbf{id}$ $0\\ 3$ $* \\textbf{id} \\#$ 归约 $T \\rightarrow F$ $0\\ 2$ $* \\textbf{id} \\#$ 移进 $0\\ 2\\ 7$ $\\textbf{id} \\#$ 移进 $0\\ 2\\ 7\\ 5$ $\\#$ 归约 $F \\rightarrow \\textbf{id}$ $0\\ 2\\ 7\\ 10$ $\\#$ 归约 $T \\rightarrow T * F$ $0\\ 2$ $\\#$ 归约 $E \\rightarrow T$ $0\\ 1$ $\\#$ 接受 虽然移进和归约的动作序列就可以唯一确定文法树的结构，但是上面的过程对于人来说还是太过抽象了。我们也可以选择在符号栈中的各状态之前加上与该状态对应的符号，更能体现句型的归约过程，方便人类阅读。\n符号栈 输入串 动作 $\\#0$ $\\textbf{id} * \\textbf{id} \\#$ 移进 $\\#0\\ \\textbf{id}5$ $* \\textbf{id} \\#$ 归约 $F \\rightarrow \\textbf{id}$ $\\#0\\ F3$ $* \\textbf{id} \\#$ 归约 $T \\rightarrow F$ $\\#0\\ T2$ $* \\textbf{id} \\#$ 移进 $\\#0\\ T2\\ *7$ $\\textbf{id} \\#$ 移进 $\\#0\\ T2\\ *7\\ \\textbf{id}5$ $\\#$ 归约 $F \\rightarrow \\textbf{id}$ $\\#0\\ T2\\ *7\\ F10$ $\\#$ 归约 $T \\rightarrow T * F$ $\\#0\\ T2$ $\\#$ 归约 $E \\rightarrow T$ $\\#0\\ E1$ $\\#$ 接受 （4）SLR(1) 分析法 我们前面提到过，LR(0) 并不实用。主要原因有二：\n如果一个项目集 $I_i$ 中存在两个不同的项目，他们的点都位于最末尾，那么 LR(0) 无法确定应当选择哪一项目对应的规则进行归约。这被称为归约-归约冲突； 如果存在两条不同的规则，其中一条规则右侧符号串是另一规则右侧符号串的前缀，那么 LR(0) 无法明确应当移进还是应当归约。这被称为移进-归约冲突。（例如项目集 $I_i$ 中存在项目 $U \\rightarrow X \\cdot a Y$ 和 $V \\rightarrow X \\cdot$。） 而 SLR(1) 在 LR(0) 的基础上进行了一些改进，使得出现归约-归约冲突和移进-归约冲突的可能性减小，这让 SLR(1) 相较于 LR(0) 能够接受更多的文法。\n注意 SLR(1) 并未完全消除两种冲突。\nSLR(1) 采取的方法就是利用我们在 LL(1) 部分使用过的 FOLLOW 集。我们知道归约就是将已经读入的符号串的后一部分替换为一个非终结符 $A$，而此时下一个待读入的符号 $a$ 正位于归约产生的非终结符的右侧。因此一定存在这样的关系：$a \\in \\text{FOLLOW}(A)$。\n这样我们就可以为归约所使用的规则添加约束条件：对于项目集 $I_i$，有点位于末尾的规则 $A_1 \\rightarrow \\alpha_1 \\cdot, A_2 \\rightarrow \\alpha_2 \\cdot...$。如果对于当前输入串首部的符号 $a$，有 $a \\in \\text{FOLLOW}(A_j)$，则我们选择 $A_j \\rightarrow \\alpha_j \\cdot$ 对应的规则进行归约。\n因此，SLR(1) 的算法只和 LR(0) 有一点区别。那就是当 $I_j = \\text{GOTO}(I_i, a) = \\phi$ 时，向前看此时输入串首部的符号 $a$，据此判断应当使用哪条规则进行归约。\n为了方便，我们使用 $\\text{ACTION}(I, x)$ 表示当前当前状态为 $I$，输入串首部符号为 $x$ 时应当采取的动作，其值可能为 $ri$（按第 $i$ 条规则归约）、$s$（移进）或 $acc$（接受）。\n$\\text{ACTION}(I, x) = acc$ 当且仅当 $x = \\#$ 且 $S' \\rightarrow S \\cdot \\in I$\n则 SLR(1) 分析法的步骤如下：\n在最开始将状态 $I_0$ 压入栈中。 在每一步中，对于栈顶的状态 $I_i$ 和输入串首部符号 $a$，得到动作 $\\text{ACTION}(I_i, a)$： 若 $\\text{ACTION}(I_i, a) = s$，则读入符号 $a$，并将 $\\text{GOTO}(I_i, a)$ 压入栈中； 若 $\\text{ACTION}(I_i, a) = r_i$，则按第 $i$ 条规则 $A \\rightarrow \\alpha$ 进行归约，并将 $\\text{GOTO}(I_t, A)$ 压入栈中。其中 $I_t$ 为此时符号栈顶的状态。 若 $\\text{ACTION}(I_i, a) = acc$，则接受输入串。 重复步骤 2，直到接受或拒绝输入串。 我们可以使用一个表格记录 $\\text{ACTION}(I, x)$ 的取值。例如对于我们的表达式文法，其 ACTION 表如下所示：\n状态 $\\textbf{id}$ $+$ $*$ $($ $)$ $\\#$ $0$ $s$ $s$ $1$ $s$ $acc$ $2$ $r2$ $s$ $r2$ $r2$ $3$ $r4$ $r4$ $r4$ $r4$ $4$ $s$ $s$ $5$ $r6$ $r6$ $r6$ $r6$ $6$ $s$ $s$ $7$ $s$ $s$ $8$ $s$ $s$ $9$ $r1$ $s$ $r1$ $r1$ $10$ $r3$ $r3$ $r3$ $r3$ $11$ $r5$ $r5$ $r5$ $r5$ 其中各编号对应的规则如下：\n$E \\rightarrow E + T$ $E \\rightarrow T$ $T \\rightarrow T * F$ $T \\rightarrow F$ $F \\rightarrow (E)$ $F \\rightarrow \\textbf{id}$ 同理，我们也可以使用一个表格记录 $\\text{GOTO}(I, X)$ 的取值。对于同一个文法，其 GOTO 表如下所示：\n状态 $\\textbf{id}$ $+$ $*$ $($ $)$ $\\#$ $E$ $T$ $F$ $0$ $5$ $4$ $1$ $2$ $3$ $1$ $6$ $2$ $7$ $3$ $4$ $5$ $4$ $8$ $2$ $3$ $5$ $6$ $5$ $4$ $9$ $3$ $7$ $5$ $4$ $10$ $8$ $6$ $11$ $9$ $7$ $10$ $11$ 由于 ACTION 和 GOTO 表的表头类似，我们也可以将其合并为一个表：\n状态 $\\textbf{id}$ $+$ $*$ $($ $)$ $\\#$ $E$ $T$ $F$ $0$ $s5$ $s4$ $1$ $2$ $3$ $1$ $s6$ $acc$ $2$ $r2$ $s7$ $r2$ $r2$ $3$ $r4$ $r4$ $r4$ $r4$ $4$ $s5$ $s4$ $8$ $2$ $3$ $5$ $r6$ $r6$ $r6$ $r6$ $6$ $s5$ $s4$ $9$ $3$ $7$ $s5$ $s4$ $10$ $8$ $s6$ $s11$ $9$ $r1$ $s7$ $r1$ $r1$ $10$ $r3$ $r3$ $r3$ $r3$ $11$ $r5$ $r5$ $r5$ $r5$ 上面得到的表格称为 SLR(1) 分析表。包含了 $\\text{ACTION}(I, x)$ 以及 $\\text{GOTO}(I, X)$ 的全部取值。根据此表以及上面描述的 SLR(1) 算法，我们即可实现输入串的解析。\n当然，SLR(1) 只是 LR 分析法家族中较为简单的一种。这种方法也并未完全解决归约-归约冲突和移进-归约冲突，体现在 SLR(1) 分析表上便是在一个表项上可能存在多个不同的取值。这导致 SLR(1) 所能接受的文法不如 LALR(1) 或 LR(1) 丰富。但是通过 SLR(1) 的原理，我们已经可以体会到 LR 分析法的基本原理及特点了。\n",
+  "wordCount" : "3631",
+  "inLanguage": "zh",
+  "datePublished": "2024-02-15T14:14:06+08:00",
+  "dateModified": "2024-02-15T14:14:06+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/compiling-tech-from-zero-4/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      从零开始的编译原理（4）：语法分析与下推自动机
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h1>
+    <div class="post-meta"><span title='2024-02-15 14:14:06 +0800 CST'>二月 15, 2024</span>&nbsp;·&nbsp;18 分钟&nbsp;·&nbsp;3631 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/compiling-tech-from-zero-4.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%89%8d%e8%a8%80" aria-label="一、前言">一、前言</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e4%bb%8e%e6%ad%a3%e5%88%99%e6%96%87%e6%b3%95%e5%88%b0%e4%b8%8a%e4%b8%8b%e6%96%87%e6%97%a0%e5%85%b3%e6%96%87%e6%b3%95" aria-label="二、从正则文法到上下文无关文法">二、从正则文法到上下文无关文法</a></li>
+                <li>
+                    <a href="#%e4%b8%89%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba" aria-label="三、下推自动机">三、下推自动机</a><ul>
+                        
+                <li>
+                    <a href="#1%e4%be%8b%e5%ad%90%e5%88%a4%e6%96%ad%e6%9c%89%e6%95%88%e6%8b%ac%e5%8f%b7%e9%97%ae%e9%a2%98" aria-label="（1）例子：判断有效括号问题">（1）例子：判断有效括号问题</a></li>
+                <li>
+                    <a href="#2%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba%e7%9a%84%e4%bb%8b%e7%bb%8d" aria-label="（2）下推自动机的介绍">（2）下推自动机的介绍</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%9b%9b%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e7%9a%84%e4%b8%80%e8%88%ac%e6%96%b9%e6%b3%95" aria-label="四、语法分析的一般方法">四、语法分析的一般方法</a><ul>
+                        
+                <li>
+                    <a href="#1%e8%87%aa%e9%a1%b6%e5%90%91%e4%b8%8b%e5%88%86%e6%9e%90" aria-label="（1）自顶向下分析">（1）自顶向下分析</a></li>
+                <li>
+                    <a href="#2%e8%87%aa%e5%ba%95%e5%90%91%e4%b8%8a%e5%88%86%e6%9e%90" aria-label="（2）自底向上分析">（2）自底向上分析</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%ba%94ll1-%e5%88%86%e6%9e%90%e6%b3%95" aria-label="五、LL(1) 分析法">五、LL(1) 分析法</a><ul>
+                        
+                <li>
+                    <a href="#1ll1-%e5%88%86%e6%9e%90%e7%ae%97%e6%b3%95%e5%92%8c%e5%88%86%e6%9e%90%e8%a1%a8" aria-label="（1）LL(1) 分析算法和分析表">（1）LL(1) 分析算法和分析表</a></li>
+                <li>
+                    <a href="#2first-%e9%9b%86%e7%9a%84%e6%9e%84%e9%80%a0" aria-label="（2）FIRST 集的构造">（2）FIRST 集的构造</a></li>
+                <li>
+                    <a href="#3follow-%e9%9b%86%e7%9a%84%e6%9e%84%e9%80%a0" aria-label="（3）FOLLOW 集的构造">（3）FOLLOW 集的构造</a></li>
+                <li>
+                    <a href="#4ll1-%e7%9a%84%e5%b1%80%e9%99%90%e6%80%a7" aria-label="（4）LL(1) 的局限性">（4）LL(1) 的局限性</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%85%ad%e9%80%92%e5%bd%92%e5%ad%90%e7%a8%8b%e5%ba%8f%e6%b3%95" aria-label="六、递归子程序法">六、递归子程序法</a><ul>
+                        
+                <li>
+                    <a href="#1%e9%80%92%e5%bd%92%e5%ad%90%e7%a8%8b%e5%ba%8f%e7%9a%84%e5%9f%ba%e6%9c%ac%e7%bb%93%e6%9e%84" aria-label="（1）递归子程序的基本结构">（1）递归子程序的基本结构</a></li>
+                <li>
+                    <a href="#2%e9%80%92%e5%bd%92%e5%ad%90%e7%a8%8b%e5%ba%8f%e6%b3%95%e7%9a%84%e6%89%a9%e5%b1%95" aria-label="（2）递归子程序法的扩展">（2）递归子程序法的扩展</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%83%e7%ae%97%e7%ac%a6%e4%bc%98%e5%85%88%e5%88%86%e6%9e%90%e6%b3%95" aria-label="七、算符优先分析法">七、算符优先分析法</a><ul>
+                        
+                <li>
+                    <a href="#1%e4%be%8b%e5%ad%90%e4%b8%ad%e7%bc%80%e8%a1%a8%e8%be%be%e5%bc%8f%e8%bd%ac%e5%90%8e%e7%bc%80%e9%97%ae%e9%a2%98" aria-label="（1）例子：中缀表达式转后缀问题">（1）例子：中缀表达式转后缀问题</a></li>
+                <li>
+                    <a href="#2%e7%ae%97%e7%ac%a6%e4%bc%98%e5%85%88%e5%88%86%e6%9e%90%e7%ae%97%e6%b3%95" aria-label="（2）算符优先分析算法">（2）算符优先分析算法</a></li>
+                <li>
+                    <a href="#3%e4%bc%98%e5%85%88%e5%85%b3%e7%b3%bb%e7%9f%a9%e9%98%b5%e7%9a%84%e7%a1%ae%e5%ae%9a" aria-label="（3）优先关系矩阵的确定">（3）优先关系矩阵的确定</a></li>
+                <li>
+                    <a href="#4firstvt-%e5%92%8c-lastvt-%e9%9b%86%e7%9a%84%e6%9e%84%e9%80%a0" aria-label="（4）FIRSTVT 和 LASTVT 集的构造">（4）FIRSTVT 和 LASTVT 集的构造</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%85%ablr-%e5%88%86%e6%9e%90%e6%b3%95" aria-label="八、LR 分析法">八、LR 分析法</a><ul>
+                        
+                <li>
+                    <a href="#1lr-%e5%88%86%e6%9e%90%e6%b3%95%e7%9a%84%e5%88%86%e7%b1%bb" aria-label="（1）LR 分析法的分类">（1）LR 分析法的分类</a></li>
+                <li>
+                    <a href="#2%e6%9e%84%e5%bb%ba-lr0-%e8%87%aa%e5%8a%a8%e6%9c%ba" aria-label="（2）构建 LR(0) 自动机">（2）构建 LR(0) 自动机</a></li>
+                <li>
+                    <a href="#3lr0-%e8%87%aa%e5%8a%a8%e6%9c%ba%e7%9a%84%e4%bd%bf%e7%94%a8" aria-label="（3）LR(0) 自动机的使用">（3）LR(0) 自动机的使用</a></li>
+                <li>
+                    <a href="#4slr1-%e5%88%86%e6%9e%90%e6%b3%95" aria-label="（4）SLR(1) 分析法">（4）SLR(1) 分析法</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一前言">一、前言<a hidden class="anchor" aria-hidden="true" href="#一前言">#</a></h2>
+<blockquote>
+<p>从这个精神王国的圣餐杯里，</p>
+<p>他的无限性给他翻涌起泡沫。</p>
+<p>—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识</p>
+</blockquote>
+<!-- raw HTML omitted -->
+<h2 id="二从正则文法到上下文无关文法">二、从正则文法到上下文无关文法<a hidden class="anchor" aria-hidden="true" href="#二从正则文法到上下文无关文法">#</a></h2>
+<p>词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是<strong>无嵌套的</strong>。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要<strong>前后匹配</strong>的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。</p>
+<p>然而，所有的高级语言却都是<strong>嵌套的</strong>。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其<strong>嵌套性</strong>。</p>
+<p>举个例子，我们可以将上述括号结构用如下 2 型文法定义：
+</p>
+$$
+    S \rightarrow (S)S | \epsilon
+$$
+<p>其中规则 $S \rightarrow S(S)$ 中左括号和右括号<strong>同时出现</strong>，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。</p>
+<p>而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。</p>
+<p>不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：</p>
+<p><img loading="lazy" src="syntax-tree.png" alt="syntax-tree"  />
+</p>
+<p>可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是<strong>下推自动机</strong>。</p>
+<h2 id="三下推自动机">三、下推自动机<a hidden class="anchor" aria-hidden="true" href="#三下推自动机">#</a></h2>
+<h3 id="1例子判断有效括号问题">（1）例子：判断有效括号问题<a hidden class="anchor" aria-hidden="true" href="#1例子判断有效括号问题">#</a></h3>
+<p>初学编程的时候各位应该都做过类似的题目，那就是<a href="https://leetcode.com/problems/valid-parentheses/description/">判断有效括号</a>。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。</p>
+<p>很明显，括号文法 $G$ 是 2 型文法，而我们又是如何解决这一问题的呢？由于左括号一定要与右括号匹配，因此我们要做的就是记录左括号的<strong>嵌套状态</strong>，并在读入右括号时尝试与其匹配。又由于嵌套具有<strong>后进先出</strong>的特点，所以我们会使用<strong>栈</strong>结构记录嵌套状态。具体的实现如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">match_cases</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;(&#39;</span><span class="p">:</span> <span class="s1">&#39;)&#39;</span><span class="p">,</span> <span class="s1">&#39;[&#39;</span><span class="p">:</span> <span class="s1">&#39;]&#39;</span><span class="p">,</span> <span class="s1">&#39;{&#39;</span><span class="p">:</span><span class="s1">&#39;}&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">is_match</span><span class="p">(</span><span class="n">left</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">right</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">match_cases</span><span class="p">[</span><span class="n">left</span><span class="p">]</span> <span class="o">==</span> <span class="n">right</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">stack</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">match_cases</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="n">stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">is_match</span><span class="p">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">(),</span> <span class="n">ch</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="kc">False</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+</span></span></code></pre></div><p>从具体到一般，栈结构是处理嵌套的普遍方法。因而从 3 型文法到 2 型文法，我们需要做的就是在有穷自动机之外增加一个堆栈结构，使其能够存取当前状态之外的其他信息。这样得到的自动机称为<strong>下推自动机</strong>（Pushdown Automaton, PDA）。</p>
+<h3 id="2下推自动机的介绍">（2）下推自动机的介绍<a hidden class="anchor" aria-hidden="true" href="#2下推自动机的介绍">#</a></h3>
+<p>非正式地说，下推自动机就是一个增加了堆栈的有穷自动机。而也因为增加了堆栈结构，下推自动机的状态转移取决于<strong>读入符号</strong>、<strong>当前状态</strong>和<strong>栈顶元素</strong>三部分；同时在转移时，下推自动机也可以同时操作堆栈，执行入栈出栈操作。</p>
+<p>下推自动机的结构如下图所示，包括了输入符号序列 input tape、转移关系表 finite control、状态 state 以及堆栈 stack。</p>
+<p><img loading="lazy" src="pushdown-automata.svg" alt="pushdown-automata"  />
+</p>
+<p>在运行时，下推自动机会按顺序读入符号。读入符号之后查找转移关系表，通过读入符号、当前状态和栈顶元素索引得到转移到的<strong>目标状态</strong>和要进行的<strong>堆栈操作</strong>。其中堆栈操作包括将某符号入栈、出栈或者不进行操作。在最后，下推自动机读入所有符号，并根据当前状态判断是否接受该符号串。</p>
+<p>与有穷自动机类似，根据 ”在给定读入符号、当前状态和栈顶元素下，是否允许存在多种不同的可选操作“ 可以将下推自动机分为<strong>不确定的下推自动机</strong>（NPDA）和<strong>确定的下推自动机</strong>（DPDA）。然而又不同于有穷自动机，NPDA 和 DPDA 并不等价。NPDA 能够识别所有 2 型文法所定义的语言（即 2 型语言），但 DPDA 却只能识别<strong>确定性上下文无关语言</strong>（Deterministic Context-free Language, DCFL）。这是 2 型语言的一个真子集。</p>
+<p>尽管 NPDA 能够识别 2 型语言，但在编译领域中我们只使用 DPDA 实现语法分析器。并且为了语法分析器的实用性，我们还需要对其进行更加精巧的设计。</p>
+<blockquote>
+<p>因为下推自动机的理论与真正实用的语法分析器的关系不大，所以本文就不再介绍下推自动机的理论了。</p>
+</blockquote>
+<h2 id="四语法分析的一般方法">四、语法分析的一般方法<a hidden class="anchor" aria-hidden="true" href="#四语法分析的一般方法">#</a></h2>
+<p>所有的语法分析器都是 DPDA。但根据其设计思路的不同，又分为<strong>自顶向下分析器</strong>（Top-Down Parsers）和<strong>自底向上分析器</strong>（Bottom-up Parsers）。两类分析器所使用的解析方法分别称<strong>自顶向下分析</strong>和<strong>自底向上分析</strong>。</p>
+<h3 id="1自顶向下分析">（1）自顶向下分析<a hidden class="anchor" aria-hidden="true" href="#1自顶向下分析">#</a></h3>
+<p>自顶向下分析利用了文法理论中的 “推导“ 的视角。将句子的解析视为从文法开始符号起，不断运用规则推导从而生成与要解析的句子相同的句子的过程。原理是若 $Z \xRightarrow[G]{+} S$，则 $S \in L(G[Z])$，否则 $S \notin L(G[Z])$。</p>
+<p>自顶向下分析器的栈中存储的是<strong>当前还未匹配</strong>的句型后缀。在每一步中，分析器都会检查栈顶符号以及输入串首部符号，并 ”按照一定方法“ 选择采取<strong>推导</strong>、<strong>匹配</strong>、<strong>接受</strong>或<strong>拒绝</strong>动作。其中：</p>
+<ul>
+<li><strong>推导</strong>：指使用文法中某条规则将符号栈顶的非终结符推导为规则右侧的符号序列，并按从右到左的顺序入栈。</li>
+<li><strong>匹配</strong>：指符号栈顶的终结符和输入串首部的终结符相同时，读入输入串首部终结符并使栈顶终结符出栈。这一操作意味着当前句型的终结符前缀增加了一个终结符。</li>
+<li><strong>接受</strong>：指当读入输入串中所有符号后，判断符号栈是否<strong>为空</strong>。如为空则接受该输入串。</li>
+<li><strong>拒绝</strong>：指当出现无法推导的情况时，判断拒绝该输入串。</li>
+</ul>
+<p>我们还以之前定义的括号文法 $G[S]$ 为例，查看输入符号串 $(()(()))$ 的自顶向下分析过程。如下表所示：</p>
+<blockquote>
+<p>需要注意：</p>
+<ul>
+<li>下面的符号栈的底部位于最左侧，因此符号栈中的符号顺序是从右到左，与正常的书写顺序相反。</li>
+<li>我们在符号序列的最右侧加上 $\#$ 表示到达符号序列的末尾。</li>
+</ul>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">符号栈</th>
+<th style="text-align:right">输入串</th>
+<th style="text-align:center">动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">$\#S$</td>
+<td style="text-align:right">$(()(()))\#$</td>
+<td style="text-align:center">推导 $S \rightarrow (S)S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S($</td>
+<td style="text-align:right">$(()(()))\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S$</td>
+<td style="text-align:right">$()(()))\#$</td>
+<td style="text-align:center">推导 $S \rightarrow (S)S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S($</td>
+<td style="text-align:right">$()(()))\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S$</td>
+<td style="text-align:right">$)(()))\#$</td>
+<td style="text-align:center">推导 $S \rightarrow \epsilon$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)$</td>
+<td style="text-align:right">$)(()))\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S$</td>
+<td style="text-align:right">$(()))\#$</td>
+<td style="text-align:center">推导 $S \rightarrow (S)S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S($</td>
+<td style="text-align:right">$(()))\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S$</td>
+<td style="text-align:right">$()))\#$</td>
+<td style="text-align:center">推导 $S \rightarrow (S)S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S)S($</td>
+<td style="text-align:right">$()))\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S)S$</td>
+<td style="text-align:right">$)))\#$</td>
+<td style="text-align:center">推导 $S \rightarrow \epsilon$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S)$</td>
+<td style="text-align:right">$)))\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)S$</td>
+<td style="text-align:right">$))\#$</td>
+<td style="text-align:center">推导 $S \rightarrow \epsilon$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S)$</td>
+<td style="text-align:right">$))\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)S$</td>
+<td style="text-align:right">$)\#$</td>
+<td style="text-align:center">推导 $S \rightarrow \epsilon$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S)$</td>
+<td style="text-align:right">$)\#$</td>
+<td style="text-align:center">匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">推导 $S \rightarrow \epsilon$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">接受</td>
+</tr>
+</tbody>
+</table>
+<p>当然，上表虽然表现了自顶向下分析的一般方法，但却未指出何时应当选取何种规则进行推导。在具体的自顶向下分析方法中，则会处理这些并未明确的内容。在本文后续将会介绍常用的自顶向下方法 <strong>LL(1) 分析法</strong>。</p>
+<h3 id="2自底向上分析">（2）自底向上分析<a hidden class="anchor" aria-hidden="true" href="#2自底向上分析">#</a></h3>
+<p>自底向上分析则利用了文法理论中的 “归约“ 的视角。将句子的解析视为从句子开始，不断运用规则归约句型成分，最终归约为文法开始符号的过程。原理是若 $Z \xLeftarrow[G]{+} S$，则 $S \in L(G[Z])$，否则 $S \notin L(G[Z])$。</p>
+<p>和自顶向下时类似，在自底向上分析器运行的每一步中，分析器都会检查栈顶符号以及输入串首部符号，并 ”按照一定方法“ 选择采取<strong>移进</strong>、<strong>归约</strong>、<strong>接受</strong>或<strong>拒绝</strong>动作。其中：</p>
+<ul>
+<li><strong>移进</strong>：指读入输入串的一个符号并将其入栈。移进的过程是寻找句柄的过程。</li>
+<li><strong>归约</strong>：指栈顶部的一部分符号串被识别为句柄时，按照某条规则进行归约，并将归约的结果入栈。
+符号栈顶的终结符和输入串首部的终结符相同时，读入输入串首部终结符并使栈顶终结符出栈。这一操作意味着当前句型的终结符前缀增加了一个终结符。</li>
+<li><strong>接受</strong>：指当读入输入串中所有符号后，判断符号栈中是否<strong>只有单一开始符号</strong>。如是则接受该输入串。</li>
+<li><strong>拒绝</strong>：指当出现无法归约的情况时，判断拒绝该输入串。</li>
+</ul>
+<p>我们还使用上一小节的例子，只不过这次展示自底向上分析的一般过程：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">符号栈</th>
+<th style="text-align:right">输入串</th>
+<th style="text-align:center">动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">$\#$</td>
+<td style="text-align:right">$(()(()))\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#($</td>
+<td style="text-align:right">$()(()))\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#(($</td>
+<td style="text-align:right">$)(()))\#$</td>
+<td style="text-align:center">归约 $\epsilon \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S$</td>
+<td style="text-align:right">$)(()))\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)$</td>
+<td style="text-align:right">$(()))\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)($</td>
+<td style="text-align:right">$()))\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)(($</td>
+<td style="text-align:right">$)))\#$</td>
+<td style="text-align:center">归约 $\epsilon \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)((S$</td>
+<td style="text-align:right">$)))\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)((S)$</td>
+<td style="text-align:right">$))\#$</td>
+<td style="text-align:center">归约 $\epsilon \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)((S)S$</td>
+<td style="text-align:right">$))\#$</td>
+<td style="text-align:center">归约 $(S)S \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)(S$</td>
+<td style="text-align:right">$))\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)(S)$</td>
+<td style="text-align:right">$)\#$</td>
+<td style="text-align:center">归约 $\epsilon \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)(S)S$</td>
+<td style="text-align:right">$)\#$</td>
+<td style="text-align:center">归约 $(S)S \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#((S)S$</td>
+<td style="text-align:right">$)\#$</td>
+<td style="text-align:center">归约 $(S)S \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#(S$</td>
+<td style="text-align:right">$)\#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#(S)$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $\epsilon \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#(S)S$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $(S)S \leftarrow S$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#S$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">接受</td>
+</tr>
+</tbody>
+</table>
+<p>根据文法树，我们当然知道何时应该移进、何时可以归约，但是如何以形式化的方法识别可归约成分，却是一个难题。不同的具体的自底向上分析方法采用不同的策略解决这一问题。在后面我们便会介绍常用的两种自底向上分析方法：<strong>算符优先分析法</strong>和 <strong>LR 分析法</strong>。</p>
+<h2 id="五ll1-分析法">五、LL(1) 分析法<a hidden class="anchor" aria-hidden="true" href="#五ll1-分析法">#</a></h2>
+<p>LL(1) 分析法是实现自顶向下分析的一种方法。所谓 LL，指的是该方法 “<strong>从左向右</strong>（<strong>L</strong>eft to Right）扫描输入符号串，并产生句子的<strong>最左推导</strong>（<strong>L</strong>eftmost Derivation）”。而括号中的 1 则指该方法在一步中只<strong>向前看一个</strong>输入符号。</p>
+<blockquote>
+<p>推广来看，还有向前看 k 个符号的分析法 LL(k)。其原理与 LL(1) 类似，但实现起来更加复杂，因此并不介绍。</p>
+</blockquote>
+<h3 id="1ll1-分析算法和分析表">（1）LL(1) 分析算法和分析表<a hidden class="anchor" aria-hidden="true" href="#1ll1-分析算法和分析表">#</a></h3>
+<p>虽然在上一节中我们已经稍微提到了自顶向下分析法的流程，但是这里我们还是给出更详细的算法描述：</p>
+<p>除了符号栈，在一个 LL(1) 分析器中还会维护一个分析表 $M$，其每一行代表一个非终结符，每一列代表一个终结符或 $\#$ 符号。表中元素则是文法规则或是留空以表示不存在匹配的规则。</p>
+<ol>
+<li>在最开始，将符号 $\#$ 以及文法开始符号 $S$ 依次推入符号栈中。</li>
+<li>在分析的某一步中：
+<ul>
+<li>如果栈顶的符号为非终结符,令当前栈顶非终结符为 $A$，输入串首部符号为 $a$。此时查找分析表 $M$。取规则 $M[A, a]$。如果此处不存在规则，则进行错误处理（拒绝）。如果存在规则，将 $A$ 从符号栈中弹出，并将规则右侧符号按从右到左的顺序依次压入符号栈（推导）。</li>
+<li>如果是终结符,令当前栈顶终结符为 $a'$，输入串首部符号为 $a$。若 $a' = a \neq \#$，则将 $A$ 从栈中弹出，并读入符号 $a$（匹配）。若 $a' = a \neq \#$，说明输入串完全匹配，说明分析器成功接受了该输入串，算法结束（接受）。若 $a' \ne a$，则进行错误处理（拒绝）。</li>
+</ul>
+</li>
+<li>不断重复步骤 2，直到算法结束。</li>
+</ol>
+<p>根据算法，我们所要做的就是找到分析表 $M$ 的构造方法。由于在推导时，我们将规则右侧的符号按从右侧到左的顺序压入栈中，因此位于栈顶的永远是最左侧的符号。故而分析表项 $M[A,a]$ 中的规则实际上的是 “能使非终结符 $A$ 最终推导出的句子中<strong>最左侧终结符</strong>为 $a$” 的规则。</p>
+<p>更形式地说，对于规则 $A \rightarrow \alpha, \alpha \in V^*$，定义 $\alpha$ 最终能推导出的句子中最左侧终结符集合 $\text{FIRST}(\alpha) = \{a | \alpha \xRightarrow{*} a..., a \in V_t\}$。那么若终结符 $a \in \text{FIRST}(\alpha)$，则有 $M[A, a] = A \rightarrow \alpha$。</p>
+<p>但是如果选择该规则后最终能够推导出空符号串 $\epsilon$（$\epsilon \in \text{FIRST}(\alpha)$），那么还需要特殊考虑。因为这种情况意味着选用该规则后可以 “跳过” 当前的非终结符 $A$，此时输入串中的首部符号应当与<strong>在 $A$ 之后出现的终结符</strong>进行匹配。</p>
+<p>因此对于规则 $A \rightarrow \alpha, \alpha \in V^*$，我们定义在非终结符 $A$ 之后可能出现的终结符集合 $\text{FOLLOW}(A) = \{a | S \xRightarrow{*} ...Aa..., a \in V_t \}$。那么若 $\epsilon \in \text{FIRST}(\alpha)$ 且 $a \in \text{FOLLOW}(A)$，则有 $M[A, a] = A \rightarrow \alpha$。</p>
+<blockquote>
+<p>特别的，若 $S \xRightarrow{*} ...A$，则规定 $\# \in \text{FOLLOW}(A)$。</p>
+</blockquote>
+<p>让我们总结一下，$M[A, a] = A \rightarrow a$ 当且仅当 $a \in \text{FIRST}(\alpha)$ 或 $\epsilon \in \text{FIRST}(\alpha) \land a \in \text{FOLLOW}(A)$。现在我们得到了分析表 $M$ 的构造方法，接下来就是确定如何计算 $\text{FIRST}(\alpha)$ 和 $\text{FOLLOW}(A)$。</p>
+<h3 id="2first-集的构造">（2）FIRST 集的构造<a hidden class="anchor" aria-hidden="true" href="#2first-集的构造">#</a></h3>
+<p>规则右侧 $\alpha = A_1A_2...A_n$ 为一符号串，因此在构造 $\text{FIRST}(\alpha)$ 之前我们可以先求出组成 $\alpha$ 的每一个符号 $A_i$ 的 FIRST 集合 $\text{FIRST}(A_i)$。</p>
+<p>因为对于规则 $A \rightarrow B...$，有 $\text{FIRST}(B) - \{\epsilon\} \subset \text{FIRST}(A)$。我们可以使用一个递归算法求得 $\text{FIRST}(A_i)$：</p>
+<ol>
+<li>
+<p>若 $A_i \in V_t \cup \{\epsilon\}$，则 $\text{FIRST}(A_i) = \{A_i\}$</p>
+</li>
+<li>
+<p>若 $A_i \in V_n$，则对于每条规则 $A_i \rightarrow A_1A_2... A_n$，</p>
+<ul>
+<li>有 $\text{FIRST}(A_1) - \{\epsilon\} \subset \text{FIRST}(A)$。</li>
+<li>若 $\epsilon \in \text{FIRST}(A_1)$，则有 $\text{FIRST}(A_2) - \{\epsilon\} \subset \text{FIRST}(A)$。</li>
+<li>若 $\epsilon \in \text{FIRST}(A_2)$，则有 $\text{FIRST}(A_3) - \{\epsilon\} \subset \text{FIRST}(A)$。</li>
+<li>若&hellip;</li>
+</ul>
+<p>以此类推，直到找到 $i \le n$，$\epsilon \notin \text{FIRST}(A_i)$，此时停止。而如果对于规则中最后一个符号 $A_n$ 依旧有 $\epsilon \in \text{FIRST}(A_n)$，则有 $\epsilon \in \text{FIRST}(A)$。</p>
+</li>
+</ol>
+<p>此时对于 $\alpha = A_1A_2...A_n$，我们就可以采用和上述算法中步骤 2 类似的方法求得 $\text{FIRST}(\alpha)$，这里不再赘述。</p>
+<p>我们可以用一个例子演示上述算法。对于如下文法 $G[E]$：
+</p>
+$$
+\begin{align*}
+    E &\rightarrow TE' \\
+    E' &\rightarrow +TE' | \epsilon \\
+    T &\rightarrow FT' \\
+    T' &\rightarrow *FT' | \epsilon \\
+    F &\rightarrow (E) | i
+\end{align*}
+$$
+<p>我们求其 FIRST 集。</p>
+<p>算法是递归过程，我们可以将其转换为迭代，先求可以直接得出的 FIRST 集。对于本例来说，我们从 $F$ 开始。</p>
+<ol>
+<li>
+<p>$F$ 的两条规则都以终结符开头，因此直接得到 FIRST 集。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>之后是 $T'$，其第一条规则以终结符开头，第二条为 $\epsilon$，同样直接得到 FIRST 集。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>之后是 $T$。由于规则以非终结诶符 $F$ 开头，因此需要求 $\text{FIRST}(F)$。因为 $\epsilon \notin \text{FIRST}(F)$，所以不需要再求 $T'$ 的 FIRST 集。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>之后是 $E'$。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>最后是 $E$。同样需要求 $\text{FIRST}(T)$。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{(, i\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p>得到各非终结符的 FIRST 集后，我们就可以求得各规则右侧符号串的 FIRST 集了。</p>
+$$
+\begin{align*}
+    \text{FIRST}(TE') &= \text{FIRST}(T) - \{\epsilon\} = \{(, i\} \\
+    \text{FIRST}(+TE') &= \{+\} \\
+    \text{FIRST}(\epsilon) &= \{\epsilon\} \\
+    \text{FIRST}(FT') &= \text{FIRST}(F) - \{\epsilon\} = \{(, i\} \\
+    \text{FIRST}(*FT') &= \{*\} \\
+    \text{FIRST}((E)) &= \{(\} \\
+    \text{FIRST}(i) &= \{i\}
+\end{align*}
+$$
+<h3 id="3follow-集的构造">（3）FOLLOW 集的构造<a hidden class="anchor" aria-hidden="true" href="#3follow-集的构造">#</a></h3>
+<p>FOLLOW 集的构造要在 FIRST 集之后。因为我们要得到的是非终结符 “之后” 可能出现的终结符。所以实际上要求的就是<strong>非终结符之后的子符号串的 FIRST 集</strong>。</p>
+<p>按照这一思路，我们就可以得到构造 FOLLOW 集的算法：</p>
+<ol>
+<li>对于开始符号 $S$，有 $\# \in \text{FOLLOW}(S)$。</li>
+<li>在每一步迭代中，对于非终结符 $B$，若有 $A \rightarrow \alpha B \beta$ 其中 $\alpha, \beta \in V^* \cup \{\epsilon\}$，则有 $\text{FIRST}(\beta) - \{\epsilon\} \subset \text{FOLLOW}(B)$。若 $\epsilon \in \text{FIRST}(\beta)$，则还有 $\text{FOLLOW}(A) \subset \text{FOLLOW}(B)$。</li>
+<li>重复步骤 2，直到所有非终结符的 FOLLOW 集都不再变化。</li>
+</ol>
+<blockquote>
+<p>对于规则 $A \rightarrow \alpha B \beta$，由于非终结符 $B$ 之后的子符号串 $\beta$ 也可能推出 $\epsilon$。此时规则等同于 $A \rightarrow \alpha B$，<strong>在 $A$ 之后可能出现的终结符也同样是在 $B$ 之后可能出现的终结符</strong>。</p>
+<p>也正因为上面的特点，FOLLOW 集的构造算法只用一次迭代不一定能得到最终结果。必须多次迭代，使得 FOLLOW 集从规则的左侧 “传播” 到右侧。</p>
+</blockquote>
+<p>我们还以前一小节中的文法 $G[E]$ 为例。</p>
+<ol>
+<li>
+<p>首先进行初始化，将 $\#$ 加入 $\text{FOLLOW}(E)$ 中。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+<th>FOLLOW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>对于 $E$，其出现在 $F \rightarrow (E)$ 中，因此 $)$ 位于 FOLLOW 集中。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+<th>FOLLOW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>对于 $E'$，其出现在 $E \rightarrow TE'$ 和 $E' \rightarrow + TE'$ 中。我们只需求 $\text{FOLLOW}(E)$。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+<th>FOLLOW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>对于 $T$，其出现在 $E \rightarrow TE'$ 和 $E' \rightarrow +TE'$ 中。需要求 $FIRST(E')$。并且由于 $\epsilon \in FIRST(E')$，因此还要求 $\text{FOLLOW}(E)$。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+<th>FOLLOW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#,),+\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>对于 $T'$，其出现在 $T \rightarrow FT'$ 和 $T' \rightarrow *FT'$ 中。我们只需求 $\text{FOLLOW}(T)$。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+<th>FOLLOW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#,),+\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+<td>$\{\#,),+\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>对于 $F$，其出现在 $T \rightarrow FT'$ 和 $T' \rightarrow *FT'$ 中。我们需要求 $\text{FIRST}(T')$，并且由于 $\epsilon \in \text{FIRST}(T')$，我们还需要求 $\text{FOLLOW}(T)$。</p>
+<table>
+<thead>
+<tr>
+<th>非终结符</th>
+<th>FIRST</th>
+<th>FOLLOW</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$E'$</td>
+<td>$\{+, \epsilon \}$</td>
+<td>$\{\#, )\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{(, i\}$</td>
+<td>$\{\#,),+\}$</td>
+</tr>
+<tr>
+<td>$T'$</td>
+<td>$\{*, \epsilon \}$</td>
+<td>$\{\#,),+\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(, i\}$</td>
+<td>$\{*，\#,),+\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>重复此过程，发现 FOLLOW 集不再变化。停止迭代。</p>
+</li>
+</ol>
+<h3 id="4ll1-的局限性">（4）LL(1) 的局限性<a hidden class="anchor" aria-hidden="true" href="#4ll1-的局限性">#</a></h3>
+<p>根据上面构造的 FIRST 集和 FOLLOW 集，并结合在前面提到的构造分析表算法，我们可以构造文法 $G[E]$ 的 LL(1) 分析表。这里就直接给出了。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"></th>
+<th style="text-align:center">$i$</th>
+<th style="text-align:center">$+$</th>
+<th style="text-align:center">$*$</th>
+<th style="text-align:center">$($</th>
+<th style="text-align:center">$)$</th>
+<th style="text-align:center">$\#$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">$E$</td>
+<td style="text-align:center">$E \rightarrow TE'$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$E \rightarrow TE'$</td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$E'$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$E' \rightarrow +TE'$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$E' \rightarrow \epsilon$</td>
+<td style="text-align:center">$E' \rightarrow \epsilon$</td>
+</tr>
+<tr>
+<td style="text-align:center">$T$</td>
+<td style="text-align:center">$T \rightarrow FT'$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$T \rightarrow FT'$</td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$T'$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$T' \rightarrow \epsilon$</td>
+<td style="text-align:center">$T' \rightarrow *FT'$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$T' \rightarrow \epsilon$</td>
+<td style="text-align:center">$T' \rightarrow \epsilon$</td>
+</tr>
+<tr>
+<td style="text-align:center">$F$</td>
+<td style="text-align:center">$F \rightarrow i$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$F \rightarrow (E)$</td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>可以看到，此时的分析表 $M$ 中每一个位置最多只有一条规则。这意味着对于任意的符号栈和输入串，要么找不到规则，语法分析器不接受该输入串；要么找到一条规则，直接使用该规则进行推导。而不存在推导时出现<strong>歧义</strong>的情况。</p>
+<p>而如果分析表中的一个位置出现多于一条规则，则不能使用 LL(1) 分析法进行分析。设这时出现在同一位置 $M[A, a]$ 的两条规则分别为 $A \rightarrow \alpha$ 和 $A \rightarrow \beta$。那么一定满足下面两个条件之一：</p>
+<ol>
+<li>$a \in \text{FIRST}(\alpha) \cap \text{FIRST}(\beta)$</li>
+<li>$\epsilon \in \text{FIRST}(\beta)$ 且 $a \in \text{FIRST}(\alpha) \cap \text{FOLLOW}(A)$</li>
+</ol>
+<p>我们定义可以构造出无歧义的 LL(1) 分析器的文法称为 <strong>LL(1) 文法</strong>。那么将上面的两个条件取逆，我们就可以得到<strong>文法 $G$ 是 LL(1) 文法的充要条件</strong>：对于 $G$ 的每一个非终结符 $A$ 的任意两条规则 $A \rightarrow \alpha | \beta$，下面两条件成立</p>
+<ol>
+<li>$\text{FIRST}(\alpha) \cap \text{FIRST}(\beta) = \emptyset$</li>
+<li>若 $\epsilon \in \text{FIRST}(\beta)$，则 $\text{FIRST}(\alpha) \cap \text{FOLLOW}(A) = \emptyset$</li>
+</ol>
+<p>很明显，由于增加了额外的限制条件，所以 <strong>LL(1) 文法的集合是上下文无关文法的集合的真子集</strong>。这与下推自动机的结论吻合。</p>
+<p>关于 LL(1) 的局限性，还有另一个结论。在第一篇文章中我们介绍了递归规则，指的是非终结符推出其自身的规则。如果递归规则是类似下面的形式 $A \rightarrow A...$，即非终结符出现在推出的符号串的最左侧，则我们称其为<strong>左递归</strong>规则。可以证明，<strong>如果文法 $G$ 中存在左递归规则，则其一定不是 LL(1) 文法</strong>。</p>
+<p>对此我们可以给出一个简单的证明：若文法 $G$ 中存在一条左递归规则 $A \rightarrow A\alpha$，则对于非终结符 $A$，必定存在至少一条规则 $A \rightarrow \beta$。那么对于 $A \rightarrow A\alpha$，有 $\text{FIRST}(A) = \text{FIRST}(A\alpha)$。而对于 $A \rightarrow \beta$，又有 $\text{FIRST}(\beta) \subset \text{FIRST}(A)$。因此有 $\text{FIRST}(\beta) \subset \text{FIRST}(A\alpha)$。因此 $\text{FIRST}(\beta) \cap \text{FIRST}(A\alpha) = \text{FIRST}(\beta) \ne \emptyset$，$G$ 不是 LL(1) 文法。</p>
+<p>然而，左递归又是非常普遍的，比如说为了实现从左到右的运算，我们常常会使用类似这样的文法规则：
+</p>
+$$
+\begin{align*}
+    A &\rightarrow A + B | A - B | B \\
+    B &\rightarrow B * C | B / C | C \\
+    C &\rightarrow i
+\end{align*}
+$$
+<p>这样的规则能够保证位于更左侧的运算处于更深的文法子树中。这时使用后序遍历访问整棵文法树的顺序就是计算的顺序。</p>
+<p>因而我们可以选择改造文法，消除其中的左递归。有两种方法。</p>
+<ol>
+<li>
+<p>第一种方法是<strong>将文法改为右递归</strong>：</p>
+<ul>
+<li>第一步：提取左递归公因子。若有左递归文法 $U \rightarrow U\alpha | U \beta | V$，则改为 $U \rightarrow U(\alpha|\beta) | V$。对本例来说，将文法改造成 $A \rightarrow A (+ B | - B) | B$ 的形式</li>
+<li>第二步：增加间接非终结符 $P'$，将 $P \rightarrow P\alpha|\beta$ 改写为 $P \rightarrow \beta P'$ 和 $P' \rightarrow \alpha P' | \epsilon$。对本例来说，可将文法改造为 $A \rightarrow BA'$ 和 $A' \rightarrow +BA' | -BA' | \epsilon$。</li>
+</ul>
+<p>我们以规则 $A \rightarrow A + B | A - B | B$ 为例。首先提取左递归公因子，将其改写为 $A \rightarrow A (+ B | - B) | B$；之后再增加非终结符 $A'$，改写为 $A \rightarrow BA'$ 和 $A' \rightarrow +BA' | -BA' | \epsilon$。此时我们就将左递归转化为了右递归。</p>
+</li>
+<li>
+<p>第二种方法是<strong>使用扩展 BNF 范式改写</strong>：</p>
+<ul>
+<li>第一步：和第一种方法相同</li>
+<li>第二步：使用 $\{\}$ 符号，将 $P \rightarrow P\alpha|\beta$ 改写为 $P \rightarrow \beta \{\alpha\}$</li>
+</ul>
+<p>我们还以规则 $A \rightarrow A + B | A - B | B$ 为例。首先同样改写为 $A \rightarrow A (+ B | - B) | B$；之后使用扩展 BNF 范式改写为 $A \rightarrow B\{+B | -B\}$。</p>
+</li>
+</ol>
+<p>两种方法都消除了左递归，但也有一些缺陷。第一种方法修改了文法，导致文法树发生改变；第二种方法使用了扩展 BNF 范式，无法根据文法构建 LL(1) 分析表。</p>
+<blockquote>
+<p>你可能会想，第二种方法不能构建分析表，那又有什么用？其实，虽然我们无法据此构建 “标准的” LL(1) 语法分析器，但却可以在一种更加实用的 LL(1) 分析方法中使用。即就是<strong>递归子程序法</strong>。</p>
+</blockquote>
+<h2 id="六递归子程序法">六、递归子程序法<a hidden class="anchor" aria-hidden="true" href="#六递归子程序法">#</a></h2>
+<h3 id="1递归子程序的基本结构">（1）递归子程序的基本结构<a hidden class="anchor" aria-hidden="true" href="#1递归子程序的基本结构">#</a></h3>
+<p>递归子程序法不是另一种自顶向下分析法，而<strong>就是</strong> LL(1) 分析法。其和 LL(1) 分析法的唯一区别就是递归子程序法<strong>使用程序的函数调用栈作为符号栈</strong>。因此递归子程序法相较于标准的 LL(1) 分析法，更适合编程实现。</p>
+<p>递归子程序法不会显式地构造分析表结构，而是将分析表蕴含在程序中。具体来说，递归子程序法需要对文法的每一个非终结符都编写一个<strong>分析子程序</strong>（即函数），当根据所处的子程序和当前的输入符号预测到要使用某个非终结符去匹配输入串时，就<strong>调用</strong>该非终结符的分析程序。（而一次调用过程，实际上就相当于非终结符入栈的过程。）</p>
+<p>接下来我们使用伪代码展示递归子程序法的实现细节。首先我们约定一些程序运行的上下文。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="c1"># FIRST sets of symbol strings</span>
+</span></span><span class="line"><span class="cl"><span class="n">FIRST</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># FOLLOW sets of non-terminal symbols</span>
+</span></span><span class="line"><span class="cl"><span class="n">FOLLOW</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">getsym</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    read the next symbol from the input string 
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">error</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    raise an error
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">assert_match</span><span class="p">(</span><span class="n">expect</span><span class="p">:</span> <span class="nb">str</span><span class="err">，</span><span class="n">actual</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    if the value of `actual` is not equal to `expect`, raise an error
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span></code></pre></div><ul>
+<li><code>FIRST</code>：即规则右侧符号串的 FIRST 集；</li>
+<li><code>FOLLOW</code>：即非终结符的 FOLLOW 集；</li>
+<li><code>getsym</code>：用于读入下一个符号；</li>
+<li><code>error</code>：用于报告解析错误；</li>
+<li><code>assert_match</code>：当两符号不相同时报告解析错误。</li>
+</ul>
+<p>在此上下文中，在不考虑其他功能（如构建文法树，因为文法树的构建就在文法的推导和归约过程中完成了），只考虑推导过程的情况下，任意非终结符 $A$ 的分析子程序 <code>A</code> 应当为如下形式：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    function to analyze non-terminal symbol `A`
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span></code></pre></div><p>此时函数 <code>x</code> 传入的参数 <code>sym</code> 是将要进行解析的，属于非终结符 $A$ 的第一个符号（应有 $\text{sym} \in \text{FIRST}(A)$）。而函数的返回值则是解析完 $A$ 之后，第一个不属于 $A$ 的符号（应有 $\text{ret\_val} \in \text{FOLLOW}(A)$）。这是在编写分析子程序时必须遵守的前置和后置约束。</p>
+<p>而对于相同非终结符 $A$ 的所有规则 $A \rightarrow x_1 | x_2 |...| x_n$，我们使用 FIRST 集判断当前符号应当适用于那条规则，从而划分到不同的条件分支中。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;x1&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">pass</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;x2&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">pass</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;xn&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">pass</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">error</span><span class="p">()</span>
+</span></span></code></pre></div><p>特别的，如果有 $\epsilon \in \text{FIRST}(x_i)$，则应当使用非终结符 $A$ 的 FOLLOW 集作为分支的条件：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FOLLOW</span><span class="p">[</span><span class="s2">&#34;A&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">pass</span>
+</span></span></code></pre></div><p>在条件分支中，我们实现对规则的解析。对于终结符，我们使用 <code>match</code> 函数判断是否匹配；对于非终结符，则使用其对应的解析函数进行解析。举个例子，假设存在规则 $A \rightarrow abYcZ$，其中 $a,b,c \in V_t$ 而 $Y,Z \in V_n$。那么对该规则进行解析的代码如下所示：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;abYcZ&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">assert_match</span><span class="p">(</span><span class="s2">&#34;a&#34;</span><span class="p">,</span> <span class="n">sym</span><span class="p">);</span> <span class="n">sym</span> <span class="o">=</span> <span class="n">getsym</span><span class="p">()</span> <span class="c1"># parse &#39;a&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">assert_match</span><span class="p">(</span><span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="n">sym</span><span class="p">);</span> <span class="n">sym</span> <span class="o">=</span> <span class="n">getsym</span><span class="p">()</span> <span class="c1"># parse &#39;b&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sym</span> <span class="o">=</span> <span class="n">Y</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>                    <span class="c1"># parse &#39;Y&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">assert_match</span><span class="p">(</span><span class="s2">&#34;c&#34;</span><span class="p">,</span> <span class="n">sym</span><span class="p">);</span> <span class="n">sym</span> <span class="o">=</span> <span class="n">getsym</span><span class="p">()</span> <span class="c1"># parse &#39;c&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sym</span> <span class="o">=</span> <span class="n">Z</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>                    <span class="c1"># parse &#39;Z&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">sym</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span></code></pre></div><p>上述代码中，不管是匹配终结符还是解析非终结符，我们都遵循了关于当前符号的前置和后置约束。这使得代码中的每一步都具有规律性。因此在完成解析后，我们也需要返回解析 $A$ 之后第一个不属于 $A$ 的符号。即 <code>Z(sym)</code> 的返回值。</p>
+<p>而若规则为 $A \rightarrow \epsilon$，则直接返回即可：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FOLLOW</span><span class="p">[</span><span class="s2">&#34;A&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">sym</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span></code></pre></div><p>在最后，我们需要判断是否接受该符号串。对于文法 $G[S]$，我们可以在解析的入口函数处使用如下代码判断：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">if</span> <span class="n">S</span><span class="p">(</span><span class="n">getsym</span><span class="p">())</span> <span class="o">!=</span> <span class="s2">&#34;#&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">error</span><span class="p">()</span>
+</span></span></code></pre></div><p>通过上面所描述的方法，对于任意 LL(1) 文法，我们都可以写出其语法分析程序。</p>
+<h3 id="2递归子程序法的扩展">（2）递归子程序法的扩展<a hidden class="anchor" aria-hidden="true" href="#2递归子程序法的扩展">#</a></h3>
+<p>递归子程序法具有很强的灵活性。我们可以通过修改代码实现更强大的解析功能。对于 LL(1) 文法，我们必须保证对于任意两条规则 $A \rightarrow \alpha | \beta$，$\text{FIRST}(\alpha) \cap \text{FIRST}(\beta) = \emptyset$。否则对于分析表，这两条规则会占据相同的表项；而对于递归子程序来说，这两条规则会占据相同的条件分支。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;alpha&#34;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;beta&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># A -&gt; alpha &amp; A -&gt; beta</span>
+</span></span><span class="line"><span class="cl">        <span class="k">pass</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span></code></pre></div><p>但是，如果我们能够在当前符号不变的情况下，<strong>提前读取</strong>一下个或多个符号的话，或许就可以区分出该使用哪一条规则进行分析了。当然，如果从理论上看，我们还需要计算 “SECOND” 乃至 “THIRD” 集。不过在实践中，或许也可以直接从文法中看出两条规则的区别。</p>
+<p>如果我们定义 <code>preread</code> 函数用于提前查看下一个符号</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">preread</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">pass</span>
+</span></span></code></pre></div><p>那么可能可以使用下面的方式区分两规则：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;alpha&#34;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;beta&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">nextsym</span> <span class="o">=</span> <span class="n">preread</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">nextsym</span> <span class="ow">in</span> <span class="n">SECOND</span><span class="p">[</span><span class="s2">&#34;alpha&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># A -&gt; alpha</span>
+</span></span><span class="line"><span class="cl">        <span class="k">elif</span> <span class="n">nextsym</span> <span class="ow">in</span> <span class="n">SECOND</span><span class="p">[</span><span class="s2">&#34;beta&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># A -&gt; beta</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">error</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span></code></pre></div><blockquote>
+<p>注意，不可偷懒将 <code>else</code> 作为 $A \rightarrow \beta$ 的条件分支。</p>
+</blockquote>
+<p>但是，提前读也不能解决左递归问题。不过对于左递归，递归子程序法有更加优雅的解决办法。在上一节中，我们提到可以使用扩展 BNF 范式中的重复符号 $\{\}$ 修改左递归规则。对于这种规则，例如 $A \rightarrow B\{B\}$。我们可以使用<strong>循环</strong>来处理。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;B</span><span class="si">{B}</span><span class="s2">&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sym</span> <span class="o">=</span> <span class="n">B</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="s2">&#34;B&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">sym</span> <span class="o">=</span> <span class="n">B</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">sym</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># omit...</span>
+</span></span></code></pre></div><blockquote>
+<p>说起来，不知道你有没有意识到，标准的文法中是不存在循环（迭代）的，而是通过递归来代替循环。从这一点也可以看出递归和循环的等价性。从中我们还可以得到另一个见解：3 型文法不需要符号栈因为其是 “尾递归” 的；2 型文法需要符号栈因为其不是 “尾递归” 的。</p>
+</blockquote>
+<blockquote>
+<p>我们知道，推导或归约的过程就是构建文法树的过程，但是我们并没有考虑到循环。实际上在循环中我们也可以<strong>按照消除左递归之前的文法构造文法树</strong>，只需要记住先进行解析的是更深的子树即可。</p>
+</blockquote>
+<h2 id="七算符优先分析法">七、算符优先分析法<a hidden class="anchor" aria-hidden="true" href="#七算符优先分析法">#</a></h2>
+<h3 id="1例子中缀表达式转后缀问题">（1）例子：中缀表达式转后缀问题<a hidden class="anchor" aria-hidden="true" href="#1例子中缀表达式转后缀问题">#</a></h3>
+<p>除了判断有效括号，各位初学编程的时候也应该做过 “中缀表达式转后缀” 问题。实际上这也是一个编译问题。因为将中缀表达式的文法树以后序遍历的方式输出，就是后缀表达式。关键的问题就是如何构建中缀表达式的文法树。</p>
+<p>这一问题的标准解法是使用<strong>栈</strong>。大致思路是对于每一个运算符，为其设定<strong>优先级</strong>。对于输入表达式，从左到右扫描，如果是数字则直接添加到后缀表达式中；如果是运算符则将所有优先级高于该运算符的运算符弹出并添加到后缀表达式中，再将该运算符入栈；如果是右括号则将栈中左右括号之间的运算符弹出并添加到后缀表达式中。</p>
+<p>看到了栈的存在，应该想到这就是一个简易的语法分析器。而优先级的概念实际上反映了文法树的深度。<strong>优先级越高</strong>，意味着位于文法树更深的地方（即 “句柄”），应该<strong>更先进行归约</strong>。从栈中弹出的过程实际上等同于进行归约的过程，所以才会将所有优先级更高的运算符弹出。</p>
+<p>上面的分析实际上表述了算符优先分析法的基本原理：用<strong>算符</strong>表示<strong>规则</strong>，用<strong>算符间的优先关系</strong>表示<strong>规则归约的优先关系</strong>。</p>
+<h3 id="2算符优先分析算法">（2）算符优先分析算法<a hidden class="anchor" aria-hidden="true" href="#2算符优先分析算法">#</a></h3>
+<p>算符优先分析法是一种自底向上分析法。特点是通过比较算符间的优先级识别 “句柄”，选择采取移进或归约操作。</p>
+<blockquote>
+<p>需要注意，这里的带引号的 “句柄” 和真正的句柄有一定区别。将在之后说明。</p>
+</blockquote>
+<p>为了方便表述，我们先定义比较算符间优先级的符号：</p>
+<ul>
+<li>$a$ ⋖ $b$ 指符号 $a$ 的优先级小于 $b$；</li>
+<li>$a$ ≐ $b$ 指符号 $a$ 的优先级等于 $b$；</li>
+<li>$a$ ⋗ $b$ 指符号 $a$ 的优先级大于 $b$；</li>
+</ul>
+<p>之后我们给出该分析算法的具体步骤：</p>
+<p>在进行算符优先分析之前，我们需要定义终结符间可能的优先级关系，这样的关系我们可以使用一个优先关系矩阵 $M$ 表示。其中的项 $M[a, b]$ 表示终结符 $a$ 和 $b$ 的优先关系。</p>
+<ol>
+<li>在最开始，将符号 $\#$ 推入符号栈中。</li>
+<li>在分析的某一步中，取符号栈从栈顶开始的第一个终结符 $a$ 和输入串首部符号 $b$。如果 $a$ ⋗ $b$，则按照此时 “句柄” 所对应的规则进行归约；如果 $a$ ⋖ $b$ 或 $a$ ≐ $b$ 则读入 $b$ 并压入栈中（移进）；如果 $a$ 和 $b$ 间无法进行比较，则进行错误处理（拒绝）。</li>
+<li>不断重复步骤 2，直到读入输入串中所有符号。如果此时符号栈中恰好只剩 $\#$ 和文法的开始符号，说明接受该输入串，算法结束（接受）；否则进行错误处理（拒绝）。</li>
+</ol>
+<blockquote>
+<p>需要注意，算符优先分析法没有指出要使用哪一条规则进行归约，而只是说此时能够进行归约。</p>
+</blockquote>
+<p>我们可以举个例子。对于文法 $G[E]$：
+</p>
+$$
+    E \rightarrow E + E | E * E | (E) | i
+$$
+<blockquote>
+<p>很明显，该文法是二义性文法。但是通过指定算符间的优先关系，却也可以实现文法的解析。</p>
+</blockquote>
+<p>我们直接给出其优先关系矩阵：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$+$</th>
+<th>$*$</th>
+<th>$i$</th>
+<th>$($</th>
+<th>$)$</th>
+<th>$\#$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$+$</td>
+<td>⋗</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$*$</td>
+<td>⋗</td>
+<td>⋗</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$i$</td>
+<td>⋗</td>
+<td>⋗</td>
+<td></td>
+<td></td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$($</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>≐</td>
+<td></td>
+</tr>
+<tr>
+<td>$)$</td>
+<td>⋗</td>
+<td>⋗</td>
+<td></td>
+<td></td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$\#$</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td></td>
+<td>≐</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>注意，优先关系很可能不是偏序的。</p>
+</blockquote>
+<p>根据优先关系矩阵和上面给出的算法，我们能够分析符号串 $i+i*i$：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">符号栈</th>
+<th style="text-align:right">输入串</th>
+<th style="text-align:center">优先关系</th>
+<th style="text-align:center">动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">$\#$</td>
+<td style="text-align:right">$i+i*i\#$</td>
+<td style="text-align:center">⋖</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#i$</td>
+<td style="text-align:right">$+i*i\#$</td>
+<td style="text-align:center">⋗</td>
+<td style="text-align:center">归约</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E$</td>
+<td style="text-align:right">$+i*i\#$</td>
+<td style="text-align:center">⋖</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E+$</td>
+<td style="text-align:right">$i*i\#$</td>
+<td style="text-align:center">⋖</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E+i$</td>
+<td style="text-align:right">$*i\#$</td>
+<td style="text-align:center">⋗</td>
+<td style="text-align:center">归约</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E+E$</td>
+<td style="text-align:right">$*i\#$</td>
+<td style="text-align:center">⋖</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E+E*$</td>
+<td style="text-align:right">$i\#$</td>
+<td style="text-align:center">⋖</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E+E*i$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">⋗</td>
+<td style="text-align:center">归约</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E+E*E$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">⋗</td>
+<td style="text-align:center">归约</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E+E$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">⋗</td>
+<td style="text-align:center">归约</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#E$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">≐</td>
+<td style="text-align:center">接受</td>
+</tr>
+</tbody>
+</table>
+<p>上面的算法虽然给出了算符优先分析法的一般步骤，但是对于给定的文法 $G$，我们并不清楚其优先关系矩阵要如何构造。接下来我们就对算符优先分析法的原理做进一步分析，考察优先关系矩阵的构造方法。</p>
+<p>让我们考虑一个简单的表达式，$a + a * a + a$，并只视 $+$ 和 $*$ 为终结符，同时设定 $*$ 的优先级别大于 $+$。因此应当在读入 $a + a * a$ 后识别到 “句柄”，对 $a * a$ 进行归约。此时，我们是用 $*$ 的优先级来代表 $a * a$ 在归约中的优先级。因为前一个 $+$ 小于 $*$，所以应该优先归约还未读入的 $a * a$；又因为 $*$ 大于后一个 $+$，所以应该优先归约已经读入的 $a * a$。正是因为算符间有 $+$ ⋖ $*$ ⋗ $+$ 的关系，我们才能找出那一个应该最先进行归约的，优先级最高的 “句柄”。</p>
+<p>因此，对于使用算符优先分析法进行归约的句子，其任意中间句型中的所有终结符 $a_1, a_2, ..., a_n$ 应当有类似这样的优先级关系：$a_1$ ⋖ $a_2$ ≐ $a_3$ ⋗ $a_4$ ⋖ $a_5$ ⋗ $a_6$&hellip; 其中 $a_2$、$a_3$ 是<strong>第一个优先级高于左右相邻终结符的部分</strong>。因此应当首先归约 $a_2$、$a_3$ 所代表的 “句柄”。故而，在算法中，我们的归约时机是遇到第一个 ⋗ 关系的时刻。因为此时优先级第一次下降，所有的 “句柄&quot; 成分都进入到符号栈中。</p>
+<p>根据上面的分析，我们就知道要如何为某一文法确定其优先关系矩阵了。</p>
+<h3 id="3优先关系矩阵的确定">（3）优先关系矩阵的确定<a hidden class="anchor" aria-hidden="true" href="#3优先关系矩阵的确定">#</a></h3>
+<p>为了能够让符号表示整个规则的优先关系，我们需要对文法进行约束。使用算符优先分析法的文法必须是<strong>算符文法</strong>（Operator Grammar, OG）。如果文法 $G$ 中没有形如 $U \rightarrow ...VW...$，其中 $V,W \in V_n$ 的规则（即存在两个非终结符相邻的规则），则称 $G$ 为算符文法。</p>
+<blockquote>
+<p>如果存在形如 $U \rightarrow ...VW...$ 的规则，则我们无法识别非终结符 $V$ 的归约时机，因为在 $V$ 之后不是一个优先级低于 $V$ 所推导出的符号串中终结符的终结符。$V$ 和 $W$ 间无法建立 ⋗ 关系。</p>
+</blockquote>
+<p>对于算符文法 $G$，我们希望设定文法中各终结符间的优先关系，使得对于任意句型 $s \in V^*$，我们希望其 “句柄” 左右两侧终结符的优先级小于句柄内的终结符；“句柄” 内的终结符的优先级按顺序相等。</p>
+<p>首先我们定义</p>
+<ul>
+<li>非终结符 $U$ 所能推导出的符号序列中最左终结符的集合（即 First $V_t$）
+$$
+        \text{FIRSTVT}(U) = \{b | U \xRightarrow{+} b... \lor U \xRightarrow{+} Vb..., b \in V_t, V \in V_n \}
+    $$</li>
+<li>以及非终结符 $U$ 所能推导出的符号序列中最右终结符的集合（即 Last $V_t$）
+$$
+        \text{LASTVT}(U) = \{a | U \xRightarrow{+} ...a \lor U \xRightarrow{+} ...aV, a \in V_t, V \in V_n \}
+    $$</li>
+</ul>
+<p>FIRSTVT 和 LASTVT 集表示了一个非终结符 $U$ 能够推出的最左和最右的终结符。这些终结符的优先级应当大于位于 $U$ 左右两侧的终结符。</p>
+<p>因此下面我们定义优先关系：对于算符文法 $G$，定义 $U,V,W \in V_n$。则任意两终结符 $a$ 和 $b$，它们之间的优先关系为：</p>
+<ol>
+<li>$a$ ≐ $b$，当且仅当文法中有形如 $U \rightarrow ...ab...$ 或 $U \rightarrow ...aVb...$ 的规则。</li>
+<li>$a$ ⋖ $b$，当且仅当文法中有形如 $U \rightarrow ...aW...$ 的规则，且 $b \in \text{FIRSTVT}(W)$。</li>
+<li>$a$ ⋗ $b$，当且仅当文法中有形如 $U \rightarrow ...Wb...$ 的规则，且 $a \in \text{LASTVT}(W)$。</li>
+</ol>
+<blockquote>
+<p>注意，对于文法 $G[U]$，我们需要添加新的开始符号 $U'$ 并添加规则 $U' \rightarrow \#U\#$，从而确定符号 $\#$ 和其他终结符的优先级关系。</p>
+</blockquote>
+<p>通过上面的方式，我们可以定义优先关系矩阵。但是和 LL(1) 分析法的分析表一样，优先关系矩阵的单一项中也可能具有多个不同关系。如果出现这种情况，则说明该算符文法不能使用算符优先分析法进行分析。</p>
+<p>另外，我们定义如果一个算符文法中两个终结符之间最多只有一种关系，则该文法为<strong>算符优先文法</strong>。算符优先文法必定能够使用算符优先分析法进行分析。</p>
+<blockquote>
+<p>在前面我们提到，“‘句柄’ 和真正的句柄有一定区别”。从上面我们定义优先关系的方法也可以看出。在定义 FIRSTVT 和 LASTVT 时我们指的并不是单步推出的最左和最右终结符。当然，FIRSTVT 和 LASTVT 这样定义是必须的，但也使得我们每一次归约时识别的符号串并不是句柄。</p>
+<p>我们归约的实际上是<strong>最左素短语</strong>。<strong>素短语</strong>是一个短语（但不一定是简单短语），该短语中<strong>至少包含一个终结符</strong>，且除自身外不包含其他素短语。而最左素短语即在句型中位于最左侧的素短语（就像句柄是在句型中位于最左侧的简单短语）。由于算符优先分析法中通过终结符定义 “句柄”，所以在每一步归约时，归约的符号串中也必定包括至少一个终结符，这也就是素短语。</p>
+<p>素短语所针对的实际上是<strong>规则中只有单个非终结符的情况</strong>。举个例子，对文法 $G[E]$：
+</p>
+$$
+\begin{align*}
+    E &\rightarrow E + T | T \\
+    T &\rightarrow T * F | F \\
+    F &\rightarrow (E) | i
+\end{align*}
+$$
+<p>该文法是算符文法，并且可以证明是算符优先文法，因此可以应用算符优先分析法。但是对于其中的规则 $E \rightarrow T$ 和 $T \rightarrow F$，由于这两条规则中不存在终结符，所以并不能知晓何时应当使用这两条规则进行归约。因而可能出现对 $T + T$、$F + T$ 或 $F * F$ 进行归约的情况（尽管这时的句柄应是 $T$ 或 $F$）。这时 “句柄” 并不与任意一条规则匹配。这也是为什么我们在前面说 “算符优先分析法没有指出要使用哪一条规则进行归约，而只是说此时能够进行归约。”。</p>
+</blockquote>
+<h3 id="4firstvt-和-lastvt-集的构造">（4）FIRSTVT 和 LASTVT 集的构造<a hidden class="anchor" aria-hidden="true" href="#4firstvt-和-lastvt-集的构造">#</a></h3>
+<p>相较于 LL(1) 分析法中的 FIRST 和 FOLLOW 集，算符优先分析法中的 FIRSTVT 和 LASTVT 的构造方法就简单得多了。</p>
+<p>构造 $\text{FIRSTVT}(U)$ 的算法如下：</p>
+<ol>
+<li>若有规则 $U \rightarrow b...$ 或 $U \rightarrow Vb...$，则 $b \in \text{FIRSTVT}(U)$。</li>
+<li>若有规则 $U \rightarrow V...$，则 $\text{FIRSTVT}(V) \subset \text{FIRSTVT}(U)$</li>
+</ol>
+<p>同理，构造 $\text{LASTVT}(U)$ 的算法如下：</p>
+<ol>
+<li>若有规则 $U \rightarrow ...a$ 或 $U \rightarrow ...aV$，则 $a \in \text{LASTVT}(U)$。</li>
+<li>若有规则 $U \rightarrow ...V$，则 $\text{LASTVT}(V) \subset \text{LASTVT}(U)$</li>
+</ol>
+<p>我们还举文法 $G[E]$ 为例：
+</p>
+$$
+\begin{align*}
+    E &\rightarrow E + T | T \\
+    T &\rightarrow T * F | F \\
+    F &\rightarrow (E) | i
+\end{align*}
+$$
+<ol>
+<li>
+<p>在一开始，求 $F$ 的 FIRSTVT 和 LASTVT。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>FIRSTVT</th>
+<th>LASTVT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{\}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{\}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(,i\}$</td>
+<td>$\{),i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>随后求 $T$ 的 FIRSTVT 和 LASTVT。此时我们已经求得了 $\text{FIRSTVT}(F)$ 和 $\text{LASTVT}(F)$。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>FIRSTVT</th>
+<th>LASTVT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{\}$</td>
+<td>$\{\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{*,(,i\}$</td>
+<td>$\{*,),i\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(,i\}$</td>
+<td>$\{),i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>最后求 $E$ 的 FIRSTVT 和 LASTVT。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>FIRSTVT</th>
+<th>LASTVT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$E$</td>
+<td>$\{+,*,(,i\}$</td>
+<td>$\{+,*,),i\}$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>$\{*,(,i\}$</td>
+<td>$\{*,),i\}$</td>
+</tr>
+<tr>
+<td>$F$</td>
+<td>$\{(,i\}$</td>
+<td>$\{),i\}$</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p>根据求得的 FIRSTVT 和 LASTVT 集，我们可以构造优先关系矩阵。最终的结果和之前例子中的优先关系矩阵相同：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$+$</th>
+<th>$*$</th>
+<th>$i$</th>
+<th>$($</th>
+<th>$)$</th>
+<th>$\#$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$+$</td>
+<td>⋗</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$*$</td>
+<td>⋗</td>
+<td>⋗</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$i$</td>
+<td>⋗</td>
+<td>⋗</td>
+<td></td>
+<td></td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$($</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>≐</td>
+<td></td>
+</tr>
+<tr>
+<td>$)$</td>
+<td>⋗</td>
+<td>⋗</td>
+<td></td>
+<td></td>
+<td>⋗</td>
+<td>⋗</td>
+</tr>
+<tr>
+<td>$\#$</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td>⋖</td>
+<td></td>
+<td>≐</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>很有趣的是，无二义的文法使用算符优先分析法，可能由于最左素短语问题导致归约时的困难；但保持优先关系矩阵不变，使用二义性文法却可以没有歧义的进行归约。</p>
+</blockquote>
+<h2 id="八lr-分析法">八、LR 分析法<a hidden class="anchor" aria-hidden="true" href="#八lr-分析法">#</a></h2>
+<h3 id="1lr-分析法的分类">（1）LR 分析法的分类<a hidden class="anchor" aria-hidden="true" href="#1lr-分析法的分类">#</a></h3>
+<p>LR(k) 分析法是实现自底向上分析的一类方法。所谓 LR，指的是该方法“<strong>从左向右</strong>（<strong>L</strong>eft to Right）扫描输入符号串，反向产生句子的 “<strong>最右推导</strong>（<strong>R</strong>ightmost Derivation）”。而 k 则和 LL(1) 类似，表示该方法在一步中只向前看的输入符号数量。</p>
+<blockquote>
+<p>因为是一种自底向上分析法，所以实际上应当说<strong>规范归约</strong>。</p>
+</blockquote>
+<p>与其他分析法相比，LR 分析法能够接受的文法范围更广，具有很高的分析效率。唯一的问题是结构较为复杂，手工实现工作量大。不过由于其便于通过程序自动生成，因此经常被语法分析程序生成器（如 yacc 或 bison）用来自动生成语法分析程序。</p>
+<p>LR 分析法包括一系列分析方法，如 LR(0)、SLR(1)、LR(1)、LALR(1) 等等。其中：</p>
+<ul>
+<li>LR(0) 并不向前看任何符号，因而并不实用。但是由于其结构简单，方便我们进行引入。</li>
+<li>LR(1) 是规范的 LR 方法，接受的文法范围更大，但实现更加困难。</li>
+<li>SLR(1) 即 Simple LR(1)。是 LR(1) 的简化版本，最容易实现。</li>
+<li>LALR(1) 即 Look-ahead LR(1)。同样是 LR(1) 的简化版本，但考虑到向前看，虽然不及 LR(1)，但相较于 SLR(1) 功能更加强大。</li>
+</ul>
+<p><img loading="lazy" src="grammars.png" alt="grammars"  />
+</p>
+<p>限于篇幅，下面将着重介绍 LR(0) 和 SLR(1)。</p>
+<blockquote>
+<p>LR 分析法由传奇程序员<a href="https://www-cs-faculty.stanford.edu/~knuth/">高德纳</a>（Donald Ervin Knuth）在 1965 年发明。高德纳是图灵将得主、算法分析之父、计算机排版系统 Tex 的作者、巨著《计算机程序设计艺术》的作者&hellip; 在算法、编译器等领域，他是永远绕不开的人物。</p>
+</blockquote>
+<h3 id="2构建-lr0-自动机">（2）构建 LR(0) 自动机<a hidden class="anchor" aria-hidden="true" href="#2构建-lr0-自动机">#</a></h3>
+<p>我们知道，自底向上分析法的主要原理就是不断移进输入串中的符号，直到识别到句柄时使用规则进行归约。但是我们要如何确定当前就是句柄了呢？算符优先分析法是根据终结符间的优先关系确定，而 LR 分析法则采取了另一种方式。后者会在每一步中<strong>记录当前可能处于的句柄中的位置</strong>，根据当前的位置情况，就可以做出移进或归约决定。</p>
+<p>这种对位置的记录称为<strong>LR(0) 项目</strong>，或简称为<strong>项目</strong>。一个项目是由文法的一条<strong>规则</strong>再加上标记位置的<strong>点</strong>组成。项目中的点之前的部分表示已经读入了符号栈中，点之后的部分表示还未读入符号栈中。比如说对于规则 $A \rightarrow XYZ$，对应四个不同的项目：
+</p>
+$$
+\begin{align*}
+    A &\rightarrow \cdot XYZ \\
+    A &\rightarrow X\cdot YZ \\
+    A &\rightarrow XY\cdot Z \\
+    A &\rightarrow XYZ\cdot \\
+\end{align*}
+$$
+<blockquote>
+<p>对于 $A \rightarrow \epsilon$，只对应一个项目 $A \rightarrow \cdot$。</p>
+</blockquote>
+<p>根据项目的含义我们可以得知，点在最开始的项目表示还未读入该规则的任何部分，点在最末尾的项目表示已经完全读入了该规则（即匹配了句柄）。这时对于文法 $G[S]$ 的开始符号 $S$，我们也希望能使用项目来表示解析的位置，从而表示<strong>解析开始</strong>和<strong>接受输入</strong>的情况。</p>
+<p>因此我们还需要进行<strong>文法拓广</strong>。$G$ 的拓广文法 $G'$ 是在 $G$ 的基础上增加一个开始符号 $S'$ 和规则 $S' \rightarrow S$。该规则对应两个项目：$S' \rightarrow \cdot S$ 和 $S' \rightarrow S\cdot$。前一个项目表示对文法的解析刚刚开始的情况，后一个项目表示整个文法的解析已经完成的情况（即接受输入串）。拓广后的文法能够保证<strong>指示接受输入的项目唯一</strong>。</p>
+<p>对于拓广后的文法 $G'[S']$，表示文法的解析刚刚开始的项目为 $S' \rightarrow \cdot S$，然而需要注意的是，$S' \rightarrow \cdot S$ 只是当前位置的一种可能，因为对于点之后的非终结符 $S$，同样有着规则 $S \rightarrow \alpha | \beta$。因此项目 $S \rightarrow \cdot \alpha$ 和 $S \rightarrow \cdot \beta$ 同样是可能的当前位置。</p>
+<p>由于这一原因，我们定义 LR 分析法的闭包函数 $\text{CLOSURE}(I)$，其中输入 $I$ 为一项目集。$\text{CLOSURE}(I)$ 的构造方法如下：</p>
+<ol>
+<li>在最开始，将 $I$ 加入 $\text{CLOSURE}(I)$ 中。</li>
+<li>在每一步迭代中，如果有形如 $A \rightarrow \alpha \cdot B \beta$ 的规则在 $\text{CLOSURE}(I)$ 中，则对于非终结符 $B$ 的规则 $B \rightarrow \gamma$，如果项目 $B \rightarrow \cdot \gamma$ 不在 $\text{CLOSURE}(I)$ 中，则将该项目加入其中。</li>
+<li>重复步骤 2，直到 $\text{CLOSURE}(I)$ 不再发生变化。</li>
+</ol>
+<p>因此，文法 $G'[S']$ 中表示解析刚刚开始的应当是项目集 $\text{CLOSURE}(\{S' \rightarrow \cdot S\})$。我们定义其为初始项目集 $I_0$，即：
+</p>
+$$
+    I_0 = \text{CLOSURE}(\{S' \rightarrow \cdot S\})
+$$
+<p>由于项目表示当前解析的位置，因此随着解析的进行，项目中点的位置也应该发生变化。举个例子，对于项目 $A \rightarrow \alpha \cdot B \beta$，其中 $B \in V_n \cup V_t$。如果读入了终结符 $B_t$ 或是归约得到了非终结符 $B_n$，都应使项目变为 $A \rightarrow \alpha B \cdot \beta$。</p>
+<p>因此我们定义转移函数 $\text{GOTO}(I, X)$，其中 $I$ 为一项目集，$X \in V_n \cup V_t$。用于表示项目集 $I$ 在读入符号 $X$ 后变成的新项目集。$\text{GOTO}(I, X)$ 的构造方法如下：</p>
+<ol>
+<li>定义 $J = \{ \text{任何形如} A \rightarrow \alpha X \cdot \beta \text{的项目}| A \rightarrow \alpha \cdot X \beta \in I\}$。</li>
+<li>令 $\text{GOTO}(I, X) = \text{CLOSURE}(J)$。</li>
+</ol>
+<p>此时对于初始项目集 $I_0$，对于任意符号 $X \in V_n \cup V_t$，我们都可以使用 GOTO 函数得到转移后的项目集 $I_i = \text{GOTO}(I_0, X)$。而同理，对于转移后得到的项目集 $I_i$，我们还可以再使用 GOTO 函数进行进一步的转移，得到 $I_j = \text{GOTO}(I_i, X)$&hellip; <strong>按照此方法不断迭代</strong>，最终得到的项目集的数量是<strong>有限的</strong>。</p>
+<p>如果我们将得到的所有项目集 $I_0, I_1, ..., I_n$ 作为状态，将关系 $I_j = \text{GOTO}(I_i, X)$ 作为从状态 $I_i$ 到 $I_j$ 的状态转移，并以 $X$ 作为状态转移的输入。最后再另 $I_0$ 为开始状态，其他项目集为接受状态。这样我们就得到了一个<strong>确定的有穷自动机</strong>。我们称其为 <strong>LR(0) 自动机</strong>，因为该自动机的每一个状态都是 LR(0) 项目集。</p>
+<blockquote>
+<p>或者更形式化的，我们定义 LR(0) 自动机 $M$:
+</p>
+$$
+    M = (\{I_0, ..., I_n\}, V_n \cup V_t, \text{GOTO}, I_0, Z)
+$$
+<p>
+其中 $Z$ 是除初始状态 $I_0$ 外的其他状态。即接受状态集 $Z = S - \{I_0\}$。</p>
+</blockquote>
+<p>我们定义，对于句型 $\alpha \beta \gamma$，其中 $\beta$ 是句柄，如果 $\alpha \beta = u_1u_2...u_n$，则符号串 $u_1u_2...u_i, (1 \le i \le n)$ 是句型 $\alpha \beta \gamma$ 的<strong>活前缀</strong>。那么可以证明，<strong>LR(0) 自动机所接受的就是规范句型的活前缀</strong>。因此 LR(0) 自动机具有识别句柄的能力。</p>
+<p>LR(0) 自动机的构建过程是十分繁琐的，非常不适人工构建。一个较为简单的文法，也可能拥有众多的状态。下面的例子我们就直接给出增广后的文法和构建后的 LR(0) 自动机。</p>
+<p>对于增广的文法 $G'[E']$：
+</p>
+$$
+\begin{align*}
+    E' &\rightarrow E \\
+    E &\rightarrow E + T | T \\
+    T &\rightarrow T * F | F \\
+    F &\rightarrow (E) | \textbf{id}
+\end{align*}
+$$
+<p>其 LR(0) 自动机如下所示：</p>
+<p><img loading="lazy" src="lr0-automata.png" alt="lr0-automata"  />
+</p>
+<blockquote>
+<p>文法和自动机出自 Compilers: Principles, Techniques, and Tools (Second Edition)。</p>
+</blockquote>
+<h3 id="3lr0-自动机的使用">（3）LR(0) 自动机的使用<a hidden class="anchor" aria-hidden="true" href="#3lr0-自动机的使用">#</a></h3>
+<p>上面我们提到，LR(0) 自动机能够识别句型的活前缀，又因为<strong>句柄是当前句型的最长活前缀的后缀</strong>，所以为了识别句柄，我们只需要采取类似有穷自动机<strong>识别词成分</strong>的方法<strong>识别最长活前缀</strong>，就可以进一步实现句柄的识别。</p>
+<p>我们希望使用 LR(0) 自动机实现<strong>最长匹配</strong>。而实现的方法已经在词法分析部分讲解过了：我们只需要不断读入当前句型中的符号并进行状态转移，直到无法进行状态转移（转移到死状态 $\phi$）即可。此时又由于除了开始状态 $I_0$，其他状态都是接受状态，所以最长活前缀实际上就是无法进行状态转移时已读入的符号序列。</p>
+<p>举个例子，对于句子 $(\textbf{id})+\textbf{id}$，我们使用上一小节中给出的 LR(0) 自动机识别其句柄。会经历如下状态转移 $I_0 \xrightarrow{(} I_4 \xrightarrow{\textbf{id}} I_5 \xrightarrow{)} \phi$。因此识别到的最长活前缀应当是 $(\textbf{id}$。句柄是最长活前缀的后缀，因此句柄为 $\textbf{id}$。</p>
+<blockquote>
+<p>由于<strong>句柄一定和某一规则右侧的符号串相同</strong>，所以我们从项目集 $I_5$ 中也可以得知此时的句柄。$I_5$ 中项目 $F \rightarrow \textbf{id} \cdot$ 中的点位于其最右侧，说明这时识别的句柄即 $\textbf{id}$。</p>
+</blockquote>
+<p>识别了句柄之后，我们进行归约。此时的句型变为 $(F)+\textbf{id}$。接着我们同样使用 LR(0) 自动机识别最长活前缀。会经历如下状态转移 $I_0 \xrightarrow{(} I_4 \xrightarrow{F} I_3 \xrightarrow{)} \phi$。</p>
+<p>在此过程中可以注意到，由于句柄是最长活前缀的后缀，所以归约完句柄之后，并不改变最长活前缀句柄之前的部分。如将 $(\textbf{id})+\textbf{id}$ 归约为 $(F)+\textbf{id}$，最前面的 $($ 并不会发生变化。</p>
+<p>所以我们并不需要每归约一次都从头匹配最长活前缀，只需要记录每一次状态转移时的状态，在归约之后重新从句柄之前的状态匹配即可。对于上面的例子来说，在将 $\textbf{id}$ 归约为 $F$ 后，只需要从 $I_4$ 开始进行状态转移，而不需要从 $I_0$ 开始。</p>
+<p>LR(0) 语法分析器便是按照上面的策略实现句子的解析。符号栈中并不存储读入的符号，而是每一步转移到的某个状态。在进行解析时：</p>
+<ol>
+<li>在最开始将状态 $I_0$ 压入栈中；</li>
+<li>在每一步中，对于栈顶的状态 $I_i$ 和输入串首部符号 $a$，求得转移后的状态 $I_j = \text{GOTO}(I_i, a)$：
+<ul>
+<li>若 $I_j = \phi$，则按照 $I_i$ 中的项目进行归约，并将句柄所对应的栈中状态弹出。同时对于归约得到的非终结符 $A$，求 $I_j = \text{GOTO}(I_t, a)$，其中 $I_t$ 为此时符号栈顶的状态。将得到的状态 $I_j$ 压入栈中。</li>
+<li>若 $I_j \ne \phi$，将 $I_j = \text{GOTO}(I_i, a)$ 压入栈中，并读入输入串首部符号 $a$（移进）。</li>
+</ul>
+</li>
+<li>重复步骤 2 直到读入全部输入串中符号。若此时符号栈中只有一个状态 $I_i$ 且有项目 $S' \rightarrow S \cdot \in I_i$，则接受。</li>
+</ol>
+<blockquote>
+<p>步骤中的 “按照 $I_i$ 中的项目进行归约” 指的是查找项目集 $I_i$ 中点位于最末尾的项目，使用该项目对应的规则进行归约。</p>
+<p>当然你可能会想到，在一个项目集中可能出现多条点位于最末尾的项目，这样 LR(0) 便无法处理了，需要使用 SLR(1) 分析法。</p>
+</blockquote>
+<p>接下来我们使用 LR(0) 分析法解析句子 $\textbf{id} * \textbf{id}$ 作为例子。在符号栈中，我们使用 $i$ 指代 $I_i$。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">符号栈</th>
+<th style="text-align:right">输入串</th>
+<th style="text-align:center">动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">$0$</td>
+<td style="text-align:right">$\textbf{id} * \textbf{id} \#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 5$</td>
+<td style="text-align:right">$* \textbf{id} \#$</td>
+<td style="text-align:center">归约 $F \rightarrow \textbf{id}$</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 3$</td>
+<td style="text-align:right">$* \textbf{id} \#$</td>
+<td style="text-align:center">归约 $T \rightarrow F$</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 2$</td>
+<td style="text-align:right">$* \textbf{id} \#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 2\ 7$</td>
+<td style="text-align:right">$\textbf{id} \#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 2\ 7\ 5$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $F \rightarrow \textbf{id}$</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 2\ 7\ 10$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $T \rightarrow T * F$</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 2$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $E \rightarrow T$</td>
+</tr>
+<tr>
+<td style="text-align:left">$0\ 1$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">接受</td>
+</tr>
+</tbody>
+</table>
+<p>虽然移进和归约的动作序列就可以唯一确定文法树的结构，但是上面的过程对于人来说还是太过抽象了。我们也可以选择在符号栈中的各状态之前加上与该状态对应的符号，更能体现句型的归约过程，方便人类阅读。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">符号栈</th>
+<th style="text-align:right">输入串</th>
+<th style="text-align:center">动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">$\#0$</td>
+<td style="text-align:right">$\textbf{id} * \textbf{id} \#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ \textbf{id}5$</td>
+<td style="text-align:right">$* \textbf{id} \#$</td>
+<td style="text-align:center">归约 $F \rightarrow \textbf{id}$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ F3$</td>
+<td style="text-align:right">$* \textbf{id} \#$</td>
+<td style="text-align:center">归约 $T \rightarrow F$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ T2$</td>
+<td style="text-align:right">$* \textbf{id} \#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ T2\ *7$</td>
+<td style="text-align:right">$\textbf{id} \#$</td>
+<td style="text-align:center">移进</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ T2\ *7\ \textbf{id}5$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $F \rightarrow \textbf{id}$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ T2\ *7\ F10$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $T \rightarrow T * F$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ T2$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">归约 $E \rightarrow T$</td>
+</tr>
+<tr>
+<td style="text-align:left">$\#0\ E1$</td>
+<td style="text-align:right">$\#$</td>
+<td style="text-align:center">接受</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4slr1-分析法">（4）SLR(1) 分析法<a hidden class="anchor" aria-hidden="true" href="#4slr1-分析法">#</a></h3>
+<p>我们前面提到过，LR(0) 并不实用。主要原因有二：</p>
+<ol>
+<li>如果一个项目集 $I_i$ 中存在两个不同的项目，他们的点都位于最末尾，那么 LR(0) 无法确定应当选择哪一项目对应的规则进行归约。这被称为<strong>归约-归约冲突</strong>；</li>
+<li>如果存在两条不同的规则，其中一条规则右侧符号串是另一规则右侧符号串的<strong>前缀</strong>，那么 LR(0) 无法明确应当移进还是应当归约。这被称为<strong>移进-归约冲突</strong>。（例如项目集 $I_i$ 中存在项目 $U \rightarrow X \cdot a Y$ 和 $V \rightarrow X \cdot$。）</li>
+</ol>
+<p>而 SLR(1) 在 LR(0) 的基础上进行了一些改进，使得出现归约-归约冲突和移进-归约冲突的<strong>可能性减小</strong>，这让 SLR(1) 相较于 LR(0) 能够接受更多的文法。</p>
+<blockquote>
+<p>注意 SLR(1) 并未完全消除两种冲突。</p>
+</blockquote>
+<p>SLR(1) 采取的方法就是利用我们在 LL(1) 部分使用过的 FOLLOW 集。我们知道归约就是将已经读入的符号串的后一部分替换为一个非终结符 $A$，而此时下一个待读入的符号 $a$ 正位于归约产生的非终结符的<strong>右侧</strong>。因此一定存在这样的关系：$a \in \text{FOLLOW}(A)$。</p>
+<p>这样我们就可以为归约所使用的规则添加约束条件：对于项目集 $I_i$，有点位于末尾的规则 $A_1 \rightarrow \alpha_1 \cdot, A_2 \rightarrow \alpha_2 \cdot...$。如果对于当前输入串首部的符号 $a$，有 $a \in \text{FOLLOW}(A_j)$，则我们选择 $A_j \rightarrow \alpha_j \cdot$ 对应的规则进行归约。</p>
+<p>因此，SLR(1) 的算法只和 LR(0) 有一点区别。那就是当 $I_j = \text{GOTO}(I_i, a) = \phi$ 时，<strong>向前看此时输入串首部的符号 $a$</strong>，据此判断应当使用哪条规则进行归约。</p>
+<p>为了方便，我们使用 $\text{ACTION}(I, x)$ 表示当前当前状态为 $I$，输入串首部符号为 $x$ 时应当采取的动作，其值可能为 $ri$（按第 $i$ 条规则归约）、$s$（移进）或 $acc$（接受）。</p>
+<blockquote>
+<p>$\text{ACTION}(I, x) = acc$ 当且仅当 $x = \#$ 且 $S' \rightarrow S \cdot \in I$</p>
+</blockquote>
+<p>则 SLR(1) 分析法的步骤如下：</p>
+<ol>
+<li>在最开始将状态 $I_0$ 压入栈中。</li>
+<li>在每一步中，对于栈顶的状态 $I_i$ 和输入串首部符号 $a$，得到动作 $\text{ACTION}(I_i, a)$：
+<ul>
+<li>若 $\text{ACTION}(I_i, a) = s$，则读入符号 $a$，并将 $\text{GOTO}(I_i, a)$ 压入栈中；</li>
+<li>若 $\text{ACTION}(I_i, a) = r_i$，则按第 $i$ 条规则 $A \rightarrow \alpha$ 进行归约，并将 $\text{GOTO}(I_t, A)$ 压入栈中。其中 $I_t$ 为此时符号栈顶的状态。</li>
+<li>若 $\text{ACTION}(I_i, a) = acc$，则接受输入串。</li>
+</ul>
+</li>
+<li>重复步骤 2，直到接受或拒绝输入串。</li>
+</ol>
+<p>我们可以使用一个表格记录 $\text{ACTION}(I, x)$ 的取值。例如对于我们的表达式文法，其 ACTION 表如下所示：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">状态</th>
+<th style="text-align:center">$\textbf{id}$</th>
+<th style="text-align:center">$+$</th>
+<th style="text-align:center">$*$</th>
+<th style="text-align:center">$($</th>
+<th style="text-align:center">$)$</th>
+<th style="text-align:center">$\#$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">$0$</td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$1$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$acc$</td>
+</tr>
+<tr>
+<td style="text-align:center">$2$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r2$</td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r2$</td>
+<td style="text-align:center">$r2$</td>
+</tr>
+<tr>
+<td style="text-align:center">$3$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r4$</td>
+<td style="text-align:center">$r4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r4$</td>
+<td style="text-align:center">$r4$</td>
+</tr>
+<tr>
+<td style="text-align:center">$4$</td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r6$</td>
+<td style="text-align:center">$r6$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r6$</td>
+<td style="text-align:center">$r6$</td>
+</tr>
+<tr>
+<td style="text-align:center">$6$</td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$7$</td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$8$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s$</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$9$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r1$</td>
+<td style="text-align:center">$s$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r1$</td>
+<td style="text-align:center">$r1$</td>
+</tr>
+<tr>
+<td style="text-align:center">$10$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r3$</td>
+<td style="text-align:center">$r3$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r3$</td>
+<td style="text-align:center">$r3$</td>
+</tr>
+<tr>
+<td style="text-align:center">$11$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r5$</td>
+<td style="text-align:center">$r5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r5$</td>
+<td style="text-align:center">$r5$</td>
+</tr>
+</tbody>
+</table>
+<p>其中各编号对应的规则如下：</p>
+<ol>
+<li>$E \rightarrow E + T$</li>
+<li>$E \rightarrow T$</li>
+<li>$T \rightarrow T * F$</li>
+<li>$T \rightarrow F$</li>
+<li>$F \rightarrow (E)$</li>
+<li>$F \rightarrow \textbf{id}$</li>
+</ol>
+<p>同理，我们也可以使用一个表格记录 $\text{GOTO}(I, X)$ 的取值。对于同一个文法，其 GOTO 表如下所示：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">状态</th>
+<th style="text-align:center">$\textbf{id}$</th>
+<th style="text-align:center">$+$</th>
+<th style="text-align:center">$*$</th>
+<th style="text-align:center">$($</th>
+<th style="text-align:center">$)$</th>
+<th style="text-align:center">$\#$</th>
+<th style="text-align:center">$E$</th>
+<th style="text-align:center">$T$</th>
+<th style="text-align:center">$F$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">$0$</td>
+<td style="text-align:center">$5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$1$</td>
+<td style="text-align:center">$2$</td>
+<td style="text-align:center">$3$</td>
+</tr>
+<tr>
+<td style="text-align:center">$1$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$6$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$2$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$7$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$3$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$4$</td>
+<td style="text-align:center">$5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$8$</td>
+<td style="text-align:center">$2$</td>
+<td style="text-align:center">$3$</td>
+</tr>
+<tr>
+<td style="text-align:center">$5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$6$</td>
+<td style="text-align:center">$5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$9$</td>
+<td style="text-align:center">$3$</td>
+</tr>
+<tr>
+<td style="text-align:center">$7$</td>
+<td style="text-align:center">$5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$10$</td>
+</tr>
+<tr>
+<td style="text-align:center">$8$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$6$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$11$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$9$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$7$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$10$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$11$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>由于 ACTION 和 GOTO 表的表头类似，我们也可以将其合并为一个表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">状态</th>
+<th style="text-align:center">$\textbf{id}$</th>
+<th style="text-align:center">$+$</th>
+<th style="text-align:center">$*$</th>
+<th style="text-align:center">$($</th>
+<th style="text-align:center">$)$</th>
+<th style="text-align:center">$\#$</th>
+<th style="text-align:center">$E$</th>
+<th style="text-align:center">$T$</th>
+<th style="text-align:center">$F$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">$0$</td>
+<td style="text-align:center">$s5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$1$</td>
+<td style="text-align:center">$2$</td>
+<td style="text-align:center">$3$</td>
+</tr>
+<tr>
+<td style="text-align:center">$1$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s6$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$acc$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$2$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r2$</td>
+<td style="text-align:center">$s7$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r2$</td>
+<td style="text-align:center">$r2$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$3$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r4$</td>
+<td style="text-align:center">$r4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r4$</td>
+<td style="text-align:center">$r4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$4$</td>
+<td style="text-align:center">$s5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$8$</td>
+<td style="text-align:center">$2$</td>
+<td style="text-align:center">$3$</td>
+</tr>
+<tr>
+<td style="text-align:center">$5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r6$</td>
+<td style="text-align:center">$r6$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r6$</td>
+<td style="text-align:center">$r6$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$6$</td>
+<td style="text-align:center">$s5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$9$</td>
+<td style="text-align:center">$3$</td>
+</tr>
+<tr>
+<td style="text-align:center">$7$</td>
+<td style="text-align:center">$s5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s4$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$10$</td>
+</tr>
+<tr>
+<td style="text-align:center">$8$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s6$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$s11$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$9$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r1$</td>
+<td style="text-align:center">$s7$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r1$</td>
+<td style="text-align:center">$r1$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$10$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r3$</td>
+<td style="text-align:center">$r3$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r3$</td>
+<td style="text-align:center">$r3$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">$11$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r5$</td>
+<td style="text-align:center">$r5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">$r5$</td>
+<td style="text-align:center">$r5$</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>上面得到的表格称为 <strong>SLR(1) 分析表</strong>。包含了 $\text{ACTION}(I, x)$ 以及 $\text{GOTO}(I, X)$ 的全部取值。根据此表以及上面描述的 SLR(1) 算法，我们即可实现输入串的解析。</p>
+<p>当然，SLR(1) 只是 LR 分析法家族中较为简单的一种。这种方法也并未完全解决归约-归约冲突和移进-归约冲突，体现在 SLR(1) 分析表上便是在一个表项上可能存在多个不同的取值。这导致 SLR(1) 所能接受的文法不如 LALR(1) 或 LR(1) 丰富。但是通过 SLR(1) 的原理，我们已经可以体会到 LR 分析法的基本原理及特点了。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/">自动机</a></li>
+      <li><a href="https://wokron.github.io/tags/%E6%95%B0%E5%AD%A6/">数学</a></li>
+      <li><a href="https://wokron.github.io/tags/%E6%96%87%E6%B3%95%E7%90%86%E8%AE%BA/">文法理论</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/compiling-tech-from-zero-5/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>从零开始的编译原理（5）：语义分析与中间代码生成</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/qemu-introduction/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>QEMU 模拟器介绍</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 从零开始的编译原理（4）：语法分析与下推自动机 on x"
+            href="https://x.com/intent/tweet/?text=%e4%bb%8e%e9%9b%b6%e5%bc%80%e5%a7%8b%e7%9a%84%e7%bc%96%e8%af%91%e5%8e%9f%e7%90%86%ef%bc%884%ef%bc%89%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%8e%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f&amp;hashtags=%e8%87%aa%e5%8a%a8%e6%9c%ba%2c%e6%95%b0%e5%ad%a6%2c%e6%96%87%e6%b3%95%e7%90%86%e8%ae%ba">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 从零开始的编译原理（4）：语法分析与下推自动机 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f&amp;title=%e4%bb%8e%e9%9b%b6%e5%bc%80%e5%a7%8b%e7%9a%84%e7%bc%96%e8%af%91%e5%8e%9f%e7%90%86%ef%bc%884%ef%bc%89%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%8e%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba&amp;summary=%e4%bb%8e%e9%9b%b6%e5%bc%80%e5%a7%8b%e7%9a%84%e7%bc%96%e8%af%91%e5%8e%9f%e7%90%86%ef%bc%884%ef%bc%89%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%8e%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 从零开始的编译原理（4）：语法分析与下推自动机 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f&title=%e4%bb%8e%e9%9b%b6%e5%bc%80%e5%a7%8b%e7%9a%84%e7%bc%96%e8%af%91%e5%8e%9f%e7%90%86%ef%bc%884%ef%bc%89%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%8e%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 从零开始的编译原理（4）：语法分析与下推自动机 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 从零开始的编译原理（4）：语法分析与下推自动机 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e4%bb%8e%e9%9b%b6%e5%bc%80%e5%a7%8b%e7%9a%84%e7%bc%96%e8%af%91%e5%8e%9f%e7%90%86%ef%bc%884%ef%bc%89%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%8e%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 从零开始的编译原理（4）：语法分析与下推自动机 on telegram"
+            href="https://telegram.me/share/url?text=%e4%bb%8e%e9%9b%b6%e5%bc%80%e5%a7%8b%e7%9a%84%e7%bc%96%e8%af%91%e5%8e%9f%e7%90%86%ef%bc%884%ef%bc%89%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%8e%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 从零开始的编译原理（4）：语法分析与下推自动机 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e4%bb%8e%e9%9b%b6%e5%bc%80%e5%a7%8b%e7%9a%84%e7%bc%96%e8%af%91%e5%8e%9f%e7%90%86%ef%bc%884%ef%bc%89%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%8e%e4%b8%8b%e6%8e%a8%e8%87%aa%e5%8a%a8%e6%9c%ba&u=https%3a%2f%2fwokron.github.io%2fposts%2fcompiling-tech-from-zero-4%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

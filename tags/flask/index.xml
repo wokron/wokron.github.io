@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Flask on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/flask/</link>
+    <description>Recent content in Flask on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Sat, 22 Apr 2023 22:40:12 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/flask/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>后端开发入门笔记之 Flask 简介</title>
+      <link>https://wokron.github.io/posts/backend-dev-getting-started-2/</link>
+      <pubDate>Sat, 22 Apr 2023 22:40:12 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/backend-dev-getting-started-2/</guid>
+      <description>一、前言 这一篇文章中主要讲解了为完成后端项目所使用的 Flask 框架。对于自己所使用的功能和特性进行了着重的讨论。当然说是着重讨论，其实还是皮毛罢了。想要更加系统地了解 Flask，还请查看官方文档
+二、Flask （1）Flask 介绍 Flask 是一个 Python Web 框架，十分轻量灵活，可以用于开发小型 Web 应用。Flask 高度可扩展，可以通过添加不同的组件来实现定制化的功能。对于简单的后端任务来说，Flask 十分合适。
+（2）Flask 用于后端 虽然 Flask 可以实现经典的 MVC 架构，但是本项目只进行后端开发，提供一些用于数据库操作的 RESTful 接口，并不涉及显示的部分。因此只讨论 Flask 用于后端开发的方面。
+对于后端项目，我们希望其向下管理数据库，向上为前端提供接口。这就需要用到 ORM 来通过对象管理数据库关系；同时通过 Route 提供 api 接口。
+另外，我们还需要对项目进行管理，以合理的结构组织项目。我们需要了解 Flask 的 BluePrint。
+三、ORM （1）数据库设置 Flask 使用 Flask-SQLAlchemy 组件实现 ORM。SQLAlchemy 本是独立于 Flask 的 ORM 库，但在 Flask 中使用时，又针对 Flask 进行了一定封装。
+我们希望创建到数据库的连接，这需要在后端项目中进行设置。对 Flask 来说，设置以字符串的形式保存于项目的配置变量 SQLALCHEMY_DATABASE_URI 中。
+app = Flask(__name__) app.config[&amp;#39;SQLALCHEMY_DATABASE_URI&amp;#39;] = f&amp;#39;mysql+pymysql://{username}:{password}@{host}:{port}/{name}?charset=utf8mb4&amp;#39; 配置存储于 app.config 中。其中 app 是一个 Flask 类型的对象，用于表示 Flask 项目这个整体。</description>
+    </item>
+  </channel>
+</rss>

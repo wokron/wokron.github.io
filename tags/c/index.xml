@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>C on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/tags/c/</link>
+    <description>Recent content in C on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Fri, 23 May 2025 17:22:16 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/tags/c/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>试试触发（几乎）所有信号</title>
+      <link>https://wokron.github.io/posts/raise-signals/</link>
+      <pubDate>Fri, 23 May 2025 17:22:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/raise-signals/</guid>
+      <description>输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。</description>
+    </item>
+    <item>
+      <title>Linux 进程的内存管理</title>
+      <link>https://wokron.github.io/posts/program-memory-management/</link>
+      <pubDate>Sat, 17 May 2025 09:33:11 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/program-memory-management/</guid>
+      <description>虽然我们都学过一个进程的内存由堆和栈组成。但是这样的模型还是太抽象了，其中掩盖了许多操作系统的细节。所以这里简单梳理一下进程的内存管理有关知识。
+堆的增长 libc 中提供 malloc 函数申请堆上内存。底层由 brk 系统调用负责申请堆上内存。
+在内核的视角下，堆空间是一个简单的结构。它由一个固定的堆底（符号 end）和可变的堆顶（称为 program break）组成。内核所要做的就是根据用户设定的 program break 将堆底和堆顶之间的内存标为有效。而 brk 系统调用的作用便是将某一地址设置为堆顶。
+在 brk 系统调用之上，glibc 提供了两个不同的函数 int brk(void *addr) 和 void *sbrk(intptr_t increment)。前者直接设置 program break 地址，后者则根据 increment 取值调整 program break 位置。
+下面使用 sbrk() 函数进行内存分配。sbrk() 会返回调用之前原本的 program break 地址，因此还需额外进行加减以获取当前地址。这一语义比较合理，因为这样 brk(N) 和 malloc(N) 的返回值都代表新分配的内存的起始地址。
+#include &amp;lt;stdio.h&amp;gt; #include &amp;lt;unistd.h&amp;gt; extern char end; int main() { printf(&amp;#34;Address of end symbol: %p\n&amp;#34;, (void *)&amp;amp;end); printf(&amp;#34;Current program break: %p\n&amp;#34;, sbrk(0)); printf(&amp;#34;New program break: %p\n&amp;#34;, sbrk(1024) + 1024); printf(&amp;#34;After deallocation: %p\n&amp;#34;, sbrk(-512) - 512); } 运行结果如下</description>
+    </item>
+    <item>
+      <title>QEMU 模拟器介绍</title>
+      <link>https://wokron.github.io/posts/qemu-introduction/</link>
+      <pubDate>Sun, 21 Jan 2024 14:33:21 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/qemu-introduction/</guid>
+      <description>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+操作系统是直接运行在计算机硬件之上，向下管理硬件资源，对上为软件提供统一服务的一类程序。在本课程的实验中，为了开发和运行我们的 MOS 操作系统，我们必须具备一套支持操作系统运行的硬件系统，其中包括处理器、内存、外部设备（如磁盘）等多个组成部分。
+然而，为每位同学都准备一套硬件设备是不切实际的。相较之下，使用模拟器则是一个更好的选择。模拟器能够模拟计算机硬件的行为和特性，使开发者可以在模拟的环境中运行和测试软件，而无需实际的物理硬件设备。
+本实验所采用的模拟器为 QEMU，接下来我们就会对这一模拟器进行介绍。
+什么是 QEMU QEMU（Quick Emulator）是一个通用的开源的机器仿真和虚拟化工具，由传奇程序员法布里斯·贝拉（Fabrice Bellard）编写。QEMU 能够提供跨体系结构的硬件模拟，支持 x86、ARM、MIPS、RISC-V 等多种架构。
+法布里斯·贝拉 是 QEMU、FFmpeg 等著名项目的创始人。他的工作涉足操作系统（QEMU）、编译器（Tiny C Compiler）、图形学（TinyGL）、通信技术（Amarisoft）、数学（Bellard&amp;rsquo;s formula）、音视频（FFmpeg）、人工智能（NNCP）等众多领域，并都做出过许多突出的贡献。是一位近乎全才的人物。
+QEMU 拥有多种不同的使用方式，而在实验中我们所使用的主要是 QEMU 的系统仿真模式。在此模式中，QEMU 能够模拟处理器的执行过程以及各种硬件设备的行为，从而提供包括处理器、内存和外部设备在内的整机虚拟模型。在此模型之上，我们能够运行一个完整的操作系统，而不需要任何额外硬件的支持。
+QEMU 提供了高度定制化的硬件模拟能力，使得搭建指定硬件平台的运行环境十分容易。并且 QEMU 也提供了使用 GDB 进行调试的原生支持，使程序的开发更加便捷。正因如此，QEMU 成为了底层开发领域十分重要的工具。
+QEMU 的工作原理 这部分并不是本课程要求掌握的内容。各位可以按兴趣阅读。
+在正式谈论 QEMU 的工作原理前，我们需要先了解一下虚拟化（Virtualization）技术。这里的虚拟化特指硬件虚拟化，是指隐藏真实的物理硬件，而由软件模拟出特定的硬件环境，在此环境中运行的操作系统就好像运行在实际的物理机器上一样。在此过程中，通过模拟产生的硬件环境称为虚拟机（Virtual Machine），实现虚拟化的程序称为虚拟机管理程序（Hypervisor）。本质上，虚拟机管理程序是一种中间件。
+通过虚拟化技术，我们可以屏蔽底层硬件的差别，从而在单台物理设备上运行许多不同的操作系统环境，充分利用硬件资源。虚拟化产生的硬件环境也很容易在不同设备间迁移，这也利于系统的管理和维护。
+根据虚拟化实现方式的不同，虚拟机管理程序分为第一类虚拟机管理程序（Type 1 Hypervisor）和第二类虚拟机管理程序（Type 2 Hypervisor）。
+第一类虚拟机管理程序直接运行在硬件之上，如下图 (a) 所示。此时虚拟机管理程序实际上占据了类似操作系统的位置，整个物理机被其分割为多个虚拟机。 而第二类虚拟机管理程序则运行在操作系统之上，是操作系统中的应用程序，如下图 (b) 所示。其中称运行该虚拟机管理程序的操作系统所处的机器为宿主机（Host），而管理程序中的虚拟机则为客户机（Guest）。由于第二类虚拟机管理程序采取了软件模拟处理器、解释执行机器码的方式，所以也被称为模拟器（Simulator）。 第一类虚拟机管理程序主要在企业数据中心或服务器中使用。常见的产品包括 KVM、VMWare ESXi 等等。而第二类虚拟机管理程序则通常在个人计算机上使用，以便能在运行虚拟机的同时执行其他进程。常见的产品包括 VMware Workstation、Oracle VirtualBox 等等，其中也包括 QEMU。
+图片来自 Andrew S.</description>
+    </item>
+    <item>
+      <title>GDB：程序的解剖术</title>
+      <link>https://wokron.github.io/posts/gdb-tutorial/</link>
+      <pubDate>Thu, 18 Jan 2024 19:44:35 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/gdb-tutorial/</guid>
+      <description>本文是北航《操作系统》课程预习教程的一部分。此版本由本人编写。
+2024 年课程实验环境由 GXemul 更换为 QEMU，为了方便同学适应新的实验环境，在预习教程中特地新增《GDB：程序的解剖术》和《QEMU 模拟器介绍》两篇文章。
+回想起刚刚踏入编程世界的时候，大概每个人都有这样的经历：仔细编写的程序总是得不到正确的结果，即便将代码从头到尾检查几遍，依旧找不出隐藏其中的错误。虽然我们对自己所写的代码了如指掌，但是代码终究是静态的，无法反映真实的运行情况；虽然各种各样的测试样例可以让我们发现错误，但是程序终归是只有输入输出的黑箱，其中的运行机理让我们束手无策。
+为了解决这样的困境你肯定试过很多办法，比如说大名鼎鼎的 “printf” 大法。但是在原有的逻辑中插入没有意义的输出反而会使代码的结构更加混乱，过量的输出同样更加可能掩盖错误的真相，最终离发现错误的目标越来越远。我们需要采用另一种方法，能够在不侵入代码原有逻辑的前提下，追踪程序的运行情况，从而发现程序运行中出现的错误。
+GDB 简介 能够实现追踪并控制程序运行功能的程序称为 Debugger，中文称其为调试器。不同语言有着不同的调试器，如 Python 的 PDB、Java 的 JDB。而我们在本篇文章中介绍的则为 GDB，全称为 “GNU Debugger“。
+GDB 的吉祥物，一条 “射水鱼”。擅长射出水柱击落岸边植物上的昆虫（Bug）。
+GDB 是一个功能十分强大的调试器，它适用于 C、C++、Go、Rust 等多种语言。GDB 最初由 GNU 项目的创始人理查德·马修·斯托曼（Richard Matthew Stallman）编写，并作为 GNU 项目的一部分。根据 GDB 官网的描述，GDB 的主要功能包括：
+启动程序并指定可能影响其行为的任何内容。 使程序在指定条件下停止。 当程序停止时，检查发生了什么。 更改程序中的内容，以便可以尝试纠正一个错误的影响，并继续了解另一个错误。 接下来我们会逐步介绍上述功能。看看 GDB 是如何像手术刀一样解剖程序运行的机理，发现病灶所在的。
+准备工作 在开始之前需要说明两点：
+接下来的内容我们将在 Ubuntu 中进行，这与本课程的实验环境保持一致。同时建议同学们尽量在学习和开发时多多使用 Linux 环境，因为许多项目都只支持 Linux 平台，或只提供 Linux 下的教程和文档。 为了更好地理解 GDB 的指令操作，同学们最好在阅读教程的同时同步进行操作。 实验所提供的跳板机上会安装好所有需要的环境，因此同学们也可以使用跳板机完成本文操作。但是跳板机中会出现由于无法关闭 address space randomization 导致无法设置断点的问题。这一问题可以通过在 GDB 界面中输入 set disable-randomization off 指令解决。</description>
+    </item>
+    <item>
+      <title>从零开始的编译原理（2）：编译程序架构</title>
+      <link>https://wokron.github.io/posts/compiling-tech-from-zero-2/</link>
+      <pubDate>Sat, 06 Jan 2024 16:33:50 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/compiling-tech-from-zero-2/</guid>
+      <description>一、前言 本质是存在的真理，是自己过去了的或内在的存在。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《小逻辑》第二篇 本质论 §112
+本篇文章是一个间章。旨在衔接文法理论与编译过程，从架构上概述整个编译程序。文法理论旨在解释自然语言，而编译过程却要创造新的语言。编译程序通过将文法规则机械化，创造出易于理解的高级语言，实现了计算的高级抽象。
+二、何为 “编译” 为了理解何为 “编译”，我们可以从一个具体的编译器开始。这里我们以 C 语言的编译过程为例：
+现在有一个简单的由 C 语言文法写成的文本文件 test.c
+// test.c #include &amp;lt;stdio.h&amp;gt; int main() { printf(&amp;#34;hello, world.\n&amp;#34;); return 0; } 想要将其编译为可执行文件，当然可以使用 gcc test.c -o test 或 clang test.c -o test，但是这样就不能反映编译的具体过程了。所以这里我编写了一个 Makefile，用来指明 gcc 编译时所经历的具体步骤。
+# Makefile srcname = test cc = gcc # Default target all: $(srcname) @echo &amp;#34;Finish!&amp;#34; # Linking stage $(srcname): $(srcname).o @echo &amp;#34;Linking stage: Creating executable &amp;#39;$(srcname)&amp;#39;&amp;#34; $(cc) $(srcname).o -o $(srcname) # Assembly stage $(srcname).</description>
+    </item>
+    <item>
+      <title>面向对象的 C 语言</title>
+      <link>https://wokron.github.io/posts/oop-by-c/</link>
+      <pubDate>Sun, 01 Oct 2023 22:53:53 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/oop-by-c/</guid>
+      <description>一、前言——对象与过程 碎碎念：这篇文章里提到的语言是真的多：c、c++、c#、java、python、golang
+c 语言怎么能面向对象呢？c 语言的设计当然并非为面向对象做出考虑，但是其拥有的语法却足以使我们写出具有面向对象味道的代码了。因为无论是面向过程或面向对象，其背后的本质思想都是相同的，那就是这样一个著名的公式： $$ 程序 = 数据结构 + 算法 $$ 面向过程无非是强调其算法的一面；面向对象无非是强调其数据结构的一面。当我们使用面向过程的思想编写代码时，我们所想的是数据是函数中的参数和变量，数据在过程中流动和变化。而在面向对象中情况则反了过来：方法成为了类的成员，被类型所划分，并从属于一定数据的集合。
+了解了这一点之后，再看程序语言从面向过程到面向对象的发展过程也能有新的认识。这一发展背后实际上是程序的关注点由机器向人的转变。在面向过程的时代，人们所关注的是如何操纵数据。那时的机器还没有蒙在名为抽象的面纱之下，呈现在操作者面前的依旧是赤裸裸的整个内存空间，数据与数据之间没有清晰的边界，是操作者自己组织起整个系统，为各个空间划分边界，定下名称。而在这一构筑起来的系统之上，数据本身就没有那么重要了，因为更底层已经为其提供了随时取用的接口。这时，管理流程成了另一个关键问题。因为在底层的支持下构建起来的日益庞大的应用，其自身的结构却往往不能支持其质量。于是人们以数据为界，将面条一般的数据流切割成彼此独立却又相互关联的部分。这样对象才得以诞生。
+二、c语言的面向对象何以可能 说回 c 语言，当其以结构体的方式组织起数据的时候，就已经有了对象的雏形了。如果我们将函数视为所属于其第一个参数类型的方法，那么对象的方法也可以表示。但是只有这两点并非真正的面向对象，因为面向对象的三大特征——封装、继承和多态，其中的后两者还未实现。
+让我们来详细分析一下继承和多态到底在表明什么。继承是两个类型间的关系，类型 A 继承了类型 B，则类型 A 具有类型 B 所具有的一切属性和方法，这意味着对于 A 和 B 这两个不同的类型，都具有所属于 B 的部分。从这一点来说，两者是相同的（也因为这种相同，子类才能不加转换的赋给父类变量）。而多态（在这里指方法的重写而不包括重载）则指子类 A 对从 B 所继承的方法的重写，使得虽是相同方法，其表现却能有所不同。
+明确了继承和多态，接下来我们从数据的角度分析 c 语言为何可以面向对象。所谓的一个对象，即在地址空间中的一段连续区域。此时继承中所谓的相同，即对两个不同类型的对象，其内存空间中相同位置所表达的含义相同。如果对于 B 类型来说，偏移 4 个字节之后的 4 个字节表示一个 int 字段，那么对于继承 B 类型的 A 类型来说，偏移 4 个字节之后的 4 个字节应同样表示一个 int 字段。类似的，多态中所谓的不同，可以表达为类型中相同的方法名对应的具体过程不同。由于过程在机器码中表现为地址，那么本质上来说，多态的这种不同不过是指相同字段中的值不同罢了。
+此时 c 语言中实现继承和多态的方法呼之欲出，那就是使用指针。地址指示了变量所处空间的起始位置，却不表明按何种方式解释这块区域，而指针完成了这份工作。对于所有赋给指针的地址值，其都如实翻译其中的数据，那么如果想要子类与父类按照同样的方式进行翻译，就需要子类在组织其结构时保持和父类一致。而对于多态来说，事情则更简单了，函数指针同样是指针，只要使其指向不同的函数即可。
+这样也可以理解为什么 c++ 中只能使用指针实现多态（引用本质还是指针）。
+Child c; Father *f = &amp;amp;c; // 正确 Father f2 = c; // 错误 而 c++ 中使用 new 关键字申请内存这一点也被 java、c# 等面向对象语言学了过去。java、c# 等中的类变量，实际上也和指针或引用没有区别</description>
+    </item>
+    <item>
+      <title>CMake 实用语法教程</title>
+      <link>https://wokron.github.io/posts/practical-cmake-tutorial/</link>
+      <pubDate>Sun, 03 Sep 2023 11:00:23 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/practical-cmake-tutorial/</guid>
+      <description>一、前言 最近一段时间在用 c++ 写一个项目，因此学了学 cmake。说实话，cmake 奇怪的语法在一开始实在容易让人望而生畏。但是上手使用的话就会发现平常会用到的不过是其中的一小部分，并且通常有规律可循。掌握这一部分的内容，大概率就可以组织起一个规模较大的项目了。因此本文也就旨在讲述 cmake 的这一部分的内容。
+当然，阅读本教程之前需要了解代码编译、链接的相关知识。关于编译相关的命令，可见我的文章系统编程之命令行编译。
+本文的所有代码保存在仓库 practical-cmake 中，欢迎 star :)。
+cmake 下载方式如下（apt）
+sudo apt-get install build-essential sudo apt-get install cmake 二、第一步 说到第一个程序，那当然要请出经典的 hello, world 了。
+#include &amp;lt;stdio.h&amp;gt; int main() { printf(&amp;#34;hello, world\n&amp;#34;); return 0; } 在本文中我会首先给出使用 gcc 编译的命令，之后再使用 cmake 做同样的事情。那么对于第一步，我们的 gcc 命令如下
+gcc main.cpp -o main 当然很简单，而对于 cmake 也类似。要使用 cmake，我们需要添加一个配置文件 CMakeLists.txt，其中包含要执行的操作。本小节中，CMakeLists.txt 的内容是
+cmake_minimum_required(VERSION 3.10) project(main) add_executable(main main.cpp) 其中第一条指定了 cmake 版本要求，第二条指定了当前项目名，而第三条 add_executable 则实现了和 gcc 命令相同的操作：指定源文件 main.cpp 和输出文件名 main，生成一个可执行文件。</description>
+    </item>
+    <item>
+      <title>系统编程之线程管理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-6/</link>
+      <pubDate>Thu, 22 Dec 2022 22:07:37 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-6/</guid>
+      <description>一、Linux 多线程简述 进程和线程的关系老生常谈。线程是最小的调度单位，进程是最小的资源分配单位。同一进程中的多个线程是在共享的内存空间中并发的多道执行路径，它们共享一个进程的资源。
+对于Linux来说，Linux线程属于用户级线程，即线程的调度是在用户空间执行的。也就是说，Linux线程的实现是在内核之外的，多线程的概念对于内核来说并不是真实存在的，而只是通过线程库中的程序模拟的并发效果。
+Linux线程遵循POSIX线程接口，称为pthread。pthread在其他平台也有对应的实现，如在windows。
+二、线程操作 （1）库的使用 在开始多线程编程之前，需要说明一下 pthread.h 库。在编译使用pthread.h库的代码时，一般需要加-lpthread。pthread在glibc2.34之前是在glibc里面的，之后分出来变成一个单独的库，因此有的情况下，不加-lpthread也能编译成功。
+（2）基本操作 创建线程 int pthread_create(pthread_t _Nullable * _Nonnull __restrict, const pthread_attr_t * _Nullable __restrict, void * _Nullable (* _Nonnull)(void * _Nullable), void * _Nullable __restrict); 该函数中第一个参数为指向一个线程标识变量的指针。第二个参数用来手动设置线程的各项属性，一般可以用NULL选择默认属性。第三个参数为一个函数指针，表示新建线程时需要执行的函数。注意该函数的参数类型和返回值类型，使用时需要进行强制类型转换。第四个参数为传递给函数的参数，也就是线程执行的函数的参数。不传递参数时可设置为NULL。 如下举一个创建线程的例子。
+pthread_t tid; if (pthread_create(&amp;amp;tid, NULL, do_something, NULL)) { // error handler } 线程退出 void pthread_exit(void *ral_ptr); 当某一线程执行该函数时，会导致该线程结束。结束时会将ral_ptr指针传递给pthread_join 函数的 rval_ptr
+线程取消 int pthread_cancel(pthread_t tid); 某一线程调用该函数，可以终止同一进程内的其他线程。 tid 即要终止的线程。
+线程挂起 int pthread_join(pthread_t thread, void **rval_ptr); 某一线程调用该函数会阻塞该线程，直到参数 thread 所指示的线程退出。第二个参数为一个指向 pthread_exit 所设置的 ral_ptr 指针的指针。</description>
+    </item>
+    <item>
+      <title>系统编程之进程间通信</title>
+      <link>https://wokron.github.io/posts/system-programming-note-5/</link>
+      <pubDate>Wed, 16 Nov 2022 09:54:43 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-5/</guid>
+      <description>一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：
+管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include &amp;lt;sys/types.h&amp;gt; #include &amp;lt;sys/ipc.h&amp;gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。
+注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。
+命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。
+ipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include &amp;lt;sys/types.</description>
+    </item>
+    <item>
+      <title>对不重复随机数的数学分析</title>
+      <link>https://wokron.github.io/posts/analysis-of-non-repeat-random-nums/</link>
+      <pubDate>Sun, 13 Nov 2022 21:03:39 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/analysis-of-non-repeat-random-nums/</guid>
+      <description>一、引子——双色球 我们知道，双色球每注投注号码由 6 个红色球号码和 1 个蓝色球号码组成。红色球号码从 1—33 中选择；蓝色球号码从 1—16 中选择。现在要求写出一个程序，模拟双色球的抽奖过程。
+我们很容易想到使用某种方法生成一定范围内的随机数。蓝色球很好解决，但对于红色球，需要的是随机生成 6 个号码不同的数，可一定范围内的随机数总可能出现相同的情况，这样要如何解决？
+也就是说：对于 $1, 2, ..., m$ 这 m 个数字，随机抽取其中 $n(n \lt m)$ 个数。要采取怎样的算法？
+二、两种思路 其一 : 暴力方法 的确，随机数总有可能出现相同的情况，但是我们知道，同一个数多次出现的概率很小，以至于我们可以将其忽略。因此，我们只需要不断地取范围内的随机数，遇到重复的舍弃，直到取得的数字数目达到 n 即可。
+void rand1(int m, int n, int rands[]) { char* hasSelect = calloc(m+1, sizeof(char)); for (int i = 0; i &amp;lt; n; ) { int r = randomInt(1, m); if (!hasSelect[r]) { rands[i++] = r; hasSelect[r] = 1; } } free(hasSelect); } 但这种算法是有缺陷的。问题在于，概率达到多小才算作可以忽略？ 考虑 $m=100, n=99$ 的情况。首先，取得第一个球，一定只需要选取 1 次；但是，我们再计算一下取得最后一个球的选取次数。为了取得第 99 个数，选中的概率为 $p_{99} = \frac{1}{50}$。我们设离散型随机变量 $X$ 表示为了取得第 99 个数所需的选取次数，则 $P\{X = k\} = (1-p)^{k-1}p$ 服从几何分布。因此 $E(X) = \frac{1}{p} = 50$。从期望上看，需要整整 50 次才能取到第 99 个数！！这中间的差距说明了，在 m 一定时，随着 n 的增大，随机的效率明显降低。</description>
+    </item>
+    <item>
+      <title>系统编程之信号及信号处理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-4/</link>
+      <pubDate>Sun, 13 Nov 2022 15:30:11 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-4/</guid>
+      <description>一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&amp;lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl+c ctrl+\ ctrl+Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &amp;lt;signal.h&amp;gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&amp;gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&amp;lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。</description>
+    </item>
+    <item>
+      <title>系统编程之进程管理</title>
+      <link>https://wokron.github.io/posts/system-programming-note-3/</link>
+      <pubDate>Mon, 31 Oct 2022 22:08:16 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-3/</guid>
+      <description>一、引言 进程是操作系统中的重要概念，是对执行一定功能的程序的过程的抽象。这篇文章将简要说明进程的相关知识。介绍进程管理相关的函数，并通过这些函数实现重定向和进程间通信等功能。
+二、进程简介 1. 程序执行原理 程序在编译后以二进制方式存在于外存上，执行的时候被操作系统载入内存。以 Linux 系统上的 C 语言编译出来的程序为例，载入的过程简单来说就是把编译完成的 ELF （Executable and Linkable Format 可执行与可链接格式） 文件的几个段的内容读取到内存指定位置，然后初始化寄存器的内容，将指令寄存器（比如cs:ip）指向程序入口，再初始化一些进程相关内容就完成了。
+在某一次时钟中断发生的时候，进程主动陷入内核态，进行进程切换的系统调用，CPU 将切换到另一个进程工作。总而言之，整个计算机从开机到关机，就是一个不断创建、切换、终止进程的过程。
+2. 进程概念的用途 早期的计算机一次只能执行一个程序，这种程序完全控制系统，并且访问所有系统资源。相比之下，现代计算机系统允许“同时”加载多个应用程序到内存，以便并发（轮流）执行。
+这种改进要求对各种程序提供更严的控制和更好的划分。这些需求导致了进程概念的诞生。
+进程是现代分时操作系统的工作单元，是操作系统向运行中的程序进行资源分配的单位。进程包括程序代码(文本)，当前活动(程序计数器，寄存器的值)，堆栈，数据端，堆。
+需要注意区分程序和进程的概念。程序是被动实体，如存储在磁盘上的可执行文件；进程是活动实体，具有一个程序计数器用于表示下个执行命令和一组相关资源。
+当一个可执行文件被加载到内存时，这个程序就成为进程。
+两个进程可以与同一程序相关联，但当作两个单独的执行序列，虽然文本段相同，但是数据、堆、堆栈不同。
+三. 进程管理 接下来介绍使用操作系统 API 进行进程管理的方法。
+1. 使用 fork 创建新进程 #include &amp;lt;unistd.h&amp;gt; pid_t fork(); fork 无参数，返回一个用于指示子进程的 pid（对于子进程，返回值为 0）。其作用是创建一个子进程，共享父进程所有内容，并且这个子进程会接着 fork 下面的代码继续执行。fork有以下两种用法：
+一个父进程希望复制自己，使父进程和子进程同时执行不同的代码段。 一个进程要执行一个不同的程序。在这种情况下，子进程从fork返回后立即调用exec。 如果在调用 fork 后子进程先于父进程结束，则子进程就会变为僵尸进程，虽然结束，却依然占据了进程表中的一个位置。为了避免这种情况，需要调用 wait 或 waitpid 来使父进程等待子进程结束，并释放子进程的信息。
+#include &amp;lt;sys/wait.h&amp;gt; pid_t wait(int *status); pid_t waitpid(pid_t pid,int *status,int options); 下面将以一个程序作为例子。该程序由父进程创建两个子进程，父进程打印字符 B ，两个子进程分别打印 A 和 C ，并且要使最终的输出为 ABC 。</description>
+    </item>
+    <item>
+      <title>系统编程之命令行编译</title>
+      <link>https://wokron.github.io/posts/system-programming-note-1/</link>
+      <pubDate>Mon, 12 Sep 2022 21:18:59 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/system-programming-note-1/</guid>
+      <description>一、前言 本文将简单介绍在Linux系统下的命令行编译流程。介绍gcc、gdb、make等工具的简单使用。
+二、GCC 基本操作 编译选项 无选项编译链接 用法：gcc test.c 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件。这里未指定输出文件，默认输出为 a.out。 选项 -o 用法：gcc test.c -o test 作用：将 test.c 预处理、编译、汇编并链接形成可执行文件 test。-o 选项用来指定输出文件的文件名。 选项 -E 用法：gcc -E test.c -o test.i 作用：将 test.c 预处理输出 test.i 文件。 选项 -S 用法：gcc -S test.i 作用：将预处理输出文件 test.i 编译成 test.s 文件。 选项 -c 用法：gcc -c test.s 作用：将汇编语言文件 test.s 汇编成目标代码 test.o 文件。 无选项链接 用法：gcc test.o -o test 作用：将目标代码文件 test.o 链接成最终可执行文件 test。 选项 -O 用法：gcc -O1 test.c -o test 作用：使用编译优化级别 1 编译程序。级别为 1~3，级别越大优化效果越好，但编译时间越长。 官方文档：GCC, the GNU Compiler Collection</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>建站 on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/categories/%E5%BB%BA%E7%AB%99/</link>
+    <description>Recent content in 建站 on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Mon, 26 Jun 2023 14:44:44 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/categories/%E5%BB%BA%E7%AB%99/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Hexo 博客迁移教程</title>
+      <link>https://wokron.github.io/posts/hexo-blog-migration/</link>
+      <pubDate>Mon, 26 Jun 2023 14:44:44 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/hexo-blog-migration/</guid>
+      <description>一、前言 因为用了新的笔记本，为了继续更新自己的博客，我决定把原来那台笔记本上的博客资源迁移过来。不过呢，当然不能用u盘拷贝这种比较low的方法，最好还是把资源放到 github 上，这样不仅方便现在的迁移，更能防止数据丢失。
+二、将博客资源推送到仓库 如果你使用 hexo 搭建了自己的博客，并且把博客放到了 github 上，那么很容易注意到使用 hexo 部署时并不是将本地的所有内容推送到了 github，实际推送的只是 ./public 路径下的文件。而现在我们要做的就是将博客的所有资源推送到仓库，不仅是用于网页的部分。
+我们选择就在博客网站所在的仓库存储博客资源，为了做到这一点，首先要在本地克隆一个仓库
+git clone https://github.com/&amp;lt;username&amp;gt;/&amp;lt;username&amp;gt;.github.io.git 随后我们新建一个分支用于存储博客资源。该分支与博客网站所使用的 master 分支无关，因此最好创建成一个“孤儿”分支。
+git checkout --orphan &amp;lt;branch_name&amp;gt; 切换到该分支后，原本随着克隆拉取到本地的文件现在依旧存在，需要将这些文件删除
+git rm -rf . 接着将位于本地的博客资源复制到该文件夹下。
+cp -r &amp;lt;old_blog_dir&amp;gt;/* . 这里需要注意，如果你使用了 next 等主题，并且是通过克隆仓库的方式下载的，那么此时应该把主题对应的项目路径下的 .git 文件夹删除。
+# take next theme as example rm -r ./themes/next/.git 以上的工作都完成后，将这些复制到仓库中的博客资源文件添加并提交
+git add . git commit -m &amp;#34;commit info&amp;#34; 最后将本地分支推送到远程仓库的新分支中
+git push --set-upstream origin &amp;lt;remote_branch_name&amp;gt; 三、迁移博客 接下来要将博客迁移到另一台设备上。首先当然要下载 git 并配置用户名和邮箱
+sudo apt install git git config --global user.</description>
+    </item>
+    <item>
+      <title>Hexo 个人博客搭建及主题配置教程</title>
+      <link>https://wokron.github.io/posts/hexo-personal-blog-tutorial/</link>
+      <pubDate>Sun, 11 Sep 2022 18:28:06 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/hexo-personal-blog-tutorial/</guid>
+      <description>一、前言 本文是作者对于Hexo搭建的阶段总结。汇总了一些搭建过程中找到的资料。希望能够较为全面的记录博客搭建的全过程。给自己备忘，为他人提供帮助。
+二、搭建阶段 （1）Hexo简介 Hexo是一款基于Node.js的静态博客框架，依赖少易于安装使用，可以方便的生成静态网页托管在GitHub和Coding上，是搭建博客的首选框架。大家可以进入hexo官网进行详细查看，因为Hexo的创建者是台湾人，对中文的支持很友好，可以选择中文进行查看。
+（2）前期安装 安装Git Git是目前世界上最先进的分布式版本控制系统，可以有效、高速的处理从很小到非常大的项目版本管理。也就是用来管理你的hexo博客文章，上传到GitHub的工具。
+windows：到git官网上下载,Download git,下载后会有一个Git Bash的命令行工具，以后就用这个工具来使用git。windows在git安装完后，就可以直接使用git bash来敲命令行了。
+linux：对linux来说实在是太简单了，因为最早的git就是在linux上编写的，只需要一行代码
+sudo apt-get install git 安装好后，用git --version来查看一下版本。
+安装nodejs Hexo是基于nodeJS编写的，所以需要安装一下nodeJs和里面的npm工具。
+windows：nodejs选择LTS版本就行了。
+linux：
+sudo apt-get install nodejs sudo apt-get install npm 安装完后，打开命令行
+node -v npm -v 检查一下有没有安装成功
+安装Hexo 前面git和nodejs安装好后，就可以安装hexo了，可以先创建一个文件夹blog，然后cd到这个文件夹下（或者在这个文件夹下直接右键git bash打开）。
+输入命令
+npm install -g hexo-cli 用hexo -v查看一下版本，至此就全部安装完了。
+接下来初始化一下hexo
+hexo init myblog 这个myblog可以自己取什么名字都行，然后
+cd myblog //进入这个myblog文件夹 npm install 新建完成后，指定文件夹目录下有：
+node_modules: 依赖包 public：存放生成的页面 scaffolds：生成文章的一些模板 source：用来存放你的文章 themes：主题 _config.yml: 博客的配置文件** 打开hexo的服务
+hexo g hexo server 在浏览器输入localhost:4000就可以看到你生成的博客了。</description>
+    </item>
+    <item>
+      <title>Test</title>
+      <link>https://wokron.github.io/posts/test/</link>
+      <pubDate>Sat, 10 Sep 2022 10:04:47 +0800</pubDate>
+      <guid>https://wokron.github.io/posts/test/</guid>
+      <description>Article Test 测试，第一篇推文
+I wonder if this can be seen&amp;hellip;
+// this is what a string cat can do. StringCat.new(&amp;#34;black&amp;#34;).meow(2).jump().sleep(1000); </description>
+    </item>
+  </channel>
+</rss>

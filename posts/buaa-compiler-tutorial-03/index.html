@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>编译技术教程：语法分析 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Tolang, BUAA">
+<meta name="description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。
+一、语法分析的作用 进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。
+例如，对于上表达式
+a &#43; (3 &#43; b) * 2 对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。
+实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。
+还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树
+LVal: Ident PrimaryExp: &#39;(&#39; Exp &#39;)&#39; | LVal | Number UnaryExp: PrimaryExp | Ident &#39;(&#39; [FuncRParams] &#39;)&#39; | UnaryOp UnaryExp UnaryOp: &#39;&#43;&#39; | &#39;-&#39; | &#39;!&#39; MulExp: UnaryExp | MulExp (&#39;*&#39; | &#39;/&#39; | &#39;%&#39;) UnaryExp AddExp: MulExp | AddExp (&#39;&#43;&#39; | &#39;-&#39;) MulExp Exp: AddExp 在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且语法树的层次结构自然保证了计算顺序的正确性。">
+<meta name="author" content="Wokron, 北航编译技术课程组">
+<link rel="canonical" href="https://wokron.github.io/posts/buaa-compiler-tutorial-03/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/buaa-compiler-tutorial-03/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="编译技术教程：语法分析" />
+<meta property="og:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。
+一、语法分析的作用 进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。
+例如，对于上表达式
+a &#43; (3 &#43; b) * 2 对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。
+实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。
+还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树
+LVal: Ident PrimaryExp: &#39;(&#39; Exp &#39;)&#39; | LVal | Number UnaryExp: PrimaryExp | Ident &#39;(&#39; [FuncRParams] &#39;)&#39; | UnaryOp UnaryExp UnaryOp: &#39;&#43;&#39; | &#39;-&#39; | &#39;!&#39; MulExp: UnaryExp | MulExp (&#39;*&#39; | &#39;/&#39; | &#39;%&#39;) UnaryExp AddExp: MulExp | AddExp (&#39;&#43;&#39; | &#39;-&#39;) MulExp Exp: AddExp 在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且语法树的层次结构自然保证了计算顺序的正确性。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/buaa-compiler-tutorial-03/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-09-10T16:03:00+08:00" />
+<meta property="article:modified_time" content="2024-09-10T16:03:00+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="编译技术教程：语法分析"/>
+<meta name="twitter:description" content="系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。
+一、语法分析的作用 进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。
+例如，对于上表达式
+a &#43; (3 &#43; b) * 2 对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。
+实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。
+还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树
+LVal: Ident PrimaryExp: &#39;(&#39; Exp &#39;)&#39; | LVal | Number UnaryExp: PrimaryExp | Ident &#39;(&#39; [FuncRParams] &#39;)&#39; | UnaryOp UnaryExp UnaryOp: &#39;&#43;&#39; | &#39;-&#39; | &#39;!&#39; MulExp: UnaryExp | MulExp (&#39;*&#39; | &#39;/&#39; | &#39;%&#39;) UnaryExp AddExp: MulExp | AddExp (&#39;&#43;&#39; | &#39;-&#39;) MulExp Exp: AddExp 在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且语法树的层次结构自然保证了计算顺序的正确性。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "编译技术教程：语法分析",
+      "item": "https://wokron.github.io/posts/buaa-compiler-tutorial-03/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "编译技术教程：语法分析",
+  "name": "编译技术教程：语法分析",
+  "description": "系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。\n一、语法分析的作用 进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。\n例如，对于上表达式\na + (3 + b) * 2 对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。\n实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。\n还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树\nLVal: Ident PrimaryExp: \u0026#39;(\u0026#39; Exp \u0026#39;)\u0026#39; | LVal | Number UnaryExp: PrimaryExp | Ident \u0026#39;(\u0026#39; [FuncRParams] \u0026#39;)\u0026#39; | UnaryOp UnaryExp UnaryOp: \u0026#39;+\u0026#39; | \u0026#39;-\u0026#39; | \u0026#39;!\u0026#39; MulExp: UnaryExp | MulExp (\u0026#39;*\u0026#39; | \u0026#39;/\u0026#39; | \u0026#39;%\u0026#39;) UnaryExp AddExp: MulExp | AddExp (\u0026#39;+\u0026#39; | \u0026#39;-\u0026#39;) MulExp Exp: AddExp 在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且语法树的层次结构自然保证了计算顺序的正确性。",
+  "keywords": [
+    "Tolang", "BUAA"
+  ],
+  "articleBody": " 系列导航：\n《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。\n一、语法分析的作用 进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。\n例如，对于上表达式\na + (3 + b) * 2 对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。\n实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。\n还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树\nLVal: Ident PrimaryExp: '(' Exp ')' | LVal | Number UnaryExp: PrimaryExp | Ident '(' [FuncRParams] ')' | UnaryOp UnaryExp UnaryOp: '+' | '-' | '!' MulExp: UnaryExp | MulExp ('*' | '/' | '%') UnaryExp AddExp: MulExp | AddExp ('+' | '-') MulExp Exp: AddExp 在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且语法树的层次结构自然保证了计算顺序的正确性。\n事实上，就像上面介绍的表达式计算，后续的编译过程也是基于语法树，利用递归等方法来进行的。因此，语法分析的作用就是根据词法分析器解析出来的一个个单词，生成这样一棵具有层次化结构的语法树，方便后续的编译。\n二、语法树的生成 在上一章节中，我们讲述了如何根据文法在程序中定义语法树的数据结构。而在本小节中，让我们再次回忆一下语法树的相关概念。\n语法树是按照给定的文法，将一个句子转化为有结构层次的树结构。树中的每个节点都代表一个语法成分，而其子节点则代表组成该语法成分的子语法成分。根节点为开始符号，代表整个句子；叶节点为终结符，代表组成句子的基本单词。我们还以上文中的语法树为例。\n以不同的视角看待语法树的生成，我们能够得到不同的语法分析方法。这些不同的方法，也一定程度上反映了我们人类处理语言的方式。\n假设我们从图中标记的叶节点出发，生成整棵语法树，我们得到的便是自底向上的归约方法，反映的是语言的理解过程。在这种情况下，我们按顺序从左到右读入一个个单词，并将一部分单词识别为更加高级的语法成分。例如在最开始我们读入 a，将其最终识别为 AddExp；当我们读入 ( 3 + b ) 时，我们将其最终识别为 MulExp，等等。这一方法对应了语法分析中的 LR 分析法。\n而另一方面，假设我们从图中的开始节点出发，生成整棵语法树，我们得到的便是自顶向下的推导方法，反映的是语言的生成过程。这种情况类似于在我们的脑海中已经产生了 a + ( 3 + b ) * 2 所对应的概念，而现在我们希望将这一概念言说出来。即按顺序生成一系列单词。在最开始我们将 Exp 推导为 AddExp，而后又推导 AddExp 的左运算数，生成第一个单词 a。随后继续推导，依次生成 + ( 3 等等单词。从语言处理的角度看，推导的过程就是将某一概念拆分为不同成分，从而最终生成句子并表达出来的过程。\n这一方法对应了语法分析中的 LL 分析法。LL 分析法的基本理念是，从开始符号进行推导，使得最终产生的单词序列与给定的句子相同。接下来我们介绍一种最为简单的 LL 分析法的代码实现方法，即递归下降子程序法。\n三、递归下降子程序法的实现 （1）基本框架 在 LL 分析法中，我们面对的问题是，对于当前句型中处于最左侧的非终结符，要选择哪一条规则进行推导，使得我们能够最终推导出的句子和给定句子相同。例如，假设目前我们从 Exp 所推导出的句型为 a + MulExp，那么我们应当选择 MulExp 对应的其中一条规则进行推导，使得最终能够推导出 a + ( 3 + b ) * 2。\n通过对比目前的句型和目标句子，我们很容易发现，关键在于 MulExp 和 ( 的关系。我们所选择的规则应当能够保证，其所推出的子句的首个终结符应当为 (。\na + MulExp a + ( 3 + b ) * 2 在理论课上，我们已经学习了 FIRST 集的概念。因此对于 MulExp 的规则的选择，我们可以用如下的伪代码表示：\ndef parse_mul_exp(): if curr_tok in FIRST[规则1]: 按规则1推导 elif curr_tok in FIRST[规则2]: 按规则2推导 # ... else: 错误处理 这就是递归下降子程序法的基本原理。其主要思路是，为每一个非终结符编写一个子程序，在子程序中通过 FIRST 集选择不同的规则。而对于规则内部，则采取如下规则：如果遇到终结符，则判断当前符号是否与其匹配；如果遇到非终结符，则调用该非终结符对应的子程序进行处理。很明显，这一过程是递归的。\n让我们用 tolangc 举例。例如对于 tolang 中的文法：\nFuncDef: 'fn' Ident '(' [FuncFParams] ')' '=\u003e' Exp ';' 我们便可以为非终结符 FuncDef 定义对应的子程序 _parse_func_def：\nstd::unique_ptr\u003cFuncDef\u003e Parser::_parse_func_def() { // ... _match(_token, Token::TK_FN); _match(_token, Token::TK_LPARENT); if (_token.type != Token::TK_RPARENT) { _parse_func_f_params(); } _match(_token, Token::TK_RPARENT); _match(_token, Token::TK_RARROW); _parse_exp(); _match(_token, Token::TK_SEMINCN); // ... } 在该子程序中，对于规则中的终结符，如 fn、(、) 等，我们调用 _match 函数判断当前单词类型是否与规则匹配。而对于非终结符，如 FuncFParams 和 Exp，我们则调用对应的子程序 _parse_func_f_params 和 _parse_exp 进行解析。\n这里需要注意的是，_match 函数在成功匹配当前单词后会读入下一个单词。这意味着 _match 函数的前置条件和后置条件分别是 “当前单词未被解析” 和 “读入下一个单词作为当前单词”。而又由于非终结符的解析子程序总是由其他子程序以及 _match 函数组成，所以这些子程序的前置条件和后置条件也与 _match 函数相同。\n（2）与词法分析的配合 上一小节中基本框架还不完整，因为我们还未考虑何时从词法分析器中读入单词。由于递归下降子程序的代码由一系列递归调用的函数组成，所以我们需要格外注意函数调用时的前置条件和后置条件，保证解析过程的一致性。具体来说，我们应当在编写子程序时保证如下约束条件：\n前置条件：一个子程序在被调用前，该子程序需要解析的第一个单词应当已被读取。 后置条件：一个子程序在返回前，应当预先读取下一个需要解析的单词。 满足这一条件后，我们便能够保证不论以何种顺序调用各子程序，都能够对正确的单词进行解析。\n在 tolangc 中，实现上述条件的关键在于 _match 函数。在 Parser 中我们使用 _token 字段保存读入的单词。而 _match 方法在成功匹配当前单词后，还会读入下一个单词。这就意味着对于终结符的解析，我们遵循了和终结符相同的约束条件。由于非终结符的解析子程序总是由其他子程序以及 _match 函数组成，所以这些子程序也满足同样的约束条件。\nvoid Parser::_match(const Token \u0026token, Token::TokenType expected) { if (token.type != expected) { ErrorReporter::error(_token.lineno, \"expect '\" + token_type_to_string(expected) + \"'\"); } else { _next_token(); } } 另外，我们在语法分析时的同时还会进行语法错误的处理。当我们在当前位置需要匹配一个语法成分时，语法分析器会 “试探性” 地去解析该语法成分，如果解析失败，则报错；并 “假装” 这个语法成分解析正确，继续进行语法分析。从而实现错误处理的局部化，使编译器能够一次性发现尽可能多的错误，方便使用者修正程序错误。\n（3）EBNF 范式的处理 tolang 的文法以及实验文法由 EBNF 范式定义。这意味着文法中能够出现可选 [] 和循环 {} 结构，扩充了文法的表达能力。然而这一扩充并未增加语法分析的难度，反而为语法分析的实现提供了更多的便利。\n这一便利源自于程序的表达能力。我们所使用的程序设计语言本就提供了分支和循环的语法结构，这使得我们能够用简洁的代码表达 EBNF 范式中的可选和循环。而不必像 BNF 范式一样总是用递归的方式表达。\n具体来说，对于可选结构，我们应当考察当前单词是否是可选部分之后的单词。还举上面我们用到过的例子：\nFuncDef: 'fn' Ident '(' [FuncFParams] ')' '=\u003e' Exp ';' 在其中，FuncFParams 是可选的。因此我们需要查看当前符号是否为 ')'，从而判断是否应当进行 FuncFParams 的解析。\nstd::unique_ptr\u003cFuncDef\u003e Parser::() { // ... if (_token.type != Token::TK_RPARENT) { _parse_func_f_params(); } // ... } 而对于文法中的循环结构，我们也需要使用循环进行处理。例如对于下面的文法\nFuncFParams: Ident { ',' Ident } 在 tolangc 中我们在循环条件里判断当前符号是否为 ','，从而解析重复的语法成分。\nvoid Parser::_parse_func_f_params() { // ... _parse_ident(); while (_token.type == Token::TK_COMMA) { _next_token(); _parse_ident(); // ... } } 在使用 LL 分析法的时候，我们还需要注意处理左递归的问题。例如 tolang 文法中的 AddExp、MulExp。\nAddExp: MulExp | AddExp ('+' | '-') MulExp MulExp: UnaryExp | MulExp ('*' | '/') UnaryExp 在理论课上我们学到，对于这一问题有两种处理方式。一是使用 EBNF 范式将规则转化为循环，如下所示：\nAddExp: MulExp { ('+' | '-') MulExp } MulExp: UnaryExp { ('*' | '/') UnaryExp } 而另一种方法则是将文法转化为右递归，如下所示\nAddExp: MulExp | MulExp ('+' | '-') AddExp MulExp: UnaryExp | UnaryExp ('*' | '/') MulExp 然而，这两种方法其实并没有本质的区别。基于这两种文法编写的代码不过是同一逻辑的不同表示罢了。接下来我们进行演示：\n首先是使用 ENBF 范式的方法。此时我们可以按照刚才提到的方式，使用循环实现解析。为了方便，这里只对加法进行解析。\nvoid parse_add_exp() { parse_mul_exp(); while (curr_token == '+') { next_token(); parse_mul_exp(); } } 而使用右递归的方法，代码有些许不同。这里需要观察到两条规则的第一个符号相同，因此可以首先统一进行解析，而后再进行区分。\nvoid parse_add_exp() { parse_mul_exp(); if (curr_token == '+') { next_token(); parse_add_exp(); } } 可以注意到，第二种方法实现的代码是尾递归的。这意味着我们可以将其转换为循环。同时可以观察到循环终止条件为 curr_token != '+'，循环体为 next_token(); parse_mul_exp();，且循环外同样具有一条 parse_mul_exp();。这意味着此尾递归代码和上面的循环代码在逻辑上等价。\n（4）歧义的消除 如果一个非终结符只有一条规则，那么其解析方法就是唯一确定的。其所对应的子程序是完全的顺序流程。然而，更多的情况是非终结符可能存在多条规则，这时按前面所说，我们需要根据 FIRST 集选择不同的规则进行推导。\n然而问题是，不同规则的 FIRST 集的交集可能不为空。这意味着我们无法只通过 FIRST 集判断应当选择哪一条规则。\n当然，tolang 的文法经过了设计，使得任意非终结符的不同规则的 FIRST 集都不相交。这使得 tolangc 中可以直接通过 switch 来选择不同规则\nstd::unique_ptr\u003cStmt\u003e Parser::_parse_stmt() { switch (_token.type) { case Token::TK_GET: { GetStmt get_stmt; // parse get_stmt } case Token::TK_PUT: { PutStmt put_stmt; // parse put_stmt } // ... } } 而实现这一点的方法其实很简单，那就是使用不同的关键字作为语法成分的前缀。一些程序设计语言的文法也被设计成易于解析，例如 go。\n这时，我们所要做的就是提前读取当前符号之后的更多符号，直到我们能够区分此时应当选择哪一个规则。\n为了实现提前读，我们需要在 Parser 中额外增加一个数据结构，将其作为 Lexer 和 Parser 之间的缓冲区。当提前读之后，我们将提前读取的单词放入该缓冲区，以待后续再次读取。该数据结构应当满足：\n顺序存储 能够从开头取出元素 能够向末尾添加元素 能够访问其中第 n 个元素（因为提前读的元素可能已经从 Lexer 中读出） C++ 中提供了一个很好的容器称为 std::deque。对该容器的头尾插入、删除以及下标访问均是 $O(1)$ 的时间复杂度。当然，我们的实验并不考察实现是否高效，因此也可以选择其他数据结构。\n（5）在语法分析中构造语法树 在最后，我们还要考虑语法树的构造方法。由于在递归下降子程序法中，语法树父节点和子节点的关系已经蕴藏在了子程序之中，所以此处语法树的构造方法实际上十分简单。只需要对于每个非终结符对应的子程序，使其返回该非终结符所对应的语法树节点即可。例如 tolangc 中的 _parse_* 函数。\nclass Parser { // ... private: // ... std::unique_ptr\u003cVarDecl\u003e _parse_var_decl(); std::unique_ptr\u003cStmt\u003e _parse_stmt(); std::unique_ptr\u003cExp\u003e _parse_exp(); std::unique_ptr\u003cExp\u003e _parse_add_exp(); std::unique_ptr\u003cExp\u003e _parse_mul_exp(); std::unique_ptr\u003cExp\u003e _parse_unary_exp(); std::unique_ptr\u003cExp\u003e _parse_primary_exp(); // ... }; 但还有一些需要注意的地方。例如，我们在代码中定义的是抽象语法树而非语法树。这使得有一些节点并不存在。这时对应的子程序便不再返回语法树节点，而是会返回其他抽象语法树所需要的信息。例如 tolangc 中对 FuncFParams 和 FuncRParams 的解析：\nvoid _parse_func_f_params(std::vector\u003cstd::unique_ptr\u003cIdent\u003e\u003e \u0026func_f_params); void _parse_func_r_params(std::vector\u003cstd::unique_ptr\u003cExp\u003e\u003e \u0026func_r_params); 此处非 const 引用作为返回值。\n另外还有节点存在，但定义与文法并不相符的情况。例如对 AddExp 的解析。在 tolangc 中，我们采用根据 EBNF 范式定义进行解析，而在抽象语法树中，我们则将其抽象为了 BinaryExp，单一节点只有 lhs 和 rhs 左右两个运算数。这就要求我们在构造语法树时进行一定转换。在循环中不断更新语法树节点。\n",
+  "wordCount" : "603",
+  "inLanguage": "zh",
+  "datePublished": "2024-09-10T16:03:00+08:00",
+  "dateModified": "2024-09-10T16:03:00+08:00",
+  "author":[{
+    "@type": "Person",
+    "name": "Wokron"
+  }, {
+    "@type": "Person",
+    "name": "北航编译技术课程组"
+  }],
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/buaa-compiler-tutorial-03/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      编译技术教程：语法分析
+    </h1>
+    <div class="post-meta"><span title='2024-09-10 16:03:00 +0800 CST'>九月 10, 2024</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;603 字&nbsp;·&nbsp;Wokron, 北航编译技术课程组&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/buaa-compiler-tutorial-03.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e7%9a%84%e4%bd%9c%e7%94%a8" aria-label="一、语法分析的作用">一、语法分析的作用</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e8%af%ad%e6%b3%95%e6%a0%91%e7%9a%84%e7%94%9f%e6%88%90" aria-label="二、语法树的生成">二、语法树的生成</a></li>
+                <li>
+                    <a href="#%e4%b8%89%e9%80%92%e5%bd%92%e4%b8%8b%e9%99%8d%e5%ad%90%e7%a8%8b%e5%ba%8f%e6%b3%95%e7%9a%84%e5%ae%9e%e7%8e%b0" aria-label="三、递归下降子程序法的实现">三、递归下降子程序法的实现</a><ul>
+                        
+                <li>
+                    <a href="#1%e5%9f%ba%e6%9c%ac%e6%a1%86%e6%9e%b6" aria-label="（1）基本框架">（1）基本框架</a></li>
+                <li>
+                    <a href="#2%e4%b8%8e%e8%af%8d%e6%b3%95%e5%88%86%e6%9e%90%e7%9a%84%e9%85%8d%e5%90%88" aria-label="（2）与词法分析的配合">（2）与词法分析的配合</a></li>
+                <li>
+                    <a href="#3ebnf-%e8%8c%83%e5%bc%8f%e7%9a%84%e5%a4%84%e7%90%86" aria-label="（3）EBNF 范式的处理">（3）EBNF 范式的处理</a></li>
+                <li>
+                    <a href="#4%e6%ad%a7%e4%b9%89%e7%9a%84%e6%b6%88%e9%99%a4" aria-label="（4）歧义的消除">（4）歧义的消除</a></li>
+                <li>
+                    <a href="#5%e5%9c%a8%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%e4%b8%ad%e6%9e%84%e9%80%a0%e8%af%ad%e6%b3%95%e6%a0%91" aria-label="（5）在语法分析中构造语法树">（5）在语法分析中构造语法树</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><blockquote>
+<p>系列导航：</p>
+<ul>
+<li>《<a href="../buaa-compiler-tutorial-00">编译技术教程：前言</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-01">编译技术教程：词法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-02">编译技术教程：抽象语法树</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-03">编译技术教程：语法分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-04">编译技术教程：符号表与类型系统</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-05">编译技术教程：语义分析</a>》</li>
+<li>《<a href="../buaa-compiler-tutorial-06">编译技术教程：附录 - 项目测试</a>》</li>
+</ul>
+</blockquote>
+<p>在词法分析阶段，我们将输入的源程序解析为一个个单词；而在语法分析部分，我们将依照文法对单词序列进行进一步的分析，从而构建结构化的抽象语法树。</p>
+<h2 id="一语法分析的作用">一、语法分析的作用<a hidden class="anchor" aria-hidden="true" href="#一语法分析的作用">#</a></h2>
+<p>进行语法分析的必要性在于，句子是线性结构，不包含相应的语法结构信息。因此直接对线性的句子进行处理非常困难。而语法树的层次化结构能够表现语法结构以及语法成分之间的关系，且方便利用递归等方法来进行处理。</p>
+<p>例如，对于上表达式</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
+</span></span></code></pre></div><p>对于人来说，可以很容易地确定表达式的运算顺序。但是，从计算机角度而言，要编写一个程序仅仅根据这个线性字符串来确定运算的顺序是比较困难的，尤其是当表达式更为复杂的时候。如果我们建立了语法树，则可以很轻松地利用递归等方法来进行计算。</p>
+<blockquote>
+<p>实际上，我们人类确定表达式运算顺序的方法，或许也在一定程度上与语法分析所采用的方法类似。这一点将在下一章节中说明。</p>
+</blockquote>
+<p>还举上面的表达式为例。我们给定文法，并给出表达式在该文法上的语法树</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">LVal: Ident
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">PrimaryExp:
+</span></span><span class="line"><span class="cl">    &#39;(&#39; Exp &#39;)&#39;
+</span></span><span class="line"><span class="cl">    | LVal
+</span></span><span class="line"><span class="cl">    | Number
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">UnaryExp:
+</span></span><span class="line"><span class="cl">    PrimaryExp
+</span></span><span class="line"><span class="cl">    | Ident &#39;(&#39; [FuncRParams] &#39;)&#39;
+</span></span><span class="line"><span class="cl">    | UnaryOp UnaryExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">UnaryOp:
+</span></span><span class="line"><span class="cl">    &#39;+&#39;
+</span></span><span class="line"><span class="cl">    | &#39;-&#39;
+</span></span><span class="line"><span class="cl">    | &#39;!&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">MulExp:
+</span></span><span class="line"><span class="cl">    UnaryExp
+</span></span><span class="line"><span class="cl">    | MulExp (&#39;*&#39; | &#39;/&#39; | &#39;%&#39;) UnaryExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">AddExp:
+</span></span><span class="line"><span class="cl">    MulExp
+</span></span><span class="line"><span class="cl">    | AddExp (&#39;+&#39; | &#39;-&#39;) MulExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exp: AddExp
+</span></span></code></pre></div><p><img loading="lazy" src="tree.png" alt=""  />
+</p>
+<p>在上面的例子中，我们要求表达式 Exp 的值（图中序号1），那么我们只需要求出 AddExp（序号2）和 MulExp（序号3）的值并将它们相加即可。要求 MulExp（序号3）的值，我们只需要求出 MulExp（序号4）和 UnaryExp（序号5）的值并将它们相乘即可。同样地，要求 MulExp（序号4）的值，我们只需要求出 AddExp（序号6）和 MulExp（序号7）的值并将它们相乘即可。对于每种语法成分的处理，如 AddExp 和 MulExp 的计算求值，我们都可以采用递归的方法很方便地实现，而且<strong>语法树的层次结构自然保证了计算顺序的正确性</strong>。</p>
+<p>事实上，就像上面介绍的表达式计算，后续的编译过程也是基于语法树，利用递归等方法来进行的。因此，<strong>语法分析的作用就是根据词法分析器解析出来的一个个单词，生成这样一棵具有层次化结构的语法树</strong>，方便后续的编译。</p>
+<h2 id="二语法树的生成">二、语法树的生成<a hidden class="anchor" aria-hidden="true" href="#二语法树的生成">#</a></h2>
+<p>在上一章节中，我们讲述了如何根据文法在程序中定义语法树的数据结构。而在本小节中，让我们再次回忆一下语法树的相关概念。</p>
+<p>语法树是按照给定的文法，将一个句子转化为有结构层次的树结构。树中的每个节点都代表一个<strong>语法成分</strong>，而其子节点则代表<strong>组成该语法成分的子语法成分</strong>。根节点为开始符号，代表整个句子；叶节点为终结符，代表组成句子的基本单词。我们还以上文中的语法树为例。</p>
+<p>以不同的视角看待语法树的生成，我们能够得到不同的语法分析方法。这些不同的方法，也一定程度上反映了我们人类处理语言的方式。</p>
+<p>假设我们从图中标记的<strong>叶节点</strong>出发，生成整棵语法树，我们得到的便是<strong>自底向上</strong>的<strong>归约</strong>方法，反映的是<strong>语言的理解过程</strong>。在这种情况下，我们按顺序从左到右读入一个个单词，并将一部分单词识别为更加高级的语法成分。例如在最开始我们读入 <code>a</code>，将其最终识别为 AddExp；当我们读入 <code>( 3 + b )</code> 时，我们将其最终识别为 MulExp，等等。这一方法对应了语法分析中的 LR 分析法。</p>
+<p>而另一方面，假设我们从图中的<strong>开始节点</strong>出发，生成整棵语法树，我们得到的便是<strong>自顶向下</strong>的<strong>推导</strong>方法，反映的是<strong>语言的生成过程</strong>。这种情况类似于在我们的脑海中已经产生了 <code>a + ( 3 + b ) * 2</code> 所对应的概念，而现在我们希望将这一概念言说出来。即按顺序生成一系列单词。在最开始我们将 Exp 推导为 AddExp，而后又推导 AddExp 的左运算数，生成第一个单词 <code>a</code>。随后继续推导，依次生成 <code>+ ( 3</code> 等等单词。从语言处理的角度看，推导的过程就是将某一概念拆分为不同成分，从而最终生成句子并表达出来的过程。</p>
+<p>这一方法对应了语法分析中的 LL 分析法。LL 分析法的基本理念是，从开始符号进行推导，使得最终产生的单词序列与给定的句子相同。接下来我们介绍一种最为简单的 LL 分析法的代码实现方法，即<strong>递归下降子程序法</strong>。</p>
+<h2 id="三递归下降子程序法的实现">三、递归下降子程序法的实现<a hidden class="anchor" aria-hidden="true" href="#三递归下降子程序法的实现">#</a></h2>
+<h3 id="1基本框架">（1）基本框架<a hidden class="anchor" aria-hidden="true" href="#1基本框架">#</a></h3>
+<p>在 LL 分析法中，我们面对的问题是，对于当前句型中处于<strong>最左侧</strong>的非终结符，要选择哪一条规则进行推导，使得我们能够最终推导出的句子和给定句子相同。例如，假设目前我们从 Exp 所推导出的句型为 <code>a + MulExp</code>，那么我们应当选择 MulExp 对应的其中一条规则进行推导，使得最终能够推导出 <code>a + ( 3 + b ) * 2</code>。</p>
+<p>通过对比目前的句型和目标句子，我们很容易发现，关键在于 MulExp 和 <code>(</code> 的关系。我们所选择的规则应当能够保证，其所推出的子句的<strong>首个终结符</strong>应当为 <code>(</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">a + MulExp
+</span></span><span class="line"><span class="cl">a + ( 3 + b ) * 2
+</span></span></code></pre></div><p>在理论课上，我们已经学习了 FIRST 集的概念。因此对于 MulExp 的规则的选择，我们可以用如下的伪代码表示：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">parse_mul_exp</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">curr_tok</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="n">规则1</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">按规则1推导</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="n">curr_tok</span> <span class="ow">in</span> <span class="n">FIRST</span><span class="p">[</span><span class="n">规则2</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">按规则2推导</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># ...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">错误处理</span>
+</span></span></code></pre></div><p>这就是递归下降子程序法的基本原理。其主要思路是，为每一个<strong>非终结符</strong>编写一个子程序，在子程序中通过 FIRST 集选择不同的规则。而对于规则内部，则采取如下规则：如果遇到终结符，则判断当前符号是否与其匹配；如果遇到非终结符，则调用该非终结符对应的子程序进行处理。很明显，这一过程是递归的。</p>
+<p>让我们用 tolangc 举例。例如对于 tolang 中的文法：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">FuncDef: &#39;fn&#39; Ident &#39;(&#39; [FuncFParams] &#39;)&#39; &#39;=&gt;&#39; Exp &#39;;&#39;
+</span></span></code></pre></div><p>我们便可以为非终结符 FuncDef 定义对应的子程序 <code>_parse_func_def</code>：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FuncDef</span><span class="o">&gt;</span> <span class="n">Parser</span><span class="o">::</span><span class="n">_parse_func_def</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">_match</span><span class="p">(</span><span class="n">_token</span><span class="p">,</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_FN</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="n">_match</span><span class="p">(</span><span class="n">_token</span><span class="p">,</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_LPARENT</span><span class="p">);</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">_token</span><span class="p">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_RPARENT</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_parse_func_f_params</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">_match</span><span class="p">(</span><span class="n">_token</span><span class="p">,</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_RPARENT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">_match</span><span class="p">(</span><span class="n">_token</span><span class="p">,</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_RARROW</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">_parse_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">_match</span><span class="p">(</span><span class="n">_token</span><span class="p">,</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_SEMINCN</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>在该子程序中，对于规则中的终结符，如 <code>fn</code>、<code>(</code>、<code>)</code> 等，我们调用 <code>_match</code> 函数判断当前单词类型是否与规则匹配。而对于非终结符，如 <code>FuncFParams</code> 和 <code>Exp</code>，我们则调用对应的子程序 <code>_parse_func_f_params</code> 和 <code>_parse_exp</code> 进行解析。</p>
+<p>这里需要注意的是，<code>_match</code> 函数在成功匹配当前单词后会读入下一个单词。这意味着 <code>_match</code> 函数的前置条件和后置条件分别是 “当前单词未被解析” 和 “读入下一个单词作为当前单词”。而又由于非终结符的解析子程序总是由其他子程序以及 <code>_match</code> 函数组成，所以这些子程序的前置条件和后置条件也与 <code>_match</code> 函数相同。</p>
+<h3 id="2与词法分析的配合">（2）与词法分析的配合<a hidden class="anchor" aria-hidden="true" href="#2与词法分析的配合">#</a></h3>
+<p>上一小节中基本框架还不完整，因为我们还未考虑何时从词法分析器中读入单词。由于递归下降子程序的代码由一系列递归调用的函数组成，所以我们需要格外注意函数调用时的前置条件和后置条件，保证解析过程的一致性。具体来说，我们应当在编写子程序时保证如下约束条件：</p>
+<ul>
+<li>前置条件：一个子程序在被调用前，该子程序需要解析的第一个单词应当已被读取。</li>
+<li>后置条件：一个子程序在返回前，应当预先读取下一个需要解析的单词。</li>
+</ul>
+<p>满足这一条件后，我们便能够保证不论以何种顺序调用各子程序，都能够对正确的单词进行解析。</p>
+<p>在 tolangc 中，实现上述条件的关键在于 <code>_match</code> 函数。在 <code>Parser</code> 中我们使用 <code>_token</code> 字段保存读入的单词。而 <code>_match</code> 方法在成功匹配当前单词后，还会读入下一个单词。这就意味着对于终结符的解析，我们遵循了和终结符相同的约束条件。由于非终结符的解析子程序总是由其他子程序以及 <code>_match</code> 函数组成，所以这些子程序也满足同样的约束条件。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Parser</span><span class="o">::</span><span class="n">_match</span><span class="p">(</span><span class="k">const</span> <span class="n">Token</span> <span class="o">&amp;</span><span class="n">token</span><span class="p">,</span> <span class="n">Token</span><span class="o">::</span><span class="n">TokenType</span> <span class="n">expected</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">token</span><span class="p">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">expected</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ErrorReporter</span><span class="o">::</span><span class="n">error</span><span class="p">(</span><span class="n">_token</span><span class="p">.</span><span class="n">lineno</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                             <span class="s">&#34;expect &#39;&#34;</span> <span class="o">+</span> <span class="n">token_type_to_string</span><span class="p">(</span><span class="n">expected</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#34;&#39;&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_next_token</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>另外，我们在语法分析时的同时还会进行<strong>语法错误</strong>的处理。当我们在当前位置需要匹配一个语法成分时，语法分析器会 “试探性” 地去解析该语法成分，如果解析失败，则报错；并 “假装” 这个语法成分解析正确，继续进行语法分析。从而实现错误处理的局部化，使编译器能够一次性发现尽可能多的错误，方便使用者修正程序错误。</p>
+<h3 id="3ebnf-范式的处理">（3）EBNF 范式的处理<a hidden class="anchor" aria-hidden="true" href="#3ebnf-范式的处理">#</a></h3>
+<p>tolang 的文法以及实验文法由 EBNF 范式定义。这意味着文法中能够出现可选 <code>[]</code> 和循环 <code>{}</code> 结构，扩充了文法的表达能力。然而这一扩充并未增加语法分析的难度，反而为语法分析的实现提供了更多的便利。</p>
+<p>这一便利源自于程序的表达能力。我们所使用的程序设计语言本就提供了分支和循环的语法结构，这使得我们能够用简洁的代码表达 EBNF 范式中的可选和循环。而不必像 BNF 范式一样总是用递归的方式表达。</p>
+<p>具体来说，对于可选结构，我们应当考察当前单词是否是可选部分之后的单词。还举上面我们用到过的例子：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">FuncDef: &#39;fn&#39; Ident &#39;(&#39; [FuncFParams] &#39;)&#39; &#39;=&gt;&#39; Exp &#39;;&#39;
+</span></span></code></pre></div><p>在其中，FuncFParams 是可选的。因此我们需要查看当前符号是否为 <code>')'</code>，从而判断是否应当进行 FuncFParams 的解析。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FuncDef</span><span class="o">&gt;</span> <span class="n">Parser</span><span class="o">::</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">_token</span><span class="p">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_RPARENT</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_parse_func_f_params</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>而对于文法中的循环结构，我们也需要使用循环进行处理。例如对于下面的文法</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">FuncFParams: Ident { &#39;,&#39; Ident }
+</span></span></code></pre></div><p>在 tolangc 中我们在循环条件里判断当前符号是否为 <code>','</code>，从而解析重复的语法成分。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Parser</span><span class="o">::</span><span class="n">_parse_func_f_params</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">_parse_ident</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="n">_token</span><span class="p">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">Token</span><span class="o">::</span><span class="n">TK_COMMA</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_next_token</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_parse_ident</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>在使用 LL 分析法的时候，我们还需要注意处理左递归的问题。例如 tolang 文法中的 AddExp、MulExp。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">AddExp:
+</span></span><span class="line"><span class="cl">    MulExp
+</span></span><span class="line"><span class="cl">    | AddExp (&#39;+&#39; | &#39;-&#39;) MulExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">MulExp:
+</span></span><span class="line"><span class="cl">    UnaryExp
+</span></span><span class="line"><span class="cl">    | MulExp (&#39;*&#39; | &#39;/&#39;) UnaryExp
+</span></span></code></pre></div><p>在理论课上我们学到，对于这一问题有两种处理方式。一是使用 EBNF 范式将规则转化为循环，如下所示：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">AddExp: MulExp { (&#39;+&#39; | &#39;-&#39;) MulExp }
+</span></span><span class="line"><span class="cl">MulExp: UnaryExp { (&#39;*&#39; | &#39;/&#39;) UnaryExp }
+</span></span></code></pre></div><p>而另一种方法则是将文法转化为右递归，如下所示</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">AddExp:
+</span></span><span class="line"><span class="cl">    MulExp
+</span></span><span class="line"><span class="cl">    | MulExp (&#39;+&#39; | &#39;-&#39;) AddExp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">MulExp:
+</span></span><span class="line"><span class="cl">    UnaryExp
+</span></span><span class="line"><span class="cl">    | UnaryExp (&#39;*&#39; | &#39;/&#39;) MulExp
+</span></span></code></pre></div><p>然而，这两种方法其实并没有本质的区别。基于这两种文法编写的代码不过是同一逻辑的不同表示罢了。接下来我们进行演示：</p>
+<p>首先是使用 ENBF 范式的方法。此时我们可以按照刚才提到的方式，使用循环实现解析。为了方便，这里只对加法进行解析。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">parse_add_exp</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parse_mul_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="n">curr_token</span> <span class="o">==</span> <span class="sc">&#39;+&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">next_token</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">parse_mul_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>而使用右递归的方法，代码有些许不同。这里需要观察到两条规则的第一个符号相同，因此可以首先统一进行解析，而后再进行区分。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">parse_add_exp</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parse_mul_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">curr_token</span> <span class="o">==</span> <span class="sc">&#39;+&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">next_token</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">parse_add_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>可以注意到，第二种方法实现的代码是<strong>尾递归</strong>的。这意味着我们可以将其转换为循环。同时可以观察到循环终止条件为 <code>curr_token != '+'</code>，循环体为 <code>next_token(); parse_mul_exp();</code>，且循环外同样具有一条 <code>parse_mul_exp();</code>。这意味着此尾递归代码和上面的循环代码在逻辑上等价。</p>
+<h3 id="4歧义的消除">（4）歧义的消除<a hidden class="anchor" aria-hidden="true" href="#4歧义的消除">#</a></h3>
+<p>如果一个非终结符只有一条规则，那么其解析方法就是唯一确定的。其所对应的子程序是完全的顺序流程。然而，更多的情况是非终结符可能存在多条规则，这时按前面所说，我们需要根据 FIRST 集选择不同的规则进行推导。</p>
+<p>然而问题是，不同规则的 FIRST 集的交集可能不为空。这意味着我们无法只通过 FIRST 集判断应当选择哪一条规则。</p>
+<blockquote>
+<p>当然，tolang 的文法经过了设计，使得任意非终结符的不同规则的 FIRST 集都不相交。这使得 tolangc 中可以直接通过 <code>switch</code> 来选择不同规则</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Stmt</span><span class="o">&gt;</span> <span class="n">Parser</span><span class="o">::</span><span class="n">_parse_stmt</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">switch</span> <span class="p">(</span><span class="n">_token</span><span class="p">.</span><span class="n">type</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">Token</span><span class="o">::</span><span class="nl">TK_GET</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">GetStmt</span> <span class="n">get_stmt</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// parse get_stmt
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">Token</span><span class="o">::</span><span class="nl">TK_PUT</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">PutStmt</span> <span class="n">put_stmt</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// parse put_stmt
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>而实现这一点的方法其实很简单，那就是使用不同的关键字作为语法成分的前缀。一些程序设计语言的文法也被设计成易于解析，例如 go。</p>
+</blockquote>
+<p>这时，我们所要做的就是<strong>提前读取</strong>当前符号之后的更多符号，直到我们能够区分此时应当选择哪一个规则。</p>
+<p>为了实现提前读，我们需要在 <code>Parser</code> 中额外增加一个数据结构，将其作为 <code>Lexer</code> 和 <code>Parser</code> 之间的缓冲区。当提前读之后，我们将提前读取的单词放入该缓冲区，以待后续再次读取。该数据结构应当满足：</p>
+<ol>
+<li>顺序存储</li>
+<li>能够从开头取出元素</li>
+<li>能够向末尾添加元素</li>
+<li>能够访问其中第 n 个元素（因为提前读的元素可能已经从 <code>Lexer</code> 中读出）</li>
+</ol>
+<p>C++ 中提供了一个很好的容器称为 <code>std::deque</code>。对该容器的头尾插入、删除以及下标访问均是 $O(1)$ 的时间复杂度。当然，我们的实验并不考察实现是否高效，因此也可以选择其他数据结构。</p>
+<h3 id="5在语法分析中构造语法树">（5）在语法分析中构造语法树<a hidden class="anchor" aria-hidden="true" href="#5在语法分析中构造语法树">#</a></h3>
+<p>在最后，我们还要考虑语法树的构造方法。由于在递归下降子程序法中，语法树父节点和子节点的关系已经蕴藏在了子程序之中，所以此处语法树的构造方法实际上十分简单。只需要对于每个非终结符对应的子程序，使其返回该非终结符所对应的语法树节点即可。例如 tolangc 中的 <code>_parse_*</code> 函数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Parser</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">VarDecl</span><span class="o">&gt;</span> <span class="n">_parse_var_decl</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Stmt</span><span class="o">&gt;</span> <span class="n">_parse_stmt</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">_parse_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">_parse_add_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">_parse_mul_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">_parse_unary_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;</span> <span class="n">_parse_primary_exp</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span></code></pre></div><p>但还有一些需要注意的地方。例如，我们在代码中定义的是<strong>抽象语法树</strong>而非语法树。这使得有一些节点并不存在。这时对应的子程序便不再返回语法树节点，而是会返回其他抽象语法树所需要的信息。例如 tolangc 中对 FuncFParams 和 FuncRParams 的解析：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">_parse_func_f_params</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Ident</span><span class="o">&gt;&gt;</span> <span class="o">&amp;</span><span class="n">func_f_params</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">_parse_func_r_params</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Exp</span><span class="o">&gt;&gt;</span> <span class="o">&amp;</span><span class="n">func_r_params</span><span class="p">);</span>
+</span></span></code></pre></div><blockquote>
+<p>此处非 <code>const</code> 引用作为返回值。</p>
+</blockquote>
+<p>另外还有节点存在，但定义与文法并不相符的情况。例如对 AddExp 的解析。在 tolangc 中，我们采用根据 EBNF 范式定义进行解析，而在抽象语法树中，我们则将其抽象为了 <code>BinaryExp</code>，单一节点只有 <code>lhs</code> 和 <code>rhs</code> 左右两个运算数。这就要求我们在构造语法树时进行一定转换。在循环中不断更新语法树节点。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/tolang/">Tolang</a></li>
+      <li><a href="https://wokron.github.io/tags/buaa/">BUAA</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/buaa-compiler-tutorial-04/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>编译技术教程：符号表与类型系统</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/buaa-compiler-tutorial-02/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>编译技术教程：抽象语法树</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语法分析 on x"
+            href="https://x.com/intent/tweet/?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f&amp;hashtags=Tolang%2cBUAA">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语法分析 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f&amp;title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90&amp;summary=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语法分析 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f&title=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语法分析 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语法分析 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语法分析 on telegram"
+            href="https://telegram.me/share/url?text=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 编译技术教程：语法分析 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%bc%96%e8%af%91%e6%8a%80%e6%9c%af%e6%95%99%e7%a8%8b%ef%bc%9a%e8%af%ad%e6%b3%95%e5%88%86%e6%9e%90&u=https%3a%2f%2fwokron.github.io%2fposts%2fbuaa-compiler-tutorial-03%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

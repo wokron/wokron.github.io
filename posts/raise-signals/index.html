@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>试试触发（几乎）所有信号 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="C, Signal, Linux">
+<meta name="description" content="输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/raise-signals/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/raise-signals/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="试试触发（几乎）所有信号" />
+<meta property="og:description" content="输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/raise-signals/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-05-23T17:22:16+08:00" />
+<meta property="article:modified_time" content="2025-05-23T17:22:16+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="试试触发（几乎）所有信号"/>
+<meta name="twitter:description" content="输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。
+$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "试试触发（几乎）所有信号",
+      "item": "https://wokron.github.io/posts/raise-signals/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "试试触发（几乎）所有信号",
+  "name": "试试触发（几乎）所有信号",
+  "description": "输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。\n$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。",
+  "keywords": [
+    "C", "Signal", "Linux"
+  ],
+  "articleBody": "输入 kill -L，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。\n$ kill -L 1 HUP 2 INT 3 QUIT 4 ILL 5 TRAP 6 ABRT 7 BUS 8 FPE 9 KILL 10 USR1 11 SEGV 12 USR2 13 PIPE 14 ALRM 15 TERM 16 STKFLT 17 CHLD 18 CONT 19 STOP 20 TSTP 21 TTIN 22 TTOU 23 URG 24 XCPU 25 XFSZ 26 VTALRM 27 PROF 28 WINCH 29 POLL 30 PWR 31 SYS 这回试试在这些信号原本的应用场景下触发它们。\n给信号分类 信号是一种进程级别的异步通知机制，是硬件和软件中断在操作系统层面的封装。信号的异步性也源自于中断的异步性。依据信号的来源和作用的不同，我们可以将 31 个信号分为三类。分别是：\n作业控制：用于控制进程运行状态的信号。这类信号产生自用户输入或其他进程。 错误处理：由于进程执行了某些不当操作而产生的信号。这类信号产生自进程自身。 异步操作：为了通知某些异步操作的完成而产生的信号。这类信号产生自外部设备。 当然 glibc 里给出了更细致的分类。不过分为三类更加简洁一些。\n按照这一标准，我们列举各类所包含的信号：\n作业控制 HUP（hang up）：会话终止，请求进程终止 INT（interrupt）：用户请求程序终止当前操作 QUIT（quit）：因为异常，用户请求程序终止 TRAP（trap）：程序被调试器控制而陷入 KILL（kill）：用户强制程序终止 USR1/USR2（user）：用户自定义的请求 TERM（terminate）：用户请求程序终止 CHLD（child）：通知父进程，子进程终止或暂停 CONT（continue）：请求当前进程继续执行 STOP（stop）：请求当前进程暂停执行 TSTP（terminal stop）：通过键盘请求当前进程暂停执行 TTIN（tty input）：在后台的进程尝试从终端读取 TTOU（tty output）：在后台的进程尝试向终端写入 错误处理 ILL（illegal instruction）：非法的指令 ABRT（abort）：因为错误，程序自行调用 abort() 终止 BUS（bus）：访问设备时发生总线错误 FPE（float point exception）：浮点错误 SEGV（segment violation）：访问无法访问的地址 PIPE（pipe）：向一个已经关闭的管道/socket写入数据 SIGSTKFLT：“协处理器栈错误”（未使用） XCPU（exceeds cpu limit）：进程超出了 cpu 运行时间限制 XFSZ（exceeds file size）：进程超出了可写入的文件大小限制 PWR（power）：电源将要耗尽 SYS（system call）：系统调用有误 异步操作： ALRM（alarm）：定时器到时 URG（ugent）：socket 上存在紧急数据 VTALRM（virtual alarm）：虚拟定时器到时 PROF（profile）：性能分析定时器到时 WINCH：终端窗口大小变化 POLL：某文件描述符可以进行读写 作业控制 （1）HUP 创建终端模拟器窗口、使用SSH登陆等操作都会在目标主机中创建一个终端会话。通常一个 shell 会作为这个会话的控制进程。当我们断开会话时，内核会向作为控制进程的 shell 发送 SIGHUP 信号。随后 shell 又会向其所管理的其他所有进程发送 SIGHUP 信号。SIGHUP 信号的默认处置方式是终止进程。这使得在默认情况下，断开会话将终止会话内的所有进程。\n使用如下程序接收 SIGHUP 信号\n// handle_hup.c #include #include #include void handle_hup(int sig) { write(1, \"HUP\\n\", 4); exit(1); } int main() { signal(SIGHUP, handle_hup); while (1) { pause(); } } 启动一个会话，运行该程序之后退出。查看 out.txt 可以发现进程接收到了 SIGHUP 信号。\n$ ./handle_hup \u003eout.txt \u0026 $ exit ... $ cat out.txt HUP （2）INT 当一个进程在前台运行时，输入 ctrl + c 可以向其发送一个 SIGINT 信号。该信号的含义是终止正在运行的操作，以便用户进行输入。对于非交互式程序来说，这等同于终止进程；但对于交互式程序来说，这仅仅意味着当前的一部分操作被打断。\n一个例子是 python 的 REPL 模式。我们在交互模式中输入一个死循环，之后再输入 ctrl + c。可以发现这时我们仅仅打断了死循环的执行，python 解释器本身并未退出。\n$ python3 Python 3.10.12 (main, Feb 4 2025, 14:57:36) [GCC 11.4.0] on linux Type \"help\", \"copyright\", \"credits\" or \"license\" for more information. \u003e\u003e\u003e while True: ... pass ... ^CTraceback (most recent call last): File \"\", line 1, in KeyboardInterrupt \u003e\u003e\u003e （3）QUIT 当一个进程在前台运行时，输入 ctrl + \\ 可以向其发送一个 SIGQUIT 信号。该信号的默认处置将终止当前进程，同时生成 core dump 文件。使用这个信号的场景可能是用户发现了当前运行的程序存在明显的异常，比如说死循环。这时终止进程，并通过 core dump 文件检查程序中的问题可能是一个好办法。\n以一个简单的死循环程序作为例子。\n// loop.c #include int main() { while (1) { } printf(\"Hello World\\n\"); return 0; } 编译，运行。随后输入 ctrl + \\ 发送 SIGQUIT 信号。\n$ clang loop.c -o loop -g $ ./loop ^\\退出 (核心已转储) 因为本人环境中用了 systemd-coredump，所以这里直接使用 coredumpctl 就可以在 gdb 中载入 core dump 信息。\n$ coredumpctl gdb loop ... #0 main () at main.c:4 4 while (1) { (gdb) 没有 core dump 文件记得调整 ulimit\n（4）TRAP SIGTRAP 由 ptrace 所使用，用于实现断点调试、跟踪系统调用等功能。不过 ptrace 目前了解不多，所以先略过。\n（5）KILL 当一个进程收到 SIGKILL 指令后，该进程必定被杀死。除了使用 kill -9 或类似操作外，没有其他产生该信号的场景。不过需要注意 SIGKILL 并不是 kill 命令默认发出的信号（SIGTERM 才是）。因为 SIGKILL 无法被捕获，当收到 SIGKILL 信号时，进程无法做任何额外工作，只能直接被杀死。这可能导致一些资源未能正确释放。\n下面的程序尝试捕获 SIGKILL 信号。\n// try_handle_kill.c #include #include #include void handle_kill(int signum) { write(1, \"KILL\\n\", 5); exit(0); } int main() { signal(SIGKILL, handle_kill); while (1) { pause(); } return 0; } 我们运行该程序，并向其发送 SIGKILL 信号。可以发现并未执行 handle_kill() 函数。\n$ ./try_handle_kill \u0026 [1] 12345 $ kill -KILL $! $ [1]+ 已杀死 ./try_handle_kill （6）USR1/USR2 SIGUSR1 和 SIGUSR2 是为用户预留的信号，用户可以自定义这些信号的含义。不过相较于使用这两个标准信号，使用实时信号（32-63）或许更好。\nSIGUSR1 和 SIGUSR2 的默认处置方式是终止进程，这可能是为了防止用户勿用未自定义的 SIGUSR1/SIGUSR2 信号。\n$ ./loop \u0026 [1] 12345 $ kill -USR1 14475 $ [1]+ 用户自定义信号 1 ./loop （7）TERM SIGTERM 是 kill 命令默认发送的信号。不同于 SIGKILL，程序可以捕获 SIGTERM 信号，并在退出之前执行一些额外的处理操作；或者也可以暂时屏蔽 SIGTERM 信号，避免重要操作被信号打断。这一点十分重要，例如数据库在写入时需要保证数据的完整性，如果使用 SIGKILL 打断这一操作可能导致数据的损坏。\n下面程序在重要操作前屏蔽了 SIGKILL 和 SIGTERM 信号。\n// test_mask.c #include #include #include void do_something_important() { sleep(2); } int main() { sigset_t mask; sigemptyset(\u0026mask); sigaddset(\u0026mask, SIGTERM); sigaddset(\u0026mask, SIGKILL); sigprocmask(SIG_BLOCK, \u0026mask, NULL); do_something_important(); printf(\"Done\\n\"); sigprocmask(SIG_UNBLOCK, \u0026mask, NULL); while (1) { pause(); } return 0; } 如果在运行程序之后发送 SIGTERM 信号，程序会在重要操作完成后才处理该信号\n$ ./test_mask \u0026 sleep 1; kill $! \u0026 wait [1] 123456 [2] 654321 Done [1]- 已终止 ./test_mask [2]+ 已完成 kill $! 而如果发送 SIGKILL，则程序会立即终止，尽管我们“屏蔽”了 SIGKILL。\n$ ./test_mask \u0026 sleep 1; kill -9 $! \u0026 wait [1] 123456 [2] 654321 [1]- 已杀死 ./test_mask （8）CHLD 当一个子进程终止、暂停或继续运行时，父进程会收到一个 SIGCHLD 信号。\n这一信号在某些情况下很有用，比如子进程的生命周期并不确定的情况。这时子进程随时可能终止，而父进程却由于有自己的任务而不能时刻调用 wait() 回收僵尸子进程。通过将子进程终止的情况通过信号的方式传递给父进程，父进程就可以在自己的程序执行之外完成对子进程的处理。\n这一点类似于被 detach 的线程。不过线程可以在结束时自动释放自己的资源，而进程却只有通过父进程才能实现彻底的回收。\n注意使用 SIGCHLD 时不需要担心父进程率先终止的情况，因为如果父进程率先终止，则子进程的父进程会自动变为 init 进程（pid=1）。而 init 进程总会进行僵尸进程的回收。\n这一点类似于内存泄露。在进程持续运行的时候才是问题，如果进程已经终止了，那么其资源也会随之释放。\n下面程序创建了两个子进程，并且注册了 SIGCHLD 信号的处理函数。在其中我们循环调用 waitpid()，直到没有新的僵尸子进程被回收。\n// test_child.c #include #include #include void handle_child(int sig) { write(1, \"CHLD\\n\", 5); while (waitpid(-1, NULL, WNOHANG) \u003e 0) { write(1, \"WAIT\\n\", 5); } } int main() { signal(SIGCHLD, handle_child); for (int i = 0; i \u003c 2; i++) { int pid = fork(); if (pid == 0) { while (1) { pause(); } return 0; } } while (1) { pause(); } return 0; } 我们运行这个程序。对于两个子进程，我们终止第一个子进程，暂停第二个子进程，之后再让其恢复运行。\n$ ./test_child \u0026 $ ps PID TTY TIME CMD 12345 pts/0 00:00:00 bash 123001 pts/0 00:00:00 test_child 123002 pts/0 00:00:00 test_child 123003 pts/0 00:00:00 test_child 123456 pts/0 00:00:00 ps $ kill 123002 CHLD WAIT $ ps PID TTY TIME CMD 12345 pts/0 00:00:00 bash 123001 pts/0 00:00:00 test_child 123003 pts/0 00:00:00 test_child 123456 pts/0 00:00:00 ps $ kill -STOP 123003 CHLD $ kill -CONT 123003 CHLD （9）CONT SIGCONT 信号用于使一个被暂停的进程恢复运行。如果进程没有被暂停，则 SIGCONT 不会有任何影响。用户可以注册该信号的处理函数，这样当进程再度运行时会首先执行处理函数中的代码。\n想要恢复运行，首先需要暂停执行。所以 SIGCONT 需要与 SIGSTOP 或 SIGTSTP 配合使用。\n下面程序处理 SIGCONT 信号。\n// test_cont.c #include #include void handle_cont(int signum) { write(1, \"CONT\\n\", 5); } int main() { signal(SIGCONT, handle_cont); while (1) { pause(); } return 0; } 先暂停进程运行，之后发送 SIGCONT 使程序恢复运行。这里需要注意的是，如果进程已经在运行，发送 SIGCONT 依然会调用信号处理函数。\n$ ./test_cont \u0026 [1] 123456 $ kill -STOP $! [1]+ 已停止 ./test_cont $ kill -CONT $! CONT $ jobs [1]+ 运行中 ./test_cont \u0026 $ kill -CONT $! CONT （10）STOP SIGSTOP 信号会使进程暂停。和 SIGKILL 类似，SIGSTOP 也不可被忽略或屏蔽，一旦进程收到该信号则必定暂停。\nSIGSTOP 只能通过 kill 等方式触发。在前面我们已经使用过多次了，所以这里略过。\n（11）TSTP SIGTSTP 信号的默认处置行为和 SIGSTOP 相同。进程在收到该信号后会暂停运行。不过该信号可以被忽略或屏蔽，其与 SIGSTOP 的关系类似于 SIGTERM 与 SIGKILL。\n对于在前台运行的进程，可以通过 ctrl + z 来向该进程发送一个 SIGTSTP 信号。一般情况下这会使得前台进程暂停运行，shell 重新成为前台进程。这样的前后台的切换是作业控制的重要功能，shell 可以据此让许多不同作业在前后台并发执行。\n这里我们用前几节中的死循环程序为例。我们首先运行该程序，运行一段时间后，我们输入 ctrl + z 暂停该程序。输入 jobs 指令查看该作业已暂停。\n$ ./loop ^Z [1]+ 已停止 ./loop $ jobs [1]+ 已停止 ./loop 随后我们后台运行另一个程序。\n$ ./loop \u0026 [2] 257314 $ jobs [1]+ 已停止 ./loop [2]- 运行中 ./loop \u0026 通过 bg 指令使之前暂停的进程在后台运行\n$ bg %1 [1]+ ./loop \u0026 $ jobs [1]- 运行中 ./loop \u0026 [2]+ 运行中 ./loop \u0026 通过 fg 指令使原本在后台运行的进程在前台运行。之后再通过 SIGINT 使其停止。\n$ fg %2 ./loop ^C 最后通过 kill 停止正在后台运行的进程\n$ kill %1 $ [1]+ 已终止 ./loop （12）TTIN 如果一个进程是后台进程，且该进程希望从终端输入中读取内容，那么就会触发 SIGTTIN 信号。因为这时候的用户的输入是针对于前台进程而言的。TTIN（以及 TTOU）的默认处置是暂停当前进程。因为虽然用户现在不需要与触发 SIGTTIN 的进程交互，但是之后很可能将该进程设置为前台进程。\n下面的程序煎蛋地读入一个数组，再将该数字输出。\n// iecho.c #include int main() { int n; scanf(\"%d\", \u0026n); printf(\"%d\\n\", n); return 0; } 将该程序置于后台运行时，进程很快暂停运行。之后我们可以通过 fg 命令将其转到前台，并与其交互。\n$ ./iecho \u0026 [1] 123456 $ [1]+ 已停止 ./iecho $ jobs [1]+ 已停止 ./iecho $ fg ./iecho 1 1 （13）TTOU SIGTTOU 和 SIGTTIN 类似。当位于后台的进程尝试向终端写入内容时会产生该信号。在默认的设置下，这个信号并不会产生，后台进程也会向终端输出内容。只有当使用 stty tostop 命令明确禁止后台进程输出后该信号才会启用。\n还用上一节的 iecho 程序进行测试。不增加 tostop 配置时，后台进程依然向前台输出。\n$ echo 1 | ./a.out \u0026 wait [1] 123456 1 [1]+ 已完成 echo 123 | ./a.out 但增加 tostop 配置后，相同的程序现在会导致进程暂停。\n$ stty tostop $ echo 123 | ./a.out \u0026 wait [1] 524975 [1]+ 已停止 echo 123 | ./a.out bash: wait: 警告： job 1[524975] stopped $ fg echo 123 | ./a.out 123 错误处理 （1）ILL 当程序运行过程中出现处理器无法识别的指令时，就会触发 SIGILL 信号。产生该信号的方式也很简单。使用如下代码即可：\n// test_ill.c int main() { asm(\".byte 0x0f, 0x00\"); return 0; } 这段代码可以正常编译，但是运行时就会触发 SIGILL 信号。由于该信号意味着程序存在错误，所以默认处置会产生 core dump 文件。\n$ ./test_ill 非法指令 (核心已转储) 由于大部分情况下程序的机器码是由编译器或汇编器翻译而来的，所以这一信号并不常见。即便是错误地将 pc 指向了数据段部分，也会由于数据段没有执行权限而不会出现 SIGILL 信号。例如下面的代码\n// invalid_call.c typedef void (*func_t)(void); const char a = 0; int main() { func_t f = (func_t)\u0026a; f(); return 0; } 运行之后并不会触发 SIGILL 信号，而是 SIGSEGV 信号\n$ ./invalid_call 段错误 (核心已转储) （2）ABRT 当程序发现自身出现了无法恢复的错误时，可调用 abort() 异常终止当前进程。这时该进程会收到一个 SIGABRT 信号。该信号的默认处置会终止当前进程，同时产生 core dump 文件。例如下面的程序。\n// test_abort.c #include #include int factorial(int n) { if (n \u003c 0) { abort(); } else if (n == 0) { return 1; } else { return n * factorial(n - 1); } } int main() { int n = -1; return factorial(n); } 运行之后，调用 abort() 触发 SIGABRT 信号，进程终止。\n$ ./test_abort 已中止 (核心已转储) 标准库中 assert 的实现中同样调用了 abort() 函数。\n（3）BUS SIGBUS 是由于不正确的方式访问设备而产生的信号。一个比较常见的产生该信号的场景是使用 mmap() 时访问了文件范围外的地址。例如下面的例子。\n// test_bus.c #include #include #include #include int main() { int fd = open(\"test.txt\", O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR); if (fd \u003c 0) { perror(\"open\"); return 1; } void *addr = mmap(NULL, 1, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0); *(char *)addr = 0; close(fd); return 0; } 这里我们创建了一个新文件 test.txt。此时文件大小为 0。我们使用 mmap() 映射该文件的第一个字节的数据（因为页，实际上会对齐到页面大小）。可由于文件大小为 0，所以对应地址上的数据应当是无效的。\n执行该程序的结果如下。我们访问的位置并没有对应的磁盘数据，所以触发了一个 SIGBUS 信号。\n$ ./test_bus 总线错误 (核心已转储) （4）FPE SIGFPE 信号表示浮点异常。会在整数除零等情况下出现。产生该信号的代码很简单。\n// test_fpe.c int main() { int x = 1; int y = 0; return x / y; } 运行该程序的结果如下。\n$ ./test_fpe 浮点异常 (核心已转储) 需要注意的是浮点数除零并不会产生 SIGFPE 信号。因为 IEEE 754 中定义了 inf。\n（5）SEGV SIGSEGV 应该是最常出现的表达错误的信号。当进程所访问的地址对应页面不存在或没有权限时就会产生这一信号。例如下面的程序。\n// test_segv.c int main() { *(char*)1 = 0; return 0; } $ ./test_segv 段错误 (核心已转储) 需要注意 SIGSEGV 并不只会出现在地址无效时。例如 ILL 一节虽然访问的地址有效，但是由于没有可执行权限，依然产生了 SIGSEGV 信号。\n（6）PIPE 当一个进程尝试写入一个对端已经关闭的管道或 socket 时，就会产生 SIGPIPE 信号。该信号的默认处置会终止当前进程的执行。\n下面的程序创建了一个管道，并在第二次写入之前关闭了读端。\n// test_pipe.c #include #include int main() { int pipefd[2]; pipe(pipefd); printf(\"Before write (1)\\n\"); write(pipefd[1], \"Hello, World!\", 13); printf(\"After write (1)\\n\"); close(pipefd[0]); printf(\"Before write (2)\\n\"); write(pipefd[1], \"Hello, World!\", 13); printf(\"After write (2)\\n\"); return 0; } 接下来运行该程序，发现只输出了前三行内容。\n$ ./test_pipe Before write (1) After write (1) Before write (2) 查看进程的返回值，为 141（128 + 13）。说明该进程是由于第 13 号信号 SIGPIPE 导致终止的。\n$ echo $? 141 对于 socket 我们也能举一个例子。下面是一个 server 端的代码。这个程序接受一个连接请求，并以一秒为间隔不断向对端写入数据。\n// server.c #include #include #include #include #include int main() { int sockfd = socket(AF_INET, SOCK_STREAM, 0); if (sockfd \u003c 0) { perror(\"socket\"); exit(1); } struct sockaddr_in server_addr; server_addr.sin_family = AF_INET; server_addr.sin_addr.s_addr = INADDR_ANY; server_addr.sin_port = 0; if (bind(sockfd, (struct sockaddr *)\u0026server_addr, sizeof(server_addr)) \u003c 0) { perror(\"bind\"); close(sockfd); exit(1); } socklen_t addr_len = sizeof(server_addr); if (getsockname(sockfd, (struct sockaddr *)\u0026server_addr, \u0026addr_len) \u003c 0) { perror(\"getsockname\"); close(sockfd); exit(1); } printf(\"Socket bound to port %d\\n\", ntohs(server_addr.sin_port)); if (listen(sockfd, 5) \u003c 0) { perror(\"listen\"); close(sockfd); exit(1); } int client_sockfd = accept(sockfd, NULL, NULL); if (client_sockfd \u003c 0) { perror(\"accept\"); close(sockfd); exit(1); } printf(\"Accepted a connection\\n\"); char buffer[] = \"Hello, World!\\n\"; while (1) { if (send(client_sockfd, buffer, sizeof(buffer), 0) \u003c 0) { perror(\"send\"); close(client_sockfd); close(sockfd); exit(1); } printf(\"Sent message to client\\n\"); sleep(1); } return 0; } 我们运行这个程序，并用 netcat 接收 server 发送的信息。一段时间后使用 SIGINT 终止 netcat 的运行。结果如下：\nserver：\n$ ./server Socket bound to port 54321 Accepted a connection Sent message to client Sent message to client Sent message to client Sent message to client Sent message to client Sent message to client $ echo $? 141 client：\n$ netcat 0.0.0.0 54321 Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! ^C 可以发现出现了这样的情况：client 程序关闭了连接，但 server 程序却因此而终止。对于可用性有较高要求的 server 端来说，这样的行为可难以接受。\n所以对于使用 socket 的程序，尤其是 server 程序，需要记得对 SIGPIPE 进行额外的处理。例如可以选择将忽略 SIGPIPE 信号，或者可以在 send() 调用时增加 MSG_NOSIGNAL 来避免这一问题。在设置了上述选项后，出现读端关闭的情况将会使得 write()、send() 等函数错误返回，并将 errno 设置为 EPIPE。\n还有一个对偶的情况：当读取数据时写端关闭。这种情况的判断条件是 read() 等函数正常返回，且返回的读取字节数为 0。因为被定义为正常情况，所以就不需要信号或错误码了。\n（7）XCPU 使用 setrlimit() 可以对单个进程所使用的各项资源进行限制。这些资源包括虚拟内存大小、CPU执行时间、文件大小等等。当进程运行过程中对资源的请求超出其限制时，会在对应时刻产生异常。对某些限制的检查是在调用接口后同步进行的，这时异常会使用错误码等方式传递；而另一些检查是随着程序的执行异步进行的。这些异步产生的异常就使用信号进行传递。\nrlimit 的作用范围是单个进程。和 rlimit 较为相关的另一个概念是 cgroup。cgroup 的作用范围是一个进程组。\nSIGCPU 表达的异常情况是“进程的运行时间超过了预先设置的CPU执行时间限制”。如下代码先将 CPU 执行时间设置为 1 秒。之后执行死循环造成超时。\n// test_xcpu.c #include #include int main() { // change the CPU time limit to 1 seconds struct rlimit rl = {.rlim_cur = 1, .rlim_max = RLIM_INFINITY}; if (setrlimit(RLIMIT_CPU, \u0026rl) == -1) { perror(\"setrlimit\"); return 1; } printf(\"CPU time limit: %ld seconds\\n\", rl.rlim_cur); while (1) ; return 0; } 运行该程序并记录其执行时间，可以看到大约一秒之后触发 SIGXCPU 信号。默认处置条件是终止进程并生成 core dump 文件。\n$ time ./test_xcpu CPU time limit: 1 seconds CPU 时间超出限制 (核心已转储) real 0m1.087s user 0m0.993s sys 0m0.005s （8）XFSZ 另一个进程资源限制相关的信号是 SIGXFSZ。setrlimit() 可以设置当前进程所能创建的文件的最大大小。超出该限制将触发 SIGXFSZ 信号。默认处置方式是终止程序并产生 core dump 文件。\n如下代码将最大大小设置为 1 字节，之后尝试创建文件并写入超过 1 字节的数据。\n// test_xfsz.c #include #include int main() { struct rlimit rl = {.rlim_cur = 1, .rlim_max = RLIM_INFINITY}; if (setrlimit(RLIMIT_FSIZE, \u0026rl) == -1) { perror(\"setrlimit\"); return 1; } printf(\"File size limit changed to: %ld bytes\\n\", rl.rlim_cur); // try to create a file larger than the limit FILE *fp = fopen(\"test.txt\", \"w\"); if (fp == NULL) { perror(\"fopen\"); return 1; } printf(\"Writing to file...\\n\"); fprintf(fp, \"Hello, World!\\n\"); fclose(fp); return 0; } 运行结果显示当试图写入数据时产生了 SIGXFSZ 信号。\n$ ./test_xfsz File size limit changed to: 1 bytes Writing to file... 文件大小超出限制 (核心已转储) （9）PWR SIGPWR 会在电源即将耗尽时被发送给 init 进程。init 进程会负责在这一时刻完成整个系统的有序退出。此信号的触发条件有些苛刻，因此这里略过。\n（10）SYS SIGSYS 会在进程发起的系统调用有误的时候触发。不过我没能构造出这样的程序。使用错误的系统调用号以及错误的参数只会让进程直接退出。\n（11）到底怎么处理？ 尽管错误处理部分的信号的默认处置方式都是终止进程并产生 core dump 文件。但是他们也是能被捕获，并由用户定义的处理函数进行处理的。不过你肯定想问类似 SIGILL 和 SIGSEGV 这样的信号要如何由用户来处理。毕竟除了直接退出程序，就算从处理函数中返回也还是要执行引发错误的同一条指令。下面的程序构造了这样的情况。\n// infinity.c #include #include void handle_segv(int sig) { write(1, \"SEGV\\n\", 5); sleep(1); // Just to slow down the output } int main() { signal(SIGSEGV, handle_segv); *(char *)1 = 1; return 0; } 运行该程序会发现进程在不断触发 SIGSEGV 信号。\n$ ./infinity SEGV SEGV SEGV SEGV SEGV ^C 解决这个问题的关键在于使信号处理函数返回时不再执行同一条语句，这需要 longjump 的支持。准确来说是 siglongjump。\n下面的程序中我们使用 sigsetjmp() 创建了一个检查点。当捕获到 SIGSEGV 信号后使用 siglongjmp() 跳转回 sigsetjmp() 所在位置进行第二次返回。并运行异常处理部分内容。\n// catch.c #include #include #include #include static sigjmp_buf senv; void handle_segv(int sig) { write(1, \"SEGV\\n\", 5); siglongjmp(senv, 1); } int main() { signal(SIGSEGV, handle_segv); int snd = sigsetjmp(senv, 1); if (!snd) { *(char *)1 = 1; } else { printf(\"Catch SEGV\\n\"); } return 0; } 运行修改后的程序，该程序成功退出。\n$ ./catch SEGV Catch SEGV 上述程序类似于下方的伪代码：\nint main() { try { *(char *)1 = 1; } catch (const SEGVException \u0026ex) { printf(\"Catch SEGV\\n\"); } return 0; } 异步操作 （1）ALRM/VTALRM/PROF SIGALRM、SIGVTALRM 和 SIGPROF 信号的产生源自相同的系统调用 setitimer。该系统调用设置一个异步的计时器，当计时器到期时会触发对应的信号。这些信号的默认处置会终止当前进程。\nSIGALRM、SIGVTALRM 和 SIGPROF 的区别在于其测量的时间不同。当将 setitimer 的 which 参数设置为 ITIMER_REAL 时，所设置的到期时间为墙钟事件（真实时间），到期时产生 SIGALRM 信号。当将 which 设置为 ITIMER_VIRTUAL 时，所设置的到期时间为用户态下的 CPU 事件，到期时产生 SIGVTALRM 信号。当将 which 设置为 ITIMER_PROF 时，所设置的到期时间为用户态和内核态下的 CPU 事件，到期时产生 SIGPROF 信号。\n需要注意一个进程只能使用这三个定时器之一，且同一时刻只能为定时器设置单个到期时间。如下程序使用 setitimer() 函数将 ITIMER_REAL 定时器的到期事件设置为 1 秒后，并注册 SIGALRM 的信号处理函数以捕获该信号。\n// test_alarm.c #include #include #include #include void handle_alarm(int sig) { write(1, \"ALRM\\n\", 5); exit(0); } int main() { signal(SIGALRM, handle_alarm); struct itimerval timer = { .it_value = {.tv_sec = 1, .tv_usec = 0}, // First alarm after 1 second .it_interval = {.tv_sec = 0, .tv_usec = 0} // No repeat }; setitimer(ITIMER_REAL, \u0026timer, NULL); while (1) { pause(); } } 运行该程序，结果如下\n$ time ./test_alarm ALRM real 0m1.002s user 0m0.002s sys 0m0.000s 其他两种信号的触发方式和 SIGALRM 类似，这里略过。\n（2）URG 当使用 socket 传输紧急数据时会产生一个 SIGURG 信号。不过紧急数据在当下几乎没有使用，所以这里略过。\n（3）WINCH 当用户改变终端窗口大小时会触发一个 SIGWINCH 信号。窗口大小可能影响一些终端应用程序（比如说 vim）的格式化结果。当收到 SIGWINCH 信号后，这样的程序可以根据新的终端窗口大小对显示结果进行重绘。\n使用如下程序捕获 SIGWINCH 信号。\n// test_winch.c #include #include void handle_winch(int sig) { write(1, \"WINCH\\n\", 6); } int main() { signal(SIGWINCH, handle_winch); while (1) { pause(); } } 新建一个终端窗口，运行该程序。之后调整窗口的大小，可以发现产生了一系列 SIGWINCH 信号。\n$ ./test_winch WINCH WINCH WINCH WINCH WINCH WINCH WINCH WINCH （4）POLL SIGPOLL 用于实现信号驱动 IO。不过基于信号处理机制进行 IO 实现起来太过复杂了，同时相较于多路复用没有明显的性能优势，所以似乎用处不大。这里略过。\n",
+  "wordCount" : "2058",
+  "inLanguage": "zh",
+  "datePublished": "2025-05-23T17:22:16+08:00",
+  "dateModified": "2025-05-23T17:22:16+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/raise-signals/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      试试触发（几乎）所有信号
+    </h1>
+    <div class="post-meta"><span title='2025-05-23 17:22:16 +0800 CST'>五月 23, 2025</span>&nbsp;·&nbsp;10 分钟&nbsp;·&nbsp;2058 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/raise-signals.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e7%bb%99%e4%bf%a1%e5%8f%b7%e5%88%86%e7%b1%bb" aria-label="给信号分类">给信号分类</a></li>
+                <li>
+                    <a href="#%e4%bd%9c%e4%b8%9a%e6%8e%a7%e5%88%b6" aria-label="作业控制">作业控制</a><ul>
+                        
+                <li>
+                    <a href="#1hup" aria-label="（1）HUP">（1）HUP</a></li>
+                <li>
+                    <a href="#2int" aria-label="（2）INT">（2）INT</a></li>
+                <li>
+                    <a href="#3quit" aria-label="（3）QUIT">（3）QUIT</a></li>
+                <li>
+                    <a href="#4trap" aria-label="（4）TRAP">（4）TRAP</a></li>
+                <li>
+                    <a href="#5kill" aria-label="（5）KILL">（5）KILL</a></li>
+                <li>
+                    <a href="#6usr1usr2" aria-label="（6）USR1/USR2">（6）USR1/USR2</a></li>
+                <li>
+                    <a href="#7term" aria-label="（7）TERM">（7）TERM</a></li>
+                <li>
+                    <a href="#8chld" aria-label="（8）CHLD">（8）CHLD</a></li>
+                <li>
+                    <a href="#9cont" aria-label="（9）CONT">（9）CONT</a></li>
+                <li>
+                    <a href="#10stop" aria-label="（10）STOP">（10）STOP</a></li>
+                <li>
+                    <a href="#11tstp" aria-label="（11）TSTP">（11）TSTP</a></li>
+                <li>
+                    <a href="#12ttin" aria-label="（12）TTIN">（12）TTIN</a></li>
+                <li>
+                    <a href="#13ttou" aria-label="（13）TTOU">（13）TTOU</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e9%94%99%e8%af%af%e5%a4%84%e7%90%86" aria-label="错误处理">错误处理</a><ul>
+                        
+                <li>
+                    <a href="#1ill" aria-label="（1）ILL">（1）ILL</a></li>
+                <li>
+                    <a href="#2abrt" aria-label="（2）ABRT">（2）ABRT</a></li>
+                <li>
+                    <a href="#3bus" aria-label="（3）BUS">（3）BUS</a></li>
+                <li>
+                    <a href="#4fpe" aria-label="（4）FPE">（4）FPE</a></li>
+                <li>
+                    <a href="#5segv" aria-label="（5）SEGV">（5）SEGV</a></li>
+                <li>
+                    <a href="#6pipe" aria-label="（6）PIPE">（6）PIPE</a></li>
+                <li>
+                    <a href="#7xcpu" aria-label="（7）XCPU">（7）XCPU</a></li>
+                <li>
+                    <a href="#8xfsz" aria-label="（8）XFSZ">（8）XFSZ</a></li>
+                <li>
+                    <a href="#9pwr" aria-label="（9）PWR">（9）PWR</a></li>
+                <li>
+                    <a href="#10sys" aria-label="（10）SYS">（10）SYS</a></li>
+                <li>
+                    <a href="#11%e5%88%b0%e5%ba%95%e6%80%8e%e4%b9%88%e5%a4%84%e7%90%86" aria-label="（11）到底怎么处理？">（11）到底怎么处理？</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%bc%82%e6%ad%a5%e6%93%8d%e4%bd%9c" aria-label="异步操作">异步操作</a><ul>
+                        
+                <li>
+                    <a href="#1alrmvtalrmprof" aria-label="（1）ALRM/VTALRM/PROF">（1）ALRM/VTALRM/PROF</a></li>
+                <li>
+                    <a href="#2urg" aria-label="（2）URG">（2）URG</a></li>
+                <li>
+                    <a href="#3winch" aria-label="（3）WINCH">（3）WINCH</a></li>
+                <li>
+                    <a href="#4poll" aria-label="（4）POLL">（4）POLL</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>输入 <code>kill -L</code>，你可以看到 Linux 下所有可用的标准信号，总共有 31 个。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">kill</span> -L
+</span></span><span class="line"><span class="cl"><span class="go"> 1 HUP      2 INT      3 QUIT     4 ILL      5 TRAP     6 ABRT     7 BUS
+</span></span></span><span class="line"><span class="cl"><span class="go"> 8 FPE      9 KILL    10 USR1    11 SEGV    12 USR2    13 PIPE    14 ALRM
+</span></span></span><span class="line"><span class="cl"><span class="go">15 TERM    16 STKFLT  17 CHLD    18 CONT    19 STOP    20 TSTP    21 TTIN
+</span></span></span><span class="line"><span class="cl"><span class="go">22 TTOU    23 URG     24 XCPU    25 XFSZ    26 VTALRM  27 PROF    28 WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">29 POLL    30 PWR     31 SYS
+</span></span></span></code></pre></div><p>这回试试在这些信号原本的应用场景下触发它们。</p>
+<h2 id="给信号分类">给信号分类<a hidden class="anchor" aria-hidden="true" href="#给信号分类">#</a></h2>
+<p>信号是一种进程级别的异步通知机制，是硬件和软件中断在操作系统层面的封装。信号的异步性也源自于中断的异步性。依据信号的来源和作用的不同，我们可以将 31 个信号分为三类。分别是：</p>
+<ul>
+<li><strong>作业控制</strong>：用于控制进程运行状态的信号。这类信号产生自用户输入或其他进程。</li>
+<li><strong>错误处理</strong>：由于进程执行了某些不当操作而产生的信号。这类信号产生自进程自身。</li>
+<li><strong>异步操作</strong>：为了通知某些异步操作的完成而产生的信号。这类信号产生自外部设备。</li>
+</ul>
+<blockquote>
+<p>当然 <a href="https://sourceware.org/glibc/manual/2.41/html_node/Standard-Signals.html">glibc 里给出了更细致的分类</a>。不过分为三类更加简洁一些。</p>
+</blockquote>
+<p>按照这一标准，我们列举各类所包含的信号：</p>
+<ul>
+<li>作业控制
+<ul>
+<li>HUP（hang up）：会话终止，请求进程终止</li>
+<li>INT（interrupt）：用户请求程序终止当前操作</li>
+<li>QUIT（quit）：因为异常，用户请求程序终止</li>
+<li>TRAP（trap）：程序被调试器控制而陷入</li>
+<li>KILL（kill）：用户强制程序终止</li>
+<li>USR1/USR2（user）：用户自定义的请求</li>
+<li>TERM（terminate）：用户请求程序终止</li>
+<li>CHLD（child）：通知父进程，子进程终止或暂停</li>
+<li>CONT（continue）：请求当前进程继续执行</li>
+<li>STOP（stop）：请求当前进程暂停执行</li>
+<li>TSTP（terminal stop）：通过键盘请求当前进程暂停执行</li>
+<li>TTIN（tty input）：在后台的进程尝试从终端读取</li>
+<li>TTOU（tty output）：在后台的进程尝试向终端写入</li>
+</ul>
+</li>
+<li>错误处理
+<ul>
+<li>ILL（illegal instruction）：非法的指令</li>
+<li>ABRT（abort）：因为错误，程序自行调用 <code>abort()</code> 终止</li>
+<li>BUS（bus）：访问设备时发生总线错误</li>
+<li>FPE（float point exception）：浮点错误</li>
+<li>SEGV（segment violation）：访问无法访问的地址</li>
+<li>PIPE（pipe）：向一个已经关闭的管道/socket写入数据</li>
+<li>SIGSTKFLT：“协处理器栈错误”（未使用）</li>
+<li>XCPU（exceeds cpu limit）：进程超出了 cpu 运行时间限制</li>
+<li>XFSZ（exceeds file size）：进程超出了可写入的文件大小限制</li>
+<li>PWR（power）：电源将要耗尽</li>
+<li>SYS（system call）：系统调用有误</li>
+</ul>
+</li>
+<li>异步操作：
+<ul>
+<li>ALRM（alarm）：定时器到时</li>
+<li>URG（ugent）：socket 上存在紧急数据</li>
+<li>VTALRM（virtual alarm）：虚拟定时器到时</li>
+<li>PROF（profile）：性能分析定时器到时</li>
+<li>WINCH：终端窗口大小变化</li>
+<li>POLL：某文件描述符可以进行读写</li>
+</ul>
+</li>
+</ul>
+<h2 id="作业控制">作业控制<a hidden class="anchor" aria-hidden="true" href="#作业控制">#</a></h2>
+<h3 id="1hup">（1）HUP<a hidden class="anchor" aria-hidden="true" href="#1hup">#</a></h3>
+<p>创建终端模拟器窗口、使用SSH登陆等操作都会在目标主机中创建一个终端会话。通常一个 shell 会作为这个会话的控制进程。当我们断开会话时，内核会向作为控制进程的 shell 发送 SIGHUP 信号。随后 shell 又会向其所管理的其他所有进程发送 SIGHUP 信号。SIGHUP 信号的默认处置方式是终止进程。这使得在默认情况下，断开会话将终止会话内的所有进程。</p>
+<p>使用如下程序接收 SIGHUP 信号</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// handle_hup.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_hup</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;HUP</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGHUP</span><span class="p">,</span> <span class="n">handle_hup</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>启动一个会话，运行该程序之后退出。查看 <code>out.txt</code> 可以发现进程接收到了 SIGHUP 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./handle_hup &gt;out.txt <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">exit</span>
+</span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> cat out.txt
+</span></span><span class="line"><span class="cl"><span class="go">HUP
+</span></span></span></code></pre></div><h3 id="2int">（2）INT<a hidden class="anchor" aria-hidden="true" href="#2int">#</a></h3>
+<p>当一个进程在前台运行时，输入 <code>ctrl + c</code> 可以向其发送一个 SIGINT 信号。该信号的含义是终止正在运行的操作，以便用户进行输入。对于非交互式程序来说，这等同于终止进程；但对于交互式程序来说，这仅仅意味着当前的一部分操作被打断。</p>
+<p>一个例子是 python 的 REPL 模式。我们在交互模式中输入一个死循环，之后再输入 <code>ctrl + c</code>。可以发现这时我们仅仅打断了死循环的执行，python 解释器本身并未退出。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> python3
+</span></span><span class="line"><span class="cl"><span class="go">Python 3.10.12 (main, Feb  4 2025, 14:57:36) [GCC 11.4.0] on linux
+</span></span></span><span class="line"><span class="cl"><span class="go">Type &#34;help&#34;, &#34;copyright&#34;, &#34;credits&#34; or &#34;license&#34; for more information.
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">&gt;</span>&gt;&gt; <span class="k">while</span> True:
+</span></span><span class="line"><span class="cl"><span class="go">...   pass
+</span></span></span><span class="line"><span class="cl"><span class="go">... 
+</span></span></span><span class="line"><span class="cl"><span class="go">^CTraceback (most recent call last):
+</span></span></span><span class="line"><span class="cl"><span class="go">  File &#34;&lt;stdin&gt;&#34;, line 1, in &lt;module&gt;
+</span></span></span><span class="line"><span class="cl"><span class="go">KeyboardInterrupt
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">&gt;</span>&gt;&gt; 
+</span></span></code></pre></div><h3 id="3quit">（3）QUIT<a hidden class="anchor" aria-hidden="true" href="#3quit">#</a></h3>
+<p>当一个进程在前台运行时，输入 <code>ctrl + \</code> 可以向其发送一个 SIGQUIT 信号。该信号的默认处置将终止当前进程，同时生成 core dump 文件。使用这个信号的场景可能是用户发现了当前运行的程序存在明显的异常，比如说死循环。这时终止进程，并通过 core dump 文件检查程序中的问题可能是一个好办法。</p>
+<p>以一个简单的死循环程序作为例子。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// loop.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Hello World</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>编译，运行。随后输入 <code>ctrl + \</code> 发送 SIGQUIT 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> clang loop.c -o loop -g
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ./loop 
+</span></span><span class="line"><span class="cl"><span class="go">^\退出 (核心已转储)
+</span></span></span></code></pre></div><p>因为本人环境中用了 <code>systemd-coredump</code>，所以这里直接使用 <code>coredumpctl</code> 就可以在 <code>gdb</code> 中载入 core dump 信息。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> coredumpctl gdb loop
+</span></span><span class="line"><span class="cl"><span class="go">...
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">#</span><span class="m">0</span>  main <span class="o">()</span> at main.c:4
+</span></span><span class="line"><span class="cl"><span class="go">4           while (1) {
+</span></span></span><span class="line"><span class="cl"><span class="go">(gdb) 
+</span></span></span></code></pre></div><blockquote>
+<p>没有 core dump 文件记得调整 <code>ulimit</code></p>
+</blockquote>
+<h3 id="4trap">（4）TRAP<a hidden class="anchor" aria-hidden="true" href="#4trap">#</a></h3>
+<p>SIGTRAP 由 <code>ptrace</code> 所使用，用于实现断点调试、跟踪系统调用等功能。不过 <code>ptrace</code> 目前了解不多，所以先略过。</p>
+<h3 id="5kill">（5）KILL<a hidden class="anchor" aria-hidden="true" href="#5kill">#</a></h3>
+<p>当一个进程收到 SIGKILL 指令后，该进程<strong>必定被杀死</strong>。除了使用 <code>kill -9 &lt;pid&gt;</code> 或类似操作外，没有其他产生该信号的场景。不过需要注意 SIGKILL 并不是 <code>kill</code> 命令默认发出的信号（SIGTERM 才是）。因为 SIGKILL 无法被捕获，当收到 SIGKILL 信号时，进程无法做任何额外工作，只能直接被杀死。这可能导致一些资源未能正确释放。</p>
+<p>下面的程序尝试捕获 SIGKILL 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// try_handle_kill.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_kill</span><span class="p">(</span><span class="kt">int</span> <span class="n">signum</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;KILL</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGKILL</span><span class="p">,</span> <span class="n">handle_kill</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们运行该程序，并向其发送 SIGKILL 信号。可以发现并未执行 <code>handle_kill()</code> 函数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./try_handle_kill <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 12345
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> -KILL <span class="nv">$!</span>
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> 
+</span></span><span class="line"><span class="cl"><span class="o">[</span>1<span class="o">]</span>+  已杀死               ./try_handle_kill
+</span></span></code></pre></div><h3 id="6usr1usr2">（6）USR1/USR2<a hidden class="anchor" aria-hidden="true" href="#6usr1usr2">#</a></h3>
+<p>SIGUSR1 和 SIGUSR2 是为用户预留的信号，用户可以自定义这些信号的含义。不过相较于使用这两个标准信号，使用实时信号（32-63）或许更好。</p>
+<p>SIGUSR1 和 SIGUSR2 的默认处置方式是终止进程，这可能是为了防止用户勿用未自定义的 SIGUSR1/SIGUSR2 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./loop <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 12345
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> -USR1 <span class="m">14475</span>
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> 
+</span></span><span class="line"><span class="cl"><span class="o">[</span>1<span class="o">]</span>+  用户自定义信号 <span class="m">1</span> ./loop
+</span></span></code></pre></div><h3 id="7term">（7）TERM<a hidden class="anchor" aria-hidden="true" href="#7term">#</a></h3>
+<p>SIGTERM 是 <code>kill</code> 命令默认发送的信号。不同于 SIGKILL，程序可以捕获 SIGTERM 信号，并在退出之前执行一些额外的处理操作；或者也可以暂时屏蔽 SIGTERM 信号，避免重要操作被信号打断。这一点十分重要，例如数据库在写入时需要保证数据的完整性，如果使用 SIGKILL 打断这一操作可能导致数据的损坏。</p>
+<p>下面程序在重要操作前屏蔽了 SIGKILL 和 SIGTERM 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_mask.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">do_something_important</span><span class="p">()</span> <span class="p">{</span> <span class="nf">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">sigset_t</span> <span class="n">mask</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mask</span><span class="p">,</span> <span class="n">SIGTERM</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mask</span><span class="p">,</span> <span class="n">SIGKILL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sigprocmask</span><span class="p">(</span><span class="n">SIG_BLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mask</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">do_something_important</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Done</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">sigprocmask</span><span class="p">(</span><span class="n">SIG_UNBLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mask</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>如果在运行程序之后发送 SIGTERM 信号，程序会在重要操作完成后才处理该信号</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="err">$</span> <span class="p">.</span><span class="o">/</span><span class="n">test_mask</span> <span class="o">&amp;</span> <span class="n">sleep</span> <span class="mi">1</span><span class="p">;</span> <span class="n">kill</span> <span class="err">$</span><span class="o">!</span> <span class="o">&amp;</span> <span class="n">wait</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="mi">123456</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="mi">654321</span>
+</span></span><span class="line"><span class="cl"><span class="n">Done</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span>  <span class="err">已终止</span>               <span class="p">.</span><span class="o">/</span><span class="n">test_mask</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span>  <span class="err">已完成</span>               <span class="n">kill</span> <span class="err">$</span><span class="o">!</span>
+</span></span></code></pre></div><p>而如果发送 SIGKILL，则程序会立即终止，尽管我们“屏蔽”了 SIGKILL。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="err">$</span> <span class="p">.</span><span class="o">/</span><span class="n">test_mask</span> <span class="o">&amp;</span> <span class="n">sleep</span> <span class="mi">1</span><span class="p">;</span> <span class="n">kill</span> <span class="o">-</span><span class="mi">9</span> <span class="err">$</span><span class="o">!</span> <span class="o">&amp;</span> <span class="n">wait</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="mi">123456</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="mi">654321</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span>  <span class="err">已杀死</span>               <span class="p">.</span><span class="o">/</span><span class="n">test_mask</span>
+</span></span></code></pre></div><h3 id="8chld">（8）CHLD<a hidden class="anchor" aria-hidden="true" href="#8chld">#</a></h3>
+<p>当一个子进程<strong>终止</strong>、<strong>暂停</strong>或<strong>继续运行</strong>时，父进程会收到一个 SIGCHLD 信号。</p>
+<p>这一信号在某些情况下很有用，比如子进程的生命周期并不确定的情况。这时子进程随时可能终止，而父进程却由于有自己的任务而不能时刻调用 <code>wait()</code> 回收僵尸子进程。通过将子进程终止的情况通过信号的方式传递给父进程，父进程就可以在自己的程序执行之外完成对子进程的处理。</p>
+<blockquote>
+<p>这一点类似于被 detach 的线程。不过线程可以在结束时自动释放自己的资源，而进程却只有通过父进程才能实现彻底的回收。</p>
+</blockquote>
+<blockquote>
+<p>注意使用 SIGCHLD 时不需要担心父进程率先终止的情况，因为如果父进程率先终止，则子进程的父进程会自动变为 init 进程（pid=1）。而 init 进程总会进行僵尸进程的回收。</p>
+<blockquote>
+<p>这一点类似于内存泄露。在进程持续运行的时候才是问题，如果进程已经终止了，那么其资源也会随之释放。</p>
+</blockquote>
+</blockquote>
+<p>下面程序创建了两个子进程，并且注册了 SIGCHLD 信号的处理函数。在其中我们<strong>循环</strong>调用 <code>waitpid()</code>，直到没有新的僵尸子进程被回收。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_child.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/wait.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_child</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;CHLD</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="nf">waitpid</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">WNOHANG</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;WAIT</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGCHLD</span><span class="p">,</span> <span class="n">handle_child</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">pid</span> <span class="o">=</span> <span class="nf">fork</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们运行这个程序。对于两个子进程，我们终止第一个子进程，暂停第二个子进程，之后再让其恢复运行。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_child <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ps
+</span></span><span class="line"><span class="cl"><span class="go">    PID TTY          TIME CMD
+</span></span></span><span class="line"><span class="cl"><span class="go">  12345 pts/0    00:00:00 bash
+</span></span></span><span class="line"><span class="cl"><span class="go"> 123001 pts/0    00:00:00 test_child
+</span></span></span><span class="line"><span class="cl"><span class="go"> 123002 pts/0    00:00:00 test_child
+</span></span></span><span class="line"><span class="cl"><span class="go"> 123003 pts/0    00:00:00 test_child
+</span></span></span><span class="line"><span class="cl"><span class="go"> 123456 pts/0    00:00:00 ps
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> <span class="m">123002</span>
+</span></span><span class="line"><span class="cl"><span class="go">CHLD
+</span></span></span><span class="line"><span class="cl"><span class="go">WAIT
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> ps
+</span></span><span class="line"><span class="cl"><span class="go">    PID TTY          TIME CMD
+</span></span></span><span class="line"><span class="cl"><span class="go">  12345 pts/0    00:00:00 bash
+</span></span></span><span class="line"><span class="cl"><span class="go"> 123001 pts/0    00:00:00 test_child
+</span></span></span><span class="line"><span class="cl"><span class="go"> 123003 pts/0    00:00:00 test_child
+</span></span></span><span class="line"><span class="cl"><span class="go"> 123456 pts/0    00:00:00 ps
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> -STOP <span class="m">123003</span>
+</span></span><span class="line"><span class="cl"><span class="go">CHLD
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> -CONT <span class="m">123003</span>
+</span></span><span class="line"><span class="cl"><span class="go">CHLD
+</span></span></span></code></pre></div><h3 id="9cont">（9）CONT<a hidden class="anchor" aria-hidden="true" href="#9cont">#</a></h3>
+<p>SIGCONT 信号用于使一个<strong>被暂停</strong>的进程<strong>恢复运行</strong>。如果进程没有被暂停，则 SIGCONT 不会有任何影响。用户可以注册该信号的处理函数，这样当进程再度运行时会首先执行处理函数中的代码。</p>
+<p>想要恢复运行，首先需要暂停执行。所以 SIGCONT 需要与 SIGSTOP 或 SIGTSTP 配合使用。</p>
+<p>下面程序处理 SIGCONT 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_cont.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_cont</span><span class="p">(</span><span class="kt">int</span> <span class="n">signum</span><span class="p">)</span> <span class="p">{</span> <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;CONT</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGCONT</span><span class="p">,</span> <span class="n">handle_cont</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>先暂停进程运行，之后发送 SIGCONT 使程序恢复运行。这里需要注意的是，如果进程已经在运行，发送 SIGCONT 依然会调用信号处理函数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_cont <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 123456
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> -STOP <span class="nv">$!</span>
+</span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">[1]+  已停止               ./test_cont
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> -CONT <span class="nv">$!</span>
+</span></span><span class="line"><span class="cl"><span class="go">CONT
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">jobs</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1]+  运行中               ./test_cont &amp;
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">kill</span> -CONT <span class="nv">$!</span>
+</span></span><span class="line"><span class="cl"><span class="go">CONT
+</span></span></span></code></pre></div><h3 id="10stop">（10）STOP<a hidden class="anchor" aria-hidden="true" href="#10stop">#</a></h3>
+<p>SIGSTOP 信号会使进程暂停。和 SIGKILL 类似，SIGSTOP 也不可被忽略或屏蔽，一旦进程收到该信号则必定暂停。</p>
+<p>SIGSTOP 只能通过 <code>kill</code> 等方式触发。在前面我们已经使用过多次了，所以这里略过。</p>
+<h3 id="11tstp">（11）TSTP<a hidden class="anchor" aria-hidden="true" href="#11tstp">#</a></h3>
+<p>SIGTSTP 信号的默认处置行为和 SIGSTOP 相同。进程在收到该信号后会暂停运行。不过该信号可以被忽略或屏蔽，其与 SIGSTOP 的关系类似于 SIGTERM 与 SIGKILL。</p>
+<p>对于在前台运行的进程，可以通过 <code>ctrl + z</code> 来向该进程发送一个 SIGTSTP 信号。一般情况下这会使得前台进程暂停运行，shell 重新成为前台进程。这样的前后台的切换是<strong>作业控制</strong>的重要功能，shell 可以据此让许多不同作业在前后台并发执行。</p>
+<p>这里我们用前几节中的死循环程序为例。我们首先运行该程序，运行一段时间后，我们输入 <code>ctrl + z</code> 暂停该程序。输入 <code>jobs</code> 指令查看该作业已暂停。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./loop 
+</span></span><span class="line"><span class="cl"><span class="go">^Z
+</span></span></span><span class="line"><span class="cl"><span class="go">[1]+  已停止               ./loop
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">jobs</span> 
+</span></span><span class="line"><span class="cl"><span class="go">[1]+  已停止               ./loop
+</span></span></span></code></pre></div><p>随后我们后台运行另一个程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./loop <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="go">[2] 257314
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">jobs</span> 
+</span></span><span class="line"><span class="cl"><span class="go">[1]+  已停止               ./loop
+</span></span></span><span class="line"><span class="cl"><span class="go">[2]-  运行中               ./loop &amp;
+</span></span></span></code></pre></div><p>通过 <code>bg</code> 指令使之前暂停的进程在后台运行</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">bg</span> %1
+</span></span><span class="line"><span class="cl"><span class="go">[1]+ ./loop &amp;
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">jobs</span> 
+</span></span><span class="line"><span class="cl"><span class="go">[1]-  运行中               ./loop &amp;
+</span></span></span><span class="line"><span class="cl"><span class="go">[2]+  运行中               ./loop &amp;
+</span></span></span></code></pre></div><p>通过 <code>fg</code> 指令使原本在后台运行的进程在前台运行。之后再通过 SIGINT 使其停止。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">fg</span> %2
+</span></span><span class="line"><span class="cl"><span class="go">./loop
+</span></span></span><span class="line"><span class="cl"><span class="go">^C
+</span></span></span></code></pre></div><p>最后通过 <code>kill</code> 停止正在后台运行的进程</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">kill</span> %1
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> 
+</span></span><span class="line"><span class="cl"><span class="o">[</span>1<span class="o">]</span>+  已终止               ./loop
+</span></span></code></pre></div><h3 id="12ttin">（12）TTIN<a hidden class="anchor" aria-hidden="true" href="#12ttin">#</a></h3>
+<p>如果一个进程是后台进程，且该进程希望从终端输入中读取内容，那么就会触发 SIGTTIN 信号。因为这时候的用户的输入是针对于前台进程而言的。TTIN（以及 TTOU）的默认处置是<strong>暂停当前进程</strong>。因为虽然用户现在不需要与触发 SIGTTIN 的进程交互，但是之后很可能将该进程设置为前台进程。</p>
+<p>下面的程序煎蛋地读入一个数组，再将该数字输出。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// iecho.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">n</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">scanf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>将该程序置于后台运行时，进程很快暂停运行。之后我们可以通过 <code>fg</code> 命令将其转到前台，并与其交互。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./iecho <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 123456
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> 
+</span></span><span class="line"><span class="cl"><span class="o">[</span>1<span class="o">]</span>+  已停止               ./iecho
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">jobs</span> 
+</span></span><span class="line"><span class="cl"><span class="go">[1]+  已停止               ./iecho
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">fg</span>
+</span></span><span class="line"><span class="cl"><span class="go">./iecho
+</span></span></span><span class="line"><span class="cl"><span class="go">1
+</span></span></span><span class="line"><span class="cl"><span class="go">1
+</span></span></span></code></pre></div><h3 id="13ttou">（13）TTOU<a hidden class="anchor" aria-hidden="true" href="#13ttou">#</a></h3>
+<p>SIGTTOU 和 SIGTTIN 类似。当位于后台的进程尝试向终端写入内容时会产生该信号。在默认的设置下，这个信号并不会产生，后台进程也会向终端输出内容。只有当使用 <code>stty tostop</code> 命令明确禁止后台进程输出后该信号才会启用。</p>
+<p>还用上一节的 <code>iecho</code> 程序进行测试。不增加 <code>tostop</code> 配置时，后台进程依然向前台输出。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">echo</span> <span class="m">1</span> <span class="p">|</span> ./a.out <span class="p">&amp;</span> <span class="nb">wait</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 123456
+</span></span></span><span class="line"><span class="cl"><span class="go">1
+</span></span></span><span class="line"><span class="cl"><span class="go">[1]+  已完成               echo 123 | ./a.out
+</span></span></span></code></pre></div><p>但增加 <code>tostop</code> 配置后，相同的程序现在会导致进程暂停。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> stty tostop
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">echo</span> <span class="m">123</span> <span class="p">|</span> ./a.out <span class="p">&amp;</span> <span class="nb">wait</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 524975
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">[1]+  已停止               echo 123 | ./a.out
+</span></span></span><span class="line"><span class="cl"><span class="go">bash: wait: 警告： job 1[524975] stopped
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">fg</span>
+</span></span><span class="line"><span class="cl"><span class="go">echo 123 | ./a.out
+</span></span></span><span class="line"><span class="cl"><span class="go">123
+</span></span></span></code></pre></div><h2 id="错误处理">错误处理<a hidden class="anchor" aria-hidden="true" href="#错误处理">#</a></h2>
+<h3 id="1ill">（1）ILL<a hidden class="anchor" aria-hidden="true" href="#1ill">#</a></h3>
+<p>当程序运行过程中出现处理器无法识别的指令时，就会触发 SIGILL 信号。产生该信号的方式也很简单。使用如下代码即可：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_ill.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">asm</span><span class="p">(</span><span class="s">&#34;.byte 0x0f, 0x00&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这段代码可以正常编译，但是运行时就会触发 SIGILL 信号。由于该信号意味着程序存在错误，所以默认处置会产生 core dump 文件。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_ill
+</span></span><span class="line"><span class="cl"><span class="go">非法指令 (核心已转储)
+</span></span></span></code></pre></div><p>由于大部分情况下程序的机器码是由编译器或汇编器翻译而来的，所以这一信号并不常见。即便是错误地将 pc 指向了数据段部分，也会由于数据段没有执行权限而不会出现 SIGILL 信号。例如下面的代码</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// invalid_call.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="nf">void</span> <span class="p">(</span><span class="o">*</span><span class="kt">func_t</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">const</span> <span class="kt">char</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">func_t</span> <span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="kt">func_t</span><span class="p">)</span><span class="o">&amp;</span><span class="n">a</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行之后并不会触发 SIGILL 信号，而是 SIGSEGV 信号</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./invalid_call
+</span></span><span class="line"><span class="cl"><span class="go">段错误 (核心已转储)
+</span></span></span></code></pre></div><h3 id="2abrt">（2）ABRT<a hidden class="anchor" aria-hidden="true" href="#2abrt">#</a></h3>
+<p>当程序发现自身出现了无法恢复的错误时，可调用 <code>abort()</code> 异常终止当前进程。这时该进程会收到一个 SIGABRT 信号。该信号的默认处置会终止当前进程，同时产生 core dump 文件。例如下面的程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_abort.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">factorial</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">abort</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">n</span> <span class="o">*</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行之后，调用 <code>abort()</code> 触发 SIGABRT 信号，进程终止。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_abort
+</span></span><span class="line"><span class="cl"><span class="go">已中止 (核心已转储)
+</span></span></span></code></pre></div><p>标准库中 <code>assert</code> 的实现中同样调用了 <code>abort()</code> 函数。</p>
+<h3 id="3bus">（3）BUS<a hidden class="anchor" aria-hidden="true" href="#3bus">#</a></h3>
+<p>SIGBUS 是由于不正确的方式访问设备而产生的信号。一个比较常见的产生该信号的场景是使用 <code>mmap()</code> 时访问了文件范围外的地址。例如下面的例子。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_bus.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;fcntl.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/mman.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">fd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="s">&#34;test.txt&#34;</span><span class="p">,</span> <span class="n">O_RDWR</span> <span class="o">|</span> <span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">O_EXCL</span><span class="p">,</span> <span class="n">S_IRUSR</span> <span class="o">|</span> <span class="n">S_IWUSR</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">fd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;open&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span> <span class="o">=</span> <span class="nf">mmap</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">PROT_READ</span> <span class="o">|</span> <span class="n">PROT_WRITE</span><span class="p">,</span> <span class="n">MAP_SHARED</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">addr</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这里我们创建了一个新文件 <code>test.txt</code>。此时文件大小为 0。我们使用 <code>mmap()</code> 映射该文件的第一个字节的数据（因为页，实际上会对齐到页面大小）。可由于文件大小为 0，所以对应地址上的数据应当是无效的。</p>
+<p>执行该程序的结果如下。我们访问的位置并没有对应的磁盘数据，所以触发了一个 SIGBUS 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_bus
+</span></span><span class="line"><span class="cl"><span class="go">总线错误 (核心已转储)
+</span></span></span></code></pre></div><h3 id="4fpe">（4）FPE<a hidden class="anchor" aria-hidden="true" href="#4fpe">#</a></h3>
+<p>SIGFPE 信号表示浮点异常。会在整数除零等情况下出现。产生该信号的代码很简单。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_fpe.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">x</span> <span class="o">/</span> <span class="n">y</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行该程序的结果如下。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_fpe
+</span></span><span class="line"><span class="cl"><span class="go">浮点异常 (核心已转储)
+</span></span></span></code></pre></div><p>需要注意的是浮点数除零并不会产生 SIGFPE 信号。因为 IEEE 754 中定义了 inf。</p>
+<h3 id="5segv">（5）SEGV<a hidden class="anchor" aria-hidden="true" href="#5segv">#</a></h3>
+<p>SIGSEGV 应该是最常出现的表达错误的信号。当进程所访问的地址对应页面不存在或没有权限时就会产生这一信号。例如下面的程序。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_segv.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="mi">1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_segv
+</span></span><span class="line"><span class="cl"><span class="go">段错误 (核心已转储)
+</span></span></span></code></pre></div><p>需要注意 SIGSEGV 并不只会出现在地址无效时。例如 ILL 一节虽然访问的地址有效，但是由于没有可执行权限，依然产生了 SIGSEGV 信号。</p>
+<h3 id="6pipe">（6）PIPE<a hidden class="anchor" aria-hidden="true" href="#6pipe">#</a></h3>
+<p>当一个进程尝试写入一个对端已经关闭的管道或 socket 时，就会产生 SIGPIPE 信号。该信号的<strong>默认处置会终止当前进程的执行</strong>。</p>
+<p>下面的程序创建了一个管道，并在第二次写入之前关闭了读端。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_pipe.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">pipefd</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pipe</span><span class="p">(</span><span class="n">pipefd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Before write (1)</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="n">pipefd</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#34;Hello, World!&#34;</span><span class="p">,</span> <span class="mi">13</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;After write (1)</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">close</span><span class="p">(</span><span class="n">pipefd</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Before write (2)</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="n">pipefd</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#34;Hello, World!&#34;</span><span class="p">,</span> <span class="mi">13</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;After write (2)</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>接下来运行该程序，发现只输出了前三行内容。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_pipe
+</span></span><span class="line"><span class="cl"><span class="go">Before write (1)
+</span></span></span><span class="line"><span class="cl"><span class="go">After write (1)
+</span></span></span><span class="line"><span class="cl"><span class="go">Before write (2)
+</span></span></span></code></pre></div><p>查看进程的返回值，为 141（128 + 13）。说明该进程是由于第 13 号信号 SIGPIPE 导致终止的。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">echo</span> <span class="nv">$?</span>
+</span></span><span class="line"><span class="cl"><span class="go">141
+</span></span></span></code></pre></div><p>对于 socket 我们也能举一个例子。下面是一个 server 端的代码。这个程序接受一个连接请求，并以一秒为间隔不断向对端写入数据。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// server.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;netinet/in.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/socket.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">sockfd</span> <span class="o">=</span> <span class="nf">socket</span><span class="p">(</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">SOCK_STREAM</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">sockfd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;socket&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sockaddr_in</span> <span class="n">server_addr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">server_addr</span><span class="p">.</span><span class="n">sin_family</span> <span class="o">=</span> <span class="n">AF_INET</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">server_addr</span><span class="p">.</span><span class="n">sin_addr</span><span class="p">.</span><span class="n">s_addr</span> <span class="o">=</span> <span class="n">INADDR_ANY</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">server_addr</span><span class="p">.</span><span class="n">sin_port</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">bind</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="p">(</span><span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">server_addr</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">server_addr</span><span class="p">))</span> <span class="o">&lt;</span>
+</span></span><span class="line"><span class="cl">        <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;bind&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">close</span><span class="p">(</span><span class="n">sockfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">socklen_t</span> <span class="n">addr_len</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">server_addr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">getsockname</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="p">(</span><span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">server_addr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">addr_len</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;getsockname&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">close</span><span class="p">(</span><span class="n">sockfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Socket bound to port %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">ntohs</span><span class="p">(</span><span class="n">server_addr</span><span class="p">.</span><span class="n">sin_port</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">listen</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;listen&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">close</span><span class="p">(</span><span class="n">sockfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">client_sockfd</span> <span class="o">=</span> <span class="nf">accept</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">client_sockfd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;accept&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">close</span><span class="p">(</span><span class="n">sockfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Accepted a connection</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">buffer</span><span class="p">[]</span> <span class="o">=</span> <span class="s">&#34;Hello, World!</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="nf">send</span><span class="p">(</span><span class="n">client_sockfd</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;send&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">close</span><span class="p">(</span><span class="n">client_sockfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">close</span><span class="p">(</span><span class="n">sockfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Sent message to client</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们运行这个程序，并用 <code>netcat</code> 接收 server 发送的信息。一段时间后使用 SIGINT 终止 <code>netcat</code> 的运行。结果如下：</p>
+<p><strong>server</strong>：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./server 
+</span></span><span class="line"><span class="cl"><span class="go">Socket bound to port 54321
+</span></span></span><span class="line"><span class="cl"><span class="go">Accepted a connection
+</span></span></span><span class="line"><span class="cl"><span class="go">Sent message to client
+</span></span></span><span class="line"><span class="cl"><span class="go">Sent message to client
+</span></span></span><span class="line"><span class="cl"><span class="go">Sent message to client
+</span></span></span><span class="line"><span class="cl"><span class="go">Sent message to client
+</span></span></span><span class="line"><span class="cl"><span class="go">Sent message to client
+</span></span></span><span class="line"><span class="cl"><span class="go">Sent message to client
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">echo</span> <span class="nv">$?</span>
+</span></span><span class="line"><span class="cl"><span class="go">141
+</span></span></span></code></pre></div><p><strong>client</strong>：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> netcat 0.0.0.0 <span class="m">54321</span>
+</span></span><span class="line"><span class="cl"><span class="go">Hello, World!
+</span></span></span><span class="line"><span class="cl"><span class="go">Hello, World!
+</span></span></span><span class="line"><span class="cl"><span class="go">Hello, World!
+</span></span></span><span class="line"><span class="cl"><span class="go">Hello, World!
+</span></span></span><span class="line"><span class="cl"><span class="go">Hello, World!
+</span></span></span><span class="line"><span class="cl"><span class="go">^C
+</span></span></span></code></pre></div><p>可以发现出现了这样的情况：<strong>client 程序关闭了连接，但 server 程序却因此而终止</strong>。对于可用性有较高要求的 server 端来说，这样的行为可难以接受。</p>
+<p>所以对于使用 socket 的程序，尤其是 server 程序，需要记得对 SIGPIPE 进行额外的处理。例如可以选择将忽略 SIGPIPE 信号，或者可以在 <code>send()</code> 调用时增加 <code>MSG_NOSIGNAL</code> 来避免这一问题。在设置了上述选项后，出现读端关闭的情况将会使得 <code>write()</code>、<code>send()</code> 等函数错误返回，并将 <code>errno</code> 设置为 <code>EPIPE</code>。</p>
+<blockquote>
+<p>还有一个对偶的情况：当读取数据时写端关闭。这种情况的判断条件是 <code>read()</code> 等函数正常返回，且返回的读取字节数为 0。因为被定义为正常情况，所以就不需要信号或错误码了。</p>
+</blockquote>
+<h3 id="7xcpu">（7）XCPU<a hidden class="anchor" aria-hidden="true" href="#7xcpu">#</a></h3>
+<p>使用 <code>setrlimit()</code> 可以对单个进程所使用的各项资源进行限制。这些资源包括虚拟内存大小、CPU执行时间、文件大小等等。当进程运行过程中对资源的请求超出其限制时，会在对应时刻产生异常。对某些限制的检查是在调用接口后同步进行的，这时异常会使用错误码等方式传递；而另一些检查是随着程序的执行异步进行的。这些异步产生的异常就使用信号进行传递。</p>
+<blockquote>
+<p><code>rlimit</code> 的作用范围是单个进程。和 <code>rlimit</code> 较为相关的另一个概念是 <code>cgroup</code>。<code>cgroup</code> 的作用范围是一个进程组。</p>
+</blockquote>
+<p>SIGCPU 表达的异常情况是“进程的运行时间超过了预先设置的CPU执行时间限制”。如下代码先将 CPU 执行时间设置为 1 秒。之后执行死循环造成超时。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_xcpu.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/resource.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// change the CPU time limit to 1 seconds
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">struct</span> <span class="n">rlimit</span> <span class="n">rl</span> <span class="o">=</span> <span class="p">{.</span><span class="n">rlim_cur</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="p">.</span><span class="n">rlim_max</span> <span class="o">=</span> <span class="n">RLIM_INFINITY</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">setrlimit</span><span class="p">(</span><span class="n">RLIMIT_CPU</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rl</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;setrlimit&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;CPU time limit: %ld seconds</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">rl</span><span class="p">.</span><span class="n">rlim_cur</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行该程序并记录其执行时间，可以看到大约一秒之后触发 SIGXCPU 信号。默认处置条件是终止进程并生成 core dump 文件。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">time</span> ./test_xcpu
+</span></span><span class="line"><span class="cl"><span class="go">CPU time limit: 1 seconds
+</span></span></span><span class="line"><span class="cl"><span class="go">CPU 时间超出限制 (核心已转储)
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">real    0m1.087s
+</span></span></span><span class="line"><span class="cl"><span class="go">user    0m0.993s
+</span></span></span><span class="line"><span class="cl"><span class="go">sys     0m0.005s
+</span></span></span></code></pre></div><h3 id="8xfsz">（8）XFSZ<a hidden class="anchor" aria-hidden="true" href="#8xfsz">#</a></h3>
+<p>另一个进程资源限制相关的信号是 SIGXFSZ。<code>setrlimit()</code> 可以设置当前进程所能创建的文件的最大大小。超出该限制将触发 SIGXFSZ 信号。默认处置方式是终止程序并产生 core dump 文件。</p>
+<p>如下代码将最大大小设置为 1 字节，之后尝试创建文件并写入超过 1 字节的数据。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_xfsz.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/resource.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">rlimit</span> <span class="n">rl</span> <span class="o">=</span> <span class="p">{.</span><span class="n">rlim_cur</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="p">.</span><span class="n">rlim_max</span> <span class="o">=</span> <span class="n">RLIM_INFINITY</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">setrlimit</span><span class="p">(</span><span class="n">RLIMIT_FSIZE</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rl</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;setrlimit&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;File size limit changed to: %ld bytes</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">rl</span><span class="p">.</span><span class="n">rlim_cur</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// try to create a file larger than the limit
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="o">=</span> <span class="nf">fopen</span><span class="p">(</span><span class="s">&#34;test.txt&#34;</span><span class="p">,</span> <span class="s">&#34;w&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">fp</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;fopen&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Writing to file...</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fprintf</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="s">&#34;Hello, World!</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fclose</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行结果显示当试图写入数据时产生了 SIGXFSZ 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_xfsz
+</span></span><span class="line"><span class="cl"><span class="go">File size limit changed to: 1 bytes
+</span></span></span><span class="line"><span class="cl"><span class="go">Writing to file...
+</span></span></span><span class="line"><span class="cl"><span class="go">文件大小超出限制 (核心已转储)
+</span></span></span></code></pre></div><h3 id="9pwr">（9）PWR<a hidden class="anchor" aria-hidden="true" href="#9pwr">#</a></h3>
+<p>SIGPWR 会在电源即将耗尽时被发送给 init 进程。init 进程会负责在这一时刻完成整个系统的有序退出。此信号的触发条件有些苛刻，因此这里略过。</p>
+<h3 id="10sys">（10）SYS<a hidden class="anchor" aria-hidden="true" href="#10sys">#</a></h3>
+<p>SIGSYS 会在进程发起的系统调用有误的时候触发。不过我没能构造出这样的程序。使用错误的系统调用号以及错误的参数只会让进程直接退出。</p>
+<h3 id="11到底怎么处理">（11）到底怎么处理？<a hidden class="anchor" aria-hidden="true" href="#11到底怎么处理">#</a></h3>
+<p>尽管错误处理部分的信号的默认处置方式都是终止进程并产生 core dump 文件。但是他们也是能被捕获，并由用户定义的处理函数进行处理的。不过你肯定想问类似 SIGILL 和 SIGSEGV 这样的信号要如何由用户来处理。毕竟除了直接退出程序，就算从处理函数中返回也还是要执行引发错误的同一条指令。下面的程序构造了这样的情况。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// infinity.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_segv</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;SEGV</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="c1">// Just to slow down the output
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGSEGV</span><span class="p">,</span> <span class="n">handle_segv</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="mi">1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行该程序会发现进程在不断触发 SIGSEGV 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./infinity 
+</span></span><span class="line"><span class="cl"><span class="go">SEGV
+</span></span></span><span class="line"><span class="cl"><span class="go">SEGV
+</span></span></span><span class="line"><span class="cl"><span class="go">SEGV
+</span></span></span><span class="line"><span class="cl"><span class="go">SEGV
+</span></span></span><span class="line"><span class="cl"><span class="go">SEGV
+</span></span></span><span class="line"><span class="cl"><span class="go">^C
+</span></span></span></code></pre></div><p>解决这个问题的关键在于使信号处理函数返回时不再执行同一条语句，这需要 <code>longjump</code> 的支持。准确来说是 <code>siglongjump</code>。</p>
+<p>下面的程序中我们使用 <code>sigsetjmp()</code> 创建了一个检查点。当捕获到 SIGSEGV 信号后使用 <code>siglongjmp()</code> 跳转回 <code>sigsetjmp()</code> 所在位置进行第二次返回。并运行异常处理部分内容。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// catch.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;setjmp.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="n">sigjmp_buf</span> <span class="n">senv</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_segv</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;SEGV</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">siglongjmp</span><span class="p">(</span><span class="n">senv</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGSEGV</span><span class="p">,</span> <span class="n">handle_segv</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">snd</span> <span class="o">=</span> <span class="nf">sigsetjmp</span><span class="p">(</span><span class="n">senv</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">snd</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="o">*</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="mi">1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Catch SEGV</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行修改后的程序，该程序成功退出。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./catch 
+</span></span><span class="line"><span class="cl"><span class="go">SEGV
+</span></span></span><span class="line"><span class="cl"><span class="go">Catch SEGV
+</span></span></span></code></pre></div><p>上述程序类似于下方的伪代码：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="o">*</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="mi">1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="k">const</span> <span class="n">SEGVException</span> <span class="o">&amp;</span><span class="n">ex</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">printf</span><span class="p">(</span><span class="s">&#34;Catch SEGV</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="异步操作">异步操作<a hidden class="anchor" aria-hidden="true" href="#异步操作">#</a></h2>
+<h3 id="1alrmvtalrmprof">（1）ALRM/VTALRM/PROF<a hidden class="anchor" aria-hidden="true" href="#1alrmvtalrmprof">#</a></h3>
+<p>SIGALRM、SIGVTALRM 和 SIGPROF 信号的产生源自相同的系统调用 <code>setitimer</code>。该系统调用设置一个异步的计时器，当计时器到期时会触发对应的信号。这些信号的默认处置会终止当前进程。</p>
+<p>SIGALRM、SIGVTALRM 和 SIGPROF 的区别在于其测量的时间不同。当将 <code>setitimer</code> 的 <code>which</code> 参数设置为 <code>ITIMER_REAL</code> 时，所设置的到期时间为墙钟事件（真实时间），到期时产生 SIGALRM 信号。当将 <code>which</code> 设置为 <code>ITIMER_VIRTUAL</code> 时，所设置的到期时间为用户态下的 CPU 事件，到期时产生 SIGVTALRM 信号。当将 <code>which</code> 设置为 <code>ITIMER_PROF</code> 时，所设置的到期时间为用户态和内核态下的 CPU 事件，到期时产生 SIGPROF 信号。</p>
+<p>需要注意一个进程只能使用这三个定时器之一，且同一时刻只能为定时器设置单个到期时间。如下程序使用 <code>setitimer()</code> 函数将 <code>ITIMER_REAL</code> 定时器的到期事件设置为 1 秒后，并注册 SIGALRM 的信号处理函数以捕获该信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_alarm.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/time.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_alarm</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;ALRM</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGALRM</span><span class="p">,</span> <span class="n">handle_alarm</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">itimerval</span> <span class="n">timer</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">.</span><span class="n">it_value</span> <span class="o">=</span> <span class="p">{.</span><span class="n">tv_sec</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="p">.</span><span class="n">tv_usec</span> <span class="o">=</span> <span class="mi">0</span><span class="p">},</span>   <span class="c1">// First alarm after 1 second
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">.</span><span class="n">it_interval</span> <span class="o">=</span> <span class="p">{.</span><span class="n">tv_sec</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="p">.</span><span class="n">tv_usec</span> <span class="o">=</span> <span class="mi">0</span><span class="p">}</span> <span class="c1">// No repeat
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">setitimer</span><span class="p">(</span><span class="n">ITIMER_REAL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">timer</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>运行该程序，结果如下</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">time</span> ./test_alarm
+</span></span><span class="line"><span class="cl"><span class="go">ALRM
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="go">real    0m1.002s
+</span></span></span><span class="line"><span class="cl"><span class="go">user    0m0.002s
+</span></span></span><span class="line"><span class="cl"><span class="go">sys     0m0.000s
+</span></span></span></code></pre></div><p>其他两种信号的触发方式和 SIGALRM 类似，这里略过。</p>
+<h3 id="2urg">（2）URG<a hidden class="anchor" aria-hidden="true" href="#2urg">#</a></h3>
+<p>当使用 socket 传输紧急数据时会产生一个 SIGURG 信号。不过紧急数据在当下几乎没有使用，所以这里略过。</p>
+<h3 id="3winch">（3）WINCH<a hidden class="anchor" aria-hidden="true" href="#3winch">#</a></h3>
+<p>当用户改变终端窗口大小时会触发一个 SIGWINCH 信号。窗口大小可能影响一些终端应用程序（比如说 vim）的格式化结果。当收到 SIGWINCH 信号后，这样的程序可以根据新的终端窗口大小对显示结果进行重绘。</p>
+<p>使用如下程序捕获 SIGWINCH 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test_winch.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;signal.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">handle_winch</span><span class="p">(</span><span class="kt">int</span> <span class="n">sig</span><span class="p">)</span> <span class="p">{</span> <span class="nf">write</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#34;WINCH</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="mi">6</span><span class="p">);</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">signal</span><span class="p">(</span><span class="n">SIGWINCH</span><span class="p">,</span> <span class="n">handle_winch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pause</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>新建一个终端窗口，运行该程序。之后调整窗口的大小，可以发现产生了一系列 SIGWINCH 信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ./test_winch
+</span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span><span class="line"><span class="cl"><span class="go">WINCH
+</span></span></span></code></pre></div><h3 id="4poll">（4）POLL<a hidden class="anchor" aria-hidden="true" href="#4poll">#</a></h3>
+<p>SIGPOLL 用于实现信号驱动 IO。不过基于信号处理机制进行 IO 实现起来太过复杂了，同时相较于多路复用没有明显的性能优势，所以似乎用处不大。这里略过。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/c/">C</a></li>
+      <li><a href="https://wokron.github.io/tags/signal/">Signal</a></li>
+      <li><a href="https://wokron.github.io/tags/linux/">Linux</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/cpp-parameter-types/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>我该用什么参数类型？</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/program-memory-management/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>Linux 进程的内存管理</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 试试触发（几乎）所有信号 on x"
+            href="https://x.com/intent/tweet/?text=%e8%af%95%e8%af%95%e8%a7%a6%e5%8f%91%ef%bc%88%e5%87%a0%e4%b9%8e%ef%bc%89%e6%89%80%e6%9c%89%e4%bf%a1%e5%8f%b7&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f&amp;hashtags=C%2cSignal%2cLinux">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 试试触发（几乎）所有信号 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f&amp;title=%e8%af%95%e8%af%95%e8%a7%a6%e5%8f%91%ef%bc%88%e5%87%a0%e4%b9%8e%ef%bc%89%e6%89%80%e6%9c%89%e4%bf%a1%e5%8f%b7&amp;summary=%e8%af%95%e8%af%95%e8%a7%a6%e5%8f%91%ef%bc%88%e5%87%a0%e4%b9%8e%ef%bc%89%e6%89%80%e6%9c%89%e4%bf%a1%e5%8f%b7&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 试试触发（几乎）所有信号 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f&title=%e8%af%95%e8%af%95%e8%a7%a6%e5%8f%91%ef%bc%88%e5%87%a0%e4%b9%8e%ef%bc%89%e6%89%80%e6%9c%89%e4%bf%a1%e5%8f%b7">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 试试触发（几乎）所有信号 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 试试触发（几乎）所有信号 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e8%af%95%e8%af%95%e8%a7%a6%e5%8f%91%ef%bc%88%e5%87%a0%e4%b9%8e%ef%bc%89%e6%89%80%e6%9c%89%e4%bf%a1%e5%8f%b7%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 试试触发（几乎）所有信号 on telegram"
+            href="https://telegram.me/share/url?text=%e8%af%95%e8%af%95%e8%a7%a6%e5%8f%91%ef%bc%88%e5%87%a0%e4%b9%8e%ef%bc%89%e6%89%80%e6%9c%89%e4%bf%a1%e5%8f%b7&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 试试触发（几乎）所有信号 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e8%af%95%e8%af%95%e8%a7%a6%e5%8f%91%ef%bc%88%e5%87%a0%e4%b9%8e%ef%bc%89%e6%89%80%e6%9c%89%e4%bf%a1%e5%8f%b7&u=https%3a%2f%2fwokron.github.io%2fposts%2fraise-signals%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

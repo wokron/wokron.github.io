@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Linux 下的用户和容器中的用户 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Linux, Docker">
+<meta name="description" content="多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。
+不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。
+用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。
+操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。
+$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。
+$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。
+当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。
+子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。
+超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。
+超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。
+利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。
+$ sleep 1 &amp; ps -o user,group,uid,gid -p $!">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/user-perm-and-container/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/user-perm-and-container/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Linux 下的用户和容器中的用户" />
+<meta property="og:description" content="多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。
+不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。
+用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。
+操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。
+$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。
+$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。
+当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。
+子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。
+超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。
+超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。
+利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。
+$ sleep 1 &amp; ps -o user,group,uid,gid -p $!" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/user-perm-and-container/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-10-12T16:11:53+08:00" />
+<meta property="article:modified_time" content="2025-10-12T16:11:53+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Linux 下的用户和容器中的用户"/>
+<meta name="twitter:description" content="多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。
+不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。
+用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。
+操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。
+$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。
+$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。
+当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。
+子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。
+超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。
+超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。
+利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。
+$ sleep 1 &amp; ps -o user,group,uid,gid -p $!"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Linux 下的用户和容器中的用户",
+      "item": "https://wokron.github.io/posts/user-perm-and-container/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Linux 下的用户和容器中的用户",
+  "name": "Linux 下的用户和容器中的用户",
+  "description": "多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。\n不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。\n用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。\n操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。\n$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。\n$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。\n当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。\n子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。\n超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。\n超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。\n利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。\n$ sleep 1 \u0026amp; ps -o user,group,uid,gid -p $!",
+  "keywords": [
+    "Linux", "Docker"
+  ],
+  "articleBody": "多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。\n不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。\n用户与权限 用户和用户组 操作系统通过用户控制权限，特定的用户才能执行特定的操作。\n操作系统中有一组配置好的用户。其信息被保存在 /etc/passwd 文件中。每个用户都属于一个或多个用户组。用户和用户组分别有 uid 和 gid。使用 id 命令可以查看当前用户的对应 ID。\n$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 其中 gid 指向的表示该用户的主组。可以通过 newgrp 命令切换主组。这会启动一个新的 shell。\n$ newgrp xxxxx $ id uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) 下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。\n当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的进程凭证。\n子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。\n超级用户 进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：超级用户和普通用户。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。\n超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。\n利用 sudo 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。\n$ sleep 1 \u0026 ps -o user,group,uid,gid -p $! \u0026 wait [1] 171301 [2] 171302 USER GROUP UID GID wokron wokron 1000 1000 $ sudo sleep 1 \u0026 ps -o user,group,uid,gid -p $! \u0026 wait [1] 171399 [2] 171400 USER GROUP UID GID root root 0 0 当然这只是 sudo 命令的默认用法，也可以用于以其他用户的身份执行命令。这时 sudo 可以解释为 switch user do……。对于下面的 su 命令同理。\n只有特定的用户才能够使用 sudo 命令以 root 用户身份执行命令。毕竟 sudo 命令只需要输入当前用户的密码。一个用户只要获得了 sudo 权限，就获得了整个操作系统的权限。在 Debian/Ubuntu 系下，这需要将该用户加入到 sudo 用户组。\n具有 sudo 权限的用户拥有整个系统的权限，sudo 的作用仅仅是保证 “只在需要的时候使用权限”。\n使用 su 命令可以以 root 用户身份运行 shell。不过这需要使用 root 用户的密码。\n如果不知道 root 的密码，可以使用 sudo 命令来以 root 身份运行 shell。\nsu # sudo su # sudo -i 在经典的 Unix 权限模型之外，Linux 还实现了能力权限模型。这个模型将 root 用户的权限拆分为一个个独立的 “能力”。在运行进程时只为其赋予特定的能力而非整个 root 用户的权限。从而实现更加精细化的权限管理。不过本文并不详述这部分内容。\n文件权限 前面我们提到除了超级用户，其他用户之间是平等的关系。但这并不意味着多用户在现在的系统中没有存在的必要。多用户的一个重要作用是设置文件访问权限。\n每一个文件都有拥有者、用户组以及权限信息。当一个进程创建一个文件时，会根据该进程的进程凭证（用户和主用户组）指定该文件的拥有者和用户组信息。\n实际上用户组信息的设定还有其他可能，这里并不详述。\n下面的例子给出了切换主组的情况下文件的用户组的变化\n$ id uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy) $ echo 1234 \u003e test1.txt $ newgrp xxxxx $ echo 1234 \u003e test2.txt $ ls -l test*.txt -rw-rw-r-- 1 wokron wokron 5 2月 30 12:34 test1.txt -rw-rw-r-- 1 wokron xxxxx 5 2月 30 12:34 test2.txt 文件的权限信息由三部分组成。分别表示 “拥有者/用户组内用户/其他用户” 对该文件是否有 “读/写/执行” 的权限。（这部分内容可能说烂了……）\n当一个进程尝试读/写/执行某个文件时，系统会判断该进程属于何种类型：\n拥有者：进程的用户等于文件的拥有者 用户组内用户：文件的用户组属于进程的多个用户组之一 其他用户：不属于上述两种情况 根据用户的类型，将进一步判断该进程是否有该文件的读/写/执行权限。\n这一点很有用处。因为通过合理配置用户和文件权限，我们能够避免因为疏忽或恶意造成的文件访问。\n例如，mysql 等程序需要维护一系列文件。他们要保证这组文件内容的一致性和安全性，因此不能让其他人访问；同时为了保证最小权限，这些程序不需要以 root 身份运行。合理的做法是为每个程序创建一个单独的用户。这些程序以该用户的身份运行，并使得创建的文件具有有别于其他用户的拥有者和用户组。这时只需要为所创建文件设置权限，避免其他用户访问即可。\n当然，root 用户依然拥有这些文件的访问权限；如果成功登陆该用户或者加入到该用户的用户组，同样能够访问这些文件。\n这里的一个例子是 docker 用户组。docker 命令行程序通过 /run/docker.sock 与 dockerd 进行通信。通常来说我们需要 sudo 来执行 docker 命令。因为 /run/docker.sock 的拥有者是 root。\n$ ls -l /run/docker.sock srw-rw---- 1 root docker 0 2月 30 12:34 /run/docker.sock= 但我们也可以发现，/run/docker.sock 的用户组是 docker，且用户组的权限和拥有者一样，是可读可写。这意味着我们只需要把当前用户加入到 docker 用户组中，即可不使用 sudo 命令执行 docker 命令。这也就是此处提到的方法。\n容器中的用户 众所周知，容器不是虚拟机。这意味着容器中的资源一定存在于 host 环境中。对于用户资源来说也是如此。\n我们运行一个容器。在容器中可以看到我们的用户是 root。我们写入一个文件，该文件的拥有者也是 root。\nwokron@host$ mkdir test_dir wokron@host$ docker run -it --rm -v ./test_dir:/test_dir ubuntu:jammy bash root@container$ whoami root root@container$ echo 1234 \u003e /test_dir/a.txt root@container$ ls -l /test_dir -rw-r--r-- 1 root root 5 Feb 30 12:34 b.txt root@container$ exit 这个文件写到了一个卷上。这时我们从 host 上查看这个文件，就会发现在 host 上这个文件的所有者依然是 root。\nwokron@host$ ls -l ./test_dir -rw-r--r-- 1 root root 5 Feb 30 12:34 b.txt 这意味着一件事，容器中的 root 就是 host 中的 root。这实在是很危险的事，尤其是容器总会让人想到隔离和安全，这增加了大意的可能。\n如果你不想以 root 身份运行，在运行容器时可以使用 --user 选项。这个选项可以指定运行命令所使用的 uid 和 gid。然后你就会发现容器中的用户名变成了惊人的 I have no name!。但是 uid 和 gid 依然被正常地设置了。这里就可以得出一个结论：用户和用户组并不重要，uid 和 gid 才重要。作为拥有 root 权限的进程，你可以设置任何的 uid 和 gid，即使其对应的用户并不存在。\nwokron@host$ docker run -it --rm --user $(id -u):$(id -g) -v ./test_dir:/test_dir ubuntu:jammy bash I have no name!@container$ id uid=1000 gid=1000 groups=1000 我们依然写入一个文件。这次我们发现原本显示为用户名和用户组名的地方，现在改为了显示 uid 和 gid。这同样可以佐证上面的结论。\nI have no name!@container$ echo 1234 \u003e /test_dir/a.txt I have no name!@container$ ls -l /test_dir -rw-r--r-- 1 1000 1000 5 Feb 30 12:34 a.txt 退出容器，我们可以做出一个预测。由于我们的用户的 uid 和 gid 就是 1000，所以原本在容器里由 uid=1000 的用户创建的文件，在容器外应该显示为由当前用户创建。这里的结果和我们预期的相同。\nI have no name!@container$ exit wokron@host$ ls -l ./test_dir -rw-r--r-- 1 wokron wokron 5 2月 30 12:34 a.txt 前面的没有用户名的问题（I have no name!）很好解决。需要在构建镜像的时候预先创建 uid 为 1000 的用户。Dockerfile 中甚至还提供了一个 USER 指令，可以设置后续指令以及容器中使用的用户。\nFROM ubuntu:jammy RUN useradd -u 1000 -m wokron # USER wokron wokron@host$ docker build -t test:v1 . wokron@host$ docker run -it --rm --user wokron -v ./test_dir:/test_dir test:v1 bash wokron@container$ whoami wokron 最后，其实还有一种方法，能够让容器中的 root 用户的行为在容器外表现为普通用户的行为。那就是使用 User Namespace。这种方法可以使得访问容器外文件系统时更加安全。有关 Namespace 的内容将在另外的文章（Here!）中进行介绍。\n",
+  "wordCount" : "485",
+  "inLanguage": "zh",
+  "datePublished": "2025-10-12T16:11:53+08:00",
+  "dateModified": "2025-10-12T16:11:53+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/user-perm-and-container/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      Linux 下的用户和容器中的用户
+    </h1>
+    <div class="post-meta"><span title='2025-10-12 16:11:53 +0800 CST'>十月 12, 2025</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;485 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/user-perm-and-container.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e7%94%a8%e6%88%b7%e4%b8%8e%e6%9d%83%e9%99%90" aria-label="用户与权限">用户与权限</a><ul>
+                        
+                <li>
+                    <a href="#%e7%94%a8%e6%88%b7%e5%92%8c%e7%94%a8%e6%88%b7%e7%bb%84" aria-label="用户和用户组">用户和用户组</a></li>
+                <li>
+                    <a href="#%e8%b6%85%e7%ba%a7%e7%94%a8%e6%88%b7" aria-label="超级用户">超级用户</a></li>
+                <li>
+                    <a href="#%e6%96%87%e4%bb%b6%e6%9d%83%e9%99%90" aria-label="文件权限">文件权限</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7" aria-label="容器中的用户">容器中的用户</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>多用户操作系统的时代早就结束了。现在的人们一般不会通过多个用户登陆到同一个操作系统的方式共享计算资源，我们有更好的虚拟化技术。</p>
+<p>不过用户依然在发挥作用，其中最主要的作用就是权限隔离。这一点似乎有许多内容可以讲，不过这里我们只会列出最关键的内容。容器中的用户会出现更多特殊情况，我们也会进行讨论。</p>
+<h2 id="用户与权限">用户与权限<a hidden class="anchor" aria-hidden="true" href="#用户与权限">#</a></h2>
+<h3 id="用户和用户组">用户和用户组<a hidden class="anchor" aria-hidden="true" href="#用户和用户组">#</a></h3>
+<p>操作系统通过用户控制权限，特定的用户才能执行特定的操作。</p>
+<p>操作系统中有一组配置好的<strong>用户</strong>。其信息被保存在 <code>/etc/passwd</code> 文件中。每个用户都属于一个或多个<strong>用户组</strong>。用户和用户组分别有 <code>uid</code> 和 <code>gid</code>。使用 <code>id</code> 命令可以查看当前用户的对应 ID。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> id
+</span></span><span class="line"><span class="cl"><span class="go">uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy)
+</span></span></span></code></pre></div><p>其中 <code>gid</code> 指向的表示该用户的<strong>主组</strong>。可以通过 <code>newgrp</code> 命令切换主组。这会启动一个新的 shell。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> newgrp xxxxx
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> id
+</span></span><span class="line"><span class="cl"><span class="go">uid=1000(wokron) gid=1001(xxxxx) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy)
+</span></span></span></code></pre></div><blockquote>
+<p>下面的内容忽略了许多细节。不过忽略的内容相对很少遇到。</p>
+</blockquote>
+<p>当选择一个用户登陆系统时，这次登陆所创建的 shell 会将用户和其主组的 ID 附加到进程中。这两个 ID 称为该进程的<strong>进程凭证</strong>。</p>
+<p>子进程创建时会继承父进程的的进程凭证。进程凭证表明了该进程代表哪一用户进行操作。</p>
+<h3 id="超级用户">超级用户<a hidden class="anchor" aria-hidden="true" href="#超级用户">#</a></h3>
+<p>进程的用户和用户组决定了其是否有权限执行某一操作。经典的 Unix 权限系统只区分了两种用户：<strong>超级用户</strong>和<strong>普通用户</strong>。超级用户能够执行操作系统所提供的所有操作，而普通用户则受到了限制。普通用户的操作不能够影响操作系统的状态。</p>
+<p>超级用户的 uid 为 0，通常名为 root。其用户组通常只有 root（gid=0）。除此以外的用户都是普通用户，他们之间没有权限上的差异。</p>
+<p>利用 <code>sudo</code> 命令可以临时提升当前用户的权限，使其以 root 用户的身份运行进程。（即进程和其子进程的进程凭证为 root）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> sleep <span class="m">1</span> <span class="p">&amp;</span> ps -o user,group,uid,gid -p <span class="nv">$!</span> <span class="p">&amp;</span> <span class="nb">wait</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 171301
+</span></span></span><span class="line"><span class="cl"><span class="go">[2] 171302
+</span></span></span><span class="line"><span class="cl"><span class="go">USER     GROUP      UID   GID
+</span></span></span><span class="line"><span class="cl"><span class="go">wokron   wokron    1000  1000
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> sudo sleep <span class="m">1</span> <span class="p">&amp;</span> ps -o user,group,uid,gid -p <span class="nv">$!</span> <span class="p">&amp;</span> <span class="nb">wait</span>
+</span></span><span class="line"><span class="cl"><span class="go">[1] 171399
+</span></span></span><span class="line"><span class="cl"><span class="go">[2] 171400
+</span></span></span><span class="line"><span class="cl"><span class="go">USER     GROUP      UID   GID
+</span></span></span><span class="line"><span class="cl"><span class="go">root     root         0     0
+</span></span></span></code></pre></div><blockquote>
+<p>当然这只是 <code>sudo</code> 命令的默认用法，也可以用于以其他用户的身份执行命令。这时 <code>sudo</code> 可以解释为 switch user do……。对于下面的 <code>su</code> 命令同理。</p>
+</blockquote>
+<p>只有特定的用户才能够使用 <code>sudo</code> 命令以 root 用户身份执行命令。毕竟 <code>sudo</code> 命令只需要输入当前用户的密码。一个用户只要获得了 <code>sudo</code> 权限，就获得了整个操作系统的权限。在 Debian/Ubuntu 系下，这需要将该用户加入到 <code>sudo</code> 用户组。</p>
+<blockquote>
+<p>具有 <code>sudo</code> 权限的用户拥有整个系统的权限，<code>sudo</code> 的作用仅仅是保证 “只在需要的时候使用权限”。</p>
+</blockquote>
+<p>使用 <code>su</code> 命令可以以 root 用户身份运行 shell。不过这需要使用 root 用户的密码。</p>
+<p>如果不知道 root 的密码，可以使用 <code>sudo</code> 命令来以 root 身份运行 shell。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">su
+</span></span><span class="line"><span class="cl"><span class="c1"># sudo su</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># sudo -i</span>
+</span></span></code></pre></div><p>在经典的 Unix 权限模型之外，Linux 还实现了<strong>能力</strong>权限模型。这个模型将 root 用户的权限拆分为一个个独立的 “能力”。在运行进程时只为其赋予特定的能力而非整个 root 用户的权限。从而实现更加精细化的权限管理。不过本文并不详述这部分内容。</p>
+<h3 id="文件权限">文件权限<a hidden class="anchor" aria-hidden="true" href="#文件权限">#</a></h3>
+<p>前面我们提到除了超级用户，其他用户之间是平等的关系。但这并不意味着多用户在现在的系统中没有存在的必要。多用户的一个重要作用是设置文件访问权限。</p>
+<p>每一个文件都有<strong>拥有者</strong>、<strong>用户组</strong>以及<strong>权限</strong>信息。当一个进程创建一个文件时，会根据该进程的进程凭证（用户和主用户组）指定该文件的拥有者和用户组信息。</p>
+<blockquote>
+<p>实际上用户组信息的设定还有其他可能，这里并不详述。</p>
+</blockquote>
+<blockquote>
+<p>下面的例子给出了切换主组的情况下文件的用户组的变化</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> id
+</span></span><span class="line"><span class="cl"><span class="go">uid=1000(wokron) gid=1000(wokron) groups=1000(wokron) 1001(xxxxx) 1002(yyyyy)
+</span></span></span><span class="line"><span class="cl"><span class="go"></span><span class="gp">$</span> <span class="nb">echo</span> <span class="m">1234</span> &gt; test1.txt
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> newgrp xxxxx
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> <span class="nb">echo</span> <span class="m">1234</span> &gt; test2.txt
+</span></span><span class="line"><span class="cl"><span class="gp">$</span> ls -l test*.txt
+</span></span><span class="line"><span class="cl"><span class="go">-rw-rw-r-- 1 wokron wokron 5 2月 30 12:34 test1.txt
+</span></span></span><span class="line"><span class="cl"><span class="go">-rw-rw-r-- 1 wokron xxxxx  5 2月 30 12:34 test2.txt
+</span></span></span></code></pre></div></blockquote>
+<p>文件的权限信息由三部分组成。分别表示 “拥有者/用户组内用户/其他用户” 对该文件是否有 “读/写/执行” 的权限。（这部分内容可能说烂了……）</p>
+<p>当一个进程尝试读/写/执行某个文件时，系统会判断该进程属于何种类型：</p>
+<ol>
+<li>拥有者：进程的用户等于文件的拥有者</li>
+<li>用户组内用户：文件的用户组属于进程的多个用户组之一</li>
+<li>其他用户：不属于上述两种情况</li>
+</ol>
+<p>根据用户的类型，将进一步判断该进程是否有该文件的读/写/执行权限。</p>
+<p>这一点很有用处。因为通过合理配置用户和文件权限，我们能够避免因为疏忽或恶意造成的文件访问。</p>
+<p>例如，mysql 等程序需要维护一系列文件。他们要保证这组文件内容的一致性和安全性，因此不能让其他人访问；同时为了保证最小权限，这些程序不需要以 root 身份运行。合理的做法是为每个程序创建一个单独的用户。这些程序以该用户的身份运行，并使得创建的文件具有有别于其他用户的拥有者和用户组。这时只需要为所创建文件设置权限，避免其他用户访问即可。</p>
+<blockquote>
+<p>当然，root 用户依然拥有这些文件的访问权限；如果成功登陆该用户或者加入到该用户的用户组，同样能够访问这些文件。</p>
+</blockquote>
+<p>这里的一个例子是 docker 用户组。<code>docker</code> 命令行程序通过 <code>/run/docker.sock</code> 与 dockerd 进行通信。通常来说我们需要 <code>sudo</code> 来执行 <code>docker</code> 命令。因为 <code>/run/docker.sock</code> 的拥有者是 root。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="gp">$</span> ls -l /run/docker.sock
+</span></span><span class="line"><span class="cl"><span class="go">srw-rw---- 1 root docker 0 2月 30 12:34 /run/docker.sock=
+</span></span></span></code></pre></div><p>但我们也可以发现，<code>/run/docker.sock</code> 的用户组是 docker，且用户组的权限和拥有者一样，是可读可写。这意味着我们只需要把当前用户加入到 docker 用户组中，即可不使用 <code>sudo</code> 命令执行 <code>docker</code> 命令。这也就是<a href="https://docs.docker.com/engine/install/linux-postinstall/">此处</a>提到的方法。</p>
+<h2 id="容器中的用户">容器中的用户<a hidden class="anchor" aria-hidden="true" href="#容器中的用户">#</a></h2>
+<p>众所周知，容器不是虚拟机。这意味着容器中的资源一定存在于 host 环境中。对于用户资源来说也是如此。</p>
+<p>我们运行一个容器。在容器中可以看到我们的用户是 root。我们写入一个文件，该文件的拥有者也是 root。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">wokron@host$ mkdir test_dir
+</span></span></span><span class="line"><span class="cl"><span class="go">wokron@host$ docker run -it --rm -v ./test_dir:/test_dir ubuntu:jammy bash
+</span></span></span><span class="line"><span class="cl"><span class="go">root@container$ whoami
+</span></span></span><span class="line"><span class="cl"><span class="go">root
+</span></span></span><span class="line"><span class="cl"><span class="go">root@container$ echo 1234 &gt; /test_dir/a.txt
+</span></span></span><span class="line"><span class="cl"><span class="go">root@container$ ls -l /test_dir
+</span></span></span><span class="line"><span class="cl"><span class="go">-rw-r--r-- 1 root root 5 Feb 30 12:34 b.txt
+</span></span></span><span class="line"><span class="cl"><span class="go">root@container$ exit
+</span></span></span></code></pre></div><p>这个文件写到了一个卷上。这时我们从 host 上查看这个文件，就会发现在 host 上这个文件的所有者依然是 root。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">wokron@host$ ls -l ./test_dir
+</span></span></span><span class="line"><span class="cl"><span class="go">-rw-r--r-- 1 root root 5 Feb 30 12:34 b.txt
+</span></span></span></code></pre></div><p>这意味着一件事，<strong>容器中的 root 就是 host 中的 root</strong>。这实在是很危险的事，尤其是容器总会让人想到隔离和安全，这增加了大意的可能。</p>
+<p>如果你不想以 root 身份运行，在运行容器时可以使用 <code>--user</code> 选项。这个选项可以指定运行命令所使用的 uid 和 gid。然后你就会发现容器中的用户名变成了惊人的 <code>I have no name!</code>。但是 uid 和 gid 依然被正常地设置了。这里就可以得出一个结论：<strong>用户和用户组并不重要，uid 和 gid 才重要</strong>。作为拥有 root 权限的进程，你可以设置任何的 uid 和 gid，即使其对应的用户并不存在。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">wokron@host$ docker run -it --rm --user $(id -u):$(id -g) -v ./test_dir:/test_dir ubuntu:jammy bash
+</span></span></span><span class="line"><span class="cl"><span class="go">I have no name!@container$ id
+</span></span></span><span class="line"><span class="cl"><span class="go">uid=1000 gid=1000 groups=1000
+</span></span></span></code></pre></div><p>我们依然写入一个文件。这次我们发现原本显示为用户名和用户组名的地方，现在改为了显示 uid 和 gid。这同样可以佐证上面的结论。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">I have no name!@container$ echo 1234 &gt; /test_dir/a.txt
+</span></span></span><span class="line"><span class="cl"><span class="go">I have no name!@container$ ls -l /test_dir
+</span></span></span><span class="line"><span class="cl"><span class="go">-rw-r--r-- 1 1000 1000 5 Feb 30 12:34 a.txt
+</span></span></span></code></pre></div><p>退出容器，我们可以做出一个预测。由于我们的用户的 uid 和 gid 就是 1000，所以原本在容器里由 uid=1000 的用户创建的文件，在容器外应该显示为由当前用户创建。这里的结果和我们预期的相同。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">I have no name!@container$ exit
+</span></span></span><span class="line"><span class="cl"><span class="go">wokron@host$ ls -l ./test_dir
+</span></span></span><span class="line"><span class="cl"><span class="go">-rw-r--r-- 1 wokron wokron 5 2月 30 12:34 a.txt
+</span></span></span></code></pre></div><p>前面的没有用户名的问题（<code>I have no name!</code>）很好解决。需要在构建镜像的时候预先创建 uid 为 1000 的用户。Dockerfile 中甚至还提供了一个 <code>USER</code> 指令，可以设置后续指令以及容器中使用的用户。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-dockerfile" data-lang="dockerfile"><span class="line"><span class="cl"><span class="k">FROM</span><span class="s"> ubuntu:jammy</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">RUN</span> useradd -u <span class="m">1000</span> -m wokron<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="c"># USER wokron</span><span class="err">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-console" data-lang="console"><span class="line"><span class="cl"><span class="go">wokron@host$ docker build -t test:v1 .
+</span></span></span><span class="line"><span class="cl"><span class="go">wokron@host$ docker run -it --rm --user wokron -v ./test_dir:/test_dir test:v1 bash
+</span></span></span><span class="line"><span class="cl"><span class="go">wokron@container$ whoami
+</span></span></span><span class="line"><span class="cl"><span class="go">wokron
+</span></span></span></code></pre></div><p>最后，其实还有一种方法，能够让容器中的 root 用户的行为在容器外表现为普通用户的行为。那就是使用 User Namespace。这种方法可以使得访问容器外文件系统时更加安全。有关 Namespace 的内容将在另外的文章（<a href="/posts/simple-container/#%E9%9A%94%E7%A6%BB%E7%94%A8%E6%88%B7">Here!</a>）中进行介绍。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/linux/">Linux</a></li>
+      <li><a href="https://wokron.github.io/tags/docker/">Docker</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/simple-container/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>用 Namespace 手搓一个容器</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/cpp-pitfalls/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>C&#43;&#43; 踩坑记录（持续更新！）</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 下的用户和容器中的用户 on x"
+            href="https://x.com/intent/tweet/?text=Linux%20%e4%b8%8b%e7%9a%84%e7%94%a8%e6%88%b7%e5%92%8c%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f&amp;hashtags=Linux%2cDocker">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 下的用户和容器中的用户 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f&amp;title=Linux%20%e4%b8%8b%e7%9a%84%e7%94%a8%e6%88%b7%e5%92%8c%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7&amp;summary=Linux%20%e4%b8%8b%e7%9a%84%e7%94%a8%e6%88%b7%e5%92%8c%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 下的用户和容器中的用户 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f&title=Linux%20%e4%b8%8b%e7%9a%84%e7%94%a8%e6%88%b7%e5%92%8c%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 下的用户和容器中的用户 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 下的用户和容器中的用户 on whatsapp"
+            href="https://api.whatsapp.com/send?text=Linux%20%e4%b8%8b%e7%9a%84%e7%94%a8%e6%88%b7%e5%92%8c%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 下的用户和容器中的用户 on telegram"
+            href="https://telegram.me/share/url?text=Linux%20%e4%b8%8b%e7%9a%84%e7%94%a8%e6%88%b7%e5%92%8c%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Linux 下的用户和容器中的用户 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=Linux%20%e4%b8%8b%e7%9a%84%e7%94%a8%e6%88%b7%e5%92%8c%e5%ae%b9%e5%99%a8%e4%b8%ad%e7%9a%84%e7%94%a8%e6%88%b7&u=https%3a%2f%2fwokron.github.io%2fposts%2fuser-perm-and-container%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

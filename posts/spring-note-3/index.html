@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Spring 面向切面 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Spring">
+<meta name="description" content="一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。
+面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。
+二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。
+通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。
+连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。
+切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。
+切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。
+引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。
+织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。
+三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。
+Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容
+AspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如
+execution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。
+切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如
+execution(* concert.Performance.perform(..)) &amp;&amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/spring-note-3/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/spring-note-3/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Spring 面向切面" />
+<meta property="og:description" content="一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。
+面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。
+二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。
+通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。
+连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。
+切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。
+切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。
+引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。
+织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。
+三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。
+Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容
+AspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如
+execution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。
+切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如
+execution(* concert.Performance.perform(..)) &amp;&amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/spring-note-3/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-01-10T16:47:00+08:00" />
+<meta property="article:modified_time" content="2023-01-10T16:47:00+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Spring 面向切面"/>
+<meta name="twitter:description" content="一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。
+面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。
+二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。
+通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。
+连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。
+切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。
+切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。
+引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。
+织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。
+三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。
+Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容
+AspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如
+execution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。
+切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如
+execution(* concert.Performance.perform(..)) &amp;&amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Spring 面向切面",
+      "item": "https://wokron.github.io/posts/spring-note-3/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Spring 面向切面",
+  "name": "Spring 面向切面",
+  "description": "一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。\n面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。\n二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。\n通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。\n连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。\n切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。\n切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。\n引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。\n织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。\n三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。\nSpring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容\nAspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如\nexecution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。\n切点表达式中还可以使用与（\u0026amp;\u0026amp;）或（||）非（!）操作。如\nexecution(* concert.Performance.perform(..)) \u0026amp;\u0026amp; within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。",
+  "keywords": [
+    "Spring"
+  ],
+  "articleBody": "一、面向切面（AOP） 有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。\n面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。\n二、面向切面的术语 正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。\n通知（Advice） 通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。\n连接点（Join Point） 连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。\n切点（Poincut） 切点是真正应用通知的地方，切点一定是连接点。\n切面（Aspect） 切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。\n引入（Introduction） 引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。\n织入（Weaving） 织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。\n三、Spring的AOP：利用切点表达式选择切点 通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。\nSpring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容\nAspectJ指示器 描述 arg() 限制连接点匹配参数为指定类型的执行方法 @args() 限制连接点匹配参数由指定注解标注的执行方法 execution() 用于匹配是连接点的执行方法 this() 限制连接点匹配AOP代理的bean引用为指定类型的类 target 限制连接点匹配目标对象为指定类型的类 @target() 限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解 within() 限制连接点匹配指定的类型 @within() 限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里） @annotation 限定匹配带有指定注解的连接点 通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如\nexecution(* concert.Performance.perform(..)) 表示匹配一个在方法执行时触发的连接点，这个方法是 concert 包下的 Performance 类中名为 perform 的方法，不考虑方法的返回值和参数（匹配所有同名的 perform 方法）。\n切点表达式中还可以使用与（\u0026\u0026）或（||）非（!）操作。如\nexecution(* concert.Performance.perform(..)) \u0026\u0026 within(concert.*) 表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。\n另外因为 Spring 具有依赖注入的功能，因此添加了一个新的切点指示器 bean() 用来通过 bean id 选择切点。\nexecution(* concert.Performance.perform()) \u0026\u0026 bean('woodstock') 四、Spring的AOP：基于注释的切面创建 （1）创建第一个切面 我们还以 CDPlayer 为例子，创建一个 Listener 作为切片。 我们首先要为切面类添加注释 @Aspect。\n@Aspect public class Listener 之后我们定义一些方法作为通知。并通过注释将其引入 CDPlayer 类。我们会在如下注释中选择：\n注解 通知调用位置 @After 通知方法会在目标方法返回或抛出异常后调用 @AfterReturning 通知方法会在目标方法返回后调用 @AfterThrowing 通知方法会在目标方法抛出异常后调用 @Around 通知方法会将目标方法封装起来 @Before 通知方法会在目标方法调用之前执行 @Aspect public class Listener { @Before(\"execution(* playCD()) \u0026\u0026 bean(cdPlayer)\") public void waitingForMusic() { System.out.println(\"waiting for listening...\"); } @AfterReturning(\"execution(* playCD()) \u0026\u0026 bean(cdPlayer)\") public void appreciateTheMusic() { System.out.println(\"this music is amazing!!\"); } @AfterThrowing(\"execution(* playCD()) \u0026\u0026 bean(cdPlayer)\") public void handleSomethingWrongWithTheCDPlayer() { System.out.println(\"there is something wrong, I need to fix this player.\"); } @After(\"execution(* playCD()) \u0026\u0026 bean(cdPlayer)\") public void leaveAfterPlayingMusic() { System.out.println(\"music finished, I will leave.\"); } } 如上，我们确定了切点为 CDPlayer 的 playCD 方法，并对调用该方法之前，成功返回之后和抛出异常之后分别设置了通知。这样切面就创建完成了。接下来我们还需在配置类中将切面设置为 Bean，并添加注释 @EnableAspectJAutoProxy 以启用切片。这样所有的配置就完成了。\n@Configuration @EnableAspectJAutoProxy // here!!! @PropertySource(\"classpath:application.properties\") public class CDPlayerConfig { @Bean public CompactDisc blankDisc( @Value(\"${disc.title}\") String title, @Value(\"${disc.artist}\") String artist) { return new BlankDisc(title, artist); } @Bean public CDPlayer cdPlayer(CompactDisc cd) { return new CDPlayer(cd); } // here!!! @Bean public Listener listener() { return new Listener(); } } （2）切点的直接声明和使用 注意在定义切面的时候，切点表达式 \"execution(* playCD()) \u0026\u0026 bean(cdPlayer)\" 出现了许多次，这无疑是代码的重复。我们可以利用注释 @Pointcut 声明该表达式，以便重用。\n@Aspect public class Listener { @Pointcut(\"execution(* playCD()) \u0026\u0026 bean(cdPlayer)\") public void playCDPointcut() {} @Before(\"playCDPointcut()\") public void waitingForMusic() { System.out.println(\"waiting for listening...\"); } @AfterReturning(\"playCDPointcut()\") public void appreciateTheMusic() { System.out.println(\"this music is amazing!!\"); } @AfterThrowing(\"playCDPointcut()\") public void handleSomethingWrongWithTheCDPlayer() { System.out.println(\"there is something wrong, I need to fix this player.\"); } @After(\"playCDPointcut()\") public void leaveAfterPlayingMusic() { System.out.println(\"music finished, I will leave.\"); } } 注意 playCDPointcut() 函数的声明和其他方法注释中值的变化。\n（3）环绕通知的使用 Spring AOP 中最强大的是环绕通知，由注释 @Around 声明。其他的通知调用位置注释不过是环绕通知的一部分。环绕通知的使用方法有些特殊，因此在这一节中单独讲解。\n首先需要明确的是，切面的本质不过是一个代理（proxy），代理类的方法调用委托类中的对应方法，并在调用的前后添加一些额外的代码，从而实现更多功能。AOP 的作用不过是去除了声明代理类的过程，减少了事务与切面间的耦合而已。\n环绕通知的使用也类似，如下就是通过环绕通知实现的与上一节等价的代码：\n@Aspect public class Listener { @Pointcut(\"execution(* playCD()) \u0026\u0026 bean(cdPlayer)\") public void playCDPointcut() {} @Around(\"playCDPointcut()\") public void listenCDPlayer(ProceedingJoinPoint pjp) { try { System.out.println(\"waiting for listening...\"); pjp.proceed(); System.out.println(\"this music is amazing!!\"); } catch (Throwable e) { System.out.println(\"there is something wrong, I need to fix this player.\"); } finally { System.out.println(\"music finished, I will leave.\"); } } } （4）处理参数 调用方法时，可能会传入参数，这些参数也可以被通知所处理。\n我们可以在 CDPlayer 中添加一个方法 playCD(int) 设定播放的次数。然后获取该参数。\npublic void playCD(int times) { for (int i = 0; i \u003c times; i++) { playCD(); } } 接着我们重写 Listener 切面。如下的代码我们将 times 传入了通知方法 listenCDPlayer 中。\n@Aspect public class Listener { @Pointcut(\"execution(* playCD(int)) \u0026\u0026 bean(cdPlayer) \u0026\u0026 args(times)\") public void playCDPointcut(int times) {} @Before(\"playCDPointcut(times)\") public void listenCDPlayer(int times) { System.out.printf(\"this music will play %d times.\\n\", times); } } 当使用多个参数时，函数中的类型名和 args() 中的参数名都用逗号隔开，如 args(arg1, arg2)\n",
+  "wordCount" : "433",
+  "inLanguage": "zh",
+  "datePublished": "2023-01-10T16:47:00+08:00",
+  "dateModified": "2023-01-10T16:47:00+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/spring-note-3/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      Spring 面向切面
+    </h1>
+    <div class="post-meta"><span title='2023-01-10 16:47:00 +0800 CST'>一月 10, 2023</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;433 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/spring-note-3.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2aop" aria-label="一、面向切面（AOP）">一、面向切面（AOP）</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2%e7%9a%84%e6%9c%af%e8%af%ad" aria-label="二、面向切面的术语">二、面向切面的术语</a><ul>
+                        
+                <li>
+                    <a href="#%e9%80%9a%e7%9f%a5advice" aria-label="通知（Advice）">通知（Advice）</a></li>
+                <li>
+                    <a href="#%e8%bf%9e%e6%8e%a5%e7%82%b9join-point" aria-label="连接点（Join Point）">连接点（Join Point）</a></li>
+                <li>
+                    <a href="#%e5%88%87%e7%82%b9poincut" aria-label="切点（Poincut）">切点（Poincut）</a></li>
+                <li>
+                    <a href="#%e5%88%87%e9%9d%a2aspect" aria-label="切面（Aspect）">切面（Aspect）</a></li>
+                <li>
+                    <a href="#%e5%bc%95%e5%85%a5introduction" aria-label="引入（Introduction）">引入（Introduction）</a></li>
+                <li>
+                    <a href="#%e7%bb%87%e5%85%a5weaving" aria-label="织入（Weaving）">织入（Weaving）</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%89spring%e7%9a%84aop%e5%88%a9%e7%94%a8%e5%88%87%e7%82%b9%e8%a1%a8%e8%be%be%e5%bc%8f%e9%80%89%e6%8b%a9%e5%88%87%e7%82%b9" aria-label="三、Spring的AOP：利用切点表达式选择切点">三、Spring的AOP：利用切点表达式选择切点</a></li>
+                <li>
+                    <a href="#%e5%9b%9bspring%e7%9a%84aop%e5%9f%ba%e4%ba%8e%e6%b3%a8%e9%87%8a%e7%9a%84%e5%88%87%e9%9d%a2%e5%88%9b%e5%bb%ba" aria-label="四、Spring的AOP：基于注释的切面创建">四、Spring的AOP：基于注释的切面创建</a><ul>
+                        
+                <li>
+                    <a href="#1%e5%88%9b%e5%bb%ba%e7%ac%ac%e4%b8%80%e4%b8%aa%e5%88%87%e9%9d%a2" aria-label="（1）创建第一个切面">（1）创建第一个切面</a></li>
+                <li>
+                    <a href="#2%e5%88%87%e7%82%b9%e7%9a%84%e7%9b%b4%e6%8e%a5%e5%a3%b0%e6%98%8e%e5%92%8c%e4%bd%bf%e7%94%a8" aria-label="（2）切点的直接声明和使用">（2）切点的直接声明和使用</a></li>
+                <li>
+                    <a href="#3%e7%8e%af%e7%bb%95%e9%80%9a%e7%9f%a5%e7%9a%84%e4%bd%bf%e7%94%a8" aria-label="（3）环绕通知的使用">（3）环绕通知的使用</a></li>
+                <li>
+                    <a href="#4%e5%a4%84%e7%90%86%e5%8f%82%e6%95%b0" aria-label="（4）处理参数">（4）处理参数</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一面向切面aop">一、面向切面（AOP）<a hidden class="anchor" aria-hidden="true" href="#一面向切面aop">#</a></h2>
+<p>有时，在按数据的处理流程编写程序时，我们不得不关心流程之外的情况，比如异常处理安全或日志。这些部分与主要事务交织在一起，使得代码功能不清，造成了强耦合。</p>
+<p>面向切片（Aspect-Oriented Programming）就是为解决这样的问题产生的技术。该技术把那些横向影响了应用多处的功能从被其影响的主要事物流程中分离开来，作为切面。使流程只需要关注其本身，而切片则通过其他方式织入程序。</p>
+<h2 id="二面向切面的术语">二、面向切面的术语<a hidden class="anchor" aria-hidden="true" href="#二面向切面的术语">#</a></h2>
+<p>正如面向对象有其术语一样，面向切面也有用于描述其技术的相关概念，在介绍 Spring 的面向切面前需要加以解释。</p>
+<h3 id="通知advice">通知（Advice）<a hidden class="anchor" aria-hidden="true" href="#通知advice">#</a></h3>
+<p>通知是切面所具有的行为，也就是不采用面向切面编程时，那些与主要事务无关，应该被抽离出来的代码段。</p>
+<h3 id="连接点join-point">连接点（Join Point）<a hidden class="anchor" aria-hidden="true" href="#连接点join-point">#</a></h3>
+<p>连接点是可以应用通知的地方，也就是能够执行切面所具有的行为的地方。</p>
+<h3 id="切点poincut">切点（Poincut）<a hidden class="anchor" aria-hidden="true" href="#切点poincut">#</a></h3>
+<p>切点是真正应用通知的地方，切点一定是连接点。</p>
+<h3 id="切面aspect">切面（Aspect）<a hidden class="anchor" aria-hidden="true" href="#切面aspect">#</a></h3>
+<p>切面是通知和切点的总和。当程序执行到切点所在的位置时，就会执行对应的通知。</p>
+<h3 id="引入introduction">引入（Introduction）<a hidden class="anchor" aria-hidden="true" href="#引入introduction">#</a></h3>
+<p>引入是作为切面的类作用到处理主要事务的类的过程。这一过程为处理主要事物的类引入了新的方法和属性，但却没有对这个类本身进行修改。</p>
+<h3 id="织入weaving">织入（Weaving）<a hidden class="anchor" aria-hidden="true" href="#织入weaving">#</a></h3>
+<p>织入是为了实现切面的引入而采取的操作。织入将切面引入目标对象，创建了融合切面和目标的代理对象。这一操作可以发生在编译期、类加载期和运行期，需要看具体的实现。Spring 会在运行期完成切面的织入。</p>
+<h2 id="三spring的aop利用切点表达式选择切点">三、Spring的AOP：利用切点表达式选择切点<a hidden class="anchor" aria-hidden="true" href="#三spring的aop利用切点表达式选择切点">#</a></h2>
+<p>通知和切点共同组成了切面，在这一部分将讲述如何确定切点的位置。我们使用的是称为切点表达式的语法规范，用这一表达式确定我们所指定的切点，以便之后通知的编写。</p>
+<p>Spring AOP 使用的是 AspectJ 切点指示器中的一部分，包括如下的内容</p>
+<table>
+<thead>
+<tr>
+<th>AspectJ指示器</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>arg()</td>
+<td>限制连接点匹配参数为指定类型的执行方法</td>
+</tr>
+<tr>
+<td>@args()</td>
+<td>限制连接点匹配参数由指定注解标注的执行方法</td>
+</tr>
+<tr>
+<td>execution()</td>
+<td>用于匹配是连接点的执行方法</td>
+</tr>
+<tr>
+<td>this()</td>
+<td>限制连接点匹配AOP代理的bean引用为指定类型的类</td>
+</tr>
+<tr>
+<td>target</td>
+<td>限制连接点匹配目标对象为指定类型的类</td>
+</tr>
+<tr>
+<td>@target()</td>
+<td>限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解</td>
+</tr>
+<tr>
+<td>within()</td>
+<td>限制连接点匹配指定的类型</td>
+</tr>
+<tr>
+<td>@within()</td>
+<td>限制连接点匹配指定注解所标注的类型（当使用Spring AOP时，方法定义在由指定的注解所标注的类里）</td>
+</tr>
+<tr>
+<td>@annotation</td>
+<td>限定匹配带有指定注解的连接点</td>
+</tr>
+</tbody>
+</table>
+<p>通过组合使用这些类似于函数的指示器的，就可以确定我们想要引入通知的连接点究竟在哪里。接下来我们通过一些示例展示切点表达式的使用。如</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">execution</span><span class="p">(</span><span class="o">*</span> <span class="n">concert</span><span class="p">.</span><span class="n">Performance</span><span class="p">.</span><span class="nf">perform</span><span class="p">(..))</span>
+</span></span></code></pre></div><p>表示匹配一个在方法执行时触发的连接点，这个方法是 <code>concert</code> 包下的 <code>Performance</code> 类中名为 <code>perform</code> 的方法，不考虑方法的返回值和参数（匹配所有同名的 <code>perform</code> 方法）。</p>
+<p>切点表达式中还可以使用与（&amp;&amp;）或（||）非（!）操作。如</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">execution</span><span class="p">(</span><span class="o">*</span> <span class="n">concert</span><span class="p">.</span><span class="n">Performance</span><span class="p">.</span><span class="nf">perform</span><span class="p">(..))</span> <span class="o">&amp;&amp;</span> <span class="nf">within</span><span class="p">(</span><span class="n">concert</span><span class="p">.</span><span class="o">*</span><span class="p">)</span>
+</span></span></code></pre></div><p>表示同时满足是 concert 包下的类方法调用，并且满足上一条的条件的切点。</p>
+<p>另外因为 Spring 具有依赖注入的功能，因此添加了一个新的切点指示器 <code>bean()</code> 用来通过 bean id 选择切点。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">execution</span><span class="p">(</span><span class="o">*</span> <span class="n">concert</span><span class="p">.</span><span class="n">Performance</span><span class="p">.</span><span class="nf">perform</span><span class="p">())</span> <span class="o">&amp;&amp;</span> <span class="nf">bean</span><span class="p">(</span><span class="err">&#39;</span><span class="n">woodstock</span><span class="err">&#39;</span><span class="p">)</span>
+</span></span></code></pre></div><h2 id="四spring的aop基于注释的切面创建">四、Spring的AOP：基于注释的切面创建<a hidden class="anchor" aria-hidden="true" href="#四spring的aop基于注释的切面创建">#</a></h2>
+<h3 id="1创建第一个切面">（1）创建第一个切面<a hidden class="anchor" aria-hidden="true" href="#1创建第一个切面">#</a></h3>
+<p>我们还以 CDPlayer 为例子，创建一个 Listener 作为切片。
+我们首先要为切面类添加注释 <code>@Aspect</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Aspect</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Listener</span><span class="w">
+</span></span></span></code></pre></div><p>之后我们定义一些方法作为通知。并通过注释将其引入 <code>CDPlayer</code> 类。我们会在如下注释中选择：</p>
+<table>
+<thead>
+<tr>
+<th>注解</th>
+<th>通知调用位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@After</td>
+<td>通知方法会在目标方法返回或抛出异常后调用</td>
+</tr>
+<tr>
+<td>@AfterReturning</td>
+<td>通知方法会在目标方法返回后调用</td>
+</tr>
+<tr>
+<td>@AfterThrowing</td>
+<td>通知方法会在目标方法抛出异常后调用</td>
+</tr>
+<tr>
+<td>@Around</td>
+<td>通知方法会将目标方法封装起来</td>
+</tr>
+<tr>
+<td>@Before</td>
+<td>通知方法会在目标方法调用之前执行</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Aspect</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Listener</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Before</span><span class="p">(</span><span class="s">&#34;execution(* playCD()) &amp;&amp; bean(cdPlayer)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">waitingForMusic</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;waiting for listening...&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@AfterReturning</span><span class="p">(</span><span class="s">&#34;execution(* playCD()) &amp;&amp; bean(cdPlayer)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">appreciateTheMusic</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;this music is amazing!!&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@AfterThrowing</span><span class="p">(</span><span class="s">&#34;execution(* playCD()) &amp;&amp; bean(cdPlayer)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">handleSomethingWrongWithTheCDPlayer</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;there is something wrong, I need to fix this player.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@After</span><span class="p">(</span><span class="s">&#34;execution(* playCD()) &amp;&amp; bean(cdPlayer)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">leaveAfterPlayingMusic</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;music finished, I will leave.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>如上，我们确定了切点为 <code>CDPlayer</code> 的 <code>playCD</code> 方法，并对调用该方法之前，成功返回之后和抛出异常之后分别设置了通知。这样切面就创建完成了。接下来我们还需在配置类中将切面设置为 Bean，并添加注释 <code>@EnableAspectJAutoProxy</code> 以启用切片。这样所有的配置就完成了。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nd">@EnableAspectJAutoProxy</span><span class="w"> </span><span class="c1">// here!!!</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nd">@PropertySource</span><span class="p">(</span><span class="s">&#34;classpath:application.properties&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CDPlayerConfig</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">CompactDisc</span><span class="w"> </span><span class="nf">blankDisc</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nd">@Value</span><span class="p">(</span><span class="s">&#34;${disc.title}&#34;</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nd">@Value</span><span class="p">(</span><span class="s">&#34;${disc.artist}&#34;</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">artist</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BlankDisc</span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">artist</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">CDPlayer</span><span class="w"> </span><span class="nf">cdPlayer</span><span class="p">(</span><span class="n">CompactDisc</span><span class="w"> </span><span class="n">cd</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CDPlayer</span><span class="p">(</span><span class="n">cd</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// here!!!</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Listener</span><span class="w"> </span><span class="nf">listener</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Listener</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h3 id="2切点的直接声明和使用">（2）切点的直接声明和使用<a hidden class="anchor" aria-hidden="true" href="#2切点的直接声明和使用">#</a></h3>
+<p>注意在定义切面的时候，切点表达式 <code>&quot;execution(* playCD()) &amp;&amp; bean(cdPlayer)&quot;</code> 出现了许多次，这无疑是代码的重复。我们可以利用注释 <code>@Pointcut</code> 声明该表达式，以便重用。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Aspect</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Listener</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Pointcut</span><span class="p">(</span><span class="s">&#34;execution(* playCD()) &amp;&amp; bean(cdPlayer)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">playCDPointcut</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Before</span><span class="p">(</span><span class="s">&#34;playCDPointcut()&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">waitingForMusic</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;waiting for listening...&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@AfterReturning</span><span class="p">(</span><span class="s">&#34;playCDPointcut()&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">appreciateTheMusic</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;this music is amazing!!&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@AfterThrowing</span><span class="p">(</span><span class="s">&#34;playCDPointcut()&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">handleSomethingWrongWithTheCDPlayer</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;there is something wrong, I need to fix this player.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@After</span><span class="p">(</span><span class="s">&#34;playCDPointcut()&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">leaveAfterPlayingMusic</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;music finished, I will leave.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>注意 <code>playCDPointcut()</code> 函数的声明和其他方法注释中值的变化。</p>
+<h3 id="3环绕通知的使用">（3）环绕通知的使用<a hidden class="anchor" aria-hidden="true" href="#3环绕通知的使用">#</a></h3>
+<p>Spring AOP 中最强大的是环绕通知，由注释 <code>@Around</code> 声明。其他的通知调用位置注释不过是环绕通知的一部分。环绕通知的使用方法有些特殊，因此在这一节中单独讲解。</p>
+<p>首先需要明确的是，切面的本质不过是一个代理（proxy），代理类的方法调用委托类中的对应方法，并在调用的前后添加一些额外的代码，从而实现更多功能。AOP 的作用不过是去除了声明代理类的过程，减少了事务与切面间的耦合而已。</p>
+<p>环绕通知的使用也类似，如下就是通过环绕通知实现的与上一节等价的代码：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Aspect</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Listener</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Pointcut</span><span class="p">(</span><span class="s">&#34;execution(* playCD()) &amp;&amp; bean(cdPlayer)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">playCDPointcut</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Around</span><span class="p">(</span><span class="s">&#34;playCDPointcut()&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">listenCDPlayer</span><span class="p">(</span><span class="n">ProceedingJoinPoint</span><span class="w"> </span><span class="n">pjp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;waiting for listening...&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">pjp</span><span class="p">.</span><span class="na">proceed</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;this music is amazing!!&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Throwable</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;there is something wrong, I need to fix this player.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;music finished, I will leave.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h3 id="4处理参数">（4）处理参数<a hidden class="anchor" aria-hidden="true" href="#4处理参数">#</a></h3>
+<p>调用方法时，可能会传入参数，这些参数也可以被通知所处理。</p>
+<p>我们可以在 CDPlayer 中添加一个方法 <code>playCD(int)</code> 设定播放的次数。然后获取该参数。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">playCD</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">times</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">times</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">playCD</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>接着我们重写 <code>Listener</code> 切面。如下的代码我们将 times 传入了通知方法 <code>listenCDPlayer</code> 中。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Aspect</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Listener</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Pointcut</span><span class="p">(</span><span class="s">&#34;execution(* playCD(int)) &amp;&amp; bean(cdPlayer) &amp;&amp; args(times)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">playCDPointcut</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">times</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Before</span><span class="p">(</span><span class="s">&#34;playCDPointcut(times)&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">listenCDPlayer</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">times</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">printf</span><span class="p">(</span><span class="s">&#34;this music will play %d times.\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">times</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><blockquote>
+<p>当使用多个参数时，函数中的类型名和 args() 中的参数名都用逗号隔开，如 <code>args(arg1, arg2)</code></p>
+</blockquote>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/spring/">Spring</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/nlp-basics/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>机器学习 NLP 基本知识</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/spring-note-2/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>Spring 高级装配</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Spring 面向切面 on x"
+            href="https://x.com/intent/tweet/?text=Spring%20%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f&amp;hashtags=Spring">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Spring 面向切面 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f&amp;title=Spring%20%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2&amp;summary=Spring%20%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Spring 面向切面 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f&title=Spring%20%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Spring 面向切面 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Spring 面向切面 on whatsapp"
+            href="https://api.whatsapp.com/send?text=Spring%20%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Spring 面向切面 on telegram"
+            href="https://telegram.me/share/url?text=Spring%20%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Spring 面向切面 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=Spring%20%e9%9d%a2%e5%90%91%e5%88%87%e9%9d%a2&u=https%3a%2f%2fwokron.github.io%2fposts%2fspring-note-3%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

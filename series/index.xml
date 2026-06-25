@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Series on Wokron&#39;s Blog</title>
+    <link>https://wokron.github.io/series/</link>
+    <description>Recent content in Series on Wokron&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <copyright>©2022-2026 Yitang Yang. All rights reserved.</copyright>
+    <lastBuildDate>Tue, 10 Sep 2024 16:07:58 +0800</lastBuildDate>
+    <atom:link href="https://wokron.github.io/series/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>BUAA 编译技术教程</title>
+      <link>https://wokron.github.io/series/buaa-%E7%BC%96%E8%AF%91%E6%8A%80%E6%9C%AF%E6%95%99%E7%A8%8B/</link>
+      <pubDate>Tue, 10 Sep 2024 16:07:58 +0800</pubDate>
+      <guid>https://wokron.github.io/series/buaa-%E7%BC%96%E8%AF%91%E6%8A%80%E6%9C%AF%E6%95%99%E7%A8%8B/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>从零开始的编译原理</title>
+      <link>https://wokron.github.io/series/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E7%9A%84%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/</link>
+      <pubDate>Mon, 11 Mar 2024 17:15:03 +0800</pubDate>
+      <guid>https://wokron.github.io/series/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E7%9A%84%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>BUAA-OS 实验笔记</title>
+      <link>https://wokron.github.io/series/buaa-os-%E5%AE%9E%E9%AA%8C%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Fri, 19 May 2023 15:59:29 +0800</pubDate>
+      <guid>https://wokron.github.io/series/buaa-os-%E5%AE%9E%E9%AA%8C%E7%AC%94%E8%AE%B0/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>后端开发入门笔记</title>
+      <link>https://wokron.github.io/series/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Tue, 25 Apr 2023 18:10:33 +0800</pubDate>
+      <guid>https://wokron.github.io/series/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8%E7%AC%94%E8%AE%B0/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>2D 物理引擎基础</title>
+      <link>https://wokron.github.io/series/2d-%E7%89%A9%E7%90%86%E5%BC%95%E6%93%8E%E5%9F%BA%E7%A1%80/</link>
+      <pubDate>Fri, 10 Feb 2023 09:47:10 +0800</pubDate>
+      <guid>https://wokron.github.io/series/2d-%E7%89%A9%E7%90%86%E5%BC%95%E6%93%8E%E5%9F%BA%E7%A1%80/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Spring 笔记</title>
+      <link>https://wokron.github.io/series/spring-%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Tue, 10 Jan 2023 16:47:00 +0800</pubDate>
+      <guid>https://wokron.github.io/series/spring-%E7%AC%94%E8%AE%B0/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>系统编程笔记</title>
+      <link>https://wokron.github.io/series/%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Thu, 22 Dec 2022 22:07:37 +0800</pubDate>
+      <guid>https://wokron.github.io/series/%E7%B3%BB%E7%BB%9F%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>机器学习笔记</title>
+      <link>https://wokron.github.io/series/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Sun, 23 Oct 2022 10:57:17 +0800</pubDate>
+      <guid>https://wokron.github.io/series/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

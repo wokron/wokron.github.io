@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>编译 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/index.xml">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="编译" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="编译"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/categories/">Categories</a></div>
+  <h1>
+    编译
+    <a href="/categories/%E7%BC%96%E8%AF%91/index.xml" title="RSS" aria-label="RSS">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" height="23">
+        <path d="M4 11a9 9 0 0 1 9 9" />
+        <path d="M4 4a16 16 0 0 1 16 16" />
+        <circle cx="5" cy="19" r="1" />
+      </svg>
+    </a>
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">编译技术教程：前言
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>本系列是北航《编译技术》实验教程的前端教程部分，介绍了编译器前端的实现过程。此系列内容由本人编写或参与修改，在此也感谢所有参与教程编写工作的本届和往届助教。对于完整的实验教程，可见 wokron/tolangc。
+系列导航：
+《编译技术教程：前言》 《编译技术教程：词法分析》 《编译技术教程：抽象语法树》 《编译技术教程：语法分析》 《编译技术教程：符号表与类型系统》 《编译技术教程：语义分析》 《编译技术教程：附录 - 项目测试》 一、本教程的背景 编译技术实验是计算机科学与技术专业核心专业必修课编译技术的实践环节，旨在帮助学生深入理解编译原理和技术，并掌握实际编译器的设计和实现方法。在本实验中，各位同学需要自行设计、实现一个完整的编译器，该编译器能够实现 SysY 语言（C 语言子集）到中间代码 LLVM、Pcode 或目标代码 MIPS 的编译过程。
+亲自实现一个编译器对各位同学理解编译技术有着极大的帮助。然而，作为这门课的初学者，同学们往往难以在一开始就对编译器产生完整全面的认识。在实验中，这一点体现为一些同学在编译器的设计上存在不足，难以运用理论课上的知识实现一个架构清晰、可随实验进度不断扩展的编译器。这导致这种情况的出现：早期的设计隐患在之后的实验中爆发，不得不重构之前的程序逻辑。在浪费时间的同时，无法学到编译器设计的更好方法。
+当然，这并不意味着理论课的内容毫无必要，而是理论与实际之间本就有着难以轻易逾越的鸿沟。将理论与实践融会贯通，本就需要付出极大的努力。在往届的实验中，我们也曾提供或推荐一些已有的编译器代码供同学们学习，然而这些代码或过于老旧、或过于复杂，常常难以满足同学们的学习和借鉴需要。
+为了能稍稍帮助同学们更好的完成编译实验，实验课教程组决定做出一点自己的贡献。以往的编译实验教程主要关注于讲述实验中可能会用到的相关知识，尽管也有一些辅助理解的例子，但也常常局限于单一章节的内容，不同章节间内容互不相通。这一定程度上妨碍了同学们从中学习编译器的设计方法，并容易造成了理解上的混乱。
+因此，我们决定修改原有的编译实验教程，通过示例驱动的方式给同学们提供更有参考价值的教程内容。具体来说，我们会设计一个十分简单的编程语言：tolang。在本教程中，我们将以 tolang 编译器 tolangc 的编写为主线，介绍基本的编译器设计和实现方法，从而为同学们提供一个相对较好的实践样例。
+二、tolang 介绍 tolang 这个名字很奇怪，最初起名时的含义是 toy lang，但是也有 too long 的谐音。不过这个语言确实是一个玩具语言，根本没有复杂冗长的语法语义。
+（1）文法定义 我们的 tolang 可以由如下的 EBNF 范式确定：
+CompUnit: {FuncDef} {VarDecl} {Stmt} FuncDef: &#39;fn&#39; Ident &#39;(&#39; [FuncFParams] &#39;)&#39; &#39;=&gt;&#39; Exp &#39;;&#39; FuncFParams: Ident { &#39;,&#39; Ident } VarDecl: &#39;var&#39; Ident &#39;;&#39; Stmt: &#39;get&#39; Ident &#39;;&#39; | &#39;put&#39; Exp &#39;;&#39; | &#39;tag&#39; Ident &#39;;&#39; | &#39;let&#39; Ident &#39;=&#39; Exp &#39;;&#39; | &#39;if&#39; Cond &#39;to&#39; Ident &#39;;&#39; | &#39;to&#39; Ident &#39;;&#39; Exp: AddExp AddExp: MulExp | AddExp (&#39;&#43;&#39; | &#39;-&#39;) MulExp MulExp: UnaryExp | MulExp (&#39;*&#39; | &#39;/&#39; | &#39;%&#39;) UnaryExp UnaryExp: PrimaryExp | Ident &#39;(&#39; [FuncRParams] &#39;)&#39; | (&#39;&#43;&#39; | &#39;-&#39;) UnaryExp PrimaryExp: &#39;(&#39; Exp &#39;)&#39; | Ident | Number FuncRParams: Exp { &#39;,&#39; Exp } Cond: Exp (&#39;&lt;&#39; | &#39;&gt;&#39; | &#39;&lt;=&#39; | &#39;&gt;=&#39; | &#39;==&#39; | &#39;!...</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-09-10 15:56:16 +0800 CST'>九月 10, 2024</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;324 字&nbsp;·&nbsp;Wokron, 北航编译技术课程组</footer>
+  <a class="entry-link" aria-label="post link to 编译技术教程：前言" href="https://wokron.github.io/posts/buaa-compiler-tutorial-00/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（5）：语义分析与中间代码生成
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 我语言的局限，即是我世界的局限
+—— 路德维希·约瑟夫·约翰·维特根斯坦
+二、从文法树到语义 经过语法分析阶段的处理，我们将词序列组织成了一棵文法树。而在语义分析阶段，我们的目标就是理解该文法树的含义，并按其含义将该文法树翻译含义等价的另一种语言。
+上面的表述十分宽泛。这是因为语义分析阶段不像前两个阶段有着明确的输入输出和确定的算法，根据使用场景的不同采用各自的处理方法。
+举个例子，对比 C 语言和 SQL 语言，虽然它们都会采用编译技术进行语句的处理，但是 C 语言的语义分析产物是类似汇编的中间代码；而 SQL 语言的语义分析的结果则是对数据库中数据的处理操作。
+因此，语义分析并没有通用的算法，就算同样是编程语言，面向过程、面向对象、函数式等不同的语言类别在语义分析上也有许多不同的处理。所以在本篇文章中，我们只会介绍最为简单和普遍的一种语义分析方法，那就是语法制导翻译。
+三、语法制导翻译 （1）属性翻译文法 通过前面的文章，我们知道文法树表达了句子的结构。这种结构从语义上来说有两种含义：
+一是指整体由部分组成。这反映了文法树中父节点的含义。例如对于表达式会 $1 &#43; 2$，表达式本身是文法树中的父节点，而 $1$ $&#43;$ 和 $2$ 则是子节点。
+二是指部分处于整体之中。这反映了文法树中子节点的含义。
+在使用语法制导翻译进行语义分析时，这两种含义我们称为属性。第一种属性由 “父” 传递到 “子”，称之为继承属性；第二种属性由 “子” 传递到 “父”，称之为综合属性。
+（2）符号表管理 四、中间代码 </p>
+  </div>
+  <footer class="entry-footer"><span title='2024-03-11 17:15:03 +0800 CST'>三月 11, 2024</span>&nbsp;·&nbsp;1 分钟&nbsp;·&nbsp;39 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（5）：语义分析与中间代码生成" href="https://wokron.github.io/posts/compiling-tech-from-zero-5/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（4）：语法分析与下推自动机
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 从这个精神王国的圣餐杯里，
+他的无限性给他翻涌起泡沫。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《精神现象学》下卷 第八章 绝对知识
+二、从正则文法到上下文无关文法 词法分析阶段，我们可以使用正则文法描述词的定义，这是因为词的结构是无嵌套的。也就是说，词只会由例如前缀、后缀以及结构的顺序重复等概念描述，不可能出现需要前后匹配的地方。举个例子，正则文法不能定义形如 $12344321$ 的回文数；或形如 $(()(()))$ 的括号结构。
+然而，所有的高级语言却都是嵌套的。通过嵌套，高级语言能够表示更加复杂的结构，实现控制流、子程序、作用域、类等等高级概念。因此，正则文法并不能描述高级语言的语法，我们需要使用 2 型文法，也即上下文无关文法描述高级语言。2 型文法区别于 3 型文法就在于其嵌套性。
+举个例子，我们可以将上述括号结构用如下 2 型文法定义： $$ S \rightarrow (S)S | \epsilon $$ 其中规则 $S \rightarrow S(S)$ 中左括号和右括号同时出现，这样就保证了对于一个左括号，必定有一个右括号与其匹配。因而我们说上面的文法具有嵌套性。
+而 3 型文法则不同。由于左线性和右线性的约束，3 型文法中不可能出现一条规则中右侧有多个终结符的情况。
+不过虽然 2 型文法相较于 3 型文法具有更强的表达能力，但是这也为其解析提供了一定的困难。我们可以选择用前面定义的文法给出 $(()(()))$ 的文法树：
+可以看出，相较于 3 型文法的文法树，2 型文法的文法树更像是树：并不是只向一侧增长，而是在任意地方都可能产生子树。因此，2 型文法的推导或归约过程不再能看作状态的转移，我们需要用有穷自动机之外的另一种模型描述，该模型应当具有接受嵌套结构的能力。这就是下推自动机。
+三、下推自动机 （1）例子：判断有效括号问题 初学编程的时候各位应该都做过类似的题目，那就是判断有效括号。实际上这是一个编译问题。我们可以使用编译理论的语言将该问题表述为：对于符号集 $\Sigma = \{`(`, `)`, `[`, `]`, `\{`, `\}`\}$，对给定的括号文法 $G$，对于任意 $s \in \Sigma^*$，给出一个算法，判断是否有 $s \in L(G)$（即 $s$ 是否被文法 $G$ 接受）。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-02-15 14:14:06 +0800 CST'>二月 15, 2024</span>&nbsp;·&nbsp;18 分钟&nbsp;·&nbsp;3631 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（4）：语法分析与下推自动机" href="https://wokron.github.io/posts/compiling-tech-from-zero-4/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（3）：词法分析与有穷自动机
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 因而，每一生物的有机形体都是一个神圣的机器，或一台无限地优越于任何人造的自动机器的自然的自动机器（automata）。因为人的技艺所制造的机器的每一部分并非机器。……而自然的机器，即有机体，在其无限小的部分仍是机器。
+—— 戈特弗里德·威廉·莱布尼茨《单子论》第 64 节
+本章将从词法分析所用的 3 型文法入手，引入自动机的概念，并详细介绍有穷自动机的原理及实现。最终实现编译程序的词法分析模块。
+二、正则文法的解析过程 在第 1 章的最后我们介绍了 3 型文法。3 型文法也称正则文法，特征是对于文法中的每一条规则，其右侧要么是一个终结符，要么是一个终结符加上一个非终结符，且非终结符只位于终结符的一侧。根据非终结符位置的不同分为左线性和右线性。
+或许有些人会这样讲：“左线性是终结符在右侧；右线性是终结符在左侧”。但是这样实在太别扭了。应该说 “左线性是非终结符在左侧；右线性是非终结符在右侧”。
+为什么通过这一约束，3 型文法就能区别于 2 型文法了呢？我们可以通过正则文法的解析过程来理解。
+现在有一左线性正则文法 $G_1[Z]$： $$ \begin{align*} Z &amp; \rightarrow A1 \\ A &amp; \rightarrow B1 | 1 \\ B &amp; \rightarrow A0 \end{align*} $$ 现在可能不太能看得出来，但是 $G_1[Z]$ 能够接受符号串 $101011$。我们可以画出此符号串对应的文法树。
+通过文法树我们可以看出，对于左线性正则文法 $G_1[Z]$，其文法树只向左增长。当然这一点从规则中也可以看出，只不过不那么直观罢了。
+可为什么具有这样特性的文法就特殊了呢？接下来我们根据文法树，以归约的视角看待符号串 $101011$ 的解析过程：
+读入 1，1 归约得到 A； 读入 0，A0 归约得到 B； 读入 1，B1 归约得到 A； …… 以此类推，我们就可以发现其中的规律。对于这样的文法，读入一次即归约一次。因为文法中最多只有两个符号，所以一旦读入了一个新的符号，则必定进行一次归约。
+同理的，我们考虑右线性正则文法 $G_2[S]$： $$ \begin{align*} S &amp; \rightarrow 1A \\ A &amp; \rightarrow 0B | 1 \\ B &amp; \rightarrow 1A \end{align*} $$ $101011$ 也能被 $G_2[S]$ 接受。其文法树如下，对于右线性正则文法 $G_2[Z]$，其文法树只向右增长...</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-01-10 19:04:00 +0800 CST'>一月 10, 2024</span>&nbsp;·&nbsp;9 分钟&nbsp;·&nbsp;1724 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（3）：词法分析与有穷自动机" href="https://wokron.github.io/posts/compiling-tech-from-zero-3/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（2）：编译程序架构
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 本质是存在的真理，是自己过去了的或内在的存在。
+—— 格奥尔格·威廉·弗里德里希·黑格尔《小逻辑》第二篇 本质论 §112
+本篇文章是一个间章。旨在衔接文法理论与编译过程，从架构上概述整个编译程序。文法理论旨在解释自然语言，而编译过程却要创造新的语言。编译程序通过将文法规则机械化，创造出易于理解的高级语言，实现了计算的高级抽象。
+二、何为 “编译” 为了理解何为 “编译”，我们可以从一个具体的编译器开始。这里我们以 C 语言的编译过程为例：
+现在有一个简单的由 C 语言文法写成的文本文件 test.c
+// test.c #include &lt;stdio.h&gt; int main() { printf(&#34;hello, world.\n&#34;); return 0; } 想要将其编译为可执行文件，当然可以使用 gcc test.c -o test 或 clang test.c -o test，但是这样就不能反映编译的具体过程了。所以这里我编写了一个 Makefile，用来指明 gcc 编译时所经历的具体步骤。
+# Makefile srcname = test cc = gcc # Default target all: $(srcname) @echo &#34;Finish!&#34; # Linking stage $(srcname): $(srcname).o @echo &#34;Linking stage: Creating executable &#39;$(srcname)&#39;&#34; $(cc) $(srcname).o -o $(srcname) # Assembly stage $(srcname)....</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-01-06 16:33:50 +0800 CST'>一月 6, 2024</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;442 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（2）：编译程序架构" href="https://wokron.github.io/posts/compiling-tech-from-zero-2/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">从零开始的编译原理（1）：文法理论
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 一个人进行推理时…… 这种过程如果是用语词进行的，他便是在心中把各部分的名词序列连成一个整体的名词或从整体及一个部分的名词求得另一个部分的名词。
+—— 托马斯·霍布斯《利维坦》第一部分 论人类 第五章 论推理与学术
+当霍布斯将他的机械唯物主义运用于人的思想时，语言便成为了人脑的齿轮。人的精神当然并非机械，可这种认识却也敏锐地察觉到了语言的一些本质，那就是语言是一些规则，通过这些规则的拼凑，我们得以表述我们的思想。如今，这种规则我们称之为文法。
+语言学家的一部分工作是从现有的自然语言中总结文法，让语言成为机械。但是这并不是我们的重点，我们所要探索的是一个更加年轻的领域，这个领域的研究从机械出发，却要去创造千变万化的语言，让机械成为语言。
+二、自然语言的文法：一个例子 但是要开始我们的旅程，还需要从自然语言开始。当我们听别人说话，或者阅读一段句子的时候，我们究竟在理解什么？比如说，现在有这样一句话，你知道我的叉子被放在哪里吗。让我们尝试理解这个句子。
+这部分默认各位已有了对词性的基本认识，至少知道名词、形容词、动词、副词等等的大致含义。否则的话，这部分内容实难描述。
+另外注意对于自然语言的相关表述可能并不完全符合人的认知的真实情况，这一部分只是为了方便理解。
+首先需要明确一点，抛开我们所有的经验来看，语言就是符号的序列。也就是说语言是在时间上存在先后顺序的许多符号。这意味着我们的理解过程必定是从前到后的。对于上述句子来说，我们先读到 你，之后才能读到 知，再之后 道、我 等等。
+另外，在这样不断读到一个个符号的时候，我们也并非单纯的按照字母或音节分别认识，而是首先明确哪些音节或符号共同组成相同含义，并将其作为一个单词来识别。在自然语言处理领域，这称为“分词”；而对于编译来说，这称为“词法分析”。
+我们理解这个句子的过程可能是这样的：
+读到 你，这指代一个事物，为名词 读到 知道，这指代一个行为，为动词 读到 我的，这描述了事物的属性，为形容词 读到 叉子，这指代了另一个事物，为名词 形容词 我的 和名词 叉子 组成 我的叉子，也是个名词 读到 被放，这是动词。 读到 在，这表达了一个关系，为介词 读到 哪里，这是名词 介词 在 和 名词 哪里 组成 在哪里，用于描述行为，为副词 动词 被放 和副词 在哪里 组成 被放在哪里，也是个动词。 名词 我的叉子 和动词 被放在哪里 组成 我的叉子被放在哪里，用于陈述一个事实，称为陈述句 名词 你、动词 知道 和句子 我的叉子被放在哪里 组成了 你知道我的叉子被放在哪里，是另一个陈述句。 读到 吗，这是一个疑问语气词，用于表达疑问。 句子 你知道我的叉子被放在哪里 和疑问语气词 吗 组成 你知道我的叉子被放在哪里吗，表达对被陈述的事情真实性的询问，是疑问句。 读完了所有的单词，最后得到的疑问句就是整个句子。 在上述过程中，我们不断将小的句子成分归纳为大的句子成分，在这样归纳的过程中，我们将句子中的每个单词相互关联起来，最终理解句子表达的含义。从中我们可以知道这是一个疑问，想要得到的回答是“你”与“我的叉子被放”两个事物间是否存在“知道”的关系等等。（这样说话好别扭。）...</p>
+  </div>
+  <footer class="entry-footer"><span title='2024-01-04 10:23:22 +0800 CST'>一月 4, 2024</span>&nbsp;·&nbsp;8 分钟&nbsp;·&nbsp;1629 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 从零开始的编译原理（1）：文法理论" href="https://wokron.github.io/posts/compiling-tech-from-zero-1/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/">
+      «&nbsp;上一页&nbsp;
+    </a>
+    <a class="next" href="https://wokron.github.io/categories/%E7%BC%96%E8%AF%91/page/3/">下一页&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

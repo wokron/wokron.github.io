@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>奇技淫巧：RNN 求解常微分方程组 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="NLP, ODE">
+<meta name="description" content="一、前言 前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。
+参考：
+貌离神合的RNN与ODE：花式RNN简介 基于RNN的微分方程拟合 二、常微分方程组和欧拉法 所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程 $$ \frac{dv}{dt} = a $$ 速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。
+类似的，路程 $s$ 也满足微分方程 $$ \frac{ds}{dt} = v $$ 那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组 $$ \begin{cases} \frac{dv}{dt} = a \\ \frac{ds}{dt} = v \end{cases} $$ 虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。
+还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令 $$ \begin{cases} v_{t_m} &= v_{t_{m-1}} &#43; a \Delta t \\ s_{t_m} &= s_{t_{m-1}} &#43; v_{t_m} \Delta t \end{cases} $$ 其中 $t_{m-1} &lt; t_{m}, \Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/rnn-solve-ode/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/rnn-solve-ode/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="奇技淫巧：RNN 求解常微分方程组" />
+<meta property="og:description" content="一、前言 前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。
+参考：
+貌离神合的RNN与ODE：花式RNN简介 基于RNN的微分方程拟合 二、常微分方程组和欧拉法 所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程 $$ \frac{dv}{dt} = a $$ 速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。
+类似的，路程 $s$ 也满足微分方程 $$ \frac{ds}{dt} = v $$ 那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组 $$ \begin{cases} \frac{dv}{dt} = a \\ \frac{ds}{dt} = v \end{cases} $$ 虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。
+还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令 $$ \begin{cases} v_{t_m} &= v_{t_{m-1}} &#43; a \Delta t \\ s_{t_m} &= s_{t_{m-1}} &#43; v_{t_m} \Delta t \end{cases} $$ 其中 $t_{m-1} &lt; t_{m}, \Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/rnn-solve-ode/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-05-11T22:25:34+08:00" />
+<meta property="article:modified_time" content="2023-05-11T22:25:34+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="奇技淫巧：RNN 求解常微分方程组"/>
+<meta name="twitter:description" content="一、前言 前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。
+参考：
+貌离神合的RNN与ODE：花式RNN简介 基于RNN的微分方程拟合 二、常微分方程组和欧拉法 所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程 $$ \frac{dv}{dt} = a $$ 速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。
+类似的，路程 $s$ 也满足微分方程 $$ \frac{ds}{dt} = v $$ 那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组 $$ \begin{cases} \frac{dv}{dt} = a \\ \frac{ds}{dt} = v \end{cases} $$ 虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。
+还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令 $$ \begin{cases} v_{t_m} &= v_{t_{m-1}} &#43; a \Delta t \\ s_{t_m} &= s_{t_{m-1}} &#43; v_{t_m} \Delta t \end{cases} $$ 其中 $t_{m-1} &lt; t_{m}, \Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "奇技淫巧：RNN 求解常微分方程组",
+      "item": "https://wokron.github.io/posts/rnn-solve-ode/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "奇技淫巧：RNN 求解常微分方程组",
+  "name": "奇技淫巧：RNN 求解常微分方程组",
+  "description": "一、前言 前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。 参考： 貌离神合的RNN与ODE：花式RNN简介 基于RNN的微分方程拟合 二、常微分方程组和欧拉法 所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程 $$ \\frac{dv}{dt} = a $$ 速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。 类似的，路程 $s$ 也满足微分方程 $$ \\frac{ds}{dt} = v $$ 那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组 $$ \\begin{cases} \\frac{dv}{dt} = a \\\\ \\frac{ds}{dt} = v \\end{cases} $$ 虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。 还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令 $$ \\begin{cases} v_{t_m} \u0026= v_{t_{m-1}} + a \\Delta t \\\\ s_{t_m} \u0026= s_{t_{m-1}} + v_{t_m} \\Delta t \\end{cases} $$ 其中 $t_{m-1} \u003c t_{m}, \\Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。",
+  "keywords": [
+    "NLP", "ODE"
+  ],
+  "articleBody": "一、前言 前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。\n参考：\n貌离神合的RNN与ODE：花式RNN简介 基于RNN的微分方程拟合 二、常微分方程组和欧拉法 所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程 $$ \\frac{dv}{dt} = a $$ 速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。\n类似的，路程 $s$ 也满足微分方程 $$ \\frac{ds}{dt} = v $$ 那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组 $$ \\begin{cases} \\frac{dv}{dt} = a \\\\ \\frac{ds}{dt} = v \\end{cases} $$ 虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。\n还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令 $$ \\begin{cases} v_{t_m} \u0026= v_{t_{m-1}} + a \\Delta t \\\\ s_{t_m} \u0026= s_{t_{m-1}} + v_{t_m} \\Delta t \\end{cases} $$ 其中 $t_{m-1} \u003c t_{m}, \\Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。\n更一般的，考虑函数 $y(t)$，有微分方程 $$ \\frac{dy(t)}{dt} = f(y(t), t) $$ 现在我们希望求得 $y(t)$ 的解析解，即一组点 $\\{(t_i, y(t_i))\\}$。\n我们对 $y(t)$ 在 $t_m$ 点做泰勒展开，得到 $$ y(t) = y(t_m) + f(y(t_m), t_m)(t - t_m) + O(t) $$ 忽略无穷小量 $O(t)$，则 $t = t_{m+1}$ 时的解近似为 $$ y(t_{m+1}) = y(t_m) + f(y(t_m), t_m) \\Delta t $$ 其中 $\\Delta t = t_{m+1} - t_{m}$，这样我们就得到了一般的求得常微分方程数值解的方法。\n三、使用 RNN 表示常微分方程组 RNN 就是深度学习里的循环神经网络，具体概念就不介绍了。RNN 可以表示成如下的数学形式 $$ y_t = g(y_{t-1}, x_t, t) $$ 我们可以对上一小节中得到的欧拉法方程做改造，令 $\\forall m, t_{m+1} = t_{m} + 1$，那么原式可以改写为 $$ y_t = y_{t-1} + f(y_{t-1}, t-1) $$ 因为等式右侧是关于 $y_{t-1}$ 和 $t$ 的表达式，所以可以令 $g(y_{t-1}, x_t, t) = y_{t-1} + f(y_{t-1}, t-1)$。\n这样我们的 RNN 就等同于欧拉法了，因此同样可以用于常微分方程组的求解。\n四、RNN 求解常微分方程组 我们考虑这样一个传染病模型\n人群分为易感者、暴露者、患病者、康复者、死者五类人群。考虑潜伏期、重复感染和死亡的情况。\n总人数为 $N$，$t$ 时刻各类人群数量为 $S, E, I, R, D$。设 $\\beta$ 为日接触率，$\\sigma$ 为日发病率，$\\gamma$ 为日治愈率，$\\alpha$ 为日死亡率，$\\omega$ 为日免疫消失率。则 $S, E, I, R, D$ 满足如下方程组\n$$ \\begin{cases} \\frac{dS}{dt} \u0026= \\omega R - \\beta \\frac{IS}{N} \\\\ \\frac{dE}{dt} \u0026= \\beta \\frac{IS}{N} - \\sigma E \\\\ \\frac{dI}{dt} \u0026= \\sigma E - \\gamma I - \\alpha I \\\\ \\frac{dR}{dt} \u0026= \\gamma I - \\omega R \\\\ \\frac{dD}{dt} \u0026= \\alpha I \\\\ N \u0026= S + E + I + R + D \\end{cases} $$ 似乎很是复杂……我们现在就要用 RNN 求解该常微分方程组。\n这是我在数学建模作业中用到的模型，也是为了求解该模型，才了解到 RNN 求解常微分方程的方法的。\n现在让我们用 pytorch 建立该微分方程的网络模型 SEIRSD。在初始化函数中需要设定 weights 用来表示参数 $\\beta, \\sigma, \\gamma, \\alpha, \\omega$。\nclass SEIRSD(nn.Module): def __init__(self, steps, h, params): super().__init__() self.steps = steps self.h = h # beta, sigma, gamma, alpha, omega self.weights = nn.Parameter( params, requires_grad=True, ) 随后编写前向传播函数，该函数传入初始值 $y_0$，输出 steps 步数内的所有 $y_i$ 值，这里 $y$ 是向量 $[S, E, I, R, D]$\ndef forward(self, init): state = init # (5) states = [] for step in range(self.steps): state = self.step_do(state) # (5) states.append(state) states = torch.stack(states, dim=0) # (step, 5) return states 其中用到了函数 step_do 用于计算每一步的状态。这里我们使用欧拉法，根据微分方程组计算 $g(y_{t-1}, x_t, t)$ 的结果并更新，求得下一个时间步的状态。\ndef step_do(self, state): x = state # (5) -\u003e S, E, I, R, D beta, sigma, gamma, alpha, omega = ( self.weights[0], self.weights[1], self.weights[2], self.weights[3], self.weights[4] ) S, E, I, R, D = x N = x.sum() dS = omega * R - beta * (I * S) / N dE = beta * (I * S) / N - sigma * E dI = sigma * E - gamma * I - alpha * I dR = gamma * I - omega * R dD = alpha * I dS = dS.reshape(1) dE = dE.reshape(1) dI = dI.reshape(1) dR = dR.reshape(1) dD = dD.reshape(1) dx = torch.cat((dS, dE, dI, dR, dD), dim=0) step_state = x + self.h * torch.clamp(dx, -1e5, 1e5) # (5) return step_state 之后我们定义函数 odeint 用于计算常微分方程组，\ndef odeint(y0, steps, params): model = SEIRSD(steps, 1, params).to(device) with torch.no_grad(): result = model(y0) return result.numpy() 设定初始状态 $$ \\begin{align*} y_0 =\u0026 [100000, 10, 0, 0, 0] \\\\ \\beta =\u0026 1 \\\\ \\sigma =\u0026 0.4 \\\\ \\gamma =\u0026 0.4 \\\\ \\alpha =\u0026 0.001 \\\\ \\omega =\u0026 0.01 \\end{align*} $$ 求解常微分方程组，并画出图像\nif __name__ == '__main__': y0 = torch.tensor([100000, 10, 0, 0, 0]) steps = 365 params = torch.tensor([1, 0.4, 0.4, 0.001, 0.01]) result = odeint(y0, steps, params) steps = np.arange(365) plt.plot(steps, result[:, 0], label=\"S\") plt.plot(steps, result[:, 1], label=\"E\") plt.plot(steps, result[:, 2], label=\"I\") plt.plot(steps, result[:, 3], label=\"R\") plt.plot(steps, result[:, 4], label=\"D\") plt.legend() plt.show() 另外我们使用 scipy 库同样求解该微分方程组\ndef ode(ini, t, beta, sigma, gamma, alpha, omega): N = ini.sum() S, E, I, R, D = ini dS = omega * R - beta * I * S / N dE = beta * I * S / N - sigma * E dI = sigma * E - gamma * I - alpha * I dR = gamma * I - omega * R dD = alpha * I return [dS, dE, dI, dR, dD] beta = 1 sigma = 0.4 gamma = 0.4 alpha = 0.001 omega = 0.01 t = np.linspace(0, 360, 360) result = odeint(ode, y0=[100000, 10, 0, 0, 0], t=t, args=(beta, sigma, gamma, alpha, omega)) # print(result[:, 0]) plt.plot(t, result[:, 0], label='S') plt.plot(t, result[:, 1], label='E') plt.plot(t, result[:, 2], label='I') plt.plot(t, result[:, 3], label='R') plt.plot(t, result[:, 4], label='D') plt.legend() plt.show() 得到的图像如下所示 可以看出两者差别不大。当然 scipy 中的 odeint 函数采用了精度更高的 lsoda 算法，得到的图像应该更加准确。\n五、RNN 拟合常微分方程组 RNN 在常微分方程组中的作用不至于求出数值解而已，如果只是根据提供的参数进行计算的话，不使用 pytorch 也可以实现欧拉法。然而不要忘了深度学习中的反向传播这样一个利器。对于 RNN，我们能做到的是根据提供的数据进行拟合，反向得到可能的参数。\n首先我们创建要进行拟合的数据集\nbeta = 1 sigma = 0.4 gamma = 0.4 alpha = 0.001 omega = 0.01 t = np.linspace(0, 360, 360) result = odeint(ode, y0=[100000, 10, 0, 0, 0], t=t, args=(beta, sigma, gamma, alpha, omega)) np.save(\"./data.npy\", result) 接着编写模型的训练代码。设定初始参数为 [5, 0.5, 0.5, 0.05, 0.05]，训练步数 2000 步。\ndevice = torch.device('cuda' if torch.cuda.is_available() else 'cpu') writer = SummaryWriter(\"/content/logs\") if __name__ == '__main__': y0 = torch.tensor([100000, 10, 0, 0, 0]).to(device) steps = 360 target = torch.tensor(np.load(\"data.npy\"), dtype=torch.float).to(device) criterion = torch.nn.MSELoss().to(device) model = SEIRSD(steps, 1, torch.tensor([5, 0.5, 0.5, 0.05, 0.05], dtype=torch.float).to(device)).to(device) optimizer = Adam(model.parameters(), lr=8e-3) bar = tqdm(range(2000)) for epoch in bar: outputs = model(y0) loss = criterion(outputs, target) optimizer.zero_grad() loss.backward() optimizer.step() bar.set_postfix(loss=loss.item(), weights=model.weights.data) writer.add_scalar(\"train loss\", loss.item(), epoch) if epoch % 100 == 0: torch.save(model.state_dict(), f\"/content/checkpoints/checkpoint{int(epoch / 1000)}.pth\") 进行训练，损失不断下降 得到训练后的参数为\n$\\beta$ $\\sigma$ $ \\gamma$ $ \\alpha$ $ \\omega$ 3.4432e+00 2.2585e-01 1.3888e+00 1.9691e-03 1.0094e-02 得到的参数似乎和我们最初设定的参数不同，但是如果我们画出图像，就会发现该参数对应的图像同样反映了真实数据的变化趋势，有效地拟合了数据 ",
+  "wordCount" : "873",
+  "inLanguage": "zh",
+  "datePublished": "2023-05-11T22:25:34+08:00",
+  "dateModified": "2023-05-11T22:25:34+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/rnn-solve-ode/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      奇技淫巧：RNN 求解常微分方程组
+    </h1>
+    <div class="post-meta"><span title='2023-05-11 22:25:34 +0800 CST'>五月 11, 2023</span>&nbsp;·&nbsp;5 分钟&nbsp;·&nbsp;873 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/rnn-solve-ode.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%89%8d%e8%a8%80" aria-label="一、前言">一、前言</a></li>
+                <li>
+                    <a href="#%e4%ba%8c%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84%e5%92%8c%e6%ac%a7%e6%8b%89%e6%b3%95" aria-label="二、常微分方程组和欧拉法">二、常微分方程组和欧拉法</a></li>
+                <li>
+                    <a href="#%e4%b8%89%e4%bd%bf%e7%94%a8-rnn-%e8%a1%a8%e7%a4%ba%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84" aria-label="三、使用 RNN 表示常微分方程组">三、使用 RNN 表示常微分方程组</a></li>
+                <li>
+                    <a href="#%e5%9b%9brnn-%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84" aria-label="四、RNN 求解常微分方程组">四、RNN 求解常微分方程组</a></li>
+                <li>
+                    <a href="#%e4%ba%94rnn-%e6%8b%9f%e5%90%88%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84" aria-label="五、RNN 拟合常微分方程组">五、RNN 拟合常微分方程组</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一前言">一、前言<a hidden class="anchor" aria-hidden="true" href="#一前言">#</a></h2>
+<p>前一段时间接触常微分方程组拟合的时候，发现了使用 RNN 求解常微分方程组的办法。感觉很有意思，于是记录一下。</p>
+<p><strong>参考：</strong></p>
+<ul>
+<li><a href="https://spaces.ac.cn/archives/5643">貌离神合的RNN与ODE：花式RNN简介</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/104149996">基于RNN的微分方程拟合</a></li>
+</ul>
+<!-- raw HTML omitted -->
+<h2 id="二常微分方程组和欧拉法">二、常微分方程组和欧拉法<a hidden class="anchor" aria-hidden="true" href="#二常微分方程组和欧拉法">#</a></h2>
+<p>所谓常微分方程，指的是只具有单一自变量的微分方程，如假设加速度 $a$ 一定，则速度 $v$ 满足微分方程
+</p>
+$$
+  \frac{dv}{dt} = a
+$$
+<p>速度 $v$ 只与时间 $t$ 有关，那么该微分方程即常微分方程。与之对应的是偏微分方程，不过不在本文的讨论范围内。</p>
+<p>类似的，路程 $s$ 也满足微分方程
+</p>
+$$
+  \frac{ds}{dt} = v
+$$
+<p>那么关于 $v, s$ 的两个常微分方程就可以组成常微分方程组
+</p>
+$$
+  \begin{cases}
+    \frac{dv}{dt} = a  \\
+    \frac{ds}{dt} = v
+  \end{cases}
+$$
+<p>虽然上面的方程组很容易求出解析解，但许多常微分方程组却难以找到解析解，甚至解析解根本不存在。这种情况就需要求出数值解。</p>
+<p>还举上面那个简单的物理问题为例，我们设 $t$ 时刻速度和路程为 $v_t, s_t$，那么可以令
+</p>
+$$
+  \begin{cases}
+    v_{t_m} &= v_{t_{m-1}} + a \Delta t \\
+    s_{t_m} &= s_{t_{m-1}} + v_{t_m} \Delta t
+  \end{cases}
+$$
+<p>其中 $t_{m-1} < t_{m}, \Delta t = t_{m} - t_{m-1}$，这样就近似得到了速度和路程随时间变化的数值解。此种方法也是游戏物理引擎中进行运动学模拟的基本方法。因为是欧拉发明的，所以也叫做欧拉法。</p>
+<p>更一般的，考虑函数 $y(t)$，有微分方程
+</p>
+$$
+  \frac{dy(t)}{dt} = f(y(t), t)
+$$
+<p>现在我们希望求得 $y(t)$ 的解析解，即一组点 $\{(t_i, y(t_i))\}$。</p>
+<p>我们对 $y(t)$ 在 $t_m$ 点做泰勒展开，得到
+</p>
+$$
+  y(t) = y(t_m) + f(y(t_m), t_m)(t - t_m) + O(t)
+$$
+<p>忽略无穷小量 $O(t)$，则 $t = t_{m+1}$ 时的解近似为
+</p>
+$$
+  y(t_{m+1}) = y(t_m) + f(y(t_m), t_m) \Delta t
+$$
+<p>其中 $\Delta t = t_{m+1} - t_{m}$，这样我们就得到了一般的求得常微分方程数值解的方法。</p>
+<h2 id="三使用-rnn-表示常微分方程组">三、使用 RNN 表示常微分方程组<a hidden class="anchor" aria-hidden="true" href="#三使用-rnn-表示常微分方程组">#</a></h2>
+<p>RNN 就是深度学习里的循环神经网络，具体概念就不介绍了。RNN 可以表示成如下的数学形式
+</p>
+$$
+  y_t = g(y_{t-1}, x_t, t)
+$$
+<p>我们可以对上一小节中得到的欧拉法方程做改造，令 $\forall m, t_{m+1} = t_{m} + 1$，那么原式可以改写为
+</p>
+$$
+  y_t = y_{t-1} + f(y_{t-1}, t-1)
+$$
+<p>因为等式右侧是关于 $y_{t-1}$ 和 $t$ 的表达式，所以可以令 $g(y_{t-1}, x_t, t) = y_{t-1} + f(y_{t-1}, t-1)$。</p>
+<p>这样我们的 RNN 就等同于欧拉法了，因此同样可以用于常微分方程组的求解。</p>
+<h2 id="四rnn-求解常微分方程组">四、RNN 求解常微分方程组<a hidden class="anchor" aria-hidden="true" href="#四rnn-求解常微分方程组">#</a></h2>
+<p>我们考虑这样一个传染病模型</p>
+<p>人群分为易感者、暴露者、患病者、康复者、死者五类人群。考虑<strong>潜伏期</strong>、<strong>重复感染</strong>和<strong>死亡</strong>的情况。</p>
+<p>总人数为 $N$，$t$ 时刻各类人群数量为 $S, E, I, R, D$。设 $\beta$ 为日接触率，$\sigma$ 为日发病率，$\gamma$ 为日治愈率，$\alpha$ 为日死亡率，$\omega$ 为日免疫消失率。则 $S, E, I, R, D$ 满足如下方程组</p>
+$$
+    \begin{cases}
+    \frac{dS}{dt} &= \omega R - \beta \frac{IS}{N} \\
+    \frac{dE}{dt} &= \beta \frac{IS}{N} - \sigma E \\
+    \frac{dI}{dt} &= \sigma E - \gamma I - \alpha I \\
+    \frac{dR}{dt} &= \gamma I - \omega R \\
+    \frac{dD}{dt} &= \alpha I \\
+    N &= S + E + I + R + D
+    \end{cases}
+$$
+<p>似乎很是复杂……我们现在就要用 RNN 求解该常微分方程组。</p>
+<blockquote>
+<p>这是我在数学建模作业中用到的模型，也是为了求解该模型，才了解到 RNN 求解常微分方程的方法的。</p>
+</blockquote>
+<p>现在让我们用 pytorch 建立该微分方程的网络模型 <code>SEIRSD</code>。在初始化函数中需要设定 <code>weights</code> 用来表示参数 $\beta, \sigma, \gamma, \alpha, \omega$。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">SEIRSD</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="n">steps</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">h</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># beta, sigma, gamma, alpha, omega</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">params</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span></code></pre></div><p>随后编写前向传播函数，该函数传入初始值 $y_0$，输出 <code>steps</code> 步数内的所有 $y_i$ 值，这里 $y$ 是向量 $[S, E, I, R, D]$</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">state</span> <span class="o">=</span> <span class="n">init</span>  <span class="c1"># (5)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">states</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_do</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>  <span class="c1"># (5)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">states</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (step, 5)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">states</span>
+</span></span></code></pre></div><p>其中用到了函数 <code>step_do</code> 用于计算每一步的状态。这里我们使用欧拉法，根据微分方程组计算 $g(y_{t-1}, x_t, t)$ 的结果并更新，求得下一个时间步的状态。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">step_do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">x</span> <span class="o">=</span> <span class="n">state</span>  <span class="c1"># (5) -&gt; S, E, I, R, D</span>
+</span></span><span class="line"><span class="cl">        <span class="n">beta</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">omega</span> <span class="o">=</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">S</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">x</span>
+</span></span><span class="line"><span class="cl">        <span class="n">N</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">dS</span> <span class="o">=</span> <span class="n">omega</span> <span class="o">*</span> <span class="n">R</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">I</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span> <span class="o">/</span> <span class="n">N</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dE</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">I</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span> <span class="o">/</span> <span class="n">N</span> <span class="o">-</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">E</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dI</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">E</span> <span class="o">-</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">I</span> <span class="o">-</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">I</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dR</span> <span class="o">=</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">I</span> <span class="o">-</span> <span class="n">omega</span> <span class="o">*</span> <span class="n">R</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dD</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">I</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">dS</span> <span class="o">=</span> <span class="n">dS</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dE</span> <span class="o">=</span> <span class="n">dE</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dI</span> <span class="o">=</span> <span class="n">dI</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dR</span> <span class="o">=</span> <span class="n">dR</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dD</span> <span class="o">=</span> <span class="n">dD</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">dx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">dS</span><span class="p">,</span> <span class="n">dE</span><span class="p">,</span> <span class="n">dI</span><span class="p">,</span> <span class="n">dR</span><span class="p">,</span> <span class="n">dD</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">step_state</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="o">-</span><span class="mf">1e5</span><span class="p">,</span> <span class="mf">1e5</span><span class="p">)</span>  <span class="c1"># (5)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">step_state</span>
+</span></span></code></pre></div><p>之后我们定义函数 <code>odeint</code> 用于计算常微分方程组，</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">odeint</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">model</span> <span class="o">=</span> <span class="n">SEIRSD</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">y0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+</span></span></code></pre></div><p>设定初始状态
+</p>
+$$
+\begin{align*}
+  y_0 =& [100000, 10, 0, 0, 0] \\
+  \beta =& 1 \\
+  \sigma =& 0.4 \\
+  \gamma =& 0.4 \\
+  \alpha =& 0.001 \\
+  \omega =& 0.01
+\end{align*}
+$$
+<p>求解常微分方程组，并画出图像</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">y0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">100000</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="n">steps</span> <span class="o">=</span> <span class="mi">365</span>
+</span></span><span class="line"><span class="cl">    <span class="n">params</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">365</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&#34;S&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&#34;E&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&#34;I&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&#34;R&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&#34;D&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></span></code></pre></div><p><img loading="lazy" src="rnnint.png" alt="rnnint"  />
+</p>
+<p>另外我们使用 scipy 库同样求解该微分方程组</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">ode</span><span class="p">(</span><span class="n">ini</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">N</span> <span class="o">=</span> <span class="n">ini</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">S</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">ini</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dS</span> <span class="o">=</span> <span class="n">omega</span> <span class="o">*</span> <span class="n">R</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">I</span> <span class="o">*</span> <span class="n">S</span> <span class="o">/</span> <span class="n">N</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dE</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">I</span> <span class="o">*</span> <span class="n">S</span> <span class="o">/</span> <span class="n">N</span> <span class="o">-</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">E</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dI</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">E</span> <span class="o">-</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">I</span> <span class="o">-</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">I</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dR</span> <span class="o">=</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">I</span> <span class="o">-</span> <span class="n">omega</span> <span class="o">*</span> <span class="n">R</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dD</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">I</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">[</span><span class="n">dS</span><span class="p">,</span> <span class="n">dE</span><span class="p">,</span> <span class="n">dI</span><span class="p">,</span> <span class="n">dR</span><span class="p">,</span> <span class="n">dD</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">beta</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="n">sigma</span> <span class="o">=</span> <span class="mf">0.4</span>
+</span></span><span class="line"><span class="cl"><span class="n">gamma</span> <span class="o">=</span> <span class="mf">0.4</span>
+</span></span><span class="line"><span class="cl"><span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.001</span>
+</span></span><span class="line"><span class="cl"><span class="n">omega</span> <span class="o">=</span> <span class="mf">0.01</span>
+</span></span><span class="line"><span class="cl"><span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">,</span> <span class="mi">360</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">result</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="p">[</span><span class="mi">100000</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">omega</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># print(result[:, 0])</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;S&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;R&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">result</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></span></code></pre></div><p>得到的图像如下所示
+<img loading="lazy" src="odeint.png" alt="odeint"  />
+</p>
+<p>可以看出两者差别不大。当然 scipy 中的 <code>odeint</code> 函数采用了精度更高的 lsoda 算法，得到的图像应该更加准确。</p>
+<h2 id="五rnn-拟合常微分方程组">五、RNN 拟合常微分方程组<a hidden class="anchor" aria-hidden="true" href="#五rnn-拟合常微分方程组">#</a></h2>
+<p>RNN 在常微分方程组中的作用不至于求出数值解而已，如果只是根据提供的参数进行计算的话，不使用 pytorch 也可以实现欧拉法。然而不要忘了深度学习中的反向传播这样一个利器。对于 RNN，我们能做到的是根据提供的数据进行拟合，反向得到可能的参数。</p>
+<p>首先我们创建要进行拟合的数据集</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="n">beta</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="n">sigma</span> <span class="o">=</span> <span class="mf">0.4</span>
+</span></span><span class="line"><span class="cl"><span class="n">gamma</span> <span class="o">=</span> <span class="mf">0.4</span>
+</span></span><span class="line"><span class="cl"><span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.001</span>
+</span></span><span class="line"><span class="cl"><span class="n">omega</span> <span class="o">=</span> <span class="mf">0.01</span>
+</span></span><span class="line"><span class="cl"><span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">,</span> <span class="mi">360</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">result</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="p">[</span><span class="mi">100000</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">omega</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&#34;./data.npy&#34;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</span></span></code></pre></div><p>接着编写模型的训练代码。设定初始参数为 <code>[5, 0.5, 0.5, 0.05, 0.05]</code>，训练步数 2000 步。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-py" data-lang="py"><span class="line"><span class="cl"><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">writer</span> <span class="o">=</span> <span class="n">SummaryWriter</span><span class="p">(</span><span class="s2">&#34;/content/logs&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">y0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">100000</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">steps</span> <span class="o">=</span> <span class="mi">360</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&#34;data.npy&#34;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">criterion</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">model</span> <span class="o">=</span> <span class="n">SEIRSD</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">8e-3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">2000</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="n">bar</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">y0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">bar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">weights</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">weights</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span><span class="s2">&#34;train loss&#34;</span><span class="p">,</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">epoch</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&#34;/content/checkpoints/checkpoint</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">epoch</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span><span class="si">}</span><span class="s2">.pth&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><p>进行训练，损失不断下降
+<img loading="lazy" src="loss.png" alt="loss"  />
+</p>
+<p>得到训练后的参数为</p>
+<table>
+<thead>
+<tr>
+<th>$\beta$</th>
+<th>$\sigma$</th>
+<th>$ \gamma$</th>
+<th>$ \alpha$</th>
+<th>$ \omega$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3.4432e+00</td>
+<td>2.2585e-01</td>
+<td>1.3888e+00</td>
+<td>1.9691e-03</td>
+<td>1.0094e-02</td>
+</tr>
+</tbody>
+</table>
+<p>得到的参数似乎和我们最初设定的参数不同，但是如果我们画出图像，就会发现该参数对应的图像同样反映了真实数据的变化趋势，有效地拟合了数据
+<img loading="lazy" src="predict.png" alt="predict"  />
+</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/nlp/">NLP</a></li>
+      <li><a href="https://wokron.github.io/tags/ode/">ODE</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/buaa-os-lab6/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>BUAA-OS 实验笔记之 Lab6</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/buaa-os-lab5/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>BUAA-OS 实验笔记之 Lab5</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 奇技淫巧：RNN 求解常微分方程组 on x"
+            href="https://x.com/intent/tweet/?text=%e5%a5%87%e6%8a%80%e6%b7%ab%e5%b7%a7%ef%bc%9aRNN%20%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f&amp;hashtags=NLP%2cODE">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 奇技淫巧：RNN 求解常微分方程组 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f&amp;title=%e5%a5%87%e6%8a%80%e6%b7%ab%e5%b7%a7%ef%bc%9aRNN%20%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84&amp;summary=%e5%a5%87%e6%8a%80%e6%b7%ab%e5%b7%a7%ef%bc%9aRNN%20%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 奇技淫巧：RNN 求解常微分方程组 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f&title=%e5%a5%87%e6%8a%80%e6%b7%ab%e5%b7%a7%ef%bc%9aRNN%20%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 奇技淫巧：RNN 求解常微分方程组 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 奇技淫巧：RNN 求解常微分方程组 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e5%a5%87%e6%8a%80%e6%b7%ab%e5%b7%a7%ef%bc%9aRNN%20%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84%20-%20https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 奇技淫巧：RNN 求解常微分方程组 on telegram"
+            href="https://telegram.me/share/url?text=%e5%a5%87%e6%8a%80%e6%b7%ab%e5%b7%a7%ef%bc%9aRNN%20%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 奇技淫巧：RNN 求解常微分方程组 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e5%a5%87%e6%8a%80%e6%b7%ab%e5%b7%a7%ef%bc%9aRNN%20%e6%b1%82%e8%a7%a3%e5%b8%b8%e5%be%ae%e5%88%86%e6%96%b9%e7%a8%8b%e7%bb%84&u=https%3a%2f%2fwokron.github.io%2fposts%2frnn-solve-ode%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

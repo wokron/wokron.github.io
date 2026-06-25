@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>系统编程之 Shell 编程 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Linux, Shell">
+<meta name="description" content="一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。
+二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。
+而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。
+三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如
+vi c1.sh vim c2.sh &gt; c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。
+创建的shell脚本，一定要在开头第一行加上如下语句：
+#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。
+执行脚本 shell脚本的执行方法有
+sh &lt;scriptname&gt; bash &lt;scriptname&gt; 或者使用chmod命令修改脚本为可执行，再直接使用 ./&lt;scriptname&gt; 运行。
+四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。
+其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。
+声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。
+var=hello_world 注意shell对空格敏感，声明时等号两边不能有空格
+另外可以在变量名前添加 readonly关键字设为只读
+readonly constVar shell中声明数组同样直接写出数组名称
+arr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。
+注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash &lt;scriptname&gt;
+赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。
+var1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。
+并且，为了满足命令处理的需要，shell设计出了引号变量值。
+shell中的引号包括单引号、双引号和倒引号。
+单引号中的字符均作为普通字符出现。（可以包括空格）
+var1=hello_world # var2=hello world # 不合法 var3=&#39;hello world&#39; 双引号中的字符大部分作为普通字符对待。除了$\’和双引号，这些变量依旧用于对字符串内容进行变量替换。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/system-programming-note-2/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/system-programming-note-2/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="系统编程之 Shell 编程" />
+<meta property="og:description" content="一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。
+二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。
+而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。
+三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如
+vi c1.sh vim c2.sh &gt; c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。
+创建的shell脚本，一定要在开头第一行加上如下语句：
+#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。
+执行脚本 shell脚本的执行方法有
+sh &lt;scriptname&gt; bash &lt;scriptname&gt; 或者使用chmod命令修改脚本为可执行，再直接使用 ./&lt;scriptname&gt; 运行。
+四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。
+其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。
+声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。
+var=hello_world 注意shell对空格敏感，声明时等号两边不能有空格
+另外可以在变量名前添加 readonly关键字设为只读
+readonly constVar shell中声明数组同样直接写出数组名称
+arr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。
+注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash &lt;scriptname&gt;
+赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。
+var1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。
+并且，为了满足命令处理的需要，shell设计出了引号变量值。
+shell中的引号包括单引号、双引号和倒引号。
+单引号中的字符均作为普通字符出现。（可以包括空格）
+var1=hello_world # var2=hello world # 不合法 var3=&#39;hello world&#39; 双引号中的字符大部分作为普通字符对待。除了$\’和双引号，这些变量依旧用于对字符串内容进行变量替换。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/system-programming-note-2/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-10-08T19:30:58+08:00" />
+<meta property="article:modified_time" content="2022-10-08T19:30:58+08:00" />
+
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="系统编程之 Shell 编程"/>
+<meta name="twitter:description" content="一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。
+二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。
+而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。
+三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如
+vi c1.sh vim c2.sh &gt; c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。
+创建的shell脚本，一定要在开头第一行加上如下语句：
+#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。
+执行脚本 shell脚本的执行方法有
+sh &lt;scriptname&gt; bash &lt;scriptname&gt; 或者使用chmod命令修改脚本为可执行，再直接使用 ./&lt;scriptname&gt; 运行。
+四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。
+其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。
+声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。
+var=hello_world 注意shell对空格敏感，声明时等号两边不能有空格
+另外可以在变量名前添加 readonly关键字设为只读
+readonly constVar shell中声明数组同样直接写出数组名称
+arr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。
+注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash &lt;scriptname&gt;
+赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。
+var1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。
+并且，为了满足命令处理的需要，shell设计出了引号变量值。
+shell中的引号包括单引号、双引号和倒引号。
+单引号中的字符均作为普通字符出现。（可以包括空格）
+var1=hello_world # var2=hello world # 不合法 var3=&#39;hello world&#39; 双引号中的字符大部分作为普通字符对待。除了$\’和双引号，这些变量依旧用于对字符串内容进行变量替换。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "系统编程之 Shell 编程",
+      "item": "https://wokron.github.io/posts/system-programming-note-2/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "系统编程之 Shell 编程",
+  "name": "系统编程之 Shell 编程",
+  "description": "一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。\n二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。\n而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。\n三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如\nvi c1.sh vim c2.sh \u0026gt; c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。\n创建的shell脚本，一定要在开头第一行加上如下语句：\n#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。\n执行脚本 shell脚本的执行方法有\nsh \u0026lt;scriptname\u0026gt; bash \u0026lt;scriptname\u0026gt; 或者使用chmod命令修改脚本为可执行，再直接使用 ./\u0026lt;scriptname\u0026gt; 运行。\n四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。\n其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。\n声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。\nvar=hello_world 注意shell对空格敏感，声明时等号两边不能有空格\n另外可以在变量名前添加 readonly关键字设为只读\nreadonly constVar shell中声明数组同样直接写出数组名称\narr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。\n注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash \u0026lt;scriptname\u0026gt;\n赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。\nvar1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。\n并且，为了满足命令处理的需要，shell设计出了引号变量值。\nshell中的引号包括单引号、双引号和倒引号。\n单引号中的字符均作为普通字符出现。（可以包括空格）\nvar1=hello_world # var2=hello world # 不合法 var3=\u0026#39;hello world\u0026#39; 双引号中的字符大部分作为普通字符对待。除了$\\’和双引号，这些变量依旧用于对字符串内容进行变量替换。",
+  "keywords": [
+    "Linux", "Shell"
+  ],
+  "articleBody": "一、前言 本文将简单探索shell脚本编程，介绍shell的基本语法。\n二、shell简介 shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。\n而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。\n三、前期准备 创建脚本 shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如\nvi c1.sh vim c2.sh \u003e c3.sh shell脚本一般以.sh为后缀，但没有后缀依旧可以执行。\n创建的shell脚本，一定要在开头第一行加上如下语句：\n#!/bin/bash 这一行将指明该脚本执行所需要的命令解释器。\n执行脚本 shell脚本的执行方法有\nsh bash 或者使用chmod命令修改脚本为可执行，再直接使用 ./ 运行。\n四、基本语法 变量 shell中的变量分为环境变量、用户定义变量、内部变量。\n其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。\n声明 只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。\nvar=hello_world 注意shell对空格敏感，声明时等号两边不能有空格\n另外可以在变量名前添加 readonly关键字设为只读\nreadonly constVar shell中声明数组同样直接写出数组名称\narr[0]=1 arr[1]=5 arr[10]=20 未赋值的部分默认为NULL。\n注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 bash 赋值 shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用${ } 进行取值。\nvar1=hi var2=${var1} 引号 shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。\n并且，为了满足命令处理的需要，shell设计出了引号变量值。\nshell中的引号包括单引号、双引号和倒引号。\n单引号中的字符均作为普通字符出现。（可以包括空格）\nvar1=hello_world # var2=hello world # 不合法 var3='hello world' 双引号中的字符大部分作为普通字符对待。除了$\\’和双引号，这些变量依旧用于对字符串内容进行变量替换。\nvar4=hello var5=friend var6=\"$var4, my $var5!\" # var6 means \"hello, my friend!\". 倒引号将引号内的内容当做命令，会先执行倒引号内的内容，再用执行后的输出替换倒引号的内容。\n倒引号可以和双引号组合使用，在双引号内使用倒引号 $(command) 与 `command` 功能相同\nvar7=\"now pwd: `pwd`\" # var6 means \"now pwd: /home/username\" (depend on the position where you execute the script) 基础操作 字符串操作 shell脚本自身具有一些字符串操作功能。\n字符串长度： ${#str} 字符串截取： ${str:position} ${str:start:length} 从字符串开头删除： ${str#substr} ${str##substr} 从字符串末尾删除： ${str%substr} ${str%%substr} 字符串替换： ${str/substr/replace} 字符串操作中出现匹配的部分都支持正则表达式。其中一个字符的为懒惰匹配，两个字符的为贪婪匹配。\n使用 expr 等命令，可以更好地进行处理。\n数字运算 shell默认变量为字符串，因此若要进行数字运算，需要特殊指明。\n具体地，有两种方法。一种是利用 $(()) 运算符。指明括号内的表达式进行的不是字符串操作而是数字运算。\nnum1=10 num2=20 num3=$(($num1+$num2)) # 30 另一种方法是调用 linux 的 expr 命令。\nnum4=3 num5=$num4 num6=`expr $num4 \\* $num5` # 9 注意乘号在shell脚本中有特殊含义，因此需要加入反斜杠转义。另外 expr 命令中变量和运算符各自作为参数，因此中间需要用空格隔开.\n流程控制 条件表达式 shell 利用 test condition 和 [condition] 进行条件测试。其中“condition” 表示一个条件表达式。包括字符比较、数值比较、文件操作、逻辑操作。\n这一部分原理较为简单，但shell中判断符号与其他语言有较大差别，内容较多，就不一一列举了。\n注意使用条件表达式时，表达式与方括号间要有空格隔开\n分支控制 分支控制语句如下\nif 分支：\nif [ condition ] then commands elif commands else commands fi 注意末尾的 fi\ncase分支（类似switch）：\ncase variable in var1) commands ;; var2 | var3) commands ;; *) commands esac 注意两个连续的分号，类似于 break。进入同样分支的变量值要用 “|” 隔开。末尾要添加 esac。\n循环控制 循环控制语句如下\nwhile 循环：\nwhile [ condition ] do commands done until 循环：\nuntil [ condition ] do commands done until 循环与条件取反的 while 循环等价\nfor 循环如下：\nfor arg in args do commands done 其中 args 是一组列出的变量名或字符串\n函数 函数的定义 function func_name{ commands } func_name(){ commands } 两种方式均可定义函数。\n参数取值 shell中的函数只有可变参数。另外，整个shell脚本本身也可以看做一个函数，它同样也只有可变参数。都具有相同的取参数的方式。\nshell中通过 $0 $1 $2 ... $9等参数来获取函数对应位置的参数。其中 $0 最开始为函数名/脚本名。当参数多于 10 个时，要获取十个之外的参数，可以使用 shift 命令，使得除了函数名/脚本名 $0 之外的所有参数整体左移一位。\n# sh .sh 123 456 echo $1 # 123 shift echo $1 # 456 echo 为输出命令\n函数返回值 函数通过 return [n] 语句来返回变量值 n。如果没有设置返回值，那么会默认返回函数最后一条命令执行后的返回值。\n在函数调用之后，可以使用 $? 获取函数的返回值。\n注意 return 的值必须只能是 0~255间的整数。要返回字符串或者更大的数字，可以直接使用 echo 输出内容，再通过倒引号获取输出的内容。\n函数实例 编写一个递归计算阶乘的函数\nfrac() { if [ $(($1)) -ge 1 ] then echo $((`frac $(($1-1))`*$1)) else echo 1 fi } echo `frac 5` # 120 ",
+  "wordCount" : "321",
+  "inLanguage": "zh",
+  "datePublished": "2022-10-08T19:30:58+08:00",
+  "dateModified": "2022-10-08T19:30:58+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/system-programming-note-2/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      系统编程之 Shell 编程
+    </h1>
+    <div class="post-meta"><span title='2022-10-08 19:30:58 +0800 CST'>十月 8, 2022</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;321 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/system-programming-note-2.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e4%b8%80%e5%89%8d%e8%a8%80" aria-label="一、前言">一、前言</a></li>
+                <li>
+                    <a href="#%e4%ba%8cshell%e7%ae%80%e4%bb%8b" aria-label="二、shell简介">二、shell简介</a></li>
+                <li>
+                    <a href="#%e4%b8%89%e5%89%8d%e6%9c%9f%e5%87%86%e5%a4%87" aria-label="三、前期准备">三、前期准备</a><ul>
+                        
+                <li>
+                    <a href="#%e5%88%9b%e5%bb%ba%e8%84%9a%e6%9c%ac" aria-label="创建脚本">创建脚本</a></li>
+                <li>
+                    <a href="#%e6%89%a7%e8%a1%8c%e8%84%9a%e6%9c%ac" aria-label="执行脚本">执行脚本</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%9b%9b%e5%9f%ba%e6%9c%ac%e8%af%ad%e6%b3%95" aria-label="四、基本语法">四、基本语法</a><ul>
+                        
+                <li>
+                    <a href="#%e5%8f%98%e9%87%8f" aria-label="变量">变量</a><ul>
+                        
+                <li>
+                    <a href="#%e5%a3%b0%e6%98%8e" aria-label="声明">声明</a></li>
+                <li>
+                    <a href="#%e8%b5%8b%e5%80%bc" aria-label="赋值">赋值</a></li>
+                <li>
+                    <a href="#%e5%bc%95%e5%8f%b7" aria-label="引号">引号</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%9f%ba%e7%a1%80%e6%93%8d%e4%bd%9c" aria-label="基础操作">基础操作</a><ul>
+                        
+                <li>
+                    <a href="#%e5%ad%97%e7%ac%a6%e4%b8%b2%e6%93%8d%e4%bd%9c" aria-label="字符串操作">字符串操作</a></li>
+                <li>
+                    <a href="#%e6%95%b0%e5%ad%97%e8%bf%90%e7%ae%97" aria-label="数字运算">数字运算</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e6%b5%81%e7%a8%8b%e6%8e%a7%e5%88%b6" aria-label="流程控制">流程控制</a><ul>
+                        
+                <li>
+                    <a href="#%e6%9d%a1%e4%bb%b6%e8%a1%a8%e8%be%be%e5%bc%8f" aria-label="条件表达式">条件表达式</a></li>
+                <li>
+                    <a href="#%e5%88%86%e6%94%af%e6%8e%a7%e5%88%b6" aria-label="分支控制">分支控制</a></li>
+                <li>
+                    <a href="#%e5%be%aa%e7%8e%af%e6%8e%a7%e5%88%b6" aria-label="循环控制">循环控制</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%87%bd%e6%95%b0" aria-label="函数">函数</a><ul>
+                        
+                <li>
+                    <a href="#%e5%87%bd%e6%95%b0%e7%9a%84%e5%ae%9a%e4%b9%89" aria-label="函数的定义">函数的定义</a></li>
+                <li>
+                    <a href="#%e5%8f%82%e6%95%b0%e5%8f%96%e5%80%bc" aria-label="参数取值">参数取值</a></li>
+                <li>
+                    <a href="#%e5%87%bd%e6%95%b0%e8%bf%94%e5%9b%9e%e5%80%bc" aria-label="函数返回值">函数返回值</a></li>
+                <li>
+                    <a href="#%e5%87%bd%e6%95%b0%e5%ae%9e%e4%be%8b" aria-label="函数实例">函数实例</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><h2 id="一前言">一、前言<a hidden class="anchor" aria-hidden="true" href="#一前言">#</a></h2>
+<p>本文将简单探索shell脚本编程，介绍shell的基本语法。</p>
+<h2 id="二shell简介">二、shell简介<a hidden class="anchor" aria-hidden="true" href="#二shell简介">#</a></h2>
+<p>shell是一个命令解释器，可以用来启动、停止、编写程序；是用户和UNIX/Linux操作系统内核程序间的一个接口。</p>
+<p>而shell编程则是将linux命令与shell的各种流程控制和条件判断来组合成命令与变量，形成可以进行自动处理的脚本程序。</p>
+<h2 id="三前期准备">三、前期准备<a hidden class="anchor" aria-hidden="true" href="#三前期准备">#</a></h2>
+<h3 id="创建脚本">创建脚本<a hidden class="anchor" aria-hidden="true" href="#创建脚本">#</a></h3>
+<p>shell脚本是一个文本文件，可用文本编辑器如vi、vim编辑保存。创建shell脚本只需按照创建文本文件的方式创建。如</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">vi c1.sh
+</span></span><span class="line"><span class="cl">vim c2.sh
+</span></span><span class="line"><span class="cl">&gt; c3.sh
+</span></span></code></pre></div><blockquote>
+<p>shell脚本一般以<code>.sh</code>为后缀，但没有后缀依旧可以执行。</p>
+</blockquote>
+<p>创建的shell脚本，一定要在开头第一行加上如下语句：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span></code></pre></div><p>这一行将指明该脚本执行所需要的命令解释器。</p>
+<h3 id="执行脚本">执行脚本<a hidden class="anchor" aria-hidden="true" href="#执行脚本">#</a></h3>
+<p>shell脚本的执行方法有</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sh &lt;scriptname&gt;
+</span></span><span class="line"><span class="cl">bash &lt;scriptname&gt;
+</span></span></code></pre></div><p>或者使用chmod命令修改脚本为可执行，再直接使用 <code>./&lt;scriptname&gt;</code> 运行。</p>
+<h2 id="四基本语法">四、基本语法<a hidden class="anchor" aria-hidden="true" href="#四基本语法">#</a></h2>
+<h3 id="变量">变量<a hidden class="anchor" aria-hidden="true" href="#变量">#</a></h3>
+<p>shell中的变量分为环境变量、用户定义变量、内部变量。</p>
+<p>其中环境变量是操作系统的一部分，但可以利用shell脚本进行修改；用户变量即在脚本中声明的变量；而内部变量则用来指示脚本运行中出现的一些变量。</p>
+<h4 id="声明">声明<a hidden class="anchor" aria-hidden="true" href="#声明">#</a></h4>
+<p>只有用户变量可以声明。和其他语言一样，使用等号进行声明。但要注意的是，shell脚本是弱类型的，因此变量名前不需要加上类型名。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">var</span><span class="o">=</span>hello_world
+</span></span></code></pre></div><blockquote>
+<p>注意shell对空格敏感，声明时等号两边不能有空格</p>
+</blockquote>
+<p>另外可以在变量名前添加 <code>readonly</code>关键字设为只读</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">readonly</span> constVar
+</span></span></code></pre></div><p>shell中声明数组同样直接写出数组名称</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">arr<span class="o">[</span>0<span class="o">]=</span><span class="m">1</span>
+</span></span><span class="line"><span class="cl">arr<span class="o">[</span>1<span class="o">]=</span><span class="m">5</span>
+</span></span><span class="line"><span class="cl">arr<span class="o">[</span>10<span class="o">]=</span><span class="m">20</span>
+</span></span></code></pre></div><p>未赋值的部分默认为NULL。</p>
+<blockquote>
+<p>注意 ubuntu 默认使用 dash 而非 bash shell。dash 并不支持数组。要使用数组可以用bash运行脚本，即运行命令 <code>bash &lt;scriptname&gt;</code></p>
+</blockquote>
+<h4 id="赋值">赋值<a hidden class="anchor" aria-hidden="true" href="#赋值">#</a></h4>
+<p>shell变量有类似左值右值的区别。在用其他变量进行赋值时，需要对变量使用<code>${ }</code> 进行取值。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">var1</span><span class="o">=</span>hi
+</span></span><span class="line"><span class="cl"><span class="nv">var2</span><span class="o">=</span><span class="si">${</span><span class="nv">var1</span><span class="si">}</span>
+</span></span></code></pre></div><h4 id="引号">引号<a hidden class="anchor" aria-hidden="true" href="#引号">#</a></h4>
+<p>shell脚本是为了自动化处理命令而设计的。因此语法中有很大一部分关注于字符串和命令的相关操作。在变量上体现在，shell中所有变量默认以字符串形式存在。</p>
+<p>并且，为了满足命令处理的需要，shell设计出了引号变量值。</p>
+<p>shell中的引号包括单引号、双引号和倒引号。</p>
+<p><strong>单引号</strong>中的字符均作为普通字符出现。（可以包括空格）</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">var1</span><span class="o">=</span>hello_world
+</span></span><span class="line"><span class="cl"><span class="c1"># var2=hello world # 不合法</span>
+</span></span><span class="line"><span class="cl"><span class="nv">var3</span><span class="o">=</span><span class="s1">&#39;hello world&#39;</span>
+</span></span></code></pre></div><p><strong>双引号</strong>中的字符大部分作为普通字符对待。除了<code>$\’</code>和双引号，这些变量依旧用于对字符串内容进行变量替换。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">var4</span><span class="o">=</span>hello
+</span></span><span class="line"><span class="cl"><span class="nv">var5</span><span class="o">=</span>friend
+</span></span><span class="line"><span class="cl"><span class="nv">var6</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$var4</span><span class="s2">, my </span><span class="nv">$var5</span><span class="s2">!&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># var6 means &#34;hello, my friend!&#34;.</span>
+</span></span></code></pre></div><p><strong>倒引号</strong>将引号内的内容当做命令，会先执行倒引号内的内容，再用执行后的输出替换倒引号的内容。</p>
+<blockquote>
+<p>倒引号可以和双引号组合使用，在双引号内使用倒引号
+$(command) 与 `command` 功能相同</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">var7</span><span class="o">=</span><span class="s2">&#34;now pwd: `pwd`&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># var6 means &#34;now pwd: /home/username&#34; (depend on the position where you execute the script)</span>
+</span></span></code></pre></div><h3 id="基础操作">基础操作<a hidden class="anchor" aria-hidden="true" href="#基础操作">#</a></h3>
+<h4 id="字符串操作">字符串操作<a hidden class="anchor" aria-hidden="true" href="#字符串操作">#</a></h4>
+<p>shell脚本自身具有一些字符串操作功能。</p>
+<ul>
+<li>字符串长度：
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="si">${#</span><span class="nv">str</span><span class="si">}</span>
+</span></span></code></pre></div></li>
+<li>字符串截取：
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="si">${</span><span class="nv">str</span><span class="p">:</span><span class="nv">position</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl"><span class="si">${</span><span class="nv">str</span><span class="p">:</span><span class="nv">start</span><span class="p">:</span><span class="nv">length</span><span class="si">}</span>
+</span></span></code></pre></div></li>
+<li>从字符串开头删除：
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="si">${</span><span class="nv">str</span><span class="p">#substr</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl"><span class="si">${</span><span class="nv">str</span><span class="p">##substr</span><span class="si">}</span>
+</span></span></code></pre></div></li>
+<li>从字符串末尾删除：
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="si">${</span><span class="nv">str</span><span class="p">%substr</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl"><span class="si">${</span><span class="nv">str</span><span class="p">%%substr</span><span class="si">}</span>
+</span></span></code></pre></div></li>
+<li>字符串替换：
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="si">${</span><span class="nv">str</span><span class="p">/substr/replace</span><span class="si">}</span>
+</span></span></code></pre></div></li>
+</ul>
+<blockquote>
+<p>字符串操作中出现匹配的部分都支持正则表达式。其中一个字符的为懒惰匹配，两个字符的为贪婪匹配。</p>
+</blockquote>
+<blockquote>
+<p>使用 <code>expr</code> 等命令，可以更好地进行处理。</p>
+</blockquote>
+<h4 id="数字运算">数字运算<a hidden class="anchor" aria-hidden="true" href="#数字运算">#</a></h4>
+<p>shell默认变量为字符串，因此若要进行数字运算，需要特殊指明。</p>
+<p>具体地，有两种方法。一种是利用 <code>$(())</code> 运算符。指明括号内的表达式进行的不是字符串操作而是数字运算。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">num1</span><span class="o">=</span><span class="m">10</span>
+</span></span><span class="line"><span class="cl"><span class="nv">num2</span><span class="o">=</span><span class="m">20</span>
+</span></span><span class="line"><span class="cl"><span class="nv">num3</span><span class="o">=</span><span class="k">$((</span><span class="nv">$num1</span><span class="o">+</span><span class="nv">$num2</span><span class="k">))</span> <span class="c1"># 30</span>
+</span></span></code></pre></div><p>另一种方法是调用 linux 的 expr 命令。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">num4</span><span class="o">=</span><span class="m">3</span>
+</span></span><span class="line"><span class="cl"><span class="nv">num5</span><span class="o">=</span><span class="nv">$num4</span>
+</span></span><span class="line"><span class="cl"><span class="nv">num6</span><span class="o">=</span><span class="sb">`</span>expr <span class="nv">$num4</span> <span class="se">\*</span> <span class="nv">$num5</span><span class="sb">`</span> <span class="c1"># 9</span>
+</span></span></code></pre></div><blockquote>
+<p>注意乘号在shell脚本中有特殊含义，因此需要加入反斜杠转义。另外 expr 命令中变量和运算符各自作为参数，因此中间需要用空格隔开.</p>
+</blockquote>
+<h3 id="流程控制">流程控制<a hidden class="anchor" aria-hidden="true" href="#流程控制">#</a></h3>
+<h4 id="条件表达式">条件表达式<a hidden class="anchor" aria-hidden="true" href="#条件表达式">#</a></h4>
+<p>shell 利用 <code>test condition</code> 和 <code>[condition]</code> 进行条件测试。其中“condition” 表示一个条件表达式。包括字符比较、数值比较、文件操作、逻辑操作。</p>
+<p>这一部分原理较为简单，但shell中判断符号与其他语言有较大差别，内容较多，就不一一列举了。</p>
+<blockquote>
+<p>注意使用条件表达式时，表达式与方括号间要有空格隔开</p>
+</blockquote>
+<h4 id="分支控制">分支控制<a hidden class="anchor" aria-hidden="true" href="#分支控制">#</a></h4>
+<p>分支控制语句如下</p>
+<p>if 分支：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> condition <span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="k">then</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="k">elif</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="k">else</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span></code></pre></div><blockquote>
+<p>注意末尾的 fi</p>
+</blockquote>
+<p>case分支（类似switch）：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="k">case</span> variable in
+</span></span><span class="line"><span class="cl">var1<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">var2 <span class="p">|</span> var3<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">*<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="k">esac</span>
+</span></span></code></pre></div><blockquote>
+<p>注意两个连续的分号，类似于 break。进入同样分支的变量值要用 “|” 隔开。末尾要添加 esac。</p>
+</blockquote>
+<h4 id="循环控制">循环控制<a hidden class="anchor" aria-hidden="true" href="#循环控制">#</a></h4>
+<p>循环控制语句如下</p>
+<p>while 循环：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="k">while</span> <span class="o">[</span> condition <span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="k">do</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="k">done</span>
+</span></span></code></pre></div><p>until 循环：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="k">until</span> <span class="o">[</span> condition <span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="k">do</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="k">done</span>
+</span></span></code></pre></div><blockquote>
+<p>until 循环与条件取反的 while 循环等价</p>
+</blockquote>
+<p>for 循环如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="k">for</span> arg in args
+</span></span><span class="line"><span class="cl"><span class="k">do</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="k">done</span>
+</span></span></code></pre></div><blockquote>
+<p>其中 args 是一组列出的变量名或字符串</p>
+</blockquote>
+<h3 id="函数">函数<a hidden class="anchor" aria-hidden="true" href="#函数">#</a></h3>
+<h4 id="函数的定义">函数的定义<a hidden class="anchor" aria-hidden="true" href="#函数的定义">#</a></h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="k">function</span> func_name<span class="o">{</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">func_name<span class="o">(){</span>
+</span></span><span class="line"><span class="cl">    commands
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p>两种方式均可定义函数。</p>
+<h4 id="参数取值">参数取值<a hidden class="anchor" aria-hidden="true" href="#参数取值">#</a></h4>
+<p>shell中的函数只有可变参数。另外，整个shell脚本本身也可以看做一个函数，它同样也只有可变参数。都具有相同的取参数的方式。</p>
+<p>shell中通过 <code>$0 $1 $2 ... $9</code>等参数来获取函数对应位置的参数。其中 <code>$0</code> 最开始为函数名/脚本名。当参数多于 10 个时，要获取十个之外的参数，可以使用 <code>shift</code> 命令，使得除了函数名/脚本名 $0 之外的所有参数整体左移一位。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="c1"># sh &lt;scriptname&gt;.sh 123 456</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="nv">$1</span> <span class="c1"># 123</span>
+</span></span><span class="line"><span class="cl"><span class="nb">shift</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="nv">$1</span> <span class="c1"># 456</span>
+</span></span></code></pre></div><blockquote>
+<p><code>echo</code> 为输出命令</p>
+</blockquote>
+<h4 id="函数返回值">函数返回值<a hidden class="anchor" aria-hidden="true" href="#函数返回值">#</a></h4>
+<p>函数通过 <code>return [n]</code> 语句来返回变量值 n。如果没有设置返回值，那么会默认返回函数最后一条命令执行后的返回值。</p>
+<p>在函数调用之后，可以使用 <code>$?</code> 获取函数的返回值。</p>
+<blockquote>
+<p>注意 return 的值必须只能是 0~255间的整数。要返回字符串或者更大的数字，可以直接使用 <code>echo</code> 输出内容，再通过倒引号获取输出的内容。</p>
+</blockquote>
+<h4 id="函数实例">函数实例<a hidden class="anchor" aria-hidden="true" href="#函数实例">#</a></h4>
+<p>编写一个递归计算阶乘的函数</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">frac<span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="o">[</span> <span class="k">$((</span><span class="nv">$1</span><span class="k">))</span> -ge <span class="m">1</span> <span class="o">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">then</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">echo</span> <span class="k">$((</span><span class="sb">`</span>frac <span class="k">$((</span><span class="nv">$1</span><span class="o">-</span><span class="m">1</span><span class="k">))</span><span class="sb">`</span><span class="o">*</span><span class="nv">$1</span><span class="k">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">echo</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">    <span class="k">fi</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="sb">`</span>frac 5<span class="sb">`</span> <span class="c1"># 120</span>
+</span></span></code></pre></div>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/linux/">Linux</a></li>
+      <li><a href="https://wokron.github.io/tags/shell/">Shell</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/machine-learning-note-7/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>机器学习之神经网络基础</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/machine-learning-note-6/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>机器学习笔记之正则化</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之 Shell 编程 on x"
+            href="https://x.com/intent/tweet/?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%20Shell%20%e7%bc%96%e7%a8%8b&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f&amp;hashtags=Linux%2cShell">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之 Shell 编程 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f&amp;title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%20Shell%20%e7%bc%96%e7%a8%8b&amp;summary=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%20Shell%20%e7%bc%96%e7%a8%8b&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之 Shell 编程 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f&title=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%20Shell%20%e7%bc%96%e7%a8%8b">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之 Shell 编程 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之 Shell 编程 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%20Shell%20%e7%bc%96%e7%a8%8b%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之 Shell 编程 on telegram"
+            href="https://telegram.me/share/url?text=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%20Shell%20%e7%bc%96%e7%a8%8b&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 系统编程之 Shell 编程 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e7%b3%bb%e7%bb%9f%e7%bc%96%e7%a8%8b%e4%b9%8b%20Shell%20%e7%bc%96%e7%a8%8b&u=https%3a%2f%2fwokron.github.io%2fposts%2fsystem-programming-note-2%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

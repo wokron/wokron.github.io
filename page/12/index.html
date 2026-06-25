@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head>
+	<meta name="generator" content="Hugo 0.123.7"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Wokron&#39;s Blog</title>
+<meta name="keywords" content="blog, code, tutorial">
+<meta name="description" content="Wokron 的个人博客。记录学习、分享经验">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://wokron.github.io/index.xml">
+<link rel="alternate" type="application/json" href="https://wokron.github.io/index.json">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Wokron&#39;s Blog" />
+<meta property="og:description" content="Wokron 的个人博客。记录学习、分享经验" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://wokron.github.io/" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Wokron&#39;s Blog"/>
+<meta name="twitter:description" content="Wokron 的个人博客。记录学习、分享经验"/>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Wokron's Blog",
+  "url": "https://wokron.github.io/",
+  "description": "Wokron 的个人博客。记录学习、分享经验",
+  "thumbnailUrl": "https://wokron.github.io/img/favicon/96x96.png",
+  "sameAs": [
+      "https://github.com/wokron", "mailto:yi1tang.yang@gmail.com", "mailto:3160114036@qq.com"
+  ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">用 Pytorch 搭建神经网络
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、前言 本文作为自己学习 pytorch 的记录。以搭建一个神经网络为例，介绍 pytorch 的基本使用。
+本文不会讲 conda、python、pycharm 等的配置和使用，也不会讲各神经层的原理及使用。只是按照自己之前学习的理解，总结神经网络训练的基本流程。
+本文所使用的例子是自己写的第一个神经网路，如下：
+import os.path import torch.utils.data from torch.utils.data import DataLoader from torch import nn from torch.utils.tensorboard import SummaryWriter from torchvision import transforms, datasets device = torch.device(&#34;cpu&#34;) if torch.cuda.is_available(): print(&#34;cuda available, use cuda to train module&#34;) device = torch.device(&#34;cuda&#34;) train_set = datasets.CIFAR10(&#34;./CIFAR10&#34;, transform=transforms.ToTensor(), download=True) test_set = datasets.CIFAR10(&#34;./CIFAR10&#34;, transform=transforms.ToTensor(), train=False, download=True) train_set_size = len(train_set) test_set_size = len(test_set) print(f&#34;train set size: {train_set_size}&#34;) print(f&#34;test set size: {test_set_size}&#34;) train_dataloader = DataLoader(train_set, 64, shuffle=True, drop_last=True) test_dataloader = DataLoader(test_set, 64) class MyModule(nn....</p>
+  </div>
+  <footer class="entry-footer"><span title='2023-01-02 15:52:55 +0800 CST'>一月 2, 2023</span>&nbsp;·&nbsp;5 分钟&nbsp;·&nbsp;884 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 用 Pytorch 搭建神经网络" href="https://wokron.github.io/posts/pytorch-basics/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">MySQL 的中文插入问题
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、问题描述 在执行一个sql脚本的时候出现了这样的问题：
+ERROR 1366 (HY000): Incorrect string value: &#39;\xA3\x8E\xE6\x9C\x89\xE5...&#39; for column &#39;name_zh&#39; at row 1 问题很明显是由于中文引起的。查看报错的语句：
+INSERT INTO `admin_menu` VALUES (&#39;1&#39;, &#39;/admin&#39;, &#39;AdminIndex&#39;, &#39;首页&#39;, &#39;el-icon-s-home&#39;, &#39;AdminIndex&#39;, &#39;0&#39;); 是 “首页” 无法被识别。考虑是字符集的问题。
+二、问题处理 情况一：数据库字符集与脚本所用字符集不一致 第一种可能是数据库所用的字符集和脚本字符集不一致，比如说建表时使用的字符集为 latin1，而脚本使用的却是 utf-8，这样就会导致错误。
+输入命令，查看建库语句
+SHOW CREATE DATABASE wj; &#43;--------------&#43;----------------------------------------------------------------------------------------------------------------------------------------&#43; | Database | Create Database | &#43;--------------&#43;----------------------------------------------------------------------------------------------------------------------------------------&#43; | white_jotter | CREATE DATABASE `wj` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION=&#39;N&#39; */ | &#43;--------------&#43;----------------------------------------------------------------------------------------------------------------------------------------&#43; 显示所用字符集为 utf8mb4，说明数据库字符集与脚本所用字符集一致。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-12-31 15:24:00 +0800 CST'>十二月 31, 2022</span>&nbsp;·&nbsp;2 分钟&nbsp;·&nbsp;252 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to MySQL 的中文插入问题" href="https://wokron.github.io/posts/using-chinese-in-mysql/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">系统编程之线程管理
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、Linux 多线程简述 进程和线程的关系老生常谈。线程是最小的调度单位，进程是最小的资源分配单位。同一进程中的多个线程是在共享的内存空间中并发的多道执行路径，它们共享一个进程的资源。
+对于Linux来说，Linux线程属于用户级线程，即线程的调度是在用户空间执行的。也就是说，Linux线程的实现是在内核之外的，多线程的概念对于内核来说并不是真实存在的，而只是通过线程库中的程序模拟的并发效果。
+Linux线程遵循POSIX线程接口，称为pthread。pthread在其他平台也有对应的实现，如在windows。
+二、线程操作 （1）库的使用 在开始多线程编程之前，需要说明一下 pthread.h 库。在编译使用pthread.h库的代码时，一般需要加-lpthread。pthread在glibc2.34之前是在glibc里面的，之后分出来变成一个单独的库，因此有的情况下，不加-lpthread也能编译成功。
+（2）基本操作 创建线程 int pthread_create(pthread_t _Nullable * _Nonnull __restrict, const pthread_attr_t * _Nullable __restrict, void * _Nullable (* _Nonnull)(void * _Nullable), void * _Nullable __restrict); 该函数中第一个参数为指向一个线程标识变量的指针。第二个参数用来手动设置线程的各项属性，一般可以用NULL选择默认属性。第三个参数为一个函数指针，表示新建线程时需要执行的函数。注意该函数的参数类型和返回值类型，使用时需要进行强制类型转换。第四个参数为传递给函数的参数，也就是线程执行的函数的参数。不传递参数时可设置为NULL。 如下举一个创建线程的例子。
+pthread_t tid; if (pthread_create(&amp;tid, NULL, do_something, NULL)) { // error handler } 线程退出 void pthread_exit(void *ral_ptr); 当某一线程执行该函数时，会导致该线程结束。结束时会将ral_ptr指针传递给pthread_join 函数的 rval_ptr
+线程取消 int pthread_cancel(pthread_t tid); 某一线程调用该函数，可以终止同一进程内的其他线程。 tid 即要终止的线程。
+线程挂起 int pthread_join(pthread_t thread, void **rval_ptr); 某一线程调用该函数会阻塞该线程，直到参数 thread 所指示的线程退出。第二个参数为一个指向 pthread_exit 所设置的 ral_ptr 指针的指针。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-12-22 22:07:37 +0800 CST'>十二月 22, 2022</span>&nbsp;·&nbsp;4 分钟&nbsp;·&nbsp;745 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 系统编程之线程管理" href="https://wokron.github.io/posts/system-programming-note-6/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">系统编程之进程间通信
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、进程间通信简述 进程是程序的一次运行的动态过程，为了完成一个任务，很多进程之间需要进行通信，从而相互合作以实现需要的功能。操作系统内核中提供了进程间通信的方法，主要有以下几种：
+管道： 管道是最基本的进程通信机制，可以想象成一个管道，两端分别连着 2 个进程，一个进程往里面写，一个进程从里面读。如果读或写管道的时候没有内容可供读或写，进程将被阻塞，直到有内容可供读写为止。 消息队列： 消息队列本质上在内核空间中开辟了一块内存空间，这块内存是其他进程可以访问到的，在其中使用链表的方式实现了一个队列，进程可以向该队列中发送数据块或读取数据块，从而达到进程间通信的目的。其中每个数据块包含两部分，首先是一个类型为 long 的 type，然后是具体的数据，数据块的 type 可以作为进程之间相互约定好的协议。例如一个进程发送 type 为123的消息，另一个进程接收 type 为123 的消息，后者便可确认这就是前者发送的信息，并信任该数据块中的数据。 信号量： 不同进程之间存在对资源的竞争，信号量就是用来标明可用资源的数量的数据结构，本质是为了实现多个进程之间的同步。需要注意，信号量（semaphore）与 “信号”（signal）没有关系。 共享内存： 共享内存的本质就是把两个或多个进程的虚拟地址映射到同一块物理内存。这样，一个进程通过对这块内存的读写就能被其他进程访问到，从而实现进程间通信的功能。 二、进程间通信操作 （1）准备操作 获取 key #include &lt;sys/types.h&gt; #include &lt;sys/ipc.h&gt; key_t ftok( const char * fname, int id ); 共享内存，消息队列，信号量等进程间通信方式都需要寻找一个中间介质来进行通信。不同的介质需要用不同的信息来进行区分，这就是进程间通信的 key。ftok() 函数就可以生成一个唯一的 key，该函数获取一个文件路径和一个字序号，生成一个用于区分的 key。
+注意，选择文件路径只是因为文件的编号是独有的。设置的文件路径与代码和程序并没有什么关系。
+命令管理进程间通信 若没有调用控制函数进行删除，则已分配的进程间通信不会自动释放。如果共享内存，消息队列，信号量在新进程执行时依旧有之前残留的信息，可能导致程序运行结果错误。可以通过 ipcs 和 ipcrm 命令进行管理。
+ipcs # 显示所有进程间通信信息 ipcrm -q MsgID # 删除消息队列 ipcrm -s SemID # 删除信号量 ipcrm -m ShrID # 删除共享内存 （2）消息队列 消息队列获取 #include &lt;sys/types....</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-11-16 09:54:43 +0800 CST'>十一月 16, 2022</span>&nbsp;·&nbsp;5 分钟&nbsp;·&nbsp;962 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 系统编程之进程间通信" href="https://wokron.github.io/posts/system-programming-note-5/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">对不重复随机数的数学分析
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、引子——双色球 我们知道，双色球每注投注号码由 6 个红色球号码和 1 个蓝色球号码组成。红色球号码从 1—33 中选择；蓝色球号码从 1—16 中选择。现在要求写出一个程序，模拟双色球的抽奖过程。
+我们很容易想到使用某种方法生成一定范围内的随机数。蓝色球很好解决，但对于红色球，需要的是随机生成 6 个号码不同的数，可一定范围内的随机数总可能出现相同的情况，这样要如何解决？
+也就是说：对于 $1, 2, ..., m$ 这 m 个数字，随机抽取其中 $n(n \lt m)$ 个数。要采取怎样的算法？
+二、两种思路 其一 : 暴力方法 的确，随机数总有可能出现相同的情况，但是我们知道，同一个数多次出现的概率很小，以至于我们可以将其忽略。因此，我们只需要不断地取范围内的随机数，遇到重复的舍弃，直到取得的数字数目达到 n 即可。
+void rand1(int m, int n, int rands[]) { char* hasSelect = calloc(m&#43;1, sizeof(char)); for (int i = 0; i &lt; n; ) { int r = randomInt(1, m); if (!hasSelect[r]) { rands[i&#43;&#43;] = r; hasSelect[r] = 1; } } free(hasSelect); } 但这种算法是有缺陷的。问题在于，概率达到多小才算作可以忽略？ 考虑 $m=100, n=99$ 的情况。首先，取得第一个球，一定只需要选取 1 次；但是，我们再计算一下取得最后一个球的选取次数。为了取得第 99 个数，选中的概率为 $p_{99} = \frac{1}{50}$。我们设离散型随机变量 $X$ 表示为了取得第 99 个数所需的选取次数，则 $P\{X = k\} = (1-p)^{k-1}p$ 服从几何分布。因此 $E(X) = \frac{1}{p} = 50$。从期望上看，需要整整 50 次才能取到第 99 个数！！这中间的差距说明了，在 m 一定时，随着 n 的增大，随机的效率明显降低。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-11-13 21:03:39 +0800 CST'>十一月 13, 2022</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;569 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 对不重复随机数的数学分析" href="https://wokron.github.io/posts/analysis-of-non-repeat-random-nums/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">系统编程之信号及信号处理
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、信号简介 （1）信号含义 软中断信号(signal，又简称为信号)用来通知进程发生了异步事件。在软件层次上是对中断机制的一种模拟；在原理上，一个进程收到一个信号与处理器收到一个中断请求可以说是一样的。信号是进程间通信机制中唯一的异步通信机制，一个进程不必通过任何操作来等待信号的到达，事实上，进程也不知道信号到底什么时候到达。进程之间可以互相通过系统调用 kill 发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。信号机制除了基本通知功能外，还可以传递附加信息。
+（2）信号分类 可以使用kill -l命令查看当前系统支持的所有信号：
+信号值小于 SIGRTMIN（&lt;=34）的信号都是不可靠信号。它的主要问题是信号可能丢失。 信号值位于 SIGRTMIN 和 SIGRTMAX 之间的信号都是可靠信号，这些信号支持排队，不会丢失。
+（3）信号的产生 信号可以由一下几种方式产生：
+键盘事件：ctrl&#43;c ctrl&#43;\ ctrl&#43;Z 等 非法内存：如果内存管理出错，系统就会发送一个信号进行处理 硬件检测到异常：如段错误，除 0，总线错误等 环境切换：比如说从用户态切换到其他态，状态的改变也会发送一个信号，这个信号会告知给系统 系统调用：如调用kill，raise，sigsend ，sigqueue函数等 （4）信号处理 进程可以通过三种方式响应信号：
+接受默认处理 忽略信号（某些信号不能被忽略，如 SIGKILL 和 SIGSTOP） 捕捉信号并执行信号处理程序 二、信号操作 （1）信号发送 系统调用中用于发送信号的函数有 kill() raise() abort() 等。
+kill() 函数 #include &lt;signal.h&gt; int kill(pid_t pid, int sig); //第一个参数pid代表接受信号的进程PID，第二个参数代表要发送的信号 参数 pid 会影响 kill()函数的作用，取值分为以下四种情况
+若 pid&gt;0，则发送信号 sig 给进程号为 pid 的进程。 若 pid=0，则发送信号 sig 给当前进程所属进程组的所有进程。 若 pid=-1，则发送信号 sig 给除 1 号进程和当前进程外的所有进程。 若 pid&lt;-1，则发送信号 sig 给属于进程组 pid 的所有进程。 segqueue() 函数 sigqueue()函数支持发送信号的同时传递参数，需要配合 sigaction() 函数一起使用。...</p>
+  </div>
+  <footer class="entry-footer"><span title='2022-11-13 15:30:11 +0800 CST'>十一月 13, 2022</span>&nbsp;·&nbsp;3 分钟&nbsp;·&nbsp;584 字&nbsp;·&nbsp;Wokron</footer>
+  <a class="entry-link" aria-label="post link to 系统编程之信号及信号处理" href="https://wokron.github.io/posts/system-programming-note-4/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="https://wokron.github.io/page/11/">
+      «&nbsp;上一页&nbsp;
+    </a>
+    <a class="next" href="https://wokron.github.io/page/13/">下一页&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

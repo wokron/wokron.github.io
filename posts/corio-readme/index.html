@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 | Wokron&#39;s Blog</title>
+<meta name="keywords" content="Coroutine, Asio, C&#43;&#43;">
+<meta name="description" content="最近研究了一下协程和网络编程，结合 C&#43;&#43;20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。
+项目仓库：wokron/corio。
+安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。
+以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。
+git submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。
+add_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。
+最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。
+#include &lt;corio.hpp&gt; 使用 协程类型 lazy corio::Lazy&lt;T&gt; 是 corio 库的核心。通过将函数的返回值设定为 Lazy&lt;T&gt;，我们将该函数定义为协程。在 Lazy&lt;T&gt; 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。">
+<meta name="author" content="Wokron">
+<link rel="canonical" href="https://wokron.github.io/posts/corio-readme/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c6f131ba84d9e5983cced9d5212cd98b83093e3b3db9159ca9f12d6952f93a6.css" integrity="sha256-HG8TG6hNnlmDzO2dUhLNmLgwk&#43;Oz25FZyp8S1pUvk6Y=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://wokron.github.io/img/favicon/96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://wokron.github.io/img/favicon/16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://wokron.github.io/img/favicon/32x32.png">
+<link rel="apple-touch-icon" href="https://wokron.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://wokron.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://wokron.github.io/posts/corio-readme/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          
+          
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          
+          throwOnError : false
+        });
+    });
+</script>
+
+
+<meta property="og:title" content="Corio - 基于 Asio 的 C&#43;&#43;20 协程框架" />
+<meta property="og:description" content="最近研究了一下协程和网络编程，结合 C&#43;&#43;20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。
+项目仓库：wokron/corio。
+安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。
+以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。
+git submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。
+add_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。
+最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。
+#include &lt;corio.hpp&gt; 使用 协程类型 lazy corio::Lazy&lt;T&gt; 是 corio 库的核心。通过将函数的返回值设定为 Lazy&lt;T&gt;，我们将该函数定义为协程。在 Lazy&lt;T&gt; 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wokron.github.io/posts/corio-readme/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-01-21T17:37:45+08:00" />
+<meta property="article:modified_time" content="2025-01-21T17:37:45+08:00" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Corio - 基于 Asio 的 C&#43;&#43;20 协程框架"/>
+<meta name="twitter:description" content="最近研究了一下协程和网络编程，结合 C&#43;&#43;20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。
+项目仓库：wokron/corio。
+安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。
+以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。
+git submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。
+add_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。
+最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。
+#include &lt;corio.hpp&gt; 使用 协程类型 lazy corio::Lazy&lt;T&gt; 是 corio 库的核心。通过将函数的返回值设定为 Lazy&lt;T&gt;，我们将该函数定义为协程。在 Lazy&lt;T&gt; 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://wokron.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Corio - 基于 Asio 的 C++20 协程框架",
+      "item": "https://wokron.github.io/posts/corio-readme/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Corio - 基于 Asio 的 C++20 协程框架",
+  "name": "Corio - 基于 Asio 的 C\u002b\u002b20 协程框架",
+  "description": "最近研究了一下协程和网络编程，结合 C++20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。\n项目仓库：wokron/corio。\n安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。\n以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。\ngit submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。\nadd_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。\n最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。\n#include \u0026lt;corio.hpp\u0026gt; 使用 协程类型 lazy corio::Lazy\u0026lt;T\u0026gt; 是 corio 库的核心。通过将函数的返回值设定为 Lazy\u0026lt;T\u0026gt;，我们将该函数定义为协程。在 Lazy\u0026lt;T\u0026gt; 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。",
+  "keywords": [
+    "Coroutine", "Asio", "C++"
+  ],
+  "articleBody": "最近研究了一下协程和网络编程，结合 C++20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。\n项目仓库：wokron/corio。\n安装 corio 是一个 Header-only Library。因此只需要将本仓库 include/ 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。\n以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。\ngit submodule add https://github.com/wokron/corio.git ./your/path/to/corio 随后在 CMakeLists.txt 中引入 corio。\nadd_library(corio INTERFACE) target_include_directories(corio INTERFACE ./your/path/to/corio/include) target_link_libraries(corio INTERFACE ${ASIO_LIBRARY}) 如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。\n最后，在你的代码中包含 corio.hpp 头文件以引入 corio。corio 的所有功能均位于 corio:: 命名空间下。\n#include 使用 协程类型 lazy corio::Lazy 是 corio 库的核心。通过将函数的返回值设定为 Lazy，我们将该函数定义为协程。在 Lazy 所定义的协程中，不再使用 return，而是使用 co_return 以便从协程中返回。其中 T 为该协程的返回值类型。\ncorio::Lazy\u003cvoid\u003e f1() { co_return; } auto f2 = []() -\u003e corio::Lazy\u003cint\u003e { co_return 1; } Lazy 是惰性的，这意味着当我们 “调用” Lazy 所修饰的函数时，该函数并不会立即执行，而是会返回 Lazy 类型的实例。当对实例使用 co_await 运算符的时候，该协程才会运行。此时类似于一般的函数调用。\ncorio::Lazy\u003cint\u003e f(); corio::Lazy\u003cvoid\u003e f2() { int r1 = co_await f(); auto lazy = f(); int r2 = co_await lazy; } 只有在协程中才能使用 co_await 调用另一协程。\ngenerator 迭代器 corio::Generator 是 corio 中的另一种协程类型。在 Generator 中可以使用 co_yield 关键字返回一 T 类型的值。返回之后该 Generator 并不销毁，而是可以从上一次返回处重新运行，直到遇到 co_return。\n和 Lazy 类似，Generator 也是惰性的。我们需要使用 co_await 来使 Generator 恢复执行。此时 co_await 的返回值类型为 bool，表示 “此次执行是否遇到了新的 co_yield”。如果遇到了新的 co_yield，则可以从 gen.current() 方法中获取最新的 co_yield 返回值。\n很容易想到 Generator 的遍历方法。\ncorio::Generator\u003cint\u003e func_gen(); auto gen = func_gen(); while (co_await gen) { int v = gen.current(); } corio 中额外提供了宏 CORIO_ASYNC_FOR() 和协程函数 async_for_each() 以简化迭代器的遍历。\nCORIO_ASYNC_FOR(int v, func_gen()) { // ... } co_await corio::async_for_each(func_gen(), [](int v) { // ... }); 协程入口 run 协程只能由协程调用，因此在所有协程之上需要协程入口以分离同步程序和异步程序。corio::run() 提供了开箱即用的协程入口。该函数接受并运行一 Lazy 类型的协程，阻塞直到该协程运行结束。如果协程有返回值，run() 函数也会将其返回。\nrun() 函数内部默认会根据当前 CPU 的核心数启动多个线程，由该多线程运行时处理异步程序的执行。但也可通过设置 multi_thread = false 以使用单线程运行时。\ncorio::Lazy\u003cint\u003e f(); int r = corio::run(f()); // int r = corio::run(f(), /*multi_thread=*/false); block_on 如果希望自行设定运行时，可以使用 corio::block_on() 函数。该函数的第一个参数应当传入一个可以转换为 asio::any_io_executor 的 executor。用户应当保证该 executor 上程序的执行是串行的。一些可能的 executor 包括：\n在单线程上运行的 asio::io_context 的 executor。 线程数为 1 的 asio::thread_pool 的 executor。 被包装在 asio::strand 中的在多线程上运行的 asio::io_context 的 executor。 被包装在 asio::strand 中的线程数大于 1 的 asio::thread_pool 的 executor。 被包装在 asio::any_io_executor 当中的上述 executor。 corio::Lazy\u003cvoid\u003e f(); asio::io_context io_context; std::jthread t([\u0026]() { io_context.run(); }); corio::block_on(io_context.get_executor(), f()); // ok asio::thread_pool pool(1); corio::block_on(pool.get_executor(), f()); // ok asio::thread_pool pool(4); corio::block_on(asio::make_strand(pool.get_executor()), f()); // ok asio::thread_pool pool(4); corio::block_on(pool.get_executor(), f()); // wrong 如果你的 executor 是一个被包装在 strand 中的多线程 executor。最好不要将其包装在 any_io_executor 之后再传入 block_on()，否则协程运行时将退化为单线程。\n并发 spawn corio::spawn() 和 corio::spawn_backgroud() 用于创建并运行一个任务。任务是一组顺序执行的协程。在协程中，任务的角色类似于同步程序中的线程。不同任务的执行是并发的（对于 corio 来说甚至是并行的！！）。\nspawn() 和 spawn_backgroud() 的不同之处在于 spawn() 返回了一个不可忽略的 corio::Task 实例。该实例可用于控制 spawn() 所创建的任务。具体内容见下一小节。\nspawn() 和 spawn_backgroud() 分别提供了非协程版本和协程版本。非协程版本的函数签名和 block_on() 相同。不同之处在于调用 spawn() 和 spawn_backgroud() 时不会阻塞代码直到任务结束。\ncorio::Lazy\u003cvoid\u003e f(); corio::Lazy\u003cvoid\u003e g(); asio::thread_pool pool(4); auto t = corio::spawn(asio::make_strand(pool.get_executor()), f()); corio::spawn_background(asio::make_strand(pool.get_executor()), g()); // Here f() and g() are running in parallel pool.join(); 当需要在协程内创建并发任务时，请使用协程版本的 spawn() 和 spawn_backgroud()。这一版本不再需要传入 executor，corio 会根据当前协程所处的运行时自动决定新任务的运行时。\ncorio::Lazy\u003cvoid\u003e f(); corio::Lazy\u003cvoid\u003e g(); corio::Lazy\u003cvoid\u003e h() { auto t = co_await corio::spawn(f()); co_await corio::spawn_background(g()); // Here f(), g() and h() are running in parallel // ... co_return; } corio::run(h()); task 如前所述，调用 spawn() 后会返回 corio::Task 实例。其中 T 与协程的返回值保持一致。可以使用 co_await 等待 Task 对象。此时当前协程会挂起，直到 Task 对象所对应的协程完成。\ncorio::Lazy\u003cint\u003e f(); corio::Lazy\u003cvoid\u003e g() { corio::Task\u003cint\u003e task = co_await corio::spawn(f()); int r = co_await task; // ... } 调用 task.abort() 函数可以取消对应任务。调用该函数后对应任务将在下一次挂起时取消。所有协程栈上的对象都将析构。\n调用 task.get_abort_handle() 函数将返回一 corio::AbortHandle 实例。调用该实例的 abort() 方法同样可以取消对应任务。如果此时 task 正在被等待，则会抛出 corio::CancellationError 异常。\ncorio::Lazy\u003cint\u003e f(); corio::Lazy\u003cvoid\u003e g(corio::AbortHandle\u003cT\u003e h) { h.abort(); co_return; } corio::Lazy\u003cvoid\u003e h() { corio::Task\u003cint\u003e task = co_await corio::spawn(f()); co_await corio::spawn_background(g(task.get_abort_handle())); try { int r = co_await task; } catch (const corio::CancellationError\u0026 e) { // ... } // ... } 需要注意，当 Task 实例析构的时候，其将默认取消对应任务。因此如果不希望任务被取消，应当使用 spawn_background()。或者可以通过 task.detach() 方法放弃对此任务的控制权。\n可等待对象 awaitable 可等待对象是满足 awaitable concept 的对象。在 corio 中，大部分可以应用 co_await 的对象都是可等待对象。\ntemplate \u003ctypename Awaiter, typename Promise = void\u003e concept awaiter = requires(Awaiter awaiter, std::coroutine_handle\u003cPromise\u003e handle) { { awaiter.await_ready() }; { awaiter.await_suspend(handle) }; { awaiter.await_resume() }; }; template \u003ctypename Awaitable, typename Promise = void\u003e concept awaitable = awaiter\u003cAwaitable, Promise\u003e || requires(Awaitable awaitable) { { awaitable.operator co_await() }; } || requires(Awaitable awaitable) { { operator co_await(awaitable) }; }; any_awaitable corio::AnyAwaitable 可以接受任意可等待对象，只需保证其应用 co_await 后的返回值为类型 Ts... 中之一。\n如果 Ts... 中类型多于一个，则 AnyAwaitable 应用 co_await 后的类型为 std::variant。若 Ts... 中包含 void，则其被替换为 std::monostate；若 Ts... 中同一类型出现了多次，则只保留第一次出现的。\ncorio::Lazy\u003cint\u003e f(); corio::Lazy\u003cvoid\u003e g(); corio::AnyAwaitable\u003cvoid, int\u003e aw1 = f(); auto r1 = std::get\u003cint\u003e(co_await aw1); corio::AnyAwaitable\u003cvoid, int\u003e aw2 = g(); auto r2 = std::get\u003cstd::monostate\u003e(co_await aw2); corio::AnyAwaitable\u003cvoid, int\u003e aw3 = co_await corio::spawn(f()); auto r3 = std::get\u003cint\u003e(co_await aw3); 协程控制 executor 可以通过对 corio::this_coro::executor 应用 co_await 来获取当前协程所运行的 executor。返回值类型为 asio::any_io_executor。返回的 executor 可以传递给 Asio 的 IO 对象。\ncorio::Lazy\u003cvoid\u003e f() { auto ex = co_await corio::this_coro::executor; asio::steady_timer timer(ex, 100us); // ... } 请不要将此处的 executor 传递给 spawn() 或 spawn_backgroud()。对于多线程运行时，这将导致新创建的任务和当前任务运行在同一个 strand 中。\nyield 可以通过对 corio::this_coro::yield 应用 co_await 来使当前任务主动放弃运行权。此外也可以通过调用 corio::this_coro::do_yield() 函数实现相同功能。yield 的效率较高，但是并不是可等待对象；后者则会返回一可等待对象。如无明确需要，请使用 yield。\ncorio::Lazy\u003cvoid\u003e f() { co_await corio::this_coro::yield; auto aw = corio::this_coro::do_yield(); co_await aw; } sleep 可以对 std::chrono::duration 或 std::chrono::time_point 对象应用 co_await 来等待特定时间。此外也可以通过调用 corio::this_coro::sleep_for() 和 corio::this_coro::sleep_until() 函数实现相同功能。其区别与 yield 类似。\nusing namespace std::chrono_literals; corio::Lazy\u003cvoid\u003e f() { co_await 1s; co_await (std::chrono::steady_clock::now() + 1s); auto aw1 = corio::this_coro::sleep_for(1s); co_await aw1; auto aw2 = corio::this_coro::sleep_until(std::chrono::steady_clock::now() + 1s); co_await aw2; } 另外也可以对 Asio 中的各类计时器（如 asio::steady_timer）应用 co_await 操作。\nusing namespace std::chrono_literals; corio::Lazy\u003cvoid\u003e f() { auto ex = co_await corio::this_coro::executor; asio::steady_timer timer(ex, 1s); co_await timer; // sleep 1s timer.expires_after(1s); co_await timer; // sleep 1s } roam 可以对 executor 对象应用 co_await 来使当前协程任务切换到新的运行时上。对 executor 的要求和 block_on() 函数相同。这有助于为协程任务的 IO-Bound 和 CPU-Bound 部分选择更加合适的 executor。此外也可以通过调用 corio::this_coro::roam_to() 函数实现相同功能。其区别与 yield 类似。\ncorio::Lazy\u003cvoid\u003e io_bound_func(); void cpu_bound_func(); asio::thread_pool p1(1); asio::thread_pool p2(16); auto f = [\u0026]() -\u003e corio::Lazy\u003cvoid\u003e { co_await io_bound_func(); co_await asio::make_strand(p2.get_executor()); cpu_bound_func(); // Run cpu-bound code in multi-thread runtime auto aw = corio::this_coro::roam_to(p1.get_executor()); co_await aw; co_await io_bound_func(); } corio::block_on(p1.get_executor(), f()); future 可以对 std::future 对象应用 co_await 异步等待 future 的完成。这并不会阻塞当前运行时的任何线程。co_await 的返回值等同于 future.get() 的返回值。\ncorio::Lazy\u003cvoid\u003e f() { std::future\u003cint\u003e fut = std::async(std::launch::async, []() -\u003e int { std::this_thread::sleep_for(10s); return 42; }); int r = co_await fut; // ... } co_await future 不会阻塞当前运行时内的线程，因为阻塞被转移到了 asio::system_executor 的线程之中。\n同步 gather corio::gather() 函数可以并行等待多个可等待对象。当所有可等待对象均完成后（包括成功返回或产生异常）返回。gather() 包含两个重载，分别接受可变数量的可等待对象或一包含可等待对象的可迭代对象。\ngather() 的返回值是 std::tuple",
+  "wordCount" : "1215",
+  "inLanguage": "zh",
+  "datePublished": "2025-01-21T17:37:45+08:00",
+  "dateModified": "2025-01-21T17:37:45+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Wokron"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://wokron.github.io/posts/corio-readme/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Wokron's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://wokron.github.io/img/favicon/96x96.png"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://wokron.github.io/" accesskey="h" title="Wokron&#39;s Blog (Alt + H)">Wokron&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://wokron.github.io/series/" title="系列文章">
+                    <span>系列文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/archives/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/search/" title="搜索 (Alt &#43; /)" accesskey=/>
+                    <span>搜索</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://wokron.github.io/links/" title="友链">
+                    <span>友链</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/wokron/wokron.github.io" title="Github Repo">
+                    <span>Github Repo</span>&nbsp;
+                    <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                    </svg>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://wokron.github.io/">主页</a>&nbsp;»&nbsp;<a href="https://wokron.github.io/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      Corio - 基于 Asio 的 C&#43;&#43;20 协程框架
+    </h1>
+    <div class="post-meta"><span title='2025-01-21 17:37:45 +0800 CST'>一月 21, 2025</span>&nbsp;·&nbsp;6 分钟&nbsp;·&nbsp;1215 字&nbsp;·&nbsp;Wokron&nbsp;|&nbsp;<a href="https://github.com/wokron/wokron.github.io/blob/master/content/posts/corio-readme.md" rel="noopener noreferrer" target="_blank">阅读原文</a>
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">目录</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%e5%ae%89%e8%a3%85" aria-label="安装">安装</a></li>
+                <li>
+                    <a href="#%e4%bd%bf%e7%94%a8" aria-label="使用">使用</a><ul>
+                        
+                <li>
+                    <a href="#%e5%8d%8f%e7%a8%8b%e7%b1%bb%e5%9e%8b" aria-label="协程类型">协程类型</a><ul>
+                        
+                <li>
+                    <a href="#lazy" aria-label="lazy">lazy</a></li>
+                <li>
+                    <a href="#generator" aria-label="generator">generator</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%8d%8f%e7%a8%8b%e5%85%a5%e5%8f%a3" aria-label="协程入口">协程入口</a><ul>
+                        
+                <li>
+                    <a href="#run" aria-label="run">run</a></li>
+                <li>
+                    <a href="#block_on" aria-label="block_on">block_on</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%b9%b6%e5%8f%91" aria-label="并发">并发</a><ul>
+                        
+                <li>
+                    <a href="#spawn" aria-label="spawn">spawn</a></li>
+                <li>
+                    <a href="#task" aria-label="task">task</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%8f%af%e7%ad%89%e5%be%85%e5%af%b9%e8%b1%a1" aria-label="可等待对象">可等待对象</a><ul>
+                        
+                <li>
+                    <a href="#awaitable" aria-label="awaitable">awaitable</a></li>
+                <li>
+                    <a href="#any_awaitable" aria-label="any_awaitable">any_awaitable</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%8d%8f%e7%a8%8b%e6%8e%a7%e5%88%b6" aria-label="协程控制">协程控制</a><ul>
+                        
+                <li>
+                    <a href="#executor" aria-label="executor">executor</a></li>
+                <li>
+                    <a href="#yield" aria-label="yield">yield</a></li>
+                <li>
+                    <a href="#sleep" aria-label="sleep">sleep</a></li>
+                <li>
+                    <a href="#roam" aria-label="roam">roam</a></li>
+                <li>
+                    <a href="#future" aria-label="future">future</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e5%90%8c%e6%ad%a5" aria-label="同步">同步</a><ul>
+                        
+                <li>
+                    <a href="#gather" aria-label="gather">gather</a></li>
+                <li>
+                    <a href="#try_gather" aria-label="try_gather">try_gather</a></li>
+                <li>
+                    <a href="#select" aria-label="select">select</a></li></ul>
+                </li>
+                <li>
+                    <a href="#%e4%b8%8e-asio-%e7%bb%93%e5%90%88" aria-label="与 Asio 结合">与 Asio 结合</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>最近研究了一下协程和网络编程，结合 C++20 的 Coroutine 和 Asio 编写了一个轻量级的协程框架 Corio。Corio 与 Asio 无缝集成，提供了多线程运行时支持和灵活的协程控制接口。</p>
+<p>项目仓库：<a href="https://github.com/wokron/corio">wokron/corio</a>。</p>
+<h2 id="安装">安装<a hidden class="anchor" aria-hidden="true" href="#安装">#</a></h2>
+<p>corio 是一个 Header-only Library。因此只需要将本仓库 <code>include/</code> 路径下的一系列头文件放在你的项目中指定位置，并将该位置添加到编译器的包含路径中即可。</p>
+<p>以 CMake 为例，为了保持项目的模块化，可以选择将本项目作为 git 子模块。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">git submodule add https://github.com/wokron/corio.git ./your/path/to/corio
+</span></span></code></pre></div><p>随后在 <code>CMakeLists.txt</code> 中引入 corio。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cmake" data-lang="cmake"><span class="line"><span class="cl"><span class="nb">add_library</span><span class="p">(</span><span class="s">corio</span> <span class="s">INTERFACE</span><span class="p">)</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="nb">target_include_directories</span><span class="p">(</span><span class="s">corio</span> <span class="s">INTERFACE</span> <span class="s">./your/path/to/corio/include</span><span class="p">)</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">corio</span> <span class="s">INTERFACE</span> <span class="o">${</span><span class="nv">ASIO_LIBRARY</span><span class="o">}</span><span class="p">)</span><span class="err">
+</span></span></span></code></pre></div><blockquote>
+<p>如前所述，Corio 依赖了 Asio。因此为了使用 Corio，还需安装 Asio（非 Boost 版本）。</p>
+</blockquote>
+<p>最后，在你的代码中包含 <code>corio.hpp</code> 头文件以引入 corio。corio 的所有功能均位于 <code>corio::</code> 命名空间下。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;corio.hpp&gt;</span><span class="cp">
+</span></span></span></code></pre></div><h2 id="使用">使用<a hidden class="anchor" aria-hidden="true" href="#使用">#</a></h2>
+<h3 id="协程类型">协程类型<a hidden class="anchor" aria-hidden="true" href="#协程类型">#</a></h3>
+<h4 id="lazy">lazy<a hidden class="anchor" aria-hidden="true" href="#lazy">#</a></h4>
+<p><code>corio::Lazy&lt;T&gt;</code> 是 corio 库的核心。通过将函数的返回值设定为 <code>Lazy&lt;T&gt;</code>，我们将该函数定义为协程。在 <code>Lazy&lt;T&gt;</code> 所定义的协程中，不再使用 <code>return</code>，而是使用 <code>co_return</code> 以便从协程中返回。其中 <code>T</code> 为该协程的返回值类型。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f1</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">f2</span> <span class="o">=</span> <span class="p">[]()</span> <span class="o">-&gt;</span> <span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>Lazy</code> 是<strong>惰性</strong>的，这意味着当我们 “调用” <code>Lazy</code> 所修饰的函数时，该函数并不会立即执行，而是会返回 <code>Lazy</code> 类型的实例。当对实例使用 <code>co_await</code> 运算符的时候，该协程才会运行。此时类似于一般的函数调用。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f2</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">r1</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">lazy</span> <span class="o">=</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">r2</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">lazy</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p>只有在协程中才能使用 <code>co_await</code> 调用另一协程。</p>
+</blockquote>
+<h4 id="generator">generator<a hidden class="anchor" aria-hidden="true" href="#generator">#</a></h4>
+<p>迭代器 <code>corio::Generator&lt;T&gt;</code> 是 corio 中的另一种协程类型。在 <code>Generator&lt;T&gt;</code> 中可以使用 <code>co_yield</code> 关键字返回一 <code>T</code> 类型的值。返回之后该 <code>Generator</code> 并不销毁，而是可以从上一次返回处重新运行，直到遇到 <code>co_return</code>。</p>
+<p>和 <code>Lazy</code> 类似，<code>Generator</code> 也是惰性的。我们需要使用 <code>co_await</code> 来使 <code>Generator</code> 恢复执行。此时 <code>co_await</code> 的返回值类型为 <code>bool</code>，表示 “此次执行是否遇到了新的 <code>co_yield</code>”。如果遇到了新的 <code>co_yield</code>，则可以从 <code>gen.current()</code> 方法中获取最新的 <code>co_yield</code> 返回值。</p>
+<p>很容易想到 <code>Generator</code> 的遍历方法。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Generator</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">func_gen</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">gen</span> <span class="o">=</span> <span class="n">func_gen</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="p">(</span><span class="k">co_await</span> <span class="n">gen</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">v</span> <span class="o">=</span> <span class="n">gen</span><span class="p">.</span><span class="n">current</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>corio 中额外提供了宏 <code>CORIO_ASYNC_FOR()</code> 和协程函数 <code>async_for_each()</code> 以简化迭代器的遍历。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">CORIO_ASYNC_FOR</span><span class="p">(</span><span class="kt">int</span> <span class="n">v</span><span class="p">,</span> <span class="n">func_gen</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">async_for_each</span><span class="p">(</span><span class="n">func_gen</span><span class="p">(),</span> <span class="p">[](</span><span class="kt">int</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">});</span>
+</span></span></code></pre></div><h3 id="协程入口">协程入口<a hidden class="anchor" aria-hidden="true" href="#协程入口">#</a></h3>
+<h4 id="run">run<a hidden class="anchor" aria-hidden="true" href="#run">#</a></h4>
+<p>协程只能由协程调用，因此在所有协程之上需要协程入口以分离同步程序和异步程序。<code>corio::run()</code> 提供了开箱即用的协程入口。该函数接受并运行一 <code>Lazy</code> 类型的协程，阻塞直到该协程运行结束。如果协程有返回值，<code>run()</code> 函数也会将其返回。</p>
+<p><code>run()</code> 函数内部默认会根据当前 CPU 的核心数启动<strong>多个线程</strong>，由该多线程运行时处理异步程序的执行。但也可通过设置 <code>multi_thread = false</code> 以使用单线程运行时。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="n">corio</span><span class="o">::</span><span class="n">run</span><span class="p">(</span><span class="n">f</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// int r = corio::run(f(), /*multi_thread=*/false);
+</span></span></span></code></pre></div><h4 id="block_on">block_on<a hidden class="anchor" aria-hidden="true" href="#block_on">#</a></h4>
+<p>如果希望自行设定运行时，可以使用 <code>corio::block_on()</code> 函数。该函数的第一个参数应当传入一个可以转换为 <code>asio::any_io_executor</code> 的 <code>executor</code>。用户应当保证该 <code>executor</code> 上程序的执行是<strong>串行</strong>的。一些可能的 <code>executor</code> 包括：</p>
+<ul>
+<li>在单线程上运行的 <code>asio::io_context</code> 的 <code>executor</code>。</li>
+<li>线程数为 1 的 <code>asio::thread_pool</code> 的 <code>executor</code>。</li>
+<li>被包装在 <code>asio::strand</code> 中的在多线程上运行的 <code>asio::io_context</code> 的 <code>executor</code>。</li>
+<li>被包装在 <code>asio::strand</code> 中的线程数大于 1 的 <code>asio::thread_pool</code> 的 <code>executor</code>。</li>
+<li>被包装在 <code>asio::any_io_executor</code> 当中的上述 <code>executor</code>。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">io_context</span> <span class="n">io_context</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">jthread</span> <span class="n">t</span><span class="p">([</span><span class="o">&amp;</span><span class="p">]()</span> <span class="p">{</span> <span class="n">io_context</span><span class="p">.</span><span class="n">run</span><span class="p">();</span> <span class="p">});</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">block_on</span><span class="p">(</span><span class="n">io_context</span><span class="p">.</span><span class="n">get_executor</span><span class="p">(),</span> <span class="n">f</span><span class="p">());</span> <span class="c1">// ok
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">thread_pool</span> <span class="n">pool</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">block_on</span><span class="p">(</span><span class="n">pool</span><span class="p">.</span><span class="n">get_executor</span><span class="p">(),</span> <span class="n">f</span><span class="p">());</span> <span class="c1">// ok
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">thread_pool</span> <span class="n">pool</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">block_on</span><span class="p">(</span><span class="n">asio</span><span class="o">::</span><span class="n">make_strand</span><span class="p">(</span><span class="n">pool</span><span class="p">.</span><span class="n">get_executor</span><span class="p">()),</span> <span class="n">f</span><span class="p">());</span> <span class="c1">// ok
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">thread_pool</span> <span class="n">pool</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">block_on</span><span class="p">(</span><span class="n">pool</span><span class="p">.</span><span class="n">get_executor</span><span class="p">(),</span> <span class="n">f</span><span class="p">());</span> <span class="c1">// wrong
+</span></span></span></code></pre></div><blockquote>
+<p>如果你的 <code>executor</code> 是一个被包装在 <code>strand</code> 中的多线程 <code>executor</code>。最好不要将其包装在 <code>any_io_executor</code> 之后再传入 <code>block_on()</code>，否则协程运行时将退化为单线程。</p>
+</blockquote>
+<h3 id="并发">并发<a hidden class="anchor" aria-hidden="true" href="#并发">#</a></h3>
+<h4 id="spawn">spawn<a hidden class="anchor" aria-hidden="true" href="#spawn">#</a></h4>
+<p><code>corio::spawn()</code> 和 <code>corio::spawn_backgroud()</code> 用于创建并运行一个<strong>任务</strong>。任务是一组顺序执行的协程。在协程中，任务的角色类似于同步程序中的线程。不同任务的执行是并发的（对于 corio 来说甚至是并行的！！）。</p>
+<p><code>spawn()</code> 和 <code>spawn_backgroud()</code> 的不同之处在于 <code>spawn()</code> 返回了一个不可忽略的 <code>corio::Task&lt;T&gt;</code> 实例。该实例可用于控制 <code>spawn()</code> 所创建的任务。具体内容见下一小节。</p>
+<p><code>spawn()</code> 和 <code>spawn_backgroud()</code> 分别提供了非协程版本和协程版本。非协程版本的函数签名和 <code>block_on()</code> 相同。不同之处在于调用 <code>spawn()</code> 和 <code>spawn_backgroud()</code> 时不会阻塞代码直到任务结束。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">thread_pool</span> <span class="n">pool</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">t</span> <span class="o">=</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">asio</span><span class="o">::</span><span class="n">make_strand</span><span class="p">(</span><span class="n">pool</span><span class="p">.</span><span class="n">get_executor</span><span class="p">()),</span> <span class="n">f</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">spawn_background</span><span class="p">(</span><span class="n">asio</span><span class="o">::</span><span class="n">make_strand</span><span class="p">(</span><span class="n">pool</span><span class="p">.</span><span class="n">get_executor</span><span class="p">()),</span> <span class="n">g</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Here f() and g() are running in parallel
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">pool</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+</span></span></code></pre></div><p>当需要在协程内创建并发任务时，请使用协程版本的 <code>spawn()</code> 和 <code>spawn_backgroud()</code>。这一版本不再需要传入 <code>executor</code>，corio 会根据当前协程所处的运行时自动决定新任务的运行时。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">h</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">t</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn_background</span><span class="p">(</span><span class="n">g</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Here f(), g() and h() are running in parallel
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">co_return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">run</span><span class="p">(</span><span class="n">h</span><span class="p">());</span>
+</span></span></code></pre></div><h4 id="task">task<a hidden class="anchor" aria-hidden="true" href="#task">#</a></h4>
+<p>如前所述，调用 <code>spawn()</code> 后会返回 <code>corio::Task&lt;T&gt;</code> 实例。其中 <code>T</code> 与协程的返回值保持一致。可以使用 <code>co_await</code> 等待 <code>Task</code> 对象。此时当前协程会挂起，直到 <code>Task</code> 对象所对应的协程完成。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">corio</span><span class="o">::</span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">task</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">task</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>调用 <code>task.abort()</code> 函数可以取消对应任务。调用该函数后对应任务将在下一次挂起时取消。所有协程栈上的对象都将析构。</p>
+<p>调用 <code>task.get_abort_handle()</code> 函数将返回一 <code>corio::AbortHandle&lt;T&gt;</code> 实例。调用该实例的 <code>abort()</code> 方法同样可以取消对应任务。如果此时 <code>task</code> 正在被等待，则会抛出 <code>corio::CancellationError</code> 异常。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">(</span><span class="n">corio</span><span class="o">::</span><span class="n">AbortHandle</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">h</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">h</span><span class="p">.</span><span class="n">abort</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">h</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">corio</span><span class="o">::</span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">task</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn_background</span><span class="p">(</span><span class="n">g</span><span class="p">(</span><span class="n">task</span><span class="p">.</span><span class="n">get_abort_handle</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">task</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="k">const</span> <span class="n">corio</span><span class="o">::</span><span class="n">CancellationError</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p>需要注意，当 <code>Task&lt;T&gt;</code> 实例析构的时候，其将<strong>默认取消对应任务</strong>。因此如果不希望任务被取消，应当使用 <code>spawn_background()</code>。或者可以通过 <code>task.detach()</code> 方法放弃对此任务的控制权。</p>
+</blockquote>
+<h3 id="可等待对象">可等待对象<a hidden class="anchor" aria-hidden="true" href="#可等待对象">#</a></h3>
+<h4 id="awaitable">awaitable<a hidden class="anchor" aria-hidden="true" href="#awaitable">#</a></h4>
+<p><strong>可等待对象</strong>是满足 <code>awaitable</code> concept 的对象。在 corio 中，大部分可以应用 <code>co_await</code> 的对象都是可等待对象。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Awaiter</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Promise</span> <span class="o">=</span> <span class="kt">void</span><span class="o">&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="k">concept</span> <span class="n">awaiter</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">    <span class="k">requires</span><span class="p">(</span><span class="n">Awaiter</span> <span class="n">awaiter</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">coroutine_handle</span><span class="o">&lt;</span><span class="n">Promise</span><span class="o">&gt;</span> <span class="n">handle</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span> <span class="n">awaiter</span><span class="p">.</span><span class="n">await_ready</span><span class="p">()</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span> <span class="n">awaiter</span><span class="p">.</span><span class="n">await_suspend</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span> <span class="n">awaiter</span><span class="p">.</span><span class="n">await_resume</span><span class="p">()</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Promise</span> <span class="o">=</span> <span class="kt">void</span><span class="o">&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="k">concept</span> <span class="n">awaitable</span> <span class="o">=</span> <span class="n">awaiter</span><span class="o">&lt;</span><span class="n">Awaitable</span><span class="p">,</span> <span class="n">Promise</span><span class="o">&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">||</span> <span class="k">requires</span><span class="p">(</span><span class="n">Awaitable</span> <span class="n">awaitable</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span> <span class="n">awaitable</span><span class="p">.</span><span class="k">operator</span> <span class="k">co_await</span><span class="p">()</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">||</span> <span class="k">requires</span><span class="p">(</span><span class="n">Awaitable</span> <span class="n">awaitable</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span> <span class="k">operator</span> <span class="nf">co_await</span><span class="p">(</span><span class="n">awaitable</span><span class="p">)</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="p">};</span>
+</span></span></code></pre></div><h4 id="any_awaitable">any_awaitable<a hidden class="anchor" aria-hidden="true" href="#any_awaitable">#</a></h4>
+<p><code>corio::AnyAwaitable&lt;Ts...&gt;</code> 可以接受任意可等待对象，只需保证其应用 <code>co_await</code> 后的返回值为类型 <code>Ts...</code> 中之一。</p>
+<p>如果 <code>Ts...</code> 中类型多于一个，则 <code>AnyAwaitable</code> 应用 <code>co_await</code> 后的类型为 <code>std::variant</code>。若 <code>Ts...</code> 中包含 <code>void</code>，则其被替换为 <code>std::monostate</code>；若 <code>Ts...</code> 中同一类型出现了多次，则只保留第一次出现的。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">AnyAwaitable</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">aw1</span> <span class="o">=</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">r1</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="k">co_await</span> <span class="n">aw1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">AnyAwaitable</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">aw2</span> <span class="o">=</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">r2</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">monostate</span><span class="o">&gt;</span><span class="p">(</span><span class="k">co_await</span> <span class="n">aw2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">AnyAwaitable</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">aw3</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">r3</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="k">co_await</span> <span class="n">aw3</span><span class="p">);</span>
+</span></span></code></pre></div><h3 id="协程控制">协程控制<a hidden class="anchor" aria-hidden="true" href="#协程控制">#</a></h3>
+<h4 id="executor">executor<a hidden class="anchor" aria-hidden="true" href="#executor">#</a></h4>
+<p>可以通过对 <code>corio::this_coro::executor</code> 应用 <code>co_await</code> 来获取当前协程所运行的 <code>executor</code>。返回值类型为 <code>asio::any_io_executor</code>。返回的 <code>executor</code> 可以传递给 Asio 的 IO 对象。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">ex</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">executor</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">asio</span><span class="o">::</span><span class="n">steady_timer</span> <span class="n">timer</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="mi">100u</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p>请不要将此处的 <code>executor</code> 传递给 <code>spawn()</code> 或 <code>spawn_backgroud()</code>。对于多线程运行时，这将导致新创建的任务和当前任务运行在同一个 <code>strand</code> 中。</p>
+</blockquote>
+<h4 id="yield">yield<a hidden class="anchor" aria-hidden="true" href="#yield">#</a></h4>
+<p>可以通过对 <code>corio::this_coro::yield</code> 应用 <code>co_await</code> 来使当前任务主动放弃运行权。此外也可以通过调用 <code>corio::this_coro::do_yield()</code> 函数实现相同功能。<code>yield</code> 的效率较高，但是并不是可等待对象；后者则会返回一可等待对象。如无明确需要，请使用 <code>yield</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">yield</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">aw</span> <span class="o">=</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">do_yield</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">aw</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h4 id="sleep">sleep<a hidden class="anchor" aria-hidden="true" href="#sleep">#</a></h4>
+<p>可以对 <code>std::chrono::duration</code> 或 <code>std::chrono::time_point</code> 对象应用 <code>co_await</code> 来等待特定时间。此外也可以通过调用 <code>corio::this_coro::sleep_for()</code> 和 <code>corio::this_coro::sleep_until()</code> 函数实现相同功能。其区别与 <code>yield</code> 类似。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="o">::</span><span class="n">chrono_literals</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="mi">1</span><span class="n">s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">steady_clock</span><span class="o">::</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">aw1</span> <span class="o">=</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="mi">1</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">aw1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">aw2</span> <span class="o">=</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">sleep_until</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">steady_clock</span><span class="o">::</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">aw2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>另外也可以对 Asio 中的各类计时器（如 <code>asio::steady_timer</code>）应用 <code>co_await</code> 操作。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="o">::</span><span class="n">chrono_literals</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">ex</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">executor</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">asio</span><span class="o">::</span><span class="n">steady_timer</span> <span class="n">timer</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="mi">1</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">timer</span><span class="p">;</span> <span class="c1">// sleep 1s
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">timer</span><span class="p">.</span><span class="n">expires_after</span><span class="p">(</span><span class="mi">1</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">timer</span><span class="p">;</span> <span class="c1">// sleep 1s
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><h4 id="roam">roam<a hidden class="anchor" aria-hidden="true" href="#roam">#</a></h4>
+<p>可以对 <code>executor</code> 对象应用 <code>co_await</code> 来使当前协程任务切换到新的运行时上。对 <code>executor</code> 的要求和 <code>block_on()</code> 函数相同。这有助于为协程任务的 IO-Bound 和 CPU-Bound 部分选择更加合适的 <code>executor</code>。此外也可以通过调用 <code>corio::this_coro::roam_to()</code> 函数实现相同功能。其区别与 <code>yield</code> 类似。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">io_bound_func</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">cpu_bound_func</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">thread_pool</span> <span class="n">p1</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">thread_pool</span> <span class="n">p2</span><span class="p">(</span><span class="mi">16</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">f</span> <span class="o">=</span> <span class="p">[</span><span class="o">&amp;</span><span class="p">]()</span> <span class="o">-&gt;</span> <span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="nf">io_bound_func</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">asio</span><span class="o">::</span><span class="n">make_strand</span><span class="p">(</span><span class="n">p2</span><span class="p">.</span><span class="n">get_executor</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">cpu_bound_func</span><span class="p">();</span> <span class="c1">// Run cpu-bound code in multi-thread runtime
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">aw</span> <span class="o">=</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">roam_to</span><span class="p">(</span><span class="n">p1</span><span class="p">.</span><span class="n">get_executor</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">aw</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="nf">io_bound_func</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">block_on</span><span class="p">(</span><span class="n">p1</span><span class="p">.</span><span class="n">get_executor</span><span class="p">(),</span> <span class="n">f</span><span class="p">());</span>
+</span></span></code></pre></div><h4 id="future">future<a hidden class="anchor" aria-hidden="true" href="#future">#</a></h4>
+<p>可以对 <code>std::future</code> 对象应用 <code>co_await</code> 异步等待 <code>future</code> 的完成。这并不会阻塞当前运行时的任何线程。<code>co_await</code> 的返回值等同于 <code>future.get()</code> 的返回值。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">future</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">fut</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">async</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">launch</span><span class="o">::</span><span class="n">async</span><span class="p">,</span> <span class="p">[]()</span> <span class="o">-&gt;</span> <span class="kt">int</span> <span class="p">{</span> 
+</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="mi">10</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">42</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">});</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">fut</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><blockquote>
+<p><code>co_await future</code> 不会阻塞当前运行时内的线程，因为阻塞被转移到了 <code>asio::system_executor</code> 的线程之中。</p>
+</blockquote>
+<h3 id="同步">同步<a hidden class="anchor" aria-hidden="true" href="#同步">#</a></h3>
+<h4 id="gather">gather<a hidden class="anchor" aria-hidden="true" href="#gather">#</a></h4>
+<p><code>corio::gather()</code> 函数可以并行等待多个可等待对象。当所有可等待对象均完成后（包括成功返回或产生异常）返回。<code>gather()</code> 包含两个重载，分别接受可变数量的可等待对象或一包含可等待对象的<strong>可迭代</strong>对象。</p>
+<p><code>gather()</code> 的返回值是 <code>std::tuple&lt;corio::Result&lt;Ts&gt;...&gt;</code> 或 <code>std::vector&lt;corio::Result&lt;T&gt;&gt;</code>。其中 <code>Ts...</code> 和 <code>T</code> 为所传入的可等待对象应用 <code>co_await</code> 后的返回值。</p>
+<blockquote>
+<p><code>corio::Result&lt;T&gt;</code> 是一个容器，类似于 Rust 的 <code>Result</code>，其中可能包含 <code>T</code> 类型的取值或一个异常。可以通过 <code>result.exception() != nullptr</code> 来判断 <code>Result</code> 中所包含的是否为异常。如果不存在异常，则 <code>result.result()</code> 将返回 <code>Result</code> 中所存储的值的引用（若 <code>T = void</code> 则无返回值）；如果存在异常，则 <code>result.result()</code> 会将该异常抛出。</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">h</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// std::tuple&lt;Result&lt;int&gt;, Result&lt;void&gt;&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">auto</span> <span class="p">[</span><span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">]</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">gather</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">()),</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">g</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">corio</span><span class="o">::</span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;&gt;</span> <span class="n">tasks</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">tasks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl"><span class="n">tasks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">h</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// std::vector&lt;Result&lt;int&gt;&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">auto</span> <span class="n">r3</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">gather</span><span class="p">(</span><span class="n">tasks</span><span class="p">);</span>
+</span></span></code></pre></div><p>另外对于可变参数版本的 <code>gather()</code>，corio 提供了对 <code>&amp;</code> 的运算符重载。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">using</span> <span class="n">corio</span><span class="o">::</span><span class="n">awaitable_operators</span><span class="o">::</span><span class="k">operator</span><span class="o">&amp;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="p">[</span><span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">]</span> <span class="o">=</span> <span class="k">co_await</span> <span class="p">(</span><span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">())</span> <span class="o">&amp;</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">g</span><span class="p">()));</span>
+</span></span></code></pre></div><h4 id="try_gather">try_gather<a hidden class="anchor" aria-hidden="true" href="#try_gather">#</a></h4>
+<p>和 <code>gather()</code> 类似，<code>corio::try_gather()</code> 同样可以并行等待多个可等待对象，也包含了两个重载。不同之处在于，当某一个可等待对象第一个抛出异常时，<code>try_gather()</code> 将提前返回。若提前返回，剩下还未完成的 <code>co_await</code> 操作将会被取消。<code>try_gather()</code> 的返回值类型是 <code>std::tuple&lt;Ts...&gt;</code> 或 <code>std::vector&lt;T&gt;</code>。若 <code>T = void</code>，则 <code>T</code> 被替换为 <code>std::monostate</code>。</p>
+<blockquote>
+<p>若采用移动语义将可等待对象移动到 <code>try_gather</code> 当中，则不仅 <code>co_await</code> 操作将会被取消，可等待对象本身也会被析构。对于 <code>Task&lt;T&gt;</code>，需要注意传入 <code>task</code> 和 <code>std::move(task)</code> 的区别。</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">h</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// int, std::monostate
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">auto</span> <span class="p">[</span><span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">]</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">try_gather</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">()),</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">g</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">corio</span><span class="o">::</span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;&gt;</span> <span class="n">tasks</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">tasks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl"><span class="n">tasks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">h</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// std::vector&lt;int&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">auto</span> <span class="n">r3</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">gather</span><span class="p">(</span><span class="n">tasks</span><span class="p">);</span>
+</span></span></code></pre></div><p>对于可变参数版本的 <code>try_gather()</code>，corio 提供了对 <code>&amp;&amp;</code> 的运算符重载。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">using</span> <span class="n">corio</span><span class="o">::</span><span class="n">awaitable_operators</span><span class="o">::</span><span class="k">operator</span><span class="o">&amp;&amp;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="p">[</span><span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">]</span> <span class="o">=</span> <span class="k">co_await</span> <span class="p">(</span><span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">())</span> <span class="o">&amp;&amp;</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">g</span><span class="p">()));</span>
+</span></span></code></pre></div><h4 id="select">select<a hidden class="anchor" aria-hidden="true" href="#select">#</a></h4>
+<p><code>corio::select()</code> 并行等待多个可等待对象，当可等待对象第一个完成时（包括成功返回或产生异常）返回，并取消剩下还未完成的 <code>co_await</code> 操作。<code>select()</code> 同样包含了两个重载。<code>select()</code> 的返回值类型为 <code>std::variant&lt;Ts...&gt;</code> 或 <code>std::pair&lt;std::size_t, T&gt;</code>。当 <code>T = void</code> 时，<code>T</code> 被替换为 <code>std::monostate</code>。</p>
+<blockquote>
+<p>返回值类型为 <code>std::variant&lt;Ts...&gt;</code> 时，可以通过 <code>var.index()</code> 判断首先完成的可等待对象为第几个传入的参数。
+返回值类型为 <code>std::pair&lt;std::size_t, T&gt;</code> 时，<code>std::size_t</code> 指示了可迭代容器中的第几个元素首先完成。</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">h</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// std::variant&lt;std::monostate, int, std::monostate&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">auto</span> <span class="n">r</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">select</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="mi">1</span><span class="n">ms</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">()),</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">g</span><span class="p">()),</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">index</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// timeout
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// not timeout
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">corio</span><span class="o">::</span><span class="n">Task</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;&gt;</span> <span class="n">tasks</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">tasks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">g</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl"><span class="n">tasks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">h</span><span class="p">()));</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// std::pair&lt;std::size_t, std::monostate&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">auto</span> <span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="n">_</span><span class="p">]</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">tasks</span><span class="p">);</span>
+</span></span></code></pre></div><blockquote>
+<p>和 <code>try_gather()</code> 类似，也请注意 <code>task</code> 和 <code>std::move(task)</code> 的区别。</p>
+</blockquote>
+<p>对于可变参数版本的 <code>select()</code>，corio 提供了对 <code>||</code> 的运算符重载。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">using</span> <span class="n">corio</span><span class="o">::</span><span class="n">awaitable_operators</span><span class="o">::</span><span class="k">operator</span><span class="o">||</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">auto</span> <span class="n">r</span> <span class="o">=</span> <span class="k">co_await</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="mi">1</span><span class="n">ms</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">||</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">f</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">    <span class="o">||</span> <span class="n">corio</span><span class="o">::</span><span class="n">spawn</span><span class="p">(</span><span class="n">g</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><h3 id="与-asio-结合">与 Asio 结合<a hidden class="anchor" aria-hidden="true" href="#与-asio-结合">#</a></h3>
+<p>Asio 提供了丰富的异步 IO 接口。corio 提供了 Completion Token <code>corio::use_corio</code> 实现了与 Asio 的适配。</p>
+<p>以 <code>asio::steady_timer</code> 为例。经典的基于回调的异步代码如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">asio</span><span class="o">::</span><span class="n">steady_timer</span> <span class="n">timer</span><span class="p">(</span><span class="n">io_context</span><span class="p">,</span> <span class="mi">500u</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">timer</span><span class="p">.</span><span class="n">async_wait</span><span class="p">([]()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do something...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">});</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">io_context</span><span class="p">.</span><span class="n">run</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// ...
+</span></span></span></code></pre></div><p>而在 corio 中，我们使用 <code>use_corio</code> 使 <code>async_wait</code> 返回一个可等待对象 <code>corio::Operation&lt;...&gt;</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">ex</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">executor</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">asio</span><span class="o">::</span><span class="n">steady_timer</span> <span class="n">timer</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="mi">500u</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">op</span> <span class="o">=</span> <span class="n">timer</span><span class="p">.</span><span class="n">async_wait</span><span class="p">(</span><span class="n">corio</span><span class="o">::</span><span class="n">use_corio</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">op</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do something...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>我们也可以使用 <code>use_corio_t::as_default_on_t</code> 或 <code>use_corio.as_default_on</code> 将 <code>corio::use_corio</code> 作为异步操作的默认 Complete Token。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">namespace</span> <span class="n">corio</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">using</span> <span class="n">steady_timer</span> <span class="o">=</span> <span class="n">use_corio_t</span><span class="o">::</span><span class="n">as_default_on_t</span><span class="o">&lt;</span><span class="n">asio</span><span class="o">::</span><span class="n">steady_timer</span><span class="o">&gt;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">ex</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">executor</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// corio:: instead of asio::
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">corio</span><span class="o">::</span><span class="n">steady_timer</span> <span class="n">timer</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="mi">500u</span><span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">timer</span><span class="p">.</span><span class="n">async_wait</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do something...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">corio</span><span class="o">::</span><span class="n">Lazy</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">&gt;</span> <span class="n">g</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">ex</span> <span class="o">=</span> <span class="k">co_await</span> <span class="n">corio</span><span class="o">::</span><span class="n">this_coro</span><span class="o">::</span><span class="n">executor</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">timer</span> <span class="o">=</span> <span class="n">corio</span><span class="o">::</span><span class="n">use_corio</span><span class="p">.</span><span class="n">as_default_on</span><span class="p">(</span><span class="n">asio</span><span class="o">::</span><span class="n">steady_timer</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="mi">500u</span><span class="n">s</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="k">co_await</span> <span class="n">timer</span><span class="p">.</span><span class="n">async_wait</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// do something...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div>
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://wokron.github.io/tags/coroutine/">Coroutine</a></li>
+      <li><a href="https://wokron.github.io/tags/asio/">Asio</a></li>
+      <li><a href="https://wokron.github.io/tags/c&#43;&#43;/">C&#43;&#43;</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="prev" href="https://wokron.github.io/posts/compile-time-sort/">
+    <span class="title">« 上一页</span>
+    <br>
+    <span>写个编译期排序</span>
+  </a>
+  <a class="next" href="https://wokron.github.io/posts/build-tensorflow-from-source/">
+    <span class="title">下一页 »</span>
+    <br>
+    <span>编译 Tensorflow 踩坑</span>
+  </a>
+</nav>
+
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 on x"
+            href="https://x.com/intent/tweet/?text=Corio%20-%20%e5%9f%ba%e4%ba%8e%20Asio%20%e7%9a%84%20C%2b%2b20%20%e5%8d%8f%e7%a8%8b%e6%a1%86%e6%9e%b6&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f&amp;hashtags=Coroutine%2cAsio%2cC%2b%2b">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f&amp;title=Corio%20-%20%e5%9f%ba%e4%ba%8e%20Asio%20%e7%9a%84%20C%2b%2b20%20%e5%8d%8f%e7%a8%8b%e6%a1%86%e6%9e%b6&amp;summary=Corio%20-%20%e5%9f%ba%e4%ba%8e%20Asio%20%e7%9a%84%20C%2b%2b20%20%e5%8d%8f%e7%a8%8b%e6%a1%86%e6%9e%b6&amp;source=https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 on reddit"
+            href="https://reddit.com/submit?url=https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f&title=Corio%20-%20%e5%9f%ba%e4%ba%8e%20Asio%20%e7%9a%84%20C%2b%2b20%20%e5%8d%8f%e7%a8%8b%e6%a1%86%e6%9e%b6">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 on whatsapp"
+            href="https://api.whatsapp.com/send?text=Corio%20-%20%e5%9f%ba%e4%ba%8e%20Asio%20%e7%9a%84%20C%2b%2b20%20%e5%8d%8f%e7%a8%8b%e6%a1%86%e6%9e%b6%20-%20https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 on telegram"
+            href="https://telegram.me/share/url?text=Corio%20-%20%e5%9f%ba%e4%ba%8e%20Asio%20%e7%9a%84%20C%2b%2b20%20%e5%8d%8f%e7%a8%8b%e6%a1%86%e6%9e%b6&amp;url=https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share Corio - 基于 Asio 的 C&#43;&#43;20 协程框架 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=Corio%20-%20%e5%9f%ba%e4%ba%8e%20Asio%20%e7%9a%84%20C%2b%2b20%20%e5%8d%8f%e7%a8%8b%e6%a1%86%e6%9e%b6&u=https%3a%2f%2fwokron.github.io%2fposts%2fcorio-readme%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer><div id="comment-container"></div>
+
+<script>
+    const getCurrentMode = () => {
+        if (document.body.className.includes("dark")) {
+            return "dark";
+        } else {
+            return "light";
+        }
+    }
+
+    const modeToGiscusTheme = (mode) => {
+        const themeMap = {
+            "light": "light",
+            "dark": "dark_dimmed",
+        };
+        return themeMap[mode];
+    }
+
+    let giscusAttributes = {
+        "src": "https://giscus.app/client.js",
+        "data-repo": "wokron/wokron.github.io",
+        "data-repo-id": "R_kgDOH-EarQ",
+        "data-category": "Announcements",
+        "data-category-id": "DIC_kwDOH-Earc4CdDm5",
+        "data-mapping": "pathname",
+        "data-strict": "0",
+        "data-reactions-enabled": "1",
+        "data-emit-metadata": "0",
+        "data-input-position": "top",
+        "data-theme": modeToGiscusTheme(getCurrentMode()),
+        "data-lang": "zh-CN",
+        "crossorigin": "anonymous",
+        "async": "",
+    };
+
+    let giscusScript = document.createElement("script");
+    Object.entries(giscusAttributes).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+    let commentContainer = document.getElementById("comment-container");
+    commentContainer.appendChild(giscusScript);
+
+    const sendMessageToGiscus = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+    }
+
+    const changeGiscusTheme = (theme) => {
+        sendMessageToGiscus({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        changeGiscusTheme(modeToGiscusTheme(getCurrentMode()));
+    });
+
+    observer.observe(document.body, { attributes: true });
+</script>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>©2022-2026 Yitang Yang. All rights reserved.</span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
