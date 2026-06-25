@@ -1,0 +1,8 @@
+<div class="post-embed embed-{{ .Get "ratio" | default "16x9" }}">
+  <iframe
+    src="{{ .Get "src" }}"
+    allow="fullscreen; autoplay"
+    allowfullscreen
+    loading="lazy">
+  </iframe>
+</div>

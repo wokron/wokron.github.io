@@ -1,0 +1,39 @@
+/* 通用 iframe 嵌入样式 */
+.post-embed {
+  position: relative;
+  width: 100%;
+  margin: 1.2em 0;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  background: #1a1a2e;
+}
+
+/* 16:9 — 幻灯片、视频 */
+.post-embed.embed-16x9 {
+  padding-bottom: 56.25%;
+}
+
+/* 4:3 — 传统演示 */
+.post-embed.embed-4x3 {
+  padding-bottom: 75%;
+}
+
+/* 1:1 — 方形 */
+.post-embed.embed-1x1 {
+  padding-bottom: 100%;
+}
+
+/* 21:9 — 超宽 */
+.post-embed.embed-21x9 {
+  padding-bottom: 42.85%;
+}
+
+.post-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
