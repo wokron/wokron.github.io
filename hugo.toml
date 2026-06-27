@@ -8,6 +8,7 @@ paginate = 6
 copyright = "©2022-2026 Yitang Yang. All rights reserved."
 
 defaultContentLanguage = "zh"
+defaultContentLanguageInSubdir = false
 
 enableRobotsTXT = true
 
@@ -20,10 +21,6 @@ series = "series"
 
 [params]
 env = "production"
-description = "Wokron 的个人博客。记录学习、分享经验"
-author = "Wokron"
-keywords = ["blog", "code", "tutorial"]
-
 ShowShareButtons = true
 ShowReadingTime = true
 ShowPostNavLinks = true
@@ -41,31 +38,6 @@ favicon = "/img/favicon/96x96.png"
 favicon16x16 = "/img/favicon/16x16.png"
 favicon32x32 = "/img/favicon/32x32.png"
 
-[params.editPost]
-URL = "https://github.com/wokron/wokron.github.io/blob/master/content"
-Text = "阅读原文"
-appendFilePath = true
-
-# [params.profileMode]
-# enabled = true
-# title = "Wokron 的博客"
-# subtitle = "学生党踩坑记录"
-# imageUrl = "/img/profile-lain.png"
-# imageTitle = "This is me"
-
-# [[params.profileMode.buttons]]
-# name = "我的帖子"
-# url = "/posts/"
-
-# [[params.profileMode.buttons]]
-# name = "系列文章"
-# url = "/series/"
-
-[params.homeInfoParams]
-enabled = true
-title = "Welcome to My Blog"
-content = "欢迎光临！文章不定期更新，希望能对您有帮助 :)"
-
 [[params.socialIcons]]
 name = "github"
 title = "My Github Account"
@@ -81,43 +53,127 @@ name = "qq"
 title = "My QQ Account"
 url = "mailto:3160114036@qq.com"
 
-[[menu.main]]
+# ==================== 中文配置 ====================
+[languages.zh]
+languageName = "中文"
+title = "Wokron's Blog"
+weight = 1
+
+[languages.zh.params]
+description = "Wokron 的个人博客。记录学习、分享经验"
+author = "Wokron"
+keywords = ["blog", "code", "tutorial"]
+
+[languages.zh.params.editPost]
+URL = "https://github.com/wokron/wokron.github.io/blob/master/content"
+Text = "阅读原文"
+appendFilePath = true
+
+[languages.zh.params.homeInfoParams]
+enabled = true
+title = "Welcome to My Blog"
+content = "欢迎光临！文章不定期更新，希望能对您有帮助 :)"
+
+[[languages.zh.menu.main]]
 identifier = "series"
 name = "系列文章"
 url = "/series/"
 weight = 1
 
-[[menu.main]]
+[[languages.zh.menu.main]]
 identifier = "categories"
 name = "分类"
 url = "/categories/"
 weight = 5
 
-[[menu.main]]
+[[languages.zh.menu.main]]
 identifier = "tags"
 name = "标签"
 url = "/tags/"
 weight = 10
 
-[[menu.main]]
+[[languages.zh.menu.main]]
 identifier = "archives"
 name = "归档"
 url = "/archives/"
 weight = 15
 
-[[menu.main]]
+[[languages.zh.menu.main]]
 identifier = "search"
 name = "搜索"
 url = "/search/"
 weight = 20
 
-[[menu.main]]
+[[languages.zh.menu.main]]
 identifier = "links"
 name = "友链"
 url = "/links/"
 weight = 25
 
-[[menu.main]]
+[[languages.zh.menu.main]]
+identifier = "github"
+name = "Github Repo"
+url = "https://github.com/wokron/wokron.github.io"
+weight = 30
+
+# ==================== 英文配置 ====================
+[languages.en]
+languageName = "English"
+title = "Wokron's Blog"
+weight = 2
+
+[languages.en.params]
+description = "Wokron's personal blog. Learning notes & sharing."
+author = "Wokron"
+keywords = ["blog", "code", "tutorial"]
+
+[languages.en.params.editPost]
+URL = "https://github.com/wokron/wokron.github.io/blob/master/content"
+Text = "View Source"
+appendFilePath = true
+
+[languages.en.params.homeInfoParams]
+enabled = true
+title = "Welcome to My Blog"
+content = "Welcome! Articles are updated occasionally. Hope they help :)"
+
+[[languages.en.menu.main]]
+identifier = "series"
+name = "Series"
+url = "/series/"
+weight = 1
+
+[[languages.en.menu.main]]
+identifier = "categories"
+name = "Categories"
+url = "/categories/"
+weight = 5
+
+[[languages.en.menu.main]]
+identifier = "tags"
+name = "Tags"
+url = "/tags/"
+weight = 10
+
+[[languages.en.menu.main]]
+identifier = "archives"
+name = "Archives"
+url = "/archives/"
+weight = 15
+
+[[languages.en.menu.main]]
+identifier = "search"
+name = "Search"
+url = "/search/"
+weight = 20
+
+[[languages.en.menu.main]]
+identifier = "links"
+name = "Links"
+url = "/links/"
+weight = 25
+
+[[languages.en.menu.main]]
 identifier = "github"
 name = "Github Repo"
 url = "https://github.com/wokron/wokron.github.io"
