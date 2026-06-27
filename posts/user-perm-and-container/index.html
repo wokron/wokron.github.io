@@ -216,6 +216,10 @@ $ sleep 1 &amp; ps -o user,group,uid,gid -p $!"/>
                     </svg>
                 </button>
                 <ul class="lang-switch"><li>|</li>
+                    <li>
+                        <a href="https://wokron.github.io/en/" title="English"
+                            aria-label="English">En</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -414,7 +418,7 @@ $ sleep 1 &amp; ps -o user,group,uid,gid -p $!"/>
 </span></span></span><span class="line"><span class="cl"><span class="go">wokron@host$ docker run -it --rm --user wokron -v ./test_dir:/test_dir test:v1 bash
 </span></span></span><span class="line"><span class="cl"><span class="go">wokron@container$ whoami
 </span></span></span><span class="line"><span class="cl"><span class="go">wokron
-</span></span></span></code></pre></div><p>最后，其实还有一种方法，能够让容器中的 root 用户的行为在容器外表现为普通用户的行为。那就是使用 User Namespace。这种方法可以使得访问容器外文件系统时更加安全。有关 Namespace 的内容将在另外的文章（<a href="/posts/simple-container/#%E9%9A%94%E7%A6%BB%E7%94%A8%E6%88%B7">Here!</a>）中进行介绍。</p>
+</span></span></span></code></pre></div><p>最后，其实还有一种方法，能够让容器中的 root 用户的行为在容器外表现为普通用户的行为。那就是使用 User Namespace。这种方法可以使得访问容器外文件系统时更加安全。有关 Namespace 的内容将在另外的文章（<a href="/posts/simple-container/#隔离用户">Here!</a>）中进行介绍。</p>
 
 
   </div>
